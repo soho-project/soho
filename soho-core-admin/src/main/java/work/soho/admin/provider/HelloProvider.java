@@ -1,7 +1,7 @@
 package work.soho.admin.provider;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.service.HelloService;
@@ -9,9 +9,10 @@ import work.soho.api.admin.po.Hello;
 
 @Log4j2
 @RestController
+@RequiredArgsConstructor
 public class HelloProvider {
-    @Autowired
-    HelloService helloService;
+
+    private final HelloService helloService;
 
     @GetMapping("/hello")
     public String hello() {
@@ -20,7 +21,7 @@ public class HelloProvider {
 
     @GetMapping("/hello-by-id")
     public Hello helloById(Integer id) {
-        if(id == null) {
+        if (id == null) {
             id = 1;
         }
         System.out.println(id);
