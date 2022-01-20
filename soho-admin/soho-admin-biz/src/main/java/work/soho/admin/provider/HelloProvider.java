@@ -26,7 +26,7 @@ public class HelloProvider {
             id = 1;
         }
         System.out.println(id);
-        log.debug(id);
+        log.debug(String.valueOf(id));
         log.debug("test");
         log.debug("test");
         return helloService.getById(id);
