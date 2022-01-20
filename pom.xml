@@ -5,14 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>work.soho</groupId>
-    <artifactId>admin</artifactId>
+    <artifactId>soho</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
 
     <modules>
-        <module>soho-core-admin</module>
-        <module>soho-api-admin</module>
         <module>soho-common-base</module>
+        <module>soho-admin</module>
     </modules>
 
     <properties>
@@ -23,6 +22,8 @@
         <disruptor.version>3.4.4</disruptor.version>
         <mybatis.version>2.2.1</mybatis.version>
         <guava.version>31.0.1-jre</guava.version>
+        <mapstruct.version>1.4.2.Final</mapstruct.version>
+        <mapstruct-lombok.version>0.2.0</mapstruct-lombok.version>
     </properties>
 
     <dependencyManagement>
@@ -37,7 +38,7 @@
 
             <dependency>
                 <groupId>work.soho</groupId>
-                <artifactId>soho-api-admin</artifactId>
+                <artifactId>soho-admin-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -45,6 +46,24 @@
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct-processor</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-mapstruct-binding</artifactId>
+                <version>${mapstruct-lombok.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

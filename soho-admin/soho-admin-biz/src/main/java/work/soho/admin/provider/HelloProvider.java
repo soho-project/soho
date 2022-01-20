@@ -2,12 +2,13 @@ package work.soho.admin.provider;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.service.HelloService;
 import work.soho.api.admin.po.Hello;
 
-@Log4j2
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class HelloProvider {
