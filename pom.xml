@@ -24,6 +24,7 @@
         <guava.version>31.0.1-jre</guava.version>
         <mapstruct.version>1.4.2.Final</mapstruct.version>
         <mapstruct-lombok.version>0.2.0</mapstruct-lombok.version>
+        <pagehelper.version>1.4.1</pagehelper.version>
     </properties>
 
     <dependencyManagement>
@@ -64,6 +65,18 @@
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok-mapstruct-binding</artifactId>
                 <version>${mapstruct-lombok.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.pagehelper</groupId>
+                <artifactId>pagehelper-spring-boot-starter</artifactId>
+                <version>${pagehelper.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-starter-jdbc</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>
