@@ -1,2 +1,3 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  com.livk.common.core.support.SpringContextHolder
+  work.soho.common.spring.support.SpringContextHolder,\
+  work.soho.common.redis.SohoRedisAutoConfiguration
