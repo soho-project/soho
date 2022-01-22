@@ -30,26 +30,35 @@ public class ResponseUtil {
         return servletRequestAttributes.getResponse();
     }
 
-    public void out(String message) {
+    public void outError(String message) {
         HttpServletResponse response = ResponseUtil.getResponse();
         Assert.notNull(response, "response not null!");
-        ResponseUtil.out(response, message);
+        ResponseUtil.outError(response, message);
+    }
+
+    /**
+     * 根据response写入返回值
+     *
+     * @param response     response
+     * @param errorMessage 写入的信息
+     */
+    public void outError(HttpServletResponse response, String errorMessage) {
+        R<?> r = R.error(errorMessage);
+        ResponseUtil.out(response, r);
     }
 
     /**
      * 根据response写入返回值
      *
      * @param response response
-     * @param message  写入的信息
+     * @param obj      写入的信息
      */
-    public void out(HttpServletResponse response, String message) {
-        R<?> r = R.error(message);
+    public void out(HttpServletResponse response, Object obj) {
         try (PrintWriter out = response.getWriter()) {
-            out.print(JacksonUtils.toJson(r));
+            out.print(JacksonUtils.toJson(obj));
             out.flush();
         } catch (IOException exception) {
             exception.printStackTrace();
         }
     }
-
 }

@@ -25,6 +25,7 @@
         <mapstruct.version>1.4.2.Final</mapstruct.version>
         <mapstruct-lombok.version>0.2.0</mapstruct-lombok.version>
         <pagehelper.version>1.4.1</pagehelper.version>
+        <easyexcel.version>3.0.5</easyexcel.version>
     </properties>
 
     <dependencyManagement>
@@ -77,6 +78,12 @@
                         <artifactId>spring-boot-starter-jdbc</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>easyexcel</artifactId>
+                <version>${easyexcel.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -1,8 +1,9 @@
 package work.soho.common.bean.result;
 
 import com.github.pagehelper.Page;
-import lombok.Data;
+import lombok.Getter;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -13,8 +14,8 @@ import java.util.List;
  * @author livk
  * @date 2022/1/22
  */
-@Data
-public class SohoPage<T> {
+@Getter
+public class SohoPage<T> implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private int pageNum;

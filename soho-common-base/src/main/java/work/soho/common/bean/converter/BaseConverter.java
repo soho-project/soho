@@ -15,36 +15,11 @@ import java.util.stream.Stream;
  */
 public interface BaseConverter<S, T> {
 
-	/**
-	 * Gets source.
-	 *
-	 * @param t the t
-	 * @return the source
-	 */
 	S getSource(T t);
 
-	/**
-	 * Gets target.
-	 *
-	 * @param s the s
-	 * @return the target
-	 */
 	T getTarget(S s);
 
-	/**
-	 * Stream source stream.
-	 *
-	 * @param ct the ct
-	 * @return the stream
-	 */
 	Stream<S> streamSource(Collection<T> ct);
 
-	/**
-	 * Stream target stream.
-	 *
-	 * @param cs the cs
-	 * @return the stream
-	 */
 	Stream<T> streamTarget(Collection<S> cs);
-
 }
