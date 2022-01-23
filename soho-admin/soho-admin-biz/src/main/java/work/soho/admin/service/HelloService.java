@@ -9,6 +9,7 @@ import work.soho.api.admin.po.Hello;
 @Service
 @RequiredArgsConstructor
 public class HelloService {
+    @Autowired
     private final HelloMapper helloMapper;
 
     public Hello getById(Integer id) {
