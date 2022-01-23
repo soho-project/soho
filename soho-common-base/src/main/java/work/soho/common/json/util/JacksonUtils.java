@@ -2,6 +2,8 @@ package work.soho.common.json.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
+import com.fasterxml.jackson.databind.type.MapType;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.springframework.util.ObjectUtils;
@@ -80,7 +82,7 @@ public class JacksonUtils {
         if (json == null || json.isEmpty() || clazz == null) {
             return Stream.empty();
         }
-        var collectionType = MAPPER.getTypeFactory().constructCollectionType(Collection.class, clazz);
+        CollectionType collectionType = MAPPER.getTypeFactory().constructCollectionType(Collection.class, clazz);
         try {
             return ((Collection<T>) MAPPER.readValue(json, collectionType)).stream();
         } catch (JsonProcessingException e) {
@@ -137,7 +139,7 @@ public class JacksonUtils {
             return Collections.emptyMap();
         }
         try {
-            var mapType = MAPPER.getTypeFactory().constructMapType(Map.class, kClass, vClass);
+            MapType mapType = MAPPER.getTypeFactory().constructMapType(Map.class, kClass, vClass);
             return MAPPER.readValue(json, mapType);
         } catch (IOException e) {
             e.printStackTrace();
