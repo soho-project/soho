@@ -1,20 +1,17 @@
 package work.soho.admin;
 
-import lombok.extern.log4j.Log4j2;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
 import work.soho.admin.mapper.AdminUserMapper;
 import work.soho.api.admin.po.AdminUser;
 
 import java.sql.Timestamp;
 import java.util.List;
 
-@RunWith(SpringRunner.class)
 @SpringBootTest(classes = AdminApplication.class)
-@Log4j2
+@Slf4j
 public class CrudTest {
     @Autowired
     public AdminUserMapper adminUserMapper;

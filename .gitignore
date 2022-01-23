@@ -1,3 +1,2 @@
 .idea
-soho-core-admin/target
-soho-api-admin/target
+**/target

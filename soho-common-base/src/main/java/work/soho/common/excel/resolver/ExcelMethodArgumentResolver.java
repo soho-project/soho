@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartRequest;
 import work.soho.common.excel.annotation.ExcelData;
 import work.soho.common.excel.annotation.ExcelImport;
+import work.soho.common.excel.listener.ExcelReadListener;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -39,10 +40,10 @@ public class ExcelMethodArgumentResolver implements HandlerMethodArgumentResolve
         if (!Arrays.asList(parameter.getParameterType().getInterfaces()).contains(Collection.class)) {
             throw new IllegalArgumentException("Excel upload request resolver error, @ExcelData parameter is not Collection ");
         }
-        var importExcel = parameter.getMethodAnnotation(ExcelImport.class);
+        ExcelImport importExcel = parameter.getMethodAnnotation(ExcelImport.class);
         if (Objects.nonNull(importExcel)) {
-            var listener = BeanUtils.instantiateClass(importExcel.parse());
-            var request = webRequest.getNativeRequest(HttpServletRequest.class);
+            ExcelReadListener<?> listener = BeanUtils.instantiateClass(importExcel.parse());
+            HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
             Class<?> excelModelClass = ResolvableType.forMethodParameter(parameter).getGeneric(0).resolve();
             return listener.parse(getInputStream(request, importExcel.fileName()), excelModelClass).getCollectionData();
         }
