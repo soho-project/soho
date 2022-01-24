@@ -43,3 +43,6 @@ idea插件自行下载
  * @date ${DATE}
  */
 ```
+Api
+
+ttp://localhost:8080/api-docs/swagger-ui/
