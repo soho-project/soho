@@ -44,7 +44,7 @@ public class RequestUtil {
 
     public Map<String, String> getHeaders() {
         HttpServletRequest request = RequestUtil.getRequest();
-        Map<String, String> map = new LinkedHashMap<String, String>();
+        Map<String, String> map = new LinkedHashMap<>();
         Enumeration<String> enumeration = request.getHeaderNames();
         if (enumeration != null) {
             while (enumeration.hasMoreElements()) {
