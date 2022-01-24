@@ -7,38 +7,55 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * <p>
  * SohoPage
- * </p>
  *
  * @author livk
  * @date 2022/1/22
  */
 @Getter
 public class SohoPage<T> implements Serializable {
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
-    private int pageNum;
+  /** 总记录数 */
+  private int total;
+  /** 每页记录数 */
+  private int pageSize;
+  /** 总页数 */
+  private int pages;
+  /** 当前页数 */
+  private int pageNum;
+  /** 列表数据 */
+  private List<T> list;
 
-    private int pageSize;
+  public SohoPage(List<T> list, int total, int pages, int pageNum) {
+    this.list = list;
+    this.total = total;
+    this.pages = pages;
+    this.pageNum = pageNum;
+    this.pages = (int) Math.ceil((double) total / pageSize);
+  }
 
-    private final long total;
+  public SohoPage(Page<T> page) {
+    this.list = page.getResult();
+    this.total = (int) page.getTotal();
+    this.pageSize = (int) page.getPageSize();
+    this.pageNum = (int) page.getPageNum();
+    this.pages = (int) page.getPages();
+  }
 
-    private final List<T> list;
-
-    private SohoPage(List<T> list) {
-        this.list = list;
-        if (list instanceof Page) {
-            Page<T> page = (Page<T>) list;
-            this.pageNum = page.getPageNum();
-            this.pageSize = page.getPageSize();
-            this.total = page.getTotal();
-        } else {
-            this.total = list.size();
-        }
+  private SohoPage(List<T> list) {
+    this.list = list;
+    if (list instanceof Page) {
+      Page<T> page = (Page<T>) list;
+      this.pageNum = page.getPageNum();
+      this.pageSize = page.getPageSize();
+      this.pages = (int) page.getTotal();
+    } else {
+      this.total = list.size();
     }
+  }
 
-    public static <T> SohoPage<T> of(List<T> list) {
-        return new SohoPage<>(list);
-    }
+  public static <T> SohoPage<T> of(List<T> list) {
+    return new SohoPage<>(list);
+  }
 }
