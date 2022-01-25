@@ -37,3 +37,11 @@ pagehelper:
   support-methods-arguments: true
   reasonable: true
   helper-dialect: mysql
+
+springfox:
+  documentation:
+    open-api:
+      enabled: true
+    swagger-ui:
+      enabled: true
+      base-url: /api-docs
