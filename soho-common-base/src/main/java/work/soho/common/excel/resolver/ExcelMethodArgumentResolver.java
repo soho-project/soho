@@ -30,38 +30,43 @@ import java.util.Objects;
  */
 public class ExcelMethodArgumentResolver implements HandlerMethodArgumentResolver {
 
-    @Override
-    public boolean supportsParameter(MethodParameter parameter) {
-        return parameter.hasMethodAnnotation(ExcelImport.class) && parameter.hasParameterAnnotation(ExcelData.class);
-    }
+	@Override
+	public boolean supportsParameter(MethodParameter parameter) {
+		return parameter.hasMethodAnnotation(ExcelImport.class) && parameter.hasParameterAnnotation(ExcelData.class);
+	}
 
-    @Override
-    public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
-        if (!Arrays.asList(parameter.getParameterType().getInterfaces()).contains(Collection.class)) {
-            throw new IllegalArgumentException("Excel upload request resolver error, @ExcelData parameter is not Collection ");
-        }
-        ExcelImport importExcel = parameter.getMethodAnnotation(ExcelImport.class);
-        if (Objects.nonNull(importExcel)) {
-            ExcelReadListener<?> listener = BeanUtils.instantiateClass(importExcel.parse());
-            HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
-            Class<?> excelModelClass = ResolvableType.forMethodParameter(parameter).getGeneric(0).resolve();
-            return listener.parse(getInputStream(request, importExcel.fileName()), excelModelClass).getCollectionData();
-        }
-        return null;
-    }
+	@Override
+	public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
+			NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
+		if (!Arrays.asList(parameter.getParameterType().getInterfaces()).contains(Collection.class)) {
+			throw new IllegalArgumentException(
+					"Excel upload request resolver error, @ExcelData parameter is not Collection ");
+		}
+		ExcelImport importExcel = parameter.getMethodAnnotation(ExcelImport.class);
+		if (Objects.nonNull(importExcel)) {
+			ExcelReadListener<?> listener = BeanUtils.instantiateClass(importExcel.parse());
+			HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
+			Class<?> excelModelClass = ResolvableType.forMethodParameter(parameter).getGeneric(0).resolve();
+			return listener.parse(getInputStream(request, importExcel.fileName()), excelModelClass).getCollectionData();
+		}
+		return null;
+	}
 
-    private InputStream getInputStream(HttpServletRequest request, String fileName) {
-        try {
-            if (request instanceof MultipartRequest) {
-                MultipartFile file = ((MultipartRequest) request).getFile(fileName);
-                assert file != null;
-                return file.getInputStream();
-            } else {
-                return request.getInputStream();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
+	private InputStream getInputStream(HttpServletRequest request, String fileName) {
+		try {
+			if (request instanceof MultipartRequest) {
+				MultipartFile file = ((MultipartRequest) request).getFile(fileName);
+				assert file != null;
+				return file.getInputStream();
+			}
+			else {
+				return request.getInputStream();
+			}
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
 }

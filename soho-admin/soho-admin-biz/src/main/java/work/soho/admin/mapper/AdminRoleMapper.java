@@ -5,4 +5,5 @@ import work.soho.api.admin.po.AdminRole;
 
 @Mapper
 public interface AdminRoleMapper extends BaseMapper<AdminRole> {
+
 }

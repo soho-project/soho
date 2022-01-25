@@ -13,29 +13,31 @@ import java.util.List;
 @SpringBootTest(classes = AdminApplication.class)
 @Slf4j
 public class CrudTest {
-    @Autowired
-    public AdminUserMapper adminUserMapper;
 
-    @Test
-    public void insert() {
-        for (int i=0; i<100; i++) {
-            AdminUser adminUser = new AdminUser();
-            adminUser.setNickname("a");
-            adminUser.setRealname("fang.liu");
-            adminUser.setEmail("i@liufang.org.cn");
-            adminUser.setPhone(158731L);
-            adminUser.setPassword("123456");
-            adminUser.setCreatedTime(new Timestamp(System.currentTimeMillis()));
-            adminUser.setUpdatedTime(new Timestamp(System.currentTimeMillis()));
-            adminUserMapper.insert(adminUser);
-        }
-    }
+	@Autowired
+	public AdminUserMapper adminUserMapper;
 
-    @Test
-    public void select() {
-        AdminUser adminUser = new AdminUser();
-        adminUser.setNickname("a");
-        List<AdminUser> list = adminUserMapper.select(adminUser);
-        System.out.println(list);
-    }
+	@Test
+	public void insert() {
+		for (int i = 0; i < 100; i++) {
+			AdminUser adminUser = new AdminUser();
+			adminUser.setNickname("a");
+			adminUser.setRealName("fang.liu");
+			adminUser.setEmail("i@liufang.org.cn");
+			adminUser.setPhone(158731L);
+			adminUser.setPassword("123456");
+			adminUser.setCreatedTime(new Timestamp(System.currentTimeMillis()));
+			adminUser.setUpdatedTime(new Timestamp(System.currentTimeMillis()));
+			adminUserMapper.insert(adminUser);
+		}
+	}
+
+	@Test
+	public void select() {
+		AdminUser adminUser = new AdminUser();
+		adminUser.setNickname("a");
+		List<AdminUser> list = adminUserMapper.select(adminUser);
+		System.out.println(list);
+	}
+
 }

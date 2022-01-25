@@ -12,26 +12,28 @@ import work.soho.common.bean.result.R;
 @Api(tags = "")
 @RestController
 public class AdminRoleProvider {
-    @Autowired
-    private AdminRoleService adminRoleService;
 
-    @ApiOperation(value = "dmin-rule/update")
-    @PostMapping("admin-rule/update")
-    public R<Boolean> update(AdminRole adminRole) {
-        adminRoleService.update(adminRole);
-        return R.ok();
-    }
+	@Autowired
+	private AdminRoleService adminRoleService;
 
-    @ApiOperation(value = "dmin-rule/update")
-    @PostMapping("admin-rule/insert")
-    public R<Boolean> insert(AdminRole adminRole) {
-        adminRoleService.insert(adminRole);
-        return R.ok();
-    }
+	@ApiOperation(value = "dmin-rule/update")
+	@PostMapping("admin-rule/update")
+	public R<Boolean> update(AdminRole adminRole) {
+		adminRoleService.update(adminRole);
+		return R.ok();
+	}
 
-    @PostMapping("admin-rule/update-resource")
-    public R<Boolean> updateResource() {
+	@ApiOperation(value = "dmin-rule/update")
+	@PostMapping("admin-rule/insert")
+	public R<Boolean> insert(AdminRole adminRole) {
+		adminRoleService.insert(adminRole);
+		return R.ok();
+	}
 
-        return R.ok();
-    }
+	@PostMapping("admin-rule/update-resource")
+	public R<Boolean> updateResource() {
+
+		return R.ok();
+	}
+
 }

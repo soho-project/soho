@@ -23,37 +23,37 @@ import java.util.Map;
 @UtilityClass
 public class RequestUtil {
 
-    public HttpServletRequest getRequest() {
-        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-        ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) requestAttributes;
-        Assert.notNull(servletRequestAttributes, "attributes not null!");
-        return servletRequestAttributes.getRequest();
-    }
+	public HttpServletRequest getRequest() {
+		RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+		ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) requestAttributes;
+		Assert.notNull(servletRequestAttributes, "attributes not null!");
+		return servletRequestAttributes.getRequest();
+	}
 
-    public HttpSession getSession() {
-        return RequestUtil.getRequest().getSession();
-    }
+	public HttpSession getSession() {
+		return RequestUtil.getRequest().getSession();
+	}
 
-    public String getParameter(String name) {
-        return RequestUtil.getRequest().getParameter(name);
-    }
+	public String getParameter(String name) {
+		return RequestUtil.getRequest().getParameter(name);
+	}
 
-    public String getHeader(String headerName) {
-        return RequestUtil.getRequest().getHeader(headerName);
-    }
+	public String getHeader(String headerName) {
+		return RequestUtil.getRequest().getHeader(headerName);
+	}
 
-    public Map<String, String> getHeaders() {
-        HttpServletRequest request = RequestUtil.getRequest();
-        Map<String, String> map = new LinkedHashMap<>();
-        Enumeration<String> enumeration = request.getHeaderNames();
-        if (enumeration != null) {
-            while (enumeration.hasMoreElements()) {
-                String key = enumeration.nextElement();
-                String value = request.getHeader(key);
-                map.put(key, value);
-            }
-        }
-        return map;
-    }
+	public Map<String, String> getHeaders() {
+		HttpServletRequest request = RequestUtil.getRequest();
+		Map<String, String> map = new LinkedHashMap<>();
+		Enumeration<String> enumeration = request.getHeaderNames();
+		if (enumeration != null) {
+			while (enumeration.hasMoreElements()) {
+				String key = enumeration.nextElement();
+				String value = request.getHeader(key);
+				map.put(key, value);
+			}
+		}
+		return map;
+	}
 
 }

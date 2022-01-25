@@ -7,7 +7,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 @MapperScan("work.soho.admin.**")
 public class AdminApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(AdminApplication.class);
-    }
+
+	public static void main(String[] args) {
+		SpringApplication.run(AdminApplication.class);
+	}
+
 }

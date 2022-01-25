@@ -19,7 +19,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExcelImport {
 
-    Class<? extends ExcelReadListener<?>> parse();
+	Class<? extends ExcelReadListener<?>> parse();
 
-    String fileName();
+	String fileName();
+
 }

@@ -9,14 +9,16 @@ import org.springframework.data.redis.core.RedisTemplate;
 @SpringBootTest(classes = AdminApplication.class)
 @Log4j2
 public class RedisTest {
-    @Autowired
-    private RedisTemplate redisTemplate;
 
-    @Test
-    public void testKV() {
-        System.out.println("=========================================");
-        log.debug("redis set data");
-        redisTemplate.opsForValue().set("test", "test");
-        log.debug("redis set data end");
-    }
+	@Autowired
+	private RedisTemplate redisTemplate;
+
+	@Test
+	public void testKV() {
+		System.out.println("=========================================");
+		log.debug("redis set data");
+		redisTemplate.opsForValue().set("test", "test");
+		log.debug("redis set data end");
+	}
+
 }

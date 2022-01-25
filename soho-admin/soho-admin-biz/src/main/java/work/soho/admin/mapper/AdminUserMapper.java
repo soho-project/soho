@@ -5,4 +5,5 @@ import work.soho.api.admin.po.AdminUser;
 
 @Mapper
 public interface AdminUserMapper extends BaseMapper<AdminUser> {
+
 }
