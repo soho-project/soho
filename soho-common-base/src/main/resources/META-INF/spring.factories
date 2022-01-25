@@ -1,4 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  work.soho.common.spring.support.SpringContextHolder,\
-  work.soho.common.redis.SohoRedisAutoConfiguration,\
-  work.soho.common.excel.ExcelAutoConfiguration

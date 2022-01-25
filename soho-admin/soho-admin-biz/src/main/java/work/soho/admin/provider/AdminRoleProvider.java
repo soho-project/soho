@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.service.AdminRoleService;
 import work.soho.api.admin.po.AdminRole;
-import work.soho.common.bean.result.R;
+import work.soho.common.core.result.R;
 
 @Api(tags = "")
 @RestController

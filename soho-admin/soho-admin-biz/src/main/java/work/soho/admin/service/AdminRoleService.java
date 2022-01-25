@@ -7,18 +7,20 @@ import work.soho.admin.mapper.AdminRoleMapper;
 
 @Service
 public class AdminRoleService {
-   @Autowired
-   private AdminRoleMapper adminroleMapper;
 
-   public AdminRole getById(Integer id) {
-       return adminroleMapper.getById(id);
-   }
+	@Autowired
+	private AdminRoleMapper adminroleMapper;
 
-   public int insert(AdminRole adminrole) {
-       return adminroleMapper.insert(adminrole);
-   }
+	public AdminRole getById(Integer id) {
+		return adminroleMapper.getById(id);
+	}
 
-   public int update(AdminRole adminrole) {
-       return adminroleMapper.update(adminrole);
-   }
+	public int insert(AdminRole adminrole) {
+		return adminroleMapper.insert(adminrole);
+	}
+
+	public int update(AdminRole adminrole) {
+		return adminroleMapper.update(adminrole);
+	}
+
 }

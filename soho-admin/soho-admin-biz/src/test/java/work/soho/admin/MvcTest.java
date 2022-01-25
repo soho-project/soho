@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -14,9 +15,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@ContextConfiguration
 @WebAppConfiguration("src/main/resources")
 @SpringBootTest(classes = AdminApplication.class)
-public class MvcTest {
+class MvcTest {
 
 	private MockMvc mockMvc;
 
@@ -29,7 +31,7 @@ public class MvcTest {
 	}
 
 	@Test
-	public void testHello() throws Exception {
+	void testHello() throws Exception {
 		MvcResult mvcResult = mockMvc.perform(get("/hello")).andExpect(status().isOk())
 				.andExpect(content().bytes("Hello world".getBytes())).andReturn();
 	}
