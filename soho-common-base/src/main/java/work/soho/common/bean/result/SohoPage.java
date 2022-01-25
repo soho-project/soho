@@ -38,11 +38,11 @@ public class SohoPage<T> implements Serializable {
     private List<T> list;
 
     @Deprecated
-    public SohoPage(List<T> list, int total, int pages, int pageNum) {
+    public SohoPage(List<T> list, int total, int pageSize, int pageNum) {
         //TODO:这方法有问题吧
         this.list = list;
         this.total = total;
-        this.pages = pages;
+        this.pageSize = pageSize;
         this.pageNum = pageNum;
         this.pages = (int) Math.ceil((double) total / pageSize);
     }
