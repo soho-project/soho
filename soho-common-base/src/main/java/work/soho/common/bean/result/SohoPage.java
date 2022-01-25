@@ -27,10 +27,10 @@ public class SohoPage<T> implements Serializable {
   /** 列表数据 */
   private List<T> list;
 
-  public SohoPage(List<T> list, int total, int pages, int pageNum) {
+  public SohoPage(List<T> list, int total, int pageSize, int pageNum) {
     this.list = list;
     this.total = total;
-    this.pages = pages;
+    this.pageSize = pageSize;
     this.pageNum = pageNum;
     this.pages = (int) Math.ceil((double) total / pageSize);
   }
