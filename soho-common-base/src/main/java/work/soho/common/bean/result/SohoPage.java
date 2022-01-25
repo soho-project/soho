@@ -37,9 +37,14 @@ public class SohoPage<T> implements Serializable {
      */
     private List<T> list;
 
-    @Deprecated
+    /**
+     *
+     * @param list 数据集
+     * @param total 总数
+     * @param pageSize 条数
+     * @param pageNum 页码
+     */
     public SohoPage(List<T> list, int total, int pageSize, int pageNum) {
-        //TODO:这方法有问题吧
         this.list = list;
         this.total = total;
         this.pageSize = pageSize;
