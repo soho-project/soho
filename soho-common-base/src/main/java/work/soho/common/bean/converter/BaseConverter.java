@@ -22,4 +22,5 @@ public interface BaseConverter<S, T> {
 	Stream<S> streamSource(Collection<T> ct);
 
 	Stream<T> streamTarget(Collection<S> cs);
+
 }

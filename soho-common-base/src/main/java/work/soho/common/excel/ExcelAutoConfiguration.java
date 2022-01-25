@@ -17,8 +17,10 @@ import java.util.List;
  */
 @Configuration(proxyBeanMethods = false)
 public class ExcelAutoConfiguration implements WebMvcConfigurer {
-    @Override
-    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
-        resolvers.add(new ExcelMethodArgumentResolver());
-    }
+
+	@Override
+	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+		resolvers.add(new ExcelMethodArgumentResolver());
+	}
+
 }

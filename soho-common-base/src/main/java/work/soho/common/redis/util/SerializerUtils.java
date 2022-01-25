@@ -18,12 +18,13 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 @UtilityClass
 public class SerializerUtils {
 
-    public <T> Jackson2JsonRedisSerializer<T> getJacksonSerializer(Class<T> targetClass) {
-        Jackson2JsonRedisSerializer<T> serializer = new Jackson2JsonRedisSerializer<>(targetClass);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        mapper.activateDefaultTyping(new DefaultBaseTypeLimitingValidator(), ObjectMapper.DefaultTyping.NON_FINAL);
-        serializer.setObjectMapper(mapper);
-        return serializer;
-    }
+	public <T> Jackson2JsonRedisSerializer<T> getJacksonSerializer(Class<T> targetClass) {
+		Jackson2JsonRedisSerializer<T> serializer = new Jackson2JsonRedisSerializer<>(targetClass);
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+		mapper.activateDefaultTyping(new DefaultBaseTypeLimitingValidator(), ObjectMapper.DefaultTyping.NON_FINAL);
+		serializer.setObjectMapper(mapper);
+		return serializer;
+	}
+
 }

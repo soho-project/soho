@@ -18,8 +18,9 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 @AutoConfigureBefore(RedisAutoConfiguration.class)
 public class SohoRedisAutoConfiguration {
 
-    @Bean
-    public SohoRedisTemplate sohoRedisTemplate(LettuceConnectionFactory connectionFactory) {
-        return new SohoRedisTemplate(connectionFactory);
-    }
+	@Bean
+	public SohoRedisTemplate sohoRedisTemplate(LettuceConnectionFactory connectionFactory) {
+		return new SohoRedisTemplate(connectionFactory);
+	}
+
 }

@@ -15,23 +15,30 @@ import org.mapstruct.factory.Mappers;
  */
 @Mapper
 public interface BeanConverter extends BaseConverter<A, B> {
-    BeanConverter INSTANCE = Mappers.getMapper(BeanConverter.class);
 
-    public static void main(String[] args) {
-        A a = new A().setA(1).setB(2);
-        B b = INSTANCE.getTarget(a);
-        System.out.println(b);
-    }
+	BeanConverter INSTANCE = Mappers.getMapper(BeanConverter.class);
+
+	public static void main(String[] args) {
+		A a = new A().setA(1).setB(2);
+		B b = INSTANCE.getTarget(a);
+		System.out.println(b);
+	}
+
 }
 
 @Data
 @Accessors(chain = true)
 class A {
-    private Integer a;
-    private Integer b;
+
+	private Integer a;
+
+	private Integer b;
+
 }
 
 @Data
 class B {
-    private Integer a;
+
+	private Integer a;
+
 }

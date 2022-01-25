@@ -15,16 +15,17 @@ import work.soho.common.redis.util.SerializerUtils;
  */
 public class SohoRedisTemplate extends RedisTemplate<String, Object> {
 
-    private SohoRedisTemplate() {
-        this.setKeySerializer(RedisSerializer.string());
-        this.setHashKeySerializer(RedisSerializer.string());
-        this.setValueSerializer(SerializerUtils.getJacksonSerializer(Object.class));
-        this.setHashValueSerializer(SerializerUtils.getJacksonSerializer(Object.class));
-    }
+	private SohoRedisTemplate() {
+		this.setKeySerializer(RedisSerializer.string());
+		this.setHashKeySerializer(RedisSerializer.string());
+		this.setValueSerializer(SerializerUtils.getJacksonSerializer(Object.class));
+		this.setHashValueSerializer(SerializerUtils.getJacksonSerializer(Object.class));
+	}
 
-    public SohoRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        this();
-        this.setConnectionFactory(redisConnectionFactory);
-        this.afterPropertiesSet();
-    }
+	public SohoRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
+		this();
+		this.setConnectionFactory(redisConnectionFactory);
+		this.afterPropertiesSet();
+	}
+
 }
