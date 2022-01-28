@@ -1,16 +1,15 @@
 package work.soho.admin;
 
-import lombok.extern.log4j.Log4j2;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 
 @Slf4j
-public class Log4j2Test {
+class Log4j2Test {
 
 	@Test
-	public void testLog() {
+	void testLog() {
 		System.out.println("test by fang");
 		Logger log = LogManager.getLogger(Log4j2Test.class);
 		log.error("error");
@@ -22,7 +21,7 @@ public class Log4j2Test {
 	}
 
 	@Test
-	public void testLog2() {
+	void testLog2() {
 		log.debug("test by fang");
 	}
 

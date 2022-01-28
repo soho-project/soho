@@ -1,6 +1,8 @@
 package work.soho.admin;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,15 +12,22 @@ import work.soho.api.admin.po.AdminUser;
 import java.sql.Timestamp;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 @SpringBootTest(classes = AdminApplication.class)
 @Slf4j
-public class CrudTest {
+class CrudTest {
 
 	@Autowired
 	public AdminUserMapper adminUserMapper;
 
+	@Autowired
+	private SqlSessionFactory sqlSessionFactory;
+
 	@Test
-	public void insert() {
+	void insert() {
+		SqlSession sqlSession = sqlSessionFactory.openSession(false);
+		AdminUserMapper userMapper = sqlSession.getMapper(AdminUserMapper.class);
 		for (int i = 0; i < 100; i++) {
 			AdminUser adminUser = new AdminUser();
 			adminUser.setNickname("a");
@@ -28,16 +37,17 @@ public class CrudTest {
 			adminUser.setPassword("123456");
 			adminUser.setCreatedTime(new Timestamp(System.currentTimeMillis()));
 			adminUser.setUpdatedTime(new Timestamp(System.currentTimeMillis()));
-			adminUserMapper.insert(adminUser);
+			userMapper.insert(adminUser);
 		}
+		sqlSession.commit();
+		sqlSession.close();
 	}
 
 	@Test
-	public void select() {
+	void select() {
 		AdminUser adminUser = new AdminUser();
 		adminUser.setNickname("a");
-		List<AdminUser> list = adminUserMapper.select(adminUser);
-		System.out.println(list);
+		List<AdminUser> list = adminUserMapper.selectAll();
 	}
 
 }

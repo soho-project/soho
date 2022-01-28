@@ -58,18 +58,13 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-boot-starter</artifactId>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-core</artifactId>
         </dependency>
 
         <dependency>
             <groupId>work.soho</groupId>
-            <artifactId>soho-common-base</artifactId>
+            <artifactId>soho-common-data</artifactId>
         </dependency>
 
         <dependency>
