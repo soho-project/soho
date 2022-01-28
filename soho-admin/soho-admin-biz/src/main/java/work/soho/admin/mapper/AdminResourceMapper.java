@@ -5,5 +5,5 @@ import work.soho.api.admin.po.AdminResource;
 
 @Mapper
 public interface AdminResourceMapper extends BaseMapper<AdminResource> {
-
+    public AdminResource getByKey(String key);
 }

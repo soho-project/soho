@@ -53,7 +53,7 @@ idea插件自行下载
 
 Api
 
-ttp://localhost:8080/api-docs/swagger-ui/
+http://localhost:8080/api-docs/swagger-ui/
 
 ```text
 |--soho

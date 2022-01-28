@@ -8,16 +8,23 @@
        type,
        remarks,
        created_time,
-       visible
+       visible,
+       `key`,
+       `order`
    </sql>
    <select id="getById" resultType="work.soho.api.admin.po.AdminResource">
-       SELECT 
+       SELECT
            <include refid="AllField"></include>
-       FROM admin_resource: table where id=#{id}
+       FROM admin_resource where id=#{id}
+   </select>
+   <select id="getByKey" resultType="work.soho.api.admin.po.AdminResource">
+       SELECT
+           <include refid="AllField"></include>
+       FROM admin_resource where `key`=#{key}
    </select>
    <insert id="insert" parameterType="work.soho.api.admin.po.AdminResource">
-       INSERT INTO admin_resource: table
-       <trim prefix="(" suffix=")" suffixOverrides=","> 
+       INSERT INTO admin_resource
+       <trim prefix="(" suffix=")" suffixOverrides=",">
       <if test="id != null">
            id,
        </if>
@@ -39,28 +46,40 @@
       <if test="visible != null">
            visible,
        </if>
+      <if test="key != null">
+           `key`,
+       </if>
+      <if test="order != null">
+           `order`,
+       </if>
        </trim>
-       <trim prefix="VALUES(" suffix=")" suffixOverrides=","> 
+       <trim prefix="VALUES(" suffix=")" suffixOverrides=",">
       <if test="id != null">
-           id,
+           #{id},
        </if>
       <if test="name != null">
-           name,
+           #{name},
        </if>
       <if test="path != null">
-           path,
+           #{path},
        </if>
       <if test="type != null">
-           type,
+           #{type},
        </if>
       <if test="remarks != null">
-           remarks,
+           #{remarks},
        </if>
       <if test="createdTime != null">
-           createdTime,
+           #{createdTime},
        </if>
       <if test="visible != null">
-           visible,
+           #{visible},
+       </if>
+      <if test="key != null">
+           #{key},
+       </if>
+      <if test="order != null">
+           #{order},
        </if>
        </trim>
    </insert>
@@ -73,6 +92,8 @@
           <if test="remarks != null">remarks=#{remarks}</if>
           <if test="createdTime != null">created_time=#{createdTime}</if>
           <if test="visible != null">visible=#{visible}</if>
+          <if test="key != null">`key`=#{key}</if>
+          <if test="order != null">`order`=#{order}</if>
       </set>
   </update>
 

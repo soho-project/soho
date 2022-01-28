@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import work.soho.admin.annotation.Node;
 import work.soho.admin.service.AdminRoleService;
 import work.soho.api.admin.po.AdminRole;
 import work.soho.common.bean.result.R;
@@ -18,6 +19,7 @@ public class AdminRoleProvider {
 
 	@ApiOperation(value = "dmin-rule/update")
 	@PostMapping("admin-rule/update")
+	@Node(value = "test by fang annotation", visible = 1, describe = "")
 	public R<Boolean> update(AdminRole adminRole) {
 		adminRoleService.update(adminRole);
 		return R.ok();
