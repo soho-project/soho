@@ -84,17 +84,20 @@
        </trim>
    </insert>
   <update id="update"  parameterType="work.soho.api.admin.po.AdminResource">
+      update admin_resource
       <set>
-          <if test="id != null">id=#{id}</if>
-          <if test="name != null">name=#{name}</if>
-          <if test="path != null">path=#{path}</if>
-          <if test="type != null">type=#{type}</if>
-          <if test="remarks != null">remarks=#{remarks}</if>
-          <if test="createdTime != null">created_time=#{createdTime}</if>
-          <if test="visible != null">visible=#{visible}</if>
-          <if test="key != null">`key`=#{key}</if>
-          <if test="order != null">`order`=#{order}</if>
+          <if test="id != null">`id`=#{id},</if>
+          <if test="name != null">name=#{name},</if>
+          <if test="path != null">path=#{path},</if>
+          <if test="type != null">`type`=#{type},</if>
+          <if test="remarks != null">remarks=#{remarks},</if>
+          <if test="createdTime != null">created_time=#{createdTime},</if>
+          <if test="visible != null">visible=#{visible},</if>
+          <if test="key != null">`key`=#{key},</if>
+          <if test="order != null">`order`=#{order},</if>
       </set>
+
+      where `id`=#{id}
   </update>
 
 

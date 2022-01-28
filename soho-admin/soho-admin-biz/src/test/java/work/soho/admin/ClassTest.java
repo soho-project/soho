@@ -15,12 +15,15 @@ import java.util.ArrayList;
 import java.util.Set;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.annotation.Node;
 import work.soho.admin.service.AdminResourceService;
 
+@ContextConfiguration
+@WebAppConfiguration("src/main/resources")
 @SpringBootTest(classes = AdminApplication.class)
-@Slf4j
 public class ClassTest {
     @Autowired
     AdminResourceService adminResourceService;

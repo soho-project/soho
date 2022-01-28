@@ -1,3 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  work.soho.common.data.excel.ExcelAutoConfiguration,\
-  work.soho.common.data.redis.SohoRedisAutoConfiguration
+  work.soho.common.data.excel.ExcelAutoConfiguration
