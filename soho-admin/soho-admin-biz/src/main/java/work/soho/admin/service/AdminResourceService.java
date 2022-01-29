@@ -50,6 +50,7 @@ public class AdminResourceService {
             queryAdminResource.setCreatedTime(new Timestamp(System.currentTimeMillis()));
             queryAdminResource.setVisible(node.visible());
             queryAdminResource.setOrder(node.order());
+            queryAdminResource.setRemarks(node.describe());
             if(data == null) {
                 adminResourceMapper.insert(queryAdminResource);
             } else {
