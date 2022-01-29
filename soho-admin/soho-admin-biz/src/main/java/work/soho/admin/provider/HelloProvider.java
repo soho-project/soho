@@ -1,11 +1,8 @@
 package work.soho.admin.provider;
 
 import com.littlenb.snowflake.sequence.IdGenerator;
-import com.littlenb.snowflake.support.MillisIdGeneratorFactory;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
