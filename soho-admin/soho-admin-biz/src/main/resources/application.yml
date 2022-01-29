@@ -49,3 +49,6 @@ springfox:
     swagger-ui:
       enabled: true
       base-url: /api-docs
+snowflake:
+  enable-atomic: true
+  enable-cached: true

@@ -69,3 +69,7 @@ http://localhost:8080/api-docs/swagger-ui/
 Action
 
     @Nde(value = "unique-key", visible = 1, describe = "describe")
+
+@Log 对方法调用进行日志记载
+
+    @Log("log key word")
