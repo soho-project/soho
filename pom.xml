@@ -21,8 +21,6 @@
         <spring-boot.version>2.6.2</spring-boot.version>
         <spring.checkstyle.version>0.0.29</spring.checkstyle.version>
         <soho-common.version>1.0-SNAPSHOT</soho-common.version>
-        <disruptor.version>3.4.4</disruptor.version>
-        <mybatis.version>2.2.1</mybatis.version>
     </properties>
 
     <dependencyManagement>
