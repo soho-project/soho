@@ -65,3 +65,7 @@ http://localhost:8080/api-docs/swagger-ui/
         |--soho-common-core (核心包)
         、、、(common包待补充)
 ```
+
+Action
+
+    @Nde(value = "unique-key", visible = 1, describe = "describe")
