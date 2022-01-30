@@ -63,6 +63,14 @@
             </exclusions>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/com.littlenb/snowflake -->
+        <dependency>
+            <groupId>com.littlenb</groupId>
+            <artifactId>snowflake</artifactId>
+            <version>1.0.5</version>
+        </dependency>
+
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
