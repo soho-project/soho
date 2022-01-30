@@ -2,11 +2,9 @@ package work.soho.admin.aspect;
 
 import com.littlenb.snowflake.sequence.IdGenerator;
 import lombok.extern.log4j.Log4j2;
-import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -30,33 +28,33 @@ public class LogAspect {
     public Object around(ProceedingJoinPoint invocation) throws Throwable {
         String requestId = String.valueOf(generator.nextId());
         Log l = getLog(invocation);
+        String jsonParams = getJsonParams(l, invocation);
         try {
-            beforeMethod(l, invocation, requestId);
             Object result = invocation.proceed();
-            log.debug("[{}] [{}] method: [{}] response: [{}]",l.value(), requestId, invocation.getSignature(), JacksonUtils.toJson(result));
+            log.debug("[{}] [{}] method: [{}] params: [{}] response: [{}]",l.value(), requestId, invocation.getSignature(), jsonParams, JacksonUtils.toJson(result));
             return result;
         } catch (Exception e) {
-            log.warn("[{}] [{}] method: [{}] response: [{}]",l.value(), requestId, invocation.getSignature(), JacksonUtils.toJson(e));
+            log.warn("[{}] [{}] method: [{}] params: [{}] exception: [{}]",l.value(), requestId, invocation.getSignature(), jsonParams, JacksonUtils.toJson(e));
             throw e;
         }
     }
 
     /**
      * before method
-     *
-     * @param l
+     *  @param l
      * @param invocation
-     * @param uuid
+     * @return
      */
-     public void beforeMethod(Log l, ProceedingJoinPoint invocation, String uuid) {
+     public String getJsonParams(Log l, ProceedingJoinPoint invocation) {
         Object[] args = invocation.getArgs();
         String[] argNames = ((MethodSignature)invocation.getSignature()).getParameterNames();
         Map<String, Object> paramsMap = new HashMap<>();
         for (int i=0; i<args.length; i++) {
             paramsMap.put(argNames[i], args[i]);
         }
-        log.debug("[{}] [{}] method: [{}] params: [{}]",l.value(), uuid, invocation.getSignature(), JacksonUtils.toJson(paramsMap));
-    }
+        JacksonUtils.toJson(paramsMap);
+         return null;
+     }
 
     /**
      * get Log
