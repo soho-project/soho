@@ -8,8 +8,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Node {
-    public String value();
-    public long visible();
-    public long order() default 300;
-    public String describe();
+    String value();
+    String name();
+    long visible() default 1;
+    long order() default 300;
+    String describe();
 }

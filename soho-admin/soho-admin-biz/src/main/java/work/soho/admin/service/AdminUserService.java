@@ -6,21 +6,10 @@ import work.soho.api.admin.po.AdminUser;
 import work.soho.admin.mapper.AdminUserMapper;
 
 @Service
-public class AdminUserService {
+public interface AdminUserService {
+	public AdminUser getById(Integer id);
 
-	@Autowired
-	private AdminUserMapper adminuserMapper;
+	public int insert(AdminUser adminuser);
 
-	public AdminUser getById(Integer id) {
-		return adminuserMapper.getById(id);
-	}
-
-	public int insert(AdminUser adminuser) {
-		return adminuserMapper.insert(adminuser);
-	}
-
-	public int update(AdminUser adminuser) {
-		return adminuserMapper.update(adminuser);
-	}
-
+	public int update(AdminUser adminuser);
 }

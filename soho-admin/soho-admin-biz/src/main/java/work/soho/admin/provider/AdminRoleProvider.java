@@ -19,7 +19,7 @@ public class AdminRoleProvider {
 
 	@ApiOperation(value = "dmin-rule/update")
 	@PostMapping("admin-rule/update")
-	@Node(value = "test by fang annotation", visible = 1, describe = "")
+	@Node(value = "test by fang annotation", name = "更新角色信息", visible = 1, describe = "")
 	public R<Boolean> update(AdminRole adminRole) {
 		adminRoleService.update(adminRole);
 		return R.ok();

@@ -1,12 +1,8 @@
 package work.soho.admin;
 
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.reflections.Reflections;
-import org.reflections.scanners.MethodAnnotationsScanner;
 import org.reflections.scanners.Scanners;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -19,14 +15,14 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.annotation.Node;
-import work.soho.admin.service.AdminResourceService;
+import work.soho.admin.service.impl.AdminResourceServiceImpl;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
 @SpringBootTest(classes = AdminApplication.class)
 public class ClassTest {
     @Autowired
-    AdminResourceService adminResourceService;
+    AdminResourceServiceImpl adminResourceServiceImpl;
 
     @Test
     public void searchAnnotation() {
@@ -73,6 +69,6 @@ public class ClassTest {
 
     @Test
     public void syncTest() {
-        adminResourceService.syncResource2Db();
+        adminResourceServiceImpl.syncResource2Db();
     }
 }
