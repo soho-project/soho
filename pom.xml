@@ -12,6 +12,7 @@
     <modules>
         <module>soho-admin</module>
         <module>soho-common</module>
+        <module>soho-framework</module>
     </modules>
 
     <properties>
