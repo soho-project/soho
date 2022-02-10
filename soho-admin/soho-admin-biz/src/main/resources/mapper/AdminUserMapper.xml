@@ -14,7 +14,7 @@
    <select id="getById" resultType="work.soho.api.admin.po.AdminUser">
        SELECT
            <include refid="AllField"></include>
-       FROM admin_user: table where id=#{id}
+       FROM admin_user where id=#{id}
    </select>
    <insert id="insert" parameterType="work.soho.api.admin.po.AdminUser">
        INSERT INTO admin_user

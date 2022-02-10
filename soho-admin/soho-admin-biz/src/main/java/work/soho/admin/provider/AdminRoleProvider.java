@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.annotation.Node;
-import work.soho.admin.service.AdminRoleService;
+import work.soho.admin.service.impl.AdminRoleServiceImpl;
 import work.soho.api.admin.po.AdminRole;
 import work.soho.common.core.result.R;
 
@@ -15,7 +15,7 @@ import work.soho.common.core.result.R;
 public class AdminRoleProvider {
 
 	@Autowired
-	private AdminRoleService adminRoleService;
+	private AdminRoleServiceImpl adminRoleService;
 
 	@ApiOperation(value = "dmin-rule/update")
 	@PostMapping("admin-rule/update")

@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,6 +35,16 @@ class MvcTest {
 	void testHello() throws Exception {
 		MvcResult mvcResult = mockMvc.perform(get("/hello")).andExpect(status().isOk())
 				.andExpect(content().bytes("Hello world".getBytes())).andReturn();
+	}
+
+	@Test
+	void testLogin() throws Exception {
+		System.out.println("=============================================================================");
+		MvcResult mvcResult = mockMvc.perform(
+				post("/login").param("username", "root").param("password", "123456")
+		).andExpect(status().isOk())
+			.andReturn();
+		System.out.println(mvcResult.getResponse().getContentAsString());
 	}
 
 }

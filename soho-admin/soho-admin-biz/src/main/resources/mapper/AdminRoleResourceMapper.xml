@@ -8,13 +8,13 @@
        created_time
    </sql>
    <select id="getById" resultType="work.soho.api.admin.po.AdminRoleResource">
-       SELECT 
+       SELECT
            <include refid="AllField"></include>
-       FROM admin_role_resource: table where id=#{id}
+       FROM admin_role_resource where id=#{id}
    </select>
    <insert id="insert" parameterType="work.soho.api.admin.po.AdminRoleResource">
-       INSERT INTO admin_role_resource: table
-       <trim prefix="(" suffix=")" suffixOverrides=","> 
+       INSERT INTO admin_role_resource
+       <trim prefix="(" suffix=")" suffixOverrides=",">
       <if test="id != null">
            id,
        </if>
@@ -28,7 +28,7 @@
            created_time,
        </if>
        </trim>
-       <trim prefix="VALUES(" suffix=")" suffixOverrides=","> 
+       <trim prefix="VALUES(" suffix=")" suffixOverrides=",">
       <if test="id != null">
            id,
        </if>

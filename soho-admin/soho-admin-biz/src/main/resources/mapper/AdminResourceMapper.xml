@@ -22,6 +22,22 @@
            <include refid="AllField"></include>
        FROM admin_resource where `key`=#{key}
    </select>
+   <select id="getByPath" resultType="work.soho.api.admin.po.AdminResource">
+       SELECT
+           <include refid="AllField"></include>
+       FROM admin_resource where `path`=#{path} limit 1
+   </select>
+   <select id="getByRoleIds" resultType="work.soho.api.admin.po.AdminResource">
+       SELECT
+           <include refid="AllField"></include>
+       FROM admin_resource where id in (select resource_id from admin_role_resource where role_id in
+       <foreach collection="roleIds" item="roleId" index="index" open="(" close=")" separator=",">
+        #{roleId}
+       </foreach>
+
+       )
+   </select>
+
    <insert id="insert" parameterType="work.soho.api.admin.po.AdminResource">
        INSERT INTO admin_resource
        <trim prefix="(" suffix=")" suffixOverrides=",">
