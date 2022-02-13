@@ -1,4 +1,4 @@
-spring:
+﻿spring:
   profiles:
     active: @profiles.active@
   application:
@@ -7,9 +7,9 @@ spring:
     pathmatch:
       matching-strategy: ant_path_matcher
   datasource:
-    url: jdbc:mysql://localhost:3306/soho?useUnicode=true&characterEncoding=utf-8
-    username: soho
-    password: soho
+    url: jdbc:mysql://192.168.0.101:3306/soho?useUnicode=true&characterEncoding=utf-8
+    username: dev
+    password: dev
     driver-class-name: com.mysql.cj.jdbc.Driver
   redis:
     host: localhost
@@ -33,8 +33,6 @@ server:
 
 mybatis:
   mapper-locations: classpath:mapper/*.xml
-
-
 #pagehelper分页插件配置 以下属性不加也可以实现分页功能
 pagehelper:
   params: count=countSql
