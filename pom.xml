@@ -12,7 +12,7 @@
     <modules>
         <module>soho-admin</module>
         <module>soho-common</module>
-        <module>soho-framework</module>
+<!--        <module>soho-framework</module>-->
     </modules>
 
     <properties>
@@ -137,4 +137,14 @@
             </plugin>
         </plugins>
     </build>
+    <distributionManagement>
+        <repository>
+            <id>rdc-releases</id>
+            <url>https://repo.rdc.aliyun.com/repository/4345-release-LJ6AGT/</url>
+        </repository>
+        <snapshotRepository>
+            <id>rdc-snapshots</id>
+            <url>https://repo.rdc.aliyun.com/repository/4345-snapshot-2iSR34/</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>

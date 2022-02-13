@@ -117,4 +117,14 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    <distributionManagement>
+        <repository>
+            <id>rdc-releases</id>
+            <url>https://repo.rdc.aliyun.com/repository/4345-release-LJ6AGT/</url>
+        </repository>
+        <snapshotRepository>
+            <id>rdc-snapshots</id>
+            <url>https://repo.rdc.aliyun.com/repository/4345-snapshot-2iSR34/</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>
