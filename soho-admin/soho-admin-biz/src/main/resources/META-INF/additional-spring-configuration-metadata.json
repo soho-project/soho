@@ -4,5 +4,10 @@
       "name": "spring.dis.password",
       "type": "java.lang.String",
       "description": "Description for spring.dis.password."
-  }
-] }
+    },
+    {
+      "name": "snowflake.enable-atomic",
+      "type": "java.lang.String",
+      "description": "Description for snowflake.enable-atomic."
+    }
+  ] }

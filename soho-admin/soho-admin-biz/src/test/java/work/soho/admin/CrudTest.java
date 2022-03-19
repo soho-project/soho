@@ -45,7 +45,7 @@ class CrudTest {
 	void select() {
 		AdminUser adminUser = new AdminUser();
 		adminUser.setNickname("a");
-		List<AdminUser> list = adminUserMapper.selectAll();
+		List<AdminUser> list = adminUserMapper.selectList(null);
 	}
 
 }
