@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Set;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -70,5 +71,11 @@ public class ClassTest {
     @Test
     public void syncTest() {
         adminResourceServiceImpl.syncResource2Db();
+    }
+
+    @Test
+    public void passwordTest() {
+        String password = new BCryptPasswordEncoder().encode("123456");
+        System.out.println(password);
     }
 }

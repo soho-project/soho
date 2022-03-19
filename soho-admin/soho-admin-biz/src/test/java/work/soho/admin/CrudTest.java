@@ -29,7 +29,7 @@ class CrudTest {
 		for (int i = 0; i < 100; i++) {
 			AdminUser adminUser = new AdminUser();
 			adminUser.setNickname("a");
-			adminUser.setRealName("fang.liu");
+			adminUser.setRealname("fang.liu");
 			adminUser.setEmail("i@liufang.org.cn");
 			adminUser.setPhone(158731L);
 			adminUser.setPassword("123456");

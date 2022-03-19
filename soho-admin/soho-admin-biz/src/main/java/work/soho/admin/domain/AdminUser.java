@@ -11,7 +11,7 @@ public class AdminUser implements Serializable {
 
 	private String nickname;
 
-	private String realName;
+	private String realname;
 
 	private String email;
 
