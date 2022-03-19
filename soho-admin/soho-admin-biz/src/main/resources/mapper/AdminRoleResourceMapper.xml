@@ -7,12 +7,12 @@
        resource_id,
        created_time
    </sql>
-   <select id="getById" resultType="work.soho.api.admin.po.AdminRoleResource">
+   <select id="getById" resultType="work.soho.admin.domain.AdminRoleResource">
        SELECT
            <include refid="AllField"></include>
        FROM admin_role_resource where id=#{id}
    </select>
-   <insert id="insert" parameterType="work.soho.api.admin.po.AdminRoleResource">
+   <insert id="insert" parameterType="work.soho.admin.domain.AdminRoleResource">
        INSERT INTO admin_role_resource
        <trim prefix="(" suffix=")" suffixOverrides=",">
       <if test="id != null">
@@ -43,7 +43,7 @@
        </if>
        </trim>
    </insert>
-  <update id="update"  parameterType="work.soho.api.admin.po.AdminRoleResource">
+  <update id="update"  parameterType="work.soho.admin.domain.AdminRoleResource">
       <set>
           <if test="id != null">id=#{id}</if>
           <if test="roleId != null">role_id=#{roleId}</if>

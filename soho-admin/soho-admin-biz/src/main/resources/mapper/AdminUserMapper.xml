@@ -11,12 +11,12 @@
        updated_time,
        created_time
    </sql>
-   <select id="getById" resultType="work.soho.api.admin.po.AdminUser">
+   <select id="getById" resultType="work.soho.admin.domain.AdminUser">
        SELECT
            <include refid="AllField"></include>
        FROM admin_user where id=#{id}
    </select>
-   <insert id="insert" parameterType="work.soho.api.admin.po.AdminUser">
+   <insert id="insert" parameterType="work.soho.admin.domain.AdminUser">
        INSERT INTO admin_user
        <trim prefix="(" suffix=")" suffixOverrides=",">
       <if test="id != null">
@@ -71,7 +71,7 @@
        </if>
        </trim>
    </insert>
-  <update id="update"  parameterType="work.soho.api.admin.po.AdminUser">
+  <update id="update"  parameterType="work.soho.admin.domain.AdminUser">
       <set>
           <if test="id != null">id=#{id}</if>
           <if test="nickname != null">nickname=#{nickname}</if>
@@ -84,7 +84,7 @@
       </set>
   </update>
 
-    <select id="select" parameterType="work.soho.api.admin.po.AdminUser" resultType="java.util.ArrayList">
+    <select id="select" parameterType="work.soho.admin.domain.AdminUser" resultType="java.util.ArrayList">
         SELECT
         <include refid="AllField"></include>
         FROM admin_user

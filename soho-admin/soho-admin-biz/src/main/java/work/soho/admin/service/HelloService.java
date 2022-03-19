@@ -1,20 +1,13 @@
 package work.soho.admin.service;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import work.soho.admin.mapper.HelloMapper;
-import work.soho.api.admin.po.Hello;
+import com.baomidou.mybatisplus.extension.service.IService;
+import work.soho.admin.domain.Hello;
 
-@Service
-@RequiredArgsConstructor
-public class HelloService {
-    @Autowired
-    private final HelloMapper helloMapper;
+/**
+* @author i
+* @description 针对表【hello】的数据库操作Service
+* @createDate 2022-03-20 01:58:02
+*/
+public interface HelloService extends IService<Hello> {
 
-    public Hello getById(Integer id) {
-        Hello hello = new Hello();
-        hello.setId(id);
-        return helloMapper.getById(hello);
-    }
 }

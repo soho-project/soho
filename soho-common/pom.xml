@@ -12,7 +12,7 @@
     <artifactId>soho-common</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>soho-common-bom</module>
+        <module>soho-common-dependencies</module>
         <module>soho-common-core</module>
         <module>soho-common-data</module>
     </modules>

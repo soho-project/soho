@@ -12,22 +12,22 @@
        `key`,
        `order`
    </sql>
-   <select id="getById" resultType="work.soho.api.admin.po.AdminResource">
+   <select id="getById" resultType="work.soho.admin.domain.AdminResource">
        SELECT
            <include refid="AllField"></include>
        FROM admin_resource where id=#{id}
    </select>
-   <select id="getByKey" resultType="work.soho.api.admin.po.AdminResource">
+   <select id="getByKey" resultType="work.soho.admin.domain.AdminResource">
        SELECT
            <include refid="AllField"></include>
        FROM admin_resource where `key`=#{key}
    </select>
-   <select id="getByPath" resultType="work.soho.api.admin.po.AdminResource">
+   <select id="getByPath" resultType="work.soho.admin.domain.AdminResource">
        SELECT
            <include refid="AllField"></include>
        FROM admin_resource where `path`=#{path} limit 1
    </select>
-   <select id="getByRoleIds" resultType="work.soho.api.admin.po.AdminResource">
+   <select id="getByRoleIds" resultType="work.soho.admin.domain.AdminResource">
        SELECT
            <include refid="AllField"></include>
        FROM admin_resource where id in (select resource_id from admin_role_resource where role_id in
@@ -38,7 +38,7 @@
        )
    </select>
 
-   <insert id="insert" parameterType="work.soho.api.admin.po.AdminResource">
+   <insert id="insert" parameterType="work.soho.admin.domain.AdminResource">
        INSERT INTO admin_resource
        <trim prefix="(" suffix=")" suffixOverrides=",">
       <if test="id != null">
@@ -99,7 +99,7 @@
        </if>
        </trim>
    </insert>
-  <update id="update"  parameterType="work.soho.api.admin.po.AdminResource">
+  <update id="update"  parameterType="work.soho.admin.domain.AdminResource">
       update admin_resource
       <set>
           <if test="id != null">`id`=#{id},</if>

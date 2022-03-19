@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import work.soho.admin.annotation.Log;
+import work.soho.admin.domain.Hello;
 import work.soho.admin.service.HelloService;
-import work.soho.api.admin.po.Hello;
 
 @Slf4j
 @Controller

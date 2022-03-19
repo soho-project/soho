@@ -7,12 +7,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import work.soho.admin.mapper.AdminUserMapper;
-import work.soho.api.admin.po.AdminUser;
+import work.soho.admin.domain.AdminUser;
 
 import java.sql.Timestamp;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = AdminApplication.class)
 @Slf4j

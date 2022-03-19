@@ -2,14 +2,13 @@ package work.soho.admin.interceptor;
 
 import com.alibaba.excel.util.StringUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import work.soho.admin.service.AdminResourceService;
 import work.soho.admin.service.AdminRoleService;
 import work.soho.admin.service.AdminUserService;
-import work.soho.api.admin.po.AdminResource;
-import work.soho.api.admin.po.AdminRole;
+import work.soho.admin.domain.AdminResource;
+import work.soho.admin.domain.AdminRole;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;

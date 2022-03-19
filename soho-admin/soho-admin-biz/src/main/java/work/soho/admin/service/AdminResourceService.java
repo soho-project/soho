@@ -1,7 +1,7 @@
 package work.soho.admin.service;
 
 import org.springframework.stereotype.Service;
-import work.soho.api.admin.po.AdminResource;
+import work.soho.admin.domain.AdminResource;
 
 import java.util.List;
 

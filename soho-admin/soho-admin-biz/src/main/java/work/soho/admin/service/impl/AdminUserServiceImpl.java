@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 import work.soho.admin.mapper.AdminUserMapper;
 import work.soho.admin.service.AdminUserService;
-import work.soho.api.admin.po.AdminUser;
+import work.soho.admin.domain.AdminUser;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +18,7 @@ public class AdminUserServiceImpl  implements AdminUserService {
     private final AdminUserMapper adminuserMapper;
 
     public AdminUser getById(Integer id) {
-        return adminuserMapper.getById(id);
+        return adminuserMapper.selectById(id);
     }
 
     public int insert(AdminUser adminuser) {
@@ -26,7 +26,7 @@ public class AdminUserServiceImpl  implements AdminUserService {
     }
 
     public int update(AdminUser adminuser) {
-        return adminuserMapper.update(adminuser);
+        return adminuserMapper.updateById(adminuser);
     }
 
     /**
@@ -40,7 +40,7 @@ public class AdminUserServiceImpl  implements AdminUserService {
      */
     public String login(String username, String password) {
         //TODO 用户查找
-        AdminUser user = adminuserMapper.getById(1);
+        AdminUser user = adminuserMapper.selectById(1);
         if(user == null) {
             return null;
         }

@@ -1,4 +1,4 @@
-package work.soho.api.admin.po;
+package work.soho.admin.domain;
 
 import lombok.Data;
 import java.io.Serializable;

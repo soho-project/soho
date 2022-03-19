@@ -1,9 +1,6 @@
 package work.soho.admin.service;
 
-import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
-import work.soho.api.admin.po.AdminUser;
-import work.soho.admin.mapper.AdminUserMapper;
+import work.soho.admin.domain.AdminUser;
 
 public interface AdminUserService {
 	public AdminUser getById(Integer id);

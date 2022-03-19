@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import work.soho.admin.service.AdminRoleService;
-import work.soho.api.admin.po.AdminRole;
+import work.soho.admin.domain.AdminRole;
 import work.soho.admin.mapper.AdminRoleMapper;
 
 import java.util.List;
@@ -17,7 +17,7 @@ public class AdminRoleServiceImpl implements AdminRoleService {
 	private AdminRoleMapper adminroleMapper;
 
 	public AdminRole getById(Integer id) {
-		return adminroleMapper.getById(id);
+		return adminroleMapper.selectById(id);
 	}
 
 	public int insert(AdminRole adminrole) {
@@ -25,7 +25,7 @@ public class AdminRoleServiceImpl implements AdminRoleService {
 	}
 
 	public int update(AdminRole adminrole) {
-		return adminroleMapper.update(adminrole);
+		return adminroleMapper.updateById(adminrole);
 	}
 
 	/**

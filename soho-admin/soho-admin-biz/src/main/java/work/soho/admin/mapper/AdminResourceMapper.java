@@ -1,7 +1,8 @@
 package work.soho.admin.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
-import work.soho.api.admin.po.AdminResource;
+import work.soho.admin.domain.AdminResource;
 
 import java.util.List;
 

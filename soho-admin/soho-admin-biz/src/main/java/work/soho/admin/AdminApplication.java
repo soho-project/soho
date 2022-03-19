@@ -5,7 +5,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-@MapperScan("work.soho.admin.mapper")
+@MapperScan({"work.soho.admin.mapper"
+		, "com.baomidou.mybatisplus.samples.quickstart.mapper"})
 public class AdminApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(AdminApplication.class);

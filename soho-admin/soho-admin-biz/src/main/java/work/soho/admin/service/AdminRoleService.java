@@ -1,6 +1,6 @@
 package work.soho.admin.service;
 
-import work.soho.api.admin.po.AdminRole;
+import work.soho.admin.domain.AdminRole;
 
 import java.util.List;
 

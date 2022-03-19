@@ -7,7 +7,7 @@
        remarks,
        created_time
    </sql>
-   <select id="getById" resultType="work.soho.api.admin.po.AdminRole">
+   <select id="getById" resultType="work.soho.admin.domain.AdminRole">
        SELECT
            <include refid="AllField"></include>
        FROM admin_role: table where id=#{id}
@@ -17,7 +17,7 @@
        <include refid="AllField"></include>
        from admin_role where id in (select role_id from admin_role_user where user_id=#{userId})
    </select>
-   <insert id="insert" parameterType="work.soho.api.admin.po.AdminRole">
+   <insert id="insert" parameterType="work.soho.admin.domain.AdminRole">
        INSERT INTO admin_role: table
        <trim prefix="(" suffix=")" suffixOverrides=",">
       <if test="id != null">
@@ -48,7 +48,7 @@
        </if>
        </trim>
    </insert>
-  <update id="update"  parameterType="work.soho.api.admin.po.AdminRole">
+  <update id="update"  parameterType="work.soho.admin.domain.AdminRole">
       <set>
           <if test="id != null">id=#{id}</if>
           <if test="name != null">name=#{name}</if>

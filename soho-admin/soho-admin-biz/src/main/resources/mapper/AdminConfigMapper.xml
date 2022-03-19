@@ -8,12 +8,12 @@
        type,
        group_name
    </sql>
-   <select id="getById" resultType="work.soho.api.admin.po.AdminConfig">
+   <select id="getById" resultType="work.soho.admin.domain.AdminConfig">
        SELECT 
            <include refid="AllField"></include>
        FROM admin_config: table where id=#{id}
    </select>
-   <insert id="insert" parameterType="work.soho.api.admin.po.AdminConfig">
+   <insert id="insert" parameterType="work.soho.admin.domain.AdminConfig">
        INSERT INTO admin_config: table
        <trim prefix="(" suffix=")" suffixOverrides=","> 
       <if test="id != null">
@@ -50,7 +50,7 @@
        </if>
        </trim>
    </insert>
-  <update id="update"  parameterType="work.soho.api.admin.po.AdminConfig">
+  <update id="update"  parameterType="work.soho.admin.domain.AdminConfig">
       <set>
           <if test="id != null">id=#{id}</if>
           <if test="key != null">key=#{key}</if>
