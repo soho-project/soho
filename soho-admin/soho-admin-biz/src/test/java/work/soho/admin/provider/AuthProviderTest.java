@@ -1,4 +1,4 @@
-package work.soho.admin;
+package work.soho.admin.provider;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -7,45 +7,38 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-
+import work.soho.admin.AdminApplication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
 @SpringBootTest(classes = AdminApplication.class)
-class MvcTest {
+class AuthProviderTest {
+    private MockMvc mockMvc;
 
-	private MockMvc mockMvc;
+    @Autowired
+    private WebApplicationContext webApplicationContext;
 
-	@Autowired
-	private WebApplicationContext webApplicationContext;
+    @BeforeEach
+    public void setup() {
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(this.webApplicationContext).build();
+    }
 
-	@BeforeEach
-	public void setup() {
-		this.mockMvc = MockMvcBuilders.webAppContextSetup(this.webApplicationContext).build();
-	}
-
-	@Test
-	void testHello() throws Exception {
-		MvcResult mvcResult = mockMvc.perform(get("/hello")).andExpect(status().isOk())
-				.andExpect(content().bytes("Hello world".getBytes())).andReturn();
-	}
-
-	@Test
-	void testLogin() throws Exception {
-		System.out.println("=============================================================================");
-		MvcResult mvcResult = mockMvc.perform(
-				get("/login").param("username", "15873164073")
-						.param("password", "123456")
-		).andExpect(status().isOk())
-			.andReturn();
-		System.out.println(mvcResult.getResponse().getContentAsString());
-	}
-
+    @Test
+    void login() throws Exception {
+        mockMvc.perform(get("/login").
+                        param("username", "15873164073")
+                        .param("password", "123456"))
+                .andExpect(status().isOk())
+                .andDo(print()).andReturn();
+    }
 }

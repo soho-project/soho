@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-public class TokenServiceImpl<LoginUser> {
+public class TokenServiceImpl {
     private final static String HEADER = "Authorization";
 
     /**
@@ -39,8 +39,8 @@ public class TokenServiceImpl<LoginUser> {
         {
             Claims claims = parseToken(token);
             UserDetailsServiceImpl.UserDetailsImpl user = new UserDetailsServiceImpl.UserDetailsImpl();
-            user.setId((String) claims.get("admin_user_id"));
-            user.setUsername((String) claims.get("admin_username"));
+            user.setId((String) claims.get("uid"));
+            user.setUsername((String) claims.get("uname"));
             return user;
         }
         return null;

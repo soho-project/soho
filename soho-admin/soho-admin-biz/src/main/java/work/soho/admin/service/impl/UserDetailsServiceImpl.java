@@ -3,6 +3,7 @@ package work.soho.admin.service.impl;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -32,6 +33,18 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             return userDetails;
         }
         return null;
+    }
+
+    /**
+     * 获取当前已登录的用户信息
+     *
+     * @return
+     */
+    public UserDetails getLoginUserDetails() {
+        UserDetailsServiceImpl.UserDetailsImpl userDetails = (UserDetailsServiceImpl.UserDetailsImpl) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
+        return userDetails;
     }
 
     @Data
