@@ -13,6 +13,7 @@ import work.soho.admin.service.impl.UserDetailsServiceImpl;
 import work.soho.common.core.result.R;
 
 import javax.annotation.Resource;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -34,7 +35,7 @@ public class AuthProvider {
             return R.error("登录失败");
         }
         UserDetailsServiceImpl.UserDetailsImpl loginUser = (UserDetailsServiceImpl.UserDetailsImpl) authentication.getPrincipal();
-        String token = tokenService.createToken(loginUser);
+        Map<String, String> token = tokenService.createTokenInfo(loginUser);
         return R.ok(token);
     }
 }

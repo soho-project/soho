@@ -9,6 +9,10 @@ public class AdminUser implements Serializable {
 
 	private Long id;
 
+	private String username;
+
+	private String avatar;
+
 	private String nickname;
 
 	private String realname;

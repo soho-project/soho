@@ -1,7 +1,11 @@
 package work.soho.admin.filter;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.RememberMeAuthenticationToken;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -23,12 +27,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         UserDetailsServiceImpl.UserDetailsImpl loginUser = tokenService.getLoginUser(request);
-        if (!StringUtils.isEmpty(loginUser) && (SecurityContextHolder.getContext().getAuthentication() == null)) {
-            //TODO 自动刷新token
-            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginUser, null);
-            authenticationToken.setAuthenticated(true);
-            authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        if (loginUser!=null && (SecurityContextHolder.getContext().getAuthentication() == null)) {
+            RememberMeAuthenticationToken  rememberMeAuthenticationToken = new RememberMeAuthenticationToken(tokenService.getToken(request)
+                    , loginUser, AuthorityUtils.createAuthorityList("admin"));
+
+            rememberMeAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(rememberMeAuthenticationToken);
         }
 
         filterChain.doFilter(request, response);

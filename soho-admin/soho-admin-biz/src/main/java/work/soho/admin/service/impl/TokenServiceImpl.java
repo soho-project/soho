@@ -6,6 +6,8 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import work.soho.admin.domain.AdminUser;
 
 import javax.servlet.http.HttpServletRequest;
@@ -32,8 +34,7 @@ public class TokenServiceImpl {
      * @return 用户信息
      */
     public UserDetailsServiceImpl.UserDetailsImpl getLoginUser(HttpServletRequest request)
-    {
-        // 获取请求携带的令牌
+    {// 获取请求携带的令牌
         String token = getToken(request);
         if (StringUtils.isNotEmpty(token))
         {
@@ -44,6 +45,16 @@ public class TokenServiceImpl {
             return user;
         }
         return null;
+    }
+
+    /**
+     * 获取当前登录的用户
+     *
+     * @return
+     */
+    public UserDetailsServiceImpl.UserDetailsImpl getLoginUser() {
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+        return getLoginUser(request);
     }
 
     /**
@@ -74,8 +85,32 @@ public class TokenServiceImpl {
         String token = Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(new Date())
+                .setExpiration(new Date(new Date().getTime() + getTokenLeaseTerm()))
                 .signWith(SignatureAlgorithm.HS512, secret).compact();
         return token;
+    }
+
+    /**
+     * 获取token相关信息
+     *
+     * @param loginUser
+     * @return
+     */
+    public Map<String, String> createTokenInfo(UserDetailsServiceImpl.UserDetailsImpl loginUser) {
+        HashMap<String, String> map = new HashMap<String, String>();
+        map.put("token", createToken(loginUser));
+        map.put("iat", String.valueOf(new Date().getTime()));
+        map.put("exp", String.valueOf(new Date().getTime() + getTokenLeaseTerm()));
+        return map;
+    }
+
+    /**
+     * 获取token租期
+     *
+     * @return
+     */
+    private Long getTokenLeaseTerm() {
+        return 3600l * 365 * 1000;
     }
 
     /**
@@ -84,7 +119,7 @@ public class TokenServiceImpl {
      * @param request
      * @return token
      */
-    private String getToken(HttpServletRequest request)
+    public String getToken(HttpServletRequest request)
     {
         String token = request.getHeader(HEADER);
         if (StringUtils.isNotEmpty(token) && token.startsWith(TOKEN_PREFIX))
