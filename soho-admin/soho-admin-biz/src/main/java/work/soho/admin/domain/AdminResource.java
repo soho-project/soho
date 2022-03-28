@@ -7,11 +7,13 @@ import java.io.Serializable;
 public class AdminResource implements Serializable {
   private long id;
   private String name;
-  private String path;
+  private String route;
+  private Long breadcrumbParentId;
+  private String icon;
   private long type;
   private String remarks;
   private java.sql.Timestamp createdTime;
   private long visible;
-  private String key;
-  private long order;
+  private long sort;
+  private String zhName;
 }

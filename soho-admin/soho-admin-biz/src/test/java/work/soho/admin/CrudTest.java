@@ -28,8 +28,8 @@ class CrudTest {
 		AdminUserMapper userMapper = sqlSession.getMapper(AdminUserMapper.class);
 		for (int i = 0; i < 100; i++) {
 			AdminUser adminUser = new AdminUser();
-			adminUser.setNickname("a");
-			adminUser.setRealname("fang.liu");
+			adminUser.setNickName("a");
+			adminUser.setRealName("fang.liu");
 			adminUser.setEmail("i@liufang.org.cn");
 			adminUser.setPhone(158731L);
 			adminUser.setPassword("123456");
@@ -44,7 +44,7 @@ class CrudTest {
 	@Test
 	void select() {
 		AdminUser adminUser = new AdminUser();
-		adminUser.setNickname("a");
+		adminUser.setNickName("a");
 		List<AdminUser> list = adminUserMapper.selectList(null);
 	}
 

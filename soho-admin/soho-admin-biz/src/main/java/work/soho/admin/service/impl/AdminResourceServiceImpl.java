@@ -1,5 +1,6 @@
 package work.soho.admin.service.impl;
 
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import work.soho.admin.annotation.Node;
@@ -13,7 +14,7 @@ import work.soho.admin.service.AdminResourceService;
 
 @Service
 @RequiredArgsConstructor
-public class AdminResourceServiceImpl implements AdminResourceService{
+public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, AdminResource> implements AdminResourceService{
 
     /**
      * AdminResourceMapper

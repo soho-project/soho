@@ -1,4 +1,4 @@
-package work.soho.admin.configuration;
+package work.soho.admin.config;
 
 import com.littlenb.snowflake.sequence.IdGenerator;
 import com.littlenb.snowflake.support.MillisIdGeneratorFactory;

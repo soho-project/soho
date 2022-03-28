@@ -1,6 +1,5 @@
-package work.soho.admin.provider;
+package work.soho.admin.controller;
 
-import com.littlenb.snowflake.sequence.IdGenerator;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import work.soho.admin.annotation.Log;
 import work.soho.admin.domain.Hello;
 import work.soho.admin.service.HelloService;
