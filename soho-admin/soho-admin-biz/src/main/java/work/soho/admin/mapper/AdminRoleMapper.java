@@ -13,5 +13,5 @@ public interface AdminRoleMapper extends BaseMapper<AdminRole> {
      *
      * @return
      */
-    List<AdminRole> getAdminRoleListByUserId(Integer userId);
+    List<AdminRole> getAdminRoleListByUserId(Long userId);
 }

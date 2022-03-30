@@ -35,7 +35,7 @@ public class AdminRoleServiceImpl extends ServiceImpl<AdminRoleMapper, AdminRole
 	 * @param userId
 	 * @return
 	 */
-	public List<AdminRole> getRoleListByUserId(Integer userId) {
+	public List<AdminRole> getRoleListByUserId(Long userId) {
 		return adminroleMapper.getAdminRoleListByUserId(userId);
 	}
 }

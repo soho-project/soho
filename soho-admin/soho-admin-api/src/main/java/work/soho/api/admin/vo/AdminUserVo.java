@@ -6,6 +6,7 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 @ToString
@@ -23,4 +24,5 @@ public class AdminUserVo {
     private String password;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdTime;
+    private List<Long> roleIds;
 }

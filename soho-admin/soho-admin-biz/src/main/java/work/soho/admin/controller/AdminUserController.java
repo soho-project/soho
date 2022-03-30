@@ -8,7 +8,11 @@ import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import work.soho.admin.domain.AdminRole;
+import work.soho.admin.domain.AdminRoleUser;
 import work.soho.admin.domain.AdminUser;
+import work.soho.admin.service.AdminRoleService;
+import work.soho.admin.service.AdminRoleUserService;
 import work.soho.admin.service.AdminUserService;
 import work.soho.admin.service.impl.TokenServiceImpl;
 import work.soho.admin.service.impl.UserDetailsServiceImpl;
@@ -19,6 +23,7 @@ import work.soho.common.core.result.R;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @RestController
@@ -26,6 +31,7 @@ import java.util.List;
 public class AdminUserController extends BaseController {
     private final TokenServiceImpl tokenService;
     private final AdminUserService adminUserService;
+    private final AdminRoleUserService adminRoleUserService;
 
     @GetMapping("/user")
     public R user() {
@@ -79,6 +85,30 @@ public class AdminUserController extends BaseController {
         adminUser.setCreatedTime(new Date());
         adminUser.setUpdatedTime(new Date());
         adminUserService.save(adminUser);
+
+        //授权用户角色信息
+        List<AdminRoleUser> adminRoleList = adminRoleUserService.list(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, adminUser.getId()));
+        List<Long> oldRoleIds = adminRoleList.stream().map(AdminRoleUser::getRoleId).collect(Collectors.toList());
+        if(adminUserVo.getRoleIds() != null) {
+            adminUserVo.getRoleIds().forEach(roleId -> {
+                if(!oldRoleIds.contains(roleId)) {
+                    //不包含该值，新增
+                    AdminRoleUser adminRoleUser = new AdminRoleUser();
+                    adminRoleUser.setUserId(adminUser.getId());
+                    adminRoleUser.setRoleId(roleId);
+                    adminRoleUser.setCreatedTime(new Date());
+                    adminRoleUser.setStatus(1);
+                    adminRoleUserService.save(adminRoleUser);
+                }
+            });
+            //删除更新中不存在的角色
+            oldRoleIds.forEach(roleId -> {
+                if(!adminUserVo.getRoleIds().contains(roleId)) {
+                    adminRoleUserService.remove(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, adminUser.getId())
+                            .eq(AdminRoleUser::getRoleId, roleId));
+                }
+            });
+        }
         return R.ok("保存成功");
     }
 
