@@ -1,64 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="work.soho.admin.mapper.AdminRoleUserMapper">
-   <sql id="AllField">
-       id,
-       role_id,
-       user_id,
-       status,
-       created_time
-   </sql>
-   <select id="getById" resultType="work.soho.admin.domain.AdminRoleUser">
-       SELECT 
-           <include refid="AllField"></include>
-       FROM admin_role_user: table where id=#{id}
-   </select>
-   <insert id="insert" parameterType="work.soho.admin.domain.AdminRoleUser">
-       INSERT INTO admin_role_user: table
-       <trim prefix="(" suffix=")" suffixOverrides=","> 
-      <if test="id != null">
-           id,
-       </if>
-      <if test="roleId != null">
-           role_id,
-       </if>
-      <if test="userId != null">
-           user_id,
-       </if>
-      <if test="status != null">
-           status,
-       </if>
-      <if test="createdTime != null">
-           created_time,
-       </if>
-       </trim>
-       <trim prefix="VALUES(" suffix=")" suffixOverrides=","> 
-      <if test="id != null">
-           id,
-       </if>
-      <if test="roleId != null">
-           roleId,
-       </if>
-      <if test="userId != null">
-           userId,
-       </if>
-      <if test="status != null">
-           status,
-       </if>
-      <if test="createdTime != null">
-           createdTime,
-       </if>
-       </trim>
-   </insert>
-  <update id="update"  parameterType="work.soho.admin.domain.AdminRoleUser">
-      <set>
-          <if test="id != null">id=#{id}</if>
-          <if test="roleId != null">role_id=#{roleId}</if>
-          <if test="userId != null">user_id=#{userId}</if>
-          <if test="status != null">status=#{status}</if>
-          <if test="createdTime != null">created_time=#{createdTime}</if>
-      </set>
-  </update>
 
+    <resultMap id="BaseResultMap" type="work.soho.admin.domain.AdminRoleUser">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="roleId" column="role_id" jdbcType="INTEGER"/>
+            <result property="userId" column="user_id" jdbcType="INTEGER"/>
+            <result property="status" column="status" jdbcType="TINYINT"/>
+            <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
 
+    <sql id="Base_Column_List">
+        id,role_id,user_id,
+        status,created_time
+    </sql>
 </mapper>

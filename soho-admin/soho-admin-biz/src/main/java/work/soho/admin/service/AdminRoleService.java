@@ -11,5 +11,5 @@ public interface AdminRoleService {
 
     int update(AdminRole adminrole);
 
-    List<AdminRole> getRoleListByUserId(Integer userId);
+    List<AdminRole> getRoleListByUserId(Long userId);
 }

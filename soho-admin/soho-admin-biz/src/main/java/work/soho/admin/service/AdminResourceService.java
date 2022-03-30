@@ -6,7 +6,6 @@ import work.soho.admin.domain.AdminResource;
 
 import java.util.List;
 
-@Service
 public interface AdminResourceService extends IService<AdminResource> {
     public void syncResource2Db();
 

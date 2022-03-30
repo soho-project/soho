@@ -5,7 +5,7 @@ import java.io.Serializable;
 
 @Data
 public class AdminResource implements Serializable {
-  private long id;
+  private Long id;
   private String name;
   private String route;
   private Long breadcrumbParentId;
