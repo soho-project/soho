@@ -15,7 +15,7 @@ import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
-public class AuthProvider {
+public class AuthController {
     private final TokenServiceImpl tokenService;
     @Resource
     private AuthenticationManager authenticationManager;

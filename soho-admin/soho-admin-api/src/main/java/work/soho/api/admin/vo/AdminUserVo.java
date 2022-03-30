@@ -20,6 +20,7 @@ public class AdminUserVo {
     private Integer sex;
     private Integer age;
     private String email;
+    private String password;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdTime;
 }

@@ -37,7 +37,8 @@ public class SwaggerAutoConfiguration {
 	 */
 	@Bean
 	public Docket createRestApi(SwaggerProperties swaggerProperties) {
-		ApiSelectorBuilder apis = new Docket(DocumentationType.SWAGGER_2).apiInfo(apiInfo(swaggerProperties)).select()
+		ApiSelectorBuilder apis = new Docket(DocumentationType.SWAGGER_2)
+				.apiInfo(apiInfo(swaggerProperties)).select()
 				.apis(RequestHandlerSelectors.basePackage(swaggerProperties.getBasePackage()));
 		ArrayList<String> excludePath = new ArrayList<>(swaggerProperties.getExcludePath());
 		excludePath.addAll(Arrays.asList("/error", "/actuator/**"));
