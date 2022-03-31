@@ -25,6 +25,7 @@
         <mybatis-plus-boot-starter.version>3.5.1</mybatis-plus-boot-starter.version>
         <jwt.version>0.9.0</jwt.version>
         <swagger.version>3.0.0</swagger.version>
+        <oss.version>3.10.2</oss.version>
     </properties>
 
     <dependencyManagement>
@@ -135,7 +136,11 @@
                 <version>${swagger.version}</version>
                 <scope>compile</scope>
             </dependency>
-
+            <dependency>
+                <groupId>com.aliyun.oss</groupId>
+                <artifactId>aliyun-sdk-oss</artifactId>
+                <version>${oss.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <distributionManagement>
