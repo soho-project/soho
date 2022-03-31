@@ -3,11 +3,15 @@ package work.soho.admin.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.github.pagehelper.Page;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.apache.ibatis.annotations.Param;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
 import work.soho.admin.domain.AdminRole;
 import work.soho.admin.domain.AdminRoleUser;
 import work.soho.admin.domain.AdminUser;
@@ -19,7 +23,10 @@ import work.soho.admin.service.impl.UserDetailsServiceImpl;
 import work.soho.api.admin.result.AdminPage;
 import work.soho.api.admin.vo.AdminUserVo;
 import work.soho.common.core.result.R;
+import work.soho.common.data.upload.utils.UploadUtils;
 
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -32,6 +39,7 @@ public class AdminUserController extends BaseController {
     private final TokenServiceImpl tokenService;
     private final AdminUserService adminUserService;
     private final AdminRoleUserService adminRoleUserService;
+    private static final Logger logger = LoggerFactory.getLogger(AdminUserController.class);
 
     @GetMapping("/user")
     public R user() {
@@ -127,5 +135,17 @@ public class AdminUserController extends BaseController {
         adminUser.setIsDeleted(1);
         adminUserService.updateById(adminUser);
         return R.ok("保存成功");
+    }
+
+    @ApiOperation("用户头像上传接口")
+    @PostMapping("/upload-avatar")
+    public Object uploadAvatar(@RequestParam("avatar")CommonsMultipartFile file) {
+        try {
+            String url = UploadUtils.upload("user/avatar" + file.getName(), file.getInputStream());
+            return R.ok(url);
+        } catch (IOException ioException) {
+            logger.error(ioException.toString());
+            return R.error("文件上传失败");
+        }
     }
 }
