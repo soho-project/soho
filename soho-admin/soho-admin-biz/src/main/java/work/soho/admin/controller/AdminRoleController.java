@@ -22,6 +22,8 @@ import work.soho.admin.service.impl.AdminRoleServiceImpl;
 import work.soho.admin.domain.AdminRole;
 import work.soho.api.admin.result.AdminPage;
 import work.soho.api.admin.vo.AdminRoleVo;
+import work.soho.api.admin.vo.AdminUserVo;
+import work.soho.api.admin.vo.OptionsRoleVo;
 import work.soho.common.core.result.R;
 
 import java.util.ArrayList;
@@ -55,6 +57,25 @@ public class AdminRoleController extends BaseController{
 		startPage();
 		List<AdminRole> list = adminRoleService.list(lqw);
 		return new AdminPage<AdminRole>().setData(list).setTotal(((Page<AdminRole>)list).getTotal());
+	}
+
+	/**
+	 * 角色选项
+	 *
+	 * @param name
+	 * @return
+	 */
+	@ApiOperation("角色选项")
+	@GetMapping("option-list")
+	public R<List<OptionsRoleVo>> optionList(String name) {
+		LambdaQueryWrapper<AdminRole> lqw = new LambdaQueryWrapper<>();
+		if(!StringUtils.isEmpty(name)) {
+			lqw.like(AdminRole::getName, name);
+		}
+		List<AdminRole> list = adminRoleService.list(lqw);
+		List<OptionsRoleVo> optionsRoleVoList = list.stream().map(item-> new OptionsRoleVo().setId(item.getId()).setName(item.getName()))
+				.collect(Collectors.toList());
+		return R.ok(optionsRoleVoList);
 	}
 
 	@ApiOperation("获取角色选中的资源")
