@@ -1,30 +1,43 @@
 package work.soho.admin.controller;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.stream.CollectorUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.Page;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import work.soho.admin.annotation.Node;
+import work.soho.admin.domain.AdminRoleResource;
+import work.soho.admin.domain.AdminRoleUser;
+import work.soho.admin.service.AdminResourceService;
+import work.soho.admin.service.AdminRoleResourceService;
+import work.soho.admin.service.AdminRoleUserService;
 import work.soho.admin.service.impl.AdminRoleServiceImpl;
 import work.soho.admin.domain.AdminRole;
 import work.soho.api.admin.result.AdminPage;
+import work.soho.api.admin.vo.AdminRoleVo;
 import work.soho.common.core.result.R;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
-@Api(tags = "")
+@Api(tags = "管理员角色")
 @RestController
 @RequestMapping("/admin/adminRole")
+@RequiredArgsConstructor
 public class AdminRoleController extends BaseController{
-
-	@Autowired
-	private AdminRoleServiceImpl adminRoleService;
+	private final AdminRoleServiceImpl adminRoleService;
+	private final AdminRoleResourceService adminRoleResourceService;
+	private final AdminRoleUserService adminRoleUserService;
 
 	/**
 	 * 角色列表
@@ -32,6 +45,7 @@ public class AdminRoleController extends BaseController{
 	 * @param name
 	 * @return
 	 */
+	@ApiOperation("角色列表")
 	@GetMapping("list")
 	public AdminPage<AdminRole> list(String name) {
 		LambdaQueryWrapper<AdminRole> lqw = new LambdaQueryWrapper<>();
@@ -43,23 +57,78 @@ public class AdminRoleController extends BaseController{
 		return new AdminPage<AdminRole>().setData(list).setTotal(((Page<AdminRole>)list).getTotal());
 	}
 
-	@ApiOperation(value = "dmin-rule/update")
-	@PostMapping("admin-rule/update")
-	@Node(value = "test by fang annotation", name = "更新角色信息", visible = 1, describe = "")
-	public R<Boolean> update(AdminRole adminRole) {
-		adminRoleService.update(adminRole);
+	@ApiOperation("获取角色选中的资源")
+	@GetMapping("/role-resources")
+	public R<List<String>> getRoleResourceIds(Long id) {
+		List<AdminRoleResource> list = adminRoleResourceService.list(new LambdaQueryWrapper<AdminRoleResource>().eq(AdminRoleResource::getRoleId, id));
+		List<String> ids = list.stream().map(item->String.valueOf(item.getResourceId())).collect(Collectors.toList());
+		return R.ok(ids);
+	}
+
+	@ApiOperation("更新用户角色")
+	@PutMapping("")
+	public R<Boolean> update(@RequestBody AdminRoleVo adminRoleVo) {
+		AdminRole adminRole = new AdminRole();
+		BeanUtils.copyProperties(adminRoleVo, adminRole);
+		adminRoleService.updateById(adminRole);
+		LambdaQueryWrapper<AdminRoleResource> delLqw = new LambdaQueryWrapper<>();
+		delLqw.eq(AdminRoleResource::getRoleId, adminRole.getId());
+
+		//获取原有资源ID
+		List<Long> oldResourceIds = adminRoleResourceService.list(new LambdaQueryWrapper<AdminRoleResource>()
+				.eq(AdminRoleResource::getRoleId, adminRole.getId())).stream().map(AdminRoleResource::getResourceId)
+				.collect(Collectors.toList());
+
+		//新增关联资源
+		for (Long rid: CollUtil.subtract(adminRoleVo.getResourceIds(), oldResourceIds)) {
+			AdminRoleResource adminRoleResource = new AdminRoleResource();
+			adminRoleResource.setResourceId(rid);
+			adminRoleResource.setRoleId(adminRole.getId());
+			adminRoleResource.setCreatedTime(new Date());
+			adminRoleResourceService.save(adminRoleResource);
+		}
+		//获取需要删除的ID
+		List<Long> delIds = (List<Long>) CollUtil.subtract(oldResourceIds, adminRoleVo.getResourceIds());
+		if(CollUtil.isNotEmpty(delIds)) {
+			delLqw.in(AdminRoleResource::getResourceId, delIds);
+			adminRoleResourceService.remove(delLqw);
+		}
 		return R.ok();
 	}
 
-	@ApiOperation(value = "dmin-rule/update")
-	@PostMapping("admin-rule/insert")
-	public R<Boolean> insert(AdminRole adminRole) {
-		adminRoleService.insert(adminRole);
+	@ApiOperation("新增角色")
+	@PostMapping("")
+	public R<Boolean> insert(@RequestBody AdminRoleVo adminRoleVo) {
+		AdminRole adminRole = new AdminRole();
+		BeanUtils.copyProperties(adminRoleVo, adminRole);
+		adminRole.setCreatedTime(new Date());
+		adminRoleService.save(adminRole);
+
+		for (Long rid: adminRoleVo.getResourceIds()) {
+			AdminRoleResource adminRoleResource = new AdminRoleResource();
+			adminRoleResource.setResourceId(rid);
+			adminRoleResource.setRoleId(adminRole.getId());
+			adminRoleResource.setCreatedTime(new Date());
+			adminRoleResourceService.save(adminRoleResource);
+		}
 		return R.ok();
 	}
 
-	@PostMapping("admin-rule/update-resource")
-	public R<Boolean> updateResource() {
+	@ApiOperation("更新角色资源")
+	@DeleteMapping("/{ids}")
+	public R<Boolean> delete(@PathVariable("ids") Long[] ids) {
+		//检查是否有用户使用到该角色
+		LambdaQueryWrapper<AdminRoleUser> lqw = new LambdaQueryWrapper<>();
+		lqw.in(AdminRoleUser::getRoleId, ids);
+		List<AdminRoleUser> list = adminRoleUserService.list(lqw);
+		if(list!=null && list.size()>0) {
+			return R.error("角色还有用户在使用， 请先取消角色关联");
+		}
+		//删除角色资源关联
+		LambdaQueryWrapper<AdminRoleResource> adminRoleResourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
+		adminRoleResourceService.remove(adminRoleResourceLambdaQueryWrapper);
+		//删除指定角色
+		adminRoleService.removeBatchByIds(Arrays.asList(ids));
 
 		return R.ok();
 	}

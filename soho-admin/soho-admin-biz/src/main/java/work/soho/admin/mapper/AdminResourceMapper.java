@@ -12,7 +12,5 @@ public interface AdminResourceMapper extends BaseMapper<AdminResource> {
 
     AdminResource getByPath(String path);
 
-//    List<AdminResource> getByIds(Integer[] ids);
-
     List<AdminResource> getByRoleIds(Integer[] roleIds);
 }

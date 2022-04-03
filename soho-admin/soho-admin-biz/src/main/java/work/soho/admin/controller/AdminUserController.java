@@ -83,6 +83,31 @@ public class AdminUserController extends BaseController {
         }
         BeanUtils.copyProperties(adminUserVo, adminUser);
         adminUserService.updateById(adminUser);
+
+        //授权用户角色信息
+        List<AdminRoleUser> adminRoleList = adminRoleUserService.list(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, adminUser.getId()));
+        List<Long> oldRoleIds = adminRoleList.stream().map(AdminRoleUser::getRoleId).collect(Collectors.toList());
+        if(adminUserVo.getRoleIds() != null) {
+            adminUserVo.getRoleIds().forEach(roleId -> {
+                if(!oldRoleIds.contains(roleId)) {
+                    //不包含该值，新增
+                    AdminRoleUser adminRoleUser = new AdminRoleUser();
+                    adminRoleUser.setUserId(adminUser.getId());
+                    adminRoleUser.setRoleId(roleId);
+                    adminRoleUser.setCreatedTime(new Date());
+                    adminRoleUser.setStatus(1);
+                    adminRoleUserService.save(adminRoleUser);
+                }
+            });
+            //删除更新中不存在的角色
+            oldRoleIds.forEach(roleId -> {
+                if(!adminUserVo.getRoleIds().contains(roleId)) {
+                    adminRoleUserService.remove(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, adminUser.getId())
+                            .eq(AdminRoleUser::getRoleId, roleId));
+                }
+            });
+        }
+
         return R.ok("保存成功");
     }
 

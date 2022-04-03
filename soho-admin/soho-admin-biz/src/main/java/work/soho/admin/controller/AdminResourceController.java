@@ -62,19 +62,21 @@ public class AdminResourceController {
      *
      * TODO 根据登录用户进行过滤
      */
+    @GetMapping("/tree")
     public R<List<TreeResourceVo>> getResourceTree() {
         List<AdminResource> list = adminResourceService.list();
         Map<Long, List<AdminResource>> parentList = new HashMap<>();
         //构造parent -> son list
         for (AdminResource item: list) {
-            Long parentId = item.getId();
+            Long parentId = item.getBreadcrumbParentId();
             parentList.computeIfAbsent(parentId, k -> new ArrayList<AdminResource>());
             List<AdminResource> tmpParentList = parentList.get(parentId);
             tmpParentList.add(item);
+            parentList.put(parentId, tmpParentList);
         }
 
         //构造treevo
-        return R.ok(getTree(Long.getLong("1"), parentList));
+        return R.ok(getTree(1l, parentList));
     }
 
     /**
@@ -91,7 +93,7 @@ public class AdminResourceController {
                 TreeResourceVo resourceVo = new TreeResourceVo();
                 resourceVo.setKey(String.valueOf(resource.getId()));
                 resourceVo.setTitle(resource.getName());
-                resourceVo.setKey(String.valueOf(resource.getId()));
+                resourceVo.setValue(String.valueOf(resource.getId()));
                 //递归查询子资源
                 resourceVo.setChildren(getTree(resource.getId(), parentMap));
                 tree.add(resourceVo);
