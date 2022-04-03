@@ -113,6 +113,16 @@ public class AdminUserController extends BaseController {
 
     @PostMapping()
     public Object create(@RequestBody AdminUserVo adminUserVo) {
+        //检查用户是否重复
+        if(
+        adminUserService.getOne(new LambdaQueryWrapper<AdminUser>()
+                .eq(AdminUser::getPhone, adminUserVo.getPhone())
+                .or().eq(AdminUser::getEmail, adminUserVo.getEmail())
+        )
+        != null
+        ) {
+            return R.error("手机号/Email不能重复");
+        }
         AdminUser adminUser = new AdminUser();
         BeanUtils.copyProperties(adminUserVo, adminUser);
         adminUser.setCreatedTime(new Date());
@@ -143,6 +153,19 @@ public class AdminUserController extends BaseController {
             });
         }
         return R.ok("保存成功");
+    }
+
+    @ApiOperation("用户详细信息")
+    @GetMapping()
+    public R<AdminUserVo> details(Long id) {
+        AdminUserVo adminUserVo = new AdminUserVo();
+        AdminUser adminUser = adminUserService.getById(id);
+        BeanUtils.copyProperties(adminUser, adminUserVo);
+        //获取关联角色
+        List<Long> roleIds = adminRoleUserService.list(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, id)).stream()
+                .map(AdminRoleUser::getRoleId).collect(Collectors.toList());
+        adminUserVo.setRoleIds(roleIds);
+        return R.ok(adminUserVo);
     }
 
     /**
