@@ -3,13 +3,11 @@ package work.soho.admin.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.annotation.Node;
 import work.soho.admin.domain.AdminResource;
-import work.soho.admin.domain.AdminRoleUser;
 import work.soho.admin.service.AdminResourceService;
 import work.soho.api.admin.vo.RouteVo;
 import work.soho.api.admin.vo.TreeResourceVo;
@@ -30,7 +28,7 @@ public class AdminResourceController {
     @GetMapping("/admin-resource/sync")
     public R<Boolean> syncResource() {
         adminResourceService.syncResource2Db();
-        return R.ok();
+        return R.success();
     }
 
     /**
@@ -58,7 +56,7 @@ public class AdminResourceController {
     @GetMapping()
     public R<AdminResource> getDetails(Long id) {
         AdminResource adminResource = adminResourceService.getById(id);
-        return R.ok(adminResource);
+        return R.success(adminResource);
     }
 
     @ApiOperation("更新资源")
@@ -66,7 +64,7 @@ public class AdminResourceController {
     public R<Boolean> update(@RequestBody AdminResource adminResource) {
         //TODO 资源检查
         adminResourceService.updateById(adminResource);
-        return R.ok(true);
+        return R.success(true);
     }
 
     /**
@@ -80,7 +78,7 @@ public class AdminResourceController {
     public R<AdminResource> create(@RequestBody AdminResource adminResource) {
         adminResource.setCreatedTime(new Date());
         adminResourceService.save(adminResource);
-        return R.ok(adminResource);
+        return R.success(adminResource);
     }
 
     @ApiOperation("删除指定资源")
@@ -95,7 +93,7 @@ public class AdminResourceController {
             return R.error("还有子节点，无法删除");
         }
         adminResourceService.removeById(dbAdminResource.getId());
-        return R.ok(true);
+        return R.success(true);
     }
 
     /**
@@ -117,7 +115,7 @@ public class AdminResourceController {
         }
 
         //构造treevo
-        return R.ok(getTree(0l, parentList).get(0));
+        return R.success(getTree(0l, parentList).get(0));
     }
 
     /**

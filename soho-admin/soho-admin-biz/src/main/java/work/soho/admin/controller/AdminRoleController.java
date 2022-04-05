@@ -6,13 +6,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.Page;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-import work.soho.admin.annotation.Node;
 import work.soho.admin.domain.AdminRoleResource;
 import work.soho.admin.domain.AdminRoleUser;
 import work.soho.admin.service.AdminResourceService;
@@ -75,7 +72,7 @@ public class AdminRoleController extends BaseController{
 		List<AdminRole> list = adminRoleService.list(lqw);
 		List<OptionsRoleVo> optionsRoleVoList = list.stream().map(item-> new OptionsRoleVo().setId(item.getId()).setName(item.getName()))
 				.collect(Collectors.toList());
-		return R.ok(optionsRoleVoList);
+		return R.success(optionsRoleVoList);
 	}
 
 	@ApiOperation("获取角色选中的资源")
@@ -83,7 +80,7 @@ public class AdminRoleController extends BaseController{
 	public R<List<String>> getRoleResourceIds(Long id) {
 		List<AdminRoleResource> list = adminRoleResourceService.list(new LambdaQueryWrapper<AdminRoleResource>().eq(AdminRoleResource::getRoleId, id));
 		List<String> ids = list.stream().map(item->String.valueOf(item.getResourceId())).collect(Collectors.toList());
-		return R.ok(ids);
+		return R.success(ids);
 	}
 
 	@ApiOperation("更新用户角色")
@@ -114,7 +111,7 @@ public class AdminRoleController extends BaseController{
 			delLqw.in(AdminRoleResource::getResourceId, delIds);
 			adminRoleResourceService.remove(delLqw);
 		}
-		return R.ok();
+		return R.success();
 	}
 
 	@ApiOperation("新增角色")
@@ -132,7 +129,7 @@ public class AdminRoleController extends BaseController{
 			adminRoleResource.setCreatedTime(new Date());
 			adminRoleResourceService.save(adminRoleResource);
 		}
-		return R.ok();
+		return R.success();
 	}
 
 	@ApiOperation("更新角色资源")
@@ -151,7 +148,7 @@ public class AdminRoleController extends BaseController{
 		//删除指定角色
 		adminRoleService.removeBatchByIds(Arrays.asList(ids));
 
-		return R.ok();
+		return R.success();
 	}
 
 }

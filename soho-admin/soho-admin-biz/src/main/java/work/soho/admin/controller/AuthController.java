@@ -34,6 +34,6 @@ public class AuthController {
         }
         UserDetailsServiceImpl.UserDetailsImpl loginUser = (UserDetailsServiceImpl.UserDetailsImpl) authentication.getPrincipal();
         Map<String, String> token = tokenService.createTokenInfo(loginUser);
-        return R.ok(token);
+        return R.success(token);
     }
 }
