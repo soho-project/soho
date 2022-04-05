@@ -22,43 +22,6 @@ public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, A
     private final AdminResourceMapper adminResourceMapper;
 
     /**
-     * RequestMappingHandlerMapping
-     */
-    //private final RequestMappingHandlerMapping requestMappingHandlerMapping;
-
-    /**
-     * get all resource node
-     *
-     * @return
-     */
-    public ArrayList<Node> getAllResourceNode() {
-//
-//        Map<RequestMappingInfo, HandlerMethod> map = requestMappingHandlerMapping.getHandlerMethods();
-//        Set<RequestMappingInfo> keys = map.keySet();
-//        for (RequestMappingInfo info: keys ) {
-//            HandlerMethod method = map.get(info);
-//
-//            System.out.println(method.toString() );
-//            System.out.println("=====>" + info.getPathPatternsCondition());
-//            System.out.println(info.getPatternsCondition().getPatterns());
-//            System.out.println(method.getMethod().getAnnotation(Node.class));
-//        }
-//
-//        Reflections reflections = new Reflections("work.soho", Scanners.MethodsAnnotated);
-//        Set<Method> methods = reflections.getMethodsAnnotatedWith(Node.class);
-//        ArrayList<Node> arrayList = new ArrayList<>();
-//        for (Method method : methods) {
-//            Node node = method.getAnnotation(Node.class);
-//            if (null != node) {
-//                System.out.println(node.value());
-//                arrayList.add(node);
-//            }
-//        }
-//        return arrayList;
-        return null;
-    }
-
-    /**
      * sync resource to db
      */
     @Override
@@ -88,27 +51,5 @@ public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, A
 //                }
 //            }
 //        }
-    }
-
-    /**
-     * 根据请求路径获取资源
-     *
-     * @param path
-     * @return
-     */
-    @Override
-    public AdminResource getByPath(String path) {
-        return adminResourceMapper.getByPath(path);
-    }
-
-    /**
-     * 获取指定角色所有的资源
-     *
-     * @param roleIds
-     * @return
-     */
-    @Override
-    public List<AdminResource> getListByRoleIds(Integer[] roleIds) {
-        return adminResourceMapper.getByRoleIds(roleIds);
     }
 }
