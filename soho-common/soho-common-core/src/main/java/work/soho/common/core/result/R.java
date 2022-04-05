@@ -38,11 +38,11 @@ public class R<T> {
 		return new R<>(code, msg, data);
 	}
 
-	public static <T> R<T> ok() {
-		return ok(null);
+	public static <T> R<T> success() {
+		return success(null);
 	}
 
-	public static <T> R<T> ok(T data) {
+	public static <T> R<T> success(T data) {
 		return result(2000, Constant.SUCCESS, data);
 	}
 

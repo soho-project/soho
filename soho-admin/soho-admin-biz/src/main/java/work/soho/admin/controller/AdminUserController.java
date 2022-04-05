@@ -1,11 +1,9 @@
 package work.soho.admin.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.github.pagehelper.Page;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
-import org.apache.ibatis.annotations.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -18,14 +16,12 @@ import work.soho.admin.domain.AdminUser;
 import work.soho.admin.service.AdminRoleService;
 import work.soho.admin.service.AdminRoleUserService;
 import work.soho.admin.service.AdminUserService;
-import work.soho.admin.service.impl.TokenServiceImpl;
 import work.soho.admin.service.impl.UserDetailsServiceImpl;
 import work.soho.api.admin.result.AdminPage;
 import work.soho.api.admin.vo.AdminUserVo;
 import work.soho.common.core.result.R;
 import work.soho.common.data.upload.utils.UploadUtils;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -36,16 +32,16 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/admin/user")
 public class AdminUserController extends BaseController {
-    private final TokenServiceImpl tokenService;
+    private final UserDetailsServiceImpl userDetailsService;
     private final AdminUserService adminUserService;
     private final AdminRoleUserService adminRoleUserService;
     private static final Logger logger = LoggerFactory.getLogger(AdminUserController.class);
 
     @GetMapping("/user")
-    public R user() {
-        UserDetailsServiceImpl.UserDetailsImpl userDetails = tokenService.getLoginUser();
+    public R<AdminUser> user() {
+        UserDetailsServiceImpl.UserDetailsImpl userDetails = (UserDetailsServiceImpl.UserDetailsImpl) userDetailsService.getLoginUserDetails();
         AdminUser adminUser = adminUserService.getById(userDetails.getId());
-        return R.ok(adminUser);
+        return R.success(adminUser);
     }
 
     @GetMapping("list")
@@ -79,7 +75,7 @@ public class AdminUserController extends BaseController {
     public Object update(@RequestBody AdminUserVo adminUserVo) {
         try {
             adminUserService.saveOrUpdate(adminUserVo);
-            return R.ok("保存成功");
+            return R.success("保存成功");
         } catch (IllegalArgumentException e) {
             return R.error(e.getMessage());
         }
@@ -89,7 +85,7 @@ public class AdminUserController extends BaseController {
     public Object create(@RequestBody AdminUserVo adminUserVo) {
         try {
             adminUserService.saveOrUpdate(adminUserVo);
-            return R.ok("保存成功");
+            return R.success("保存成功");
         } catch (IllegalArgumentException e) {
             return R.error(e.getMessage());
         }
@@ -105,7 +101,7 @@ public class AdminUserController extends BaseController {
         List<Long> roleIds = adminRoleUserService.list(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, id)).stream()
                 .map(AdminRoleUser::getRoleId).collect(Collectors.toList());
         adminUserVo.setRoleIds(roleIds);
-        return R.ok(adminUserVo);
+        return R.success(adminUserVo);
     }
 
     /**
@@ -122,7 +118,7 @@ public class AdminUserController extends BaseController {
         }
         adminUser.setIsDeleted(1);
         adminUserService.updateById(adminUser);
-        return R.ok("保存成功");
+        return R.success("保存成功");
     }
 
     @ApiOperation("用户头像上传接口")
@@ -130,7 +126,7 @@ public class AdminUserController extends BaseController {
     public Object uploadAvatar(@RequestParam("avatar")CommonsMultipartFile file) {
         try {
             String url = UploadUtils.upload("user/avatar" + file.getName(), file.getInputStream());
-            return R.ok(url);
+            return R.success(url);
         } catch (IOException ioException) {
             logger.error(ioException.toString());
             return R.error("文件上传失败");
