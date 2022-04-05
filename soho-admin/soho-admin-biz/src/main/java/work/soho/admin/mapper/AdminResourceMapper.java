@@ -8,9 +8,5 @@ import java.util.List;
 
 @Mapper
 public interface AdminResourceMapper extends BaseMapper<AdminResource> {
-    AdminResource getByKey(String key);
-
-    AdminResource getByPath(String path);
-
     List<AdminResource> getByRoleIds(Integer[] roleIds);
 }

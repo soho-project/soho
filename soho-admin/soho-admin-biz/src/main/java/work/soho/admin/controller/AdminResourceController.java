@@ -3,22 +3,19 @@ package work.soho.admin.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import work.soho.admin.annotation.Node;
 import work.soho.admin.domain.AdminResource;
+import work.soho.admin.domain.AdminRoleUser;
 import work.soho.admin.service.AdminResourceService;
 import work.soho.api.admin.vo.RouteVo;
 import work.soho.api.admin.vo.TreeResourceVo;
 import work.soho.common.core.result.R;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Api(tags = "菜单管理")
@@ -57,13 +54,57 @@ public class AdminResourceController {
         }).collect(Collectors.toList());
     }
 
+    @ApiOperation("资源详情")
+    @GetMapping()
+    public R<AdminResource> getDetails(Long id) {
+        AdminResource adminResource = adminResourceService.getById(id);
+        return R.ok(adminResource);
+    }
+
+    @ApiOperation("更新资源")
+    @PutMapping
+    public R<Boolean> update(@RequestBody AdminResource adminResource) {
+        //TODO 资源检查
+        adminResourceService.updateById(adminResource);
+        return R.ok(true);
+    }
+
+    /**
+     * 创建资源
+     *
+     * @param adminResource
+     * @return
+     */
+    @PostMapping
+    @ApiOperation("创建资源")
+    public R<AdminResource> create(@RequestBody AdminResource adminResource) {
+        adminResource.setCreatedTime(new Date());
+        adminResourceService.save(adminResource);
+        return R.ok(adminResource);
+    }
+
+    @ApiOperation("删除指定资源")
+    @DeleteMapping()
+    public R<Boolean> delete(@RequestBody AdminResource adminResource) {
+        AdminResource dbAdminResource = adminResourceService.getById(adminResource.getId());
+        //检查是否有子节点
+        LambdaQueryWrapper<AdminResource> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(AdminResource::getBreadcrumbParentId, dbAdminResource.getId());
+        List<AdminResource> list = adminResourceService.list(lqw);
+        if(list.size()>0) {
+            return R.error("还有子节点，无法删除");
+        }
+        adminResourceService.removeById(dbAdminResource.getId());
+        return R.ok(true);
+    }
+
     /**
      * 获取资源树
      *
      * TODO 根据登录用户进行过滤
      */
     @GetMapping("/tree")
-    public R<List<TreeResourceVo>> getResourceTree() {
+    public R<TreeResourceVo> getResourceTree() {
         List<AdminResource> list = adminResourceService.list();
         Map<Long, List<AdminResource>> parentList = new HashMap<>();
         //构造parent -> son list
@@ -76,7 +117,7 @@ public class AdminResourceController {
         }
 
         //构造treevo
-        return R.ok(getTree(1l, parentList));
+        return R.ok(getTree(0l, parentList).get(0));
     }
 
     /**

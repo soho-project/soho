@@ -77,82 +77,22 @@ public class AdminUserController extends BaseController {
 
     @PutMapping()
     public Object update(@RequestBody AdminUserVo adminUserVo) {
-        AdminUser adminUser = adminUserService.getById(adminUserVo.getId());
-        if(adminUser==null) {
-            return R.error("没有找到对应的用户");
+        try {
+            adminUserService.saveOrUpdate(adminUserVo);
+            return R.ok("保存成功");
+        } catch (IllegalArgumentException e) {
+            return R.error(e.getMessage());
         }
-        BeanUtils.copyProperties(adminUserVo, adminUser);
-        adminUserService.updateById(adminUser);
-
-        //授权用户角色信息
-        List<AdminRoleUser> adminRoleList = adminRoleUserService.list(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, adminUser.getId()));
-        List<Long> oldRoleIds = adminRoleList.stream().map(AdminRoleUser::getRoleId).collect(Collectors.toList());
-        if(adminUserVo.getRoleIds() != null) {
-            adminUserVo.getRoleIds().forEach(roleId -> {
-                if(!oldRoleIds.contains(roleId)) {
-                    //不包含该值，新增
-                    AdminRoleUser adminRoleUser = new AdminRoleUser();
-                    adminRoleUser.setUserId(adminUser.getId());
-                    adminRoleUser.setRoleId(roleId);
-                    adminRoleUser.setCreatedTime(new Date());
-                    adminRoleUser.setStatus(1);
-                    adminRoleUserService.save(adminRoleUser);
-                }
-            });
-            //删除更新中不存在的角色
-            oldRoleIds.forEach(roleId -> {
-                if(!adminUserVo.getRoleIds().contains(roleId)) {
-                    adminRoleUserService.remove(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, adminUser.getId())
-                            .eq(AdminRoleUser::getRoleId, roleId));
-                }
-            });
-        }
-
-        return R.ok("保存成功");
     }
 
     @PostMapping()
     public Object create(@RequestBody AdminUserVo adminUserVo) {
-        //检查用户是否重复
-        if(
-        adminUserService.getOne(new LambdaQueryWrapper<AdminUser>()
-                .eq(AdminUser::getPhone, adminUserVo.getPhone())
-                .or().eq(AdminUser::getEmail, adminUserVo.getEmail())
-        )
-        != null
-        ) {
-            return R.error("手机号/Email不能重复");
+        try {
+            adminUserService.saveOrUpdate(adminUserVo);
+            return R.ok("保存成功");
+        } catch (IllegalArgumentException e) {
+            return R.error(e.getMessage());
         }
-        AdminUser adminUser = new AdminUser();
-        BeanUtils.copyProperties(adminUserVo, adminUser);
-        adminUser.setCreatedTime(new Date());
-        adminUser.setUpdatedTime(new Date());
-        adminUserService.save(adminUser);
-
-        //授权用户角色信息
-        List<AdminRoleUser> adminRoleList = adminRoleUserService.list(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, adminUser.getId()));
-        List<Long> oldRoleIds = adminRoleList.stream().map(AdminRoleUser::getRoleId).collect(Collectors.toList());
-        if(adminUserVo.getRoleIds() != null) {
-            adminUserVo.getRoleIds().forEach(roleId -> {
-                if(!oldRoleIds.contains(roleId)) {
-                    //不包含该值，新增
-                    AdminRoleUser adminRoleUser = new AdminRoleUser();
-                    adminRoleUser.setUserId(adminUser.getId());
-                    adminRoleUser.setRoleId(roleId);
-                    adminRoleUser.setCreatedTime(new Date());
-                    adminRoleUser.setStatus(1);
-                    adminRoleUserService.save(adminRoleUser);
-                }
-            });
-            //删除更新中不存在的角色
-            oldRoleIds.forEach(roleId -> {
-                if(!adminUserVo.getRoleIds().contains(roleId)) {
-                    adminRoleUserService.remove(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, adminUser.getId())
-                            .eq(AdminRoleUser::getRoleId, roleId));
-                }
-            });
-        }
-        return R.ok("保存成功");
     }
 
     @ApiOperation("用户详细信息")

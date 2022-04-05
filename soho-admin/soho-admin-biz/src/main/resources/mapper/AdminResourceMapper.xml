@@ -4,7 +4,7 @@
    <sql id="AllField">
        id,
        name,
-       path,
+       route,
        type,
        remarks,
        created_time,
@@ -12,21 +12,7 @@
        `key`,
        `order`
    </sql>
-   <select id="getById" resultType="work.soho.admin.domain.AdminResource">
-       SELECT
-           <include refid="AllField"></include>
-       FROM admin_resource where id=#{id}
-   </select>
-   <select id="getByKey" resultType="work.soho.admin.domain.AdminResource">
-       SELECT
-           <include refid="AllField"></include>
-       FROM admin_resource where `key`=#{key}
-   </select>
-   <select id="getByPath" resultType="work.soho.admin.domain.AdminResource">
-       SELECT
-           <include refid="AllField"></include>
-       FROM admin_resource where `path`=#{path} limit 1
-   </select>
+
    <select id="getByRoleIds" resultType="work.soho.admin.domain.AdminResource">
        SELECT
            <include refid="AllField"></include>
@@ -37,84 +23,5 @@
 
        )
    </select>
-
-   <insert id="insert" parameterType="work.soho.admin.domain.AdminResource">
-       INSERT INTO admin_resource
-       <trim prefix="(" suffix=")" suffixOverrides=",">
-      <if test="id != null">
-           id,
-       </if>
-      <if test="name != null">
-           name,
-       </if>
-      <if test="path != null">
-           path,
-       </if>
-      <if test="type != null">
-           type,
-       </if>
-      <if test="remarks != null">
-           remarks,
-       </if>
-      <if test="createdTime != null">
-           created_time,
-       </if>
-      <if test="visible != null">
-           visible,
-       </if>
-      <if test="key != null">
-           `key`,
-       </if>
-      <if test="order != null">
-           `order`,
-       </if>
-       </trim>
-       <trim prefix="VALUES(" suffix=")" suffixOverrides=",">
-      <if test="id != null">
-           #{id},
-       </if>
-      <if test="name != null">
-           #{name},
-       </if>
-      <if test="path != null">
-           #{path},
-       </if>
-      <if test="type != null">
-           #{type},
-       </if>
-      <if test="remarks != null">
-           #{remarks},
-       </if>
-      <if test="createdTime != null">
-           #{createdTime},
-       </if>
-      <if test="visible != null">
-           #{visible},
-       </if>
-      <if test="key != null">
-           #{key},
-       </if>
-      <if test="order != null">
-           #{order},
-       </if>
-       </trim>
-   </insert>
-  <update id="update"  parameterType="work.soho.admin.domain.AdminResource">
-      update admin_resource
-      <set>
-          <if test="id != null">`id`=#{id},</if>
-          <if test="name != null">name=#{name},</if>
-          <if test="path != null">path=#{path},</if>
-          <if test="type != null">`type`=#{type},</if>
-          <if test="remarks != null">remarks=#{remarks},</if>
-          <if test="createdTime != null">created_time=#{createdTime},</if>
-          <if test="visible != null">visible=#{visible},</if>
-          <if test="key != null">`key`=#{key},</if>
-          <if test="order != null">`order`=#{order},</if>
-      </set>
-
-      where `id`=#{id}
-  </update>
-
 
 </mapper>

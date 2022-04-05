@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 import java.io.Serializable;
+import java.util.Date;
 
 @Data
 public class AdminResource implements Serializable {
@@ -12,10 +13,10 @@ public class AdminResource implements Serializable {
   private String name;
   private String route;
   private Long breadcrumbParentId;
-  private String icon;
+  private String iconName;
   private long type;
   private String remarks;
-  private java.sql.Timestamp createdTime;
+  private Date createdTime;
   private long visible;
   private long sort;
   private String zhName;

@@ -8,8 +8,4 @@ import java.util.List;
 
 public interface AdminResourceService extends IService<AdminResource> {
     public void syncResource2Db();
-
-    AdminResource getByPath(String path);
-
-    List<AdminResource> getListByRoleIds(Integer[] roleIds);
 }
