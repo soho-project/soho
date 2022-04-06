@@ -39,12 +39,14 @@ public class AdminResourceController {
     @GetMapping("/routes")
     public List<RouteVo> routeVoList() {
         LambdaQueryWrapper<AdminResource> lqw = new LambdaQueryWrapper<>();
-        lqw.eq(AdminResource::getType, 1);
+        lqw.eq(AdminResource::getType, 1); //前端节点
+        lqw.eq(AdminResource::getVisible, 1); //可见菜单
         lqw.orderByAsc(AdminResource::getSort);
         List<AdminResource> list = adminResourceService.list(lqw);
         return list.stream().map(item->{
             RouteVo routeVo = new RouteVo();
             BeanUtils.copyProperties(item, routeVo);
+            routeVo.setMenuParentId(routeVo.getBreadcrumbParentId());
             RouteVo.Langues zh = new RouteVo.Langues();
             zh.setName(item.getZhName());
             routeVo.setZh(zh);

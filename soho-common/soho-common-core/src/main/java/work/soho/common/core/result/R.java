@@ -2,14 +2,6 @@ package work.soho.common.core.result;
 
 import lombok.Getter;
 
-/**
- * <p>
- * R
- * </p>
- *
- * @author livk
- * @date 2022/1/20
- */
 @Getter
 public class R<T> {
 
@@ -26,12 +18,12 @@ public class R<T> {
 	/**
 	 * 返回数据
 	 */
-	private final T data;
+	private final T payload;
 
 	private R(int code, String msg, T data) {
 		this.code = code;
 		this.msg = msg;
-		this.data = data;
+		this.payload = data;
 	}
 
 	public static <T> R<T> result(int code, String msg, T data) {
