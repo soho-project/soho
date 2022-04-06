@@ -1,22 +1,91 @@
 package work.soho.admin.domain;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import lombok.Data;
+import com.baomidou.mybatisplus.annotation.*;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Data;
+import lombok.ToString;
+
+/**
+ * 
+ * @TableName admin_config
+ */
+@TableName(value ="admin_config")
 @Data
+@ToString
 public class AdminConfig implements Serializable {
-	@TableId(type = IdType.AUTO)
-	private Long id;
+    /**
+     * 
+     */
+    @TableId(value = "id", type = IdType.AUTO)
+    private Integer id;
 
-	private String key;
+    /**
+     * 配置文件分组名
+     */
+    @TableField(value = "group_key")
+    private String groupKey;
 
-	private String value;
+    /**
+     * 配置信息唯一识别key
+     */
+    @TableField(value = "`key`")
+    private String key;
 
-	private Long type;
+    /**
+     * 配置信息值
+     */
+    @TableField(value = "value")
+    private String value;
 
-	private String groupName;
+    @TableField(value = "`explain`")
+    private String explain;
 
+    /**
+     * 配置信息类型
+     */
+    @TableField(value = "type")
+    private Integer type;
+
+    /**
+     * 更新时间
+     */
+    @TableField(value = "updated_time", fill = FieldFill.UPDATE)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date updatedTime;
+
+    /**
+     * 创建时间
+     */
+    @TableField(value = "created_time", fill = FieldFill.INSERT)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date createdTime;
+
+    @TableField(exist = false)
+    private static final long serialVersionUID = 1L;
+
+    @Override
+    public boolean equals(Object that) {
+        if (this == that) {
+            return true;
+        }
+        if (that == null) {
+            return false;
+        }
+        if (getClass() != that.getClass()) {
+            return false;
+        }
+        AdminConfig other = (AdminConfig) that;
+        return (this.getId() == null ? other.getId() == null : this.getId().equals(other.getId()))
+            && (this.getGroupKey() == null ? other.getGroupKey() == null : this.getGroupKey().equals(other.getGroupKey()))
+            && (this.getKey() == null ? other.getKey() == null : this.getKey().equals(other.getKey()))
+            && (this.getValue() == null ? other.getValue() == null : this.getValue().equals(other.getValue()))
+            && (this.getType() == null ? other.getType() == null : this.getType().equals(other.getType()))
+            && (this.getUpdatedTime() == null ? other.getUpdatedTime() == null : this.getUpdatedTime().equals(other.getUpdatedTime()))
+            && (this.getCreatedTime() == null ? other.getCreatedTime() == null : this.getCreatedTime().equals(other.getCreatedTime()));
+    }
 }
