@@ -8,14 +8,13 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
-import org.springframework.util.StringUtils;
 import work.soho.admin.domain.AdminRoleUser;
 import work.soho.admin.mapper.AdminUserMapper;
 import work.soho.admin.service.AdminRoleUserService;
 import work.soho.admin.service.AdminUserService;
 import work.soho.admin.domain.AdminUser;
 import work.soho.api.admin.vo.AdminUserVo;
-import work.soho.common.core.result.R;
+import work.soho.common.core.util.StringUtils;
 
 import java.util.Date;
 import java.util.List;
@@ -41,7 +40,7 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
             throw new IllegalArgumentException("没有找到对应的用户");
         }
         BeanUtils.copyProperties(adminUserVo, adminUser);
-        if(!StringUtils.isEmpty(adminUser.getPassword())) {
+        if(StringUtils.isNotEmpty(adminUser.getPassword())) {
             adminUser.setPassword(new BCryptPasswordEncoder().encode(adminUser.getPassword()));
         }
         saveOrUpdate(adminUser);
