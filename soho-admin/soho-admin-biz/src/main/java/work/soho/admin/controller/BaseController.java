@@ -15,7 +15,7 @@ public class BaseController {
         Integer pageNum = 1;
         Integer pageSize = 20;
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        String pageNumString = request.getParameter("pageNum");
+        String pageNumString = request.getParameter("page");
         String pageSizeString = request.getParameter("pageSize");
         if(!StringUtils.isEmpty(pageSizeString)) {
             pageNum = Integer.parseInt(pageNumString);

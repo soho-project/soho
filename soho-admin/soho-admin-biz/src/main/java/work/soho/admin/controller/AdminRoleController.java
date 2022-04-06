@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.stream.CollectorUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.Page;
+import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
@@ -46,14 +47,14 @@ public class AdminRoleController extends BaseController{
 	 */
 	@ApiOperation("角色列表")
 	@GetMapping("list")
-	public AdminPage<AdminRole> list(String name) {
+	public R<PageSerializable<AdminRole>> list(String name) {
 		LambdaQueryWrapper<AdminRole> lqw = new LambdaQueryWrapper<>();
 		if(!StringUtils.isEmpty(name)) {
 			lqw.like(AdminRole::getName, name);
 		}
 		startPage();
 		List<AdminRole> list = adminRoleService.list(lqw);
-		return new AdminPage<AdminRole>().setData(list).setTotal(((Page<AdminRole>)list).getTotal());
+		return R.success(new PageSerializable(list));
 	}
 
 	/**

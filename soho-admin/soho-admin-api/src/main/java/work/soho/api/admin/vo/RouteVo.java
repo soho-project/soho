@@ -11,6 +11,7 @@ public class RouteVo {
     private String route;
     private String icon;
     private Long breadcrumbParentId;
+    private Long menuParentId;
     private Langues zh;
 
     @Data

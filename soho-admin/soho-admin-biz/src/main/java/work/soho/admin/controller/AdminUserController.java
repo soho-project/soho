@@ -2,11 +2,13 @@ package work.soho.admin.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.Page;
+import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.core.parameters.P;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.commons.CommonsMultipartFile;
@@ -45,7 +47,7 @@ public class AdminUserController extends BaseController {
     }
 
     @GetMapping("list")
-    public AdminPage<AdminUserVo> list(AdminUserVo adminUserVo, Date startDate
+    public R<PageSerializable<AdminUserVo>> list(AdminUserVo adminUserVo, Date startDate
             ,Date endDate) {
         LambdaQueryWrapper<AdminUser> lqw = new LambdaQueryWrapper<>();
         if(!StringUtils.isEmpty(adminUserVo.getUsername())) {
@@ -68,7 +70,9 @@ public class AdminUserController extends BaseController {
             BeanUtils.copyProperties(item, vo);
             voList.add(vo);
         });
-        return new AdminPage<AdminUserVo>().setTotal(((Page<AdminUser>)list).getTotal()).setData(voList);
+        PageSerializable pageSerializable = new PageSerializable(voList);
+        pageSerializable.setTotal(((Page<AdminUser>)list).getTotal());
+        return R.success(pageSerializable);
     }
 
     @PutMapping()
