@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import work.soho.admin.service.impl.TokenServiceImpl;
 import work.soho.admin.service.impl.UserDetailsServiceImpl;
 import work.soho.api.admin.vo.AdminUserLoginVo;
@@ -38,5 +35,16 @@ public class AuthController {
         UserDetailsServiceImpl.UserDetailsImpl loginUser = (UserDetailsServiceImpl.UserDetailsImpl) authentication.getPrincipal();
         Map<String, String> token = tokenService.createTokenInfo(loginUser);
         return R.success(token);
+    }
+
+    /**
+     * 用户登出
+     *
+     * @return
+     */
+    @GetMapping("/logout")
+    public R<Boolean> logout() {
+        //nothing todo
+        return R.success(true);
     }
 }
