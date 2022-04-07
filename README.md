@@ -1,4 +1,16 @@
-> 依赖注入使用构造注入 <br>
+SOHO后台管理系统
+==============
+
+预览地址
+-------
+
+预览地址： http://demo.soho.work/
+
+
+项目规范
+-------
+
+> > 依赖注入使用构造注入 <br>
 
 ```java
 import lombok.RequiredArgsConstructor;
