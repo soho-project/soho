@@ -100,7 +100,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                         "/*.html",
                         "/**/*.html",
                         "/**/*.css",
-                        "/**/*.js"
+                        "/**/*.js",
+                        "/admin/user/user"
                 )
                 .permitAll()
               //  .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
