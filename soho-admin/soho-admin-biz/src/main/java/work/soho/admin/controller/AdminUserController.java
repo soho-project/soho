@@ -11,6 +11,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.security.core.parameters.P;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.commons.CommonsMultipartFile;
 import work.soho.admin.domain.AdminRole;
 import work.soho.admin.domain.AdminRoleUser;
@@ -127,12 +128,13 @@ public class AdminUserController extends BaseController {
 
     @ApiOperation("用户头像上传接口")
     @PostMapping("/upload-avatar")
-    public Object uploadAvatar(@RequestParam("avatar")CommonsMultipartFile file) {
+    public Object uploadAvatar(@RequestParam(value = "file", required = false)MultipartFile file) {
         try {
-            String url = UploadUtils.upload("user/avatar" + file.getName(), file.getInputStream());
+            String url = UploadUtils.upload("user/avatar", file);
             return R.success(url);
-        } catch (IOException ioException) {
+        } catch (Exception ioException) {
             logger.error(ioException.toString());
+            ioException.printStackTrace();
             return R.error("文件上传失败");
         }
     }
