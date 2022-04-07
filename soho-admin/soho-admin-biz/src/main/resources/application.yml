@@ -49,3 +49,6 @@ springfox:
 #snowflake:
 #  enable-atomic: true
 #  enable-cached: true
+
+token:
+  secret: sxxxxxxxxdddddddddaret
