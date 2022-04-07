@@ -128,7 +128,7 @@ public class AdminUserController extends BaseController {
 
     @ApiOperation("用户头像上传接口")
     @PostMapping("/upload-avatar")
-    public Object uploadAvatar(@RequestParam(value = "file", required = false)MultipartFile file) {
+    public Object uploadAvatar(@RequestParam(value = "avatar")MultipartFile file) {
         try {
             String url = UploadUtils.upload("user/avatar", file);
             return R.success(url);
