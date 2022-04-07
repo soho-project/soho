@@ -104,7 +104,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                         "/admin/user/user"
                 )
                 .permitAll()
-              //  .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // 除上面外的所有请求全部需要鉴权认证
                 .anyRequest().authenticated()
                 .and()
