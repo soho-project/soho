@@ -22,6 +22,7 @@ import work.soho.admin.service.AdminUserService;
 import work.soho.admin.service.impl.UserDetailsServiceImpl;
 import work.soho.api.admin.result.AdminPage;
 import work.soho.api.admin.vo.AdminUserVo;
+import work.soho.api.admin.vo.CurrentAdminUserVo;
 import work.soho.common.core.result.R;
 import work.soho.common.data.upload.utils.UploadUtils;
 
@@ -41,10 +42,19 @@ public class AdminUserController extends BaseController {
     private static final Logger logger = LoggerFactory.getLogger(AdminUserController.class);
 
     @GetMapping("/user")
-    public R<AdminUser> user() {
-        UserDetailsServiceImpl.UserDetailsImpl userDetails = (UserDetailsServiceImpl.UserDetailsImpl) userDetailsService.getLoginUserDetails();
-        AdminUser adminUser = adminUserService.getById(userDetails.getId());
-        return R.success(adminUser);
+    public R<CurrentAdminUserVo> user() {
+        try {
+            UserDetailsServiceImpl.UserDetailsImpl userDetails = (UserDetailsServiceImpl.UserDetailsImpl) userDetailsService.getLoginUserDetails();
+            AdminUser adminUser = adminUserService.getById(userDetails.getId());
+            CurrentAdminUserVo currentAdminUserVo = new CurrentAdminUserVo();
+            currentAdminUserVo.setId(adminUser.getId());
+            currentAdminUserVo.setUsername(adminUser.getUsername());
+            currentAdminUserVo.setAvatar(adminUser.getAvatar());
+            currentAdminUserVo.setPermissions(new CurrentAdminUserVo.Permissions().setRole("admin"));
+            return R.success(currentAdminUserVo);
+        } catch (Exception e) {
+            return R.error("请登录");
+        }
     }
 
     @GetMapping("list")

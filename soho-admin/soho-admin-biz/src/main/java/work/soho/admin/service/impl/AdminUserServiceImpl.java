@@ -29,7 +29,7 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
     public AdminUser getByLoginName(String loginName) {
         LambdaQueryWrapper<AdminUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(AdminUser::getPhone, loginName);
-        lambdaQueryWrapper.or().eq(AdminUser::getEmail, loginName);
+        lambdaQueryWrapper.or().eq(AdminUser::getUsername, loginName);
         return getOne(lambdaQueryWrapper);
     }
 
