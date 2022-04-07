@@ -42,6 +42,8 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
         BeanUtils.copyProperties(adminUserVo, adminUser);
         if(StringUtils.isNotEmpty(adminUser.getPassword())) {
             adminUser.setPassword(new BCryptPasswordEncoder().encode(adminUser.getPassword()));
+        } else {
+            adminUser.setPassword(null);
         }
         saveOrUpdate(adminUser);
 
