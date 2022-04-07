@@ -4,10 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.service.impl.TokenServiceImpl;
 import work.soho.admin.service.impl.UserDetailsServiceImpl;
+import work.soho.api.admin.vo.AdminUserLoginVo;
 import work.soho.common.core.result.R;
 
 import javax.annotation.Resource;
@@ -20,13 +23,13 @@ public class AuthController {
     @Resource
     private AuthenticationManager authenticationManager;
 
-    @RequestMapping("/login")
-    public Object login(String username, String password) {
+    @RequestMapping(value = "/login", method = RequestMethod.POST)
+    public Object login(@RequestBody AdminUserLoginVo adminUserLoginVo) {
         Authentication authentication = null;
         try{
             // 该方法会去调用UserDetailsServiceImpl.loadUserByUsername
             authentication = authenticationManager
-                    .authenticate(new UsernamePasswordAuthenticationToken(username, password));
+                    .authenticate(new UsernamePasswordAuthenticationToken(adminUserLoginVo.getUsername(), adminUserLoginVo.getPassword()));
         } catch (Exception e) {
             //TODO 登录失败
             e.printStackTrace();
