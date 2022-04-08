@@ -20,7 +20,7 @@ public class SohoPage<T> implements Serializable {
 	/**
 	 * 总记录数
 	 */
-	private int total;
+	private long total;
 
 	/**
 	 * 每页记录数
@@ -58,7 +58,7 @@ public class SohoPage<T> implements Serializable {
 
 	public SohoPage(Page<T> page) {
 		this.list = page.getResult();
-		this.total = Long.valueOf(page.getTotal()).intValue();
+		this.total = page.getTotal();
 		this.pageSize = page.getPageSize();
 		this.pageNum = page.getPageNum();
 		this.pages = page.getPages();
