@@ -39,12 +39,13 @@ pagehelper:
   reasonable: true
   helper-dialect: mysql
 
+# swagger 相关配置
 springfox:
   documentation:
     open-api:
-      enabled: true
+      enabled: false
     swagger-ui:
-      enabled: true
+      enabled: false
       base-url: /api-docs
 #snowflake:
 #  enable-atomic: true

@@ -11,6 +11,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import work.soho.admin.AdminApplication;
+import work.soho.common.core.util.JacksonUtils;
+
+import java.util.HashMap;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -37,10 +41,14 @@ class AuthProviderTest {
 
     @Test
     void login() throws Exception {
-        mockMvc.perform(get("/login").
-                        param("username", "15873164073")
-                        .param("password", "123456"))
+        HashMap<String, String> request = new HashMap<>();
+        request.put("username", "admin");
+        request.put("password", "123456");
+
+        mockMvc.perform(post("/login").contentType("application/json")
+                                .content(JacksonUtils.toJson(request)))
+                .andDo(print())
                 .andExpect(status().isOk())
-                .andDo(print()).andReturn();
+                .andReturn();
     }
 }
