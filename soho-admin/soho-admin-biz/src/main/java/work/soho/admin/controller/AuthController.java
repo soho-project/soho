@@ -20,7 +20,7 @@ public class AuthController {
     @Resource
     private AuthenticationManager authenticationManager;
 
-    @RequestMapping(value = "/login", method = RequestMethod.POST)
+    @PostMapping(value = "/login")
     public Object login(@RequestBody AdminUserLoginVo adminUserLoginVo) {
         Authentication authentication = null;
         try{
@@ -28,7 +28,6 @@ public class AuthController {
             authentication = authenticationManager
                     .authenticate(new UsernamePasswordAuthenticationToken(adminUserLoginVo.getUsername(), adminUserLoginVo.getPassword()));
         } catch (Exception e) {
-            //TODO 登录失败
             e.printStackTrace();
             return R.error("登录失败");
         }
@@ -44,7 +43,7 @@ public class AuthController {
      */
     @GetMapping("/logout")
     public R<Boolean> logout() {
-        //nothing todo
+        //nothing
         return R.success(true);
     }
 }

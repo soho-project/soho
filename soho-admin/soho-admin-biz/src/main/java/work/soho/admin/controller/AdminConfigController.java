@@ -5,11 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.util.List;
 import java.util.Arrays;
 
-import com.github.pagehelper.PageInfo;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -19,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.Page;
 import work.soho.common.core.result.R;
 import work.soho.admin.domain.AdminConfig;
 import work.soho.admin.service.AdminConfigService;
@@ -44,7 +40,7 @@ public class AdminConfigController extends BaseController {
     public R<PageSerializable<AdminConfig>> list(AdminConfig adminConfig)
     {
         startPage();
-        LambdaQueryWrapper<AdminConfig> lqw = new LambdaQueryWrapper<AdminConfig>();
+        LambdaQueryWrapper<AdminConfig> lqw = new LambdaQueryWrapper<>();
 
         if (adminConfig.getId() != null){
             lqw.eq(AdminConfig::getId ,adminConfig.getId());
@@ -68,7 +64,7 @@ public class AdminConfigController extends BaseController {
             lqw.eq(AdminConfig::getCreatedTime ,adminConfig.getCreatedTime());
         }
         List<AdminConfig> list = adminConfigService.list(lqw);
-        return R.success(new PageSerializable(list));
+        return R.success(new PageSerializable<>(list));
     }
 
     /**

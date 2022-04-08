@@ -4,9 +4,9 @@ package work.soho.admin.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.util.List;
 import java.util.Arrays;
+
+import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageInfo;
 import work.soho.common.core.result.R;
 import work.soho.admin.domain.Hello;
 import work.soho.admin.service.HelloService;
@@ -25,7 +24,6 @@ import work.soho.admin.service.HelloService;
  * helloController
  *
  * @author i
- * @date 2022-04-05 21:14:29
  */
 @RequiredArgsConstructor
 @RestController
@@ -38,10 +36,10 @@ public class HelloController extends BaseController {
      * 查询hello列表
      */
     @GetMapping("/list")
-    public R<PageInfo> list(Hello hello)
+    public R<PageSerializable<Hello>> list(Hello hello)
     {
         startPage();
-        LambdaQueryWrapper<Hello> lqw = new LambdaQueryWrapper<Hello>();
+        LambdaQueryWrapper<Hello> lqw = new LambdaQueryWrapper<>();
 
         if (hello.getId() != null){
             lqw.eq(Hello::getId ,hello.getId());
@@ -53,7 +51,7 @@ public class HelloController extends BaseController {
             lqw.like(Hello::getValue ,hello.getValue());
         }
         List<Hello> list = helloService.list(lqw);
-        return R.success((PageInfo)list);
+        return R.success(new PageSerializable<>(list));
     }
 
     /**

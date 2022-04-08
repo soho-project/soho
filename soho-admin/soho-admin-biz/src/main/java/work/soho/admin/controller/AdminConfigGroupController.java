@@ -5,8 +5,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.util.List;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -41,7 +39,7 @@ public class AdminConfigGroupController extends BaseController {
     public R<Page<AdminConfigGroup>> list(AdminConfigGroup adminConfigGroup)
     {
         startPage();
-        LambdaQueryWrapper<AdminConfigGroup> lqw = new LambdaQueryWrapper<AdminConfigGroup>();
+        LambdaQueryWrapper<AdminConfigGroup> lqw = new LambdaQueryWrapper<>();
 
         if (adminConfigGroup.getId() != null){
             lqw.eq(AdminConfigGroup::getId ,adminConfigGroup.getId());

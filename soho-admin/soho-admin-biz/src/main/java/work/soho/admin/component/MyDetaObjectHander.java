@@ -13,23 +13,26 @@ import java.util.Date;
 @Component
 @Slf4j
 public class MyDetaObjectHander implements MetaObjectHandler {
+    private static final String UPDATED_TIME = "updatedTime";
+    private static final String CREATED_TIME = "createdTime";
+
     @Override
     public void insertFill(MetaObject metaObject) {
         log.info("自动插入时间");
-        if(metaObject.hasSetter("createdTime")) {
-            this.setFieldValByName("createdTime", new Date(), metaObject);
+        if(metaObject.hasSetter(CREATED_TIME)) {
+            this.setFieldValByName(CREATED_TIME, new Date(), metaObject);
         }
 
-        if(metaObject.hasSetter("updatedTime")) {
-            this.setFieldValByName("updatedTime", new Date(), metaObject);
+        if(metaObject.hasSetter(UPDATED_TIME)) {
+            this.setFieldValByName(UPDATED_TIME, new Date(), metaObject);
         }
     }
 
     @Override
     public void updateFill(MetaObject metaObject) {
         log.info("auto set updated time  on  update");
-        if(metaObject.hasSetter("updatedTime")) {
-            this.setFieldValByName("updatedTime", new Date(), metaObject);
+        if(metaObject.hasSetter(UPDATED_TIME)) {
+            this.setFieldValByName(UPDATED_TIME, new Date(), metaObject);
         }
     }
 }

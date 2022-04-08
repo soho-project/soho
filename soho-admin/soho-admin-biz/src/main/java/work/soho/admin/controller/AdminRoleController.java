@@ -1,9 +1,7 @@
 package work.soho.admin.controller;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.stream.CollectorUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.github.pagehelper.Page;
 import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -13,18 +11,13 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.domain.AdminRoleResource;
 import work.soho.admin.domain.AdminRoleUser;
-import work.soho.admin.service.AdminResourceService;
 import work.soho.admin.service.AdminRoleResourceService;
 import work.soho.admin.service.AdminRoleUserService;
 import work.soho.admin.service.impl.AdminRoleServiceImpl;
 import work.soho.admin.domain.AdminRole;
-import work.soho.api.admin.result.AdminPage;
 import work.soho.api.admin.vo.AdminRoleVo;
-import work.soho.api.admin.vo.AdminUserVo;
 import work.soho.api.admin.vo.OptionsRoleVo;
 import work.soho.common.core.result.R;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -54,7 +47,7 @@ public class AdminRoleController extends BaseController{
 		}
 		startPage();
 		List<AdminRole> list = adminRoleService.list(lqw);
-		return R.success(new PageSerializable(list));
+		return R.success(new PageSerializable<>(list));
 	}
 
 	/**
@@ -140,7 +133,7 @@ public class AdminRoleController extends BaseController{
 		LambdaQueryWrapper<AdminRoleUser> lqw = new LambdaQueryWrapper<>();
 		lqw.in(AdminRoleUser::getRoleId, ids);
 		List<AdminRoleUser> list = adminRoleUserService.list(lqw);
-		if(list!=null && list.size()>0) {
+		if(list!=null && !list.isEmpty()) {
 			return R.error("角色还有用户在使用， 请先取消角色关联");
 		}
 		//删除角色资源关联

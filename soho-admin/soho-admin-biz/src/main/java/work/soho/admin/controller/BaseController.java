@@ -14,7 +14,11 @@ public class BaseController {
     public void startPage() {
         Integer pageNum = 1;
         Integer pageSize = 20;
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+        ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if(servletRequestAttributes == null) {
+            return;
+        }
+        HttpServletRequest request = servletRequestAttributes.getRequest();
         String pageNumString = request.getParameter("page");
         String pageSizeString = request.getParameter("pageSize");
         if(!StringUtils.isEmpty(pageSizeString)) {
