@@ -139,11 +139,10 @@ public class JacksonUtils {
 		try {
 			MapType mapType = MAPPER.getTypeFactory().constructMapType(Map.class, kClass, vClass);
 			return MAPPER.readValue(json, mapType);
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
+			return null;
 		}
-		return null;
 	}
 
 }
