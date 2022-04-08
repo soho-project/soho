@@ -1,1 +1,3 @@
 application-dev.yml
+application-demo.yml
+application-*.yml
