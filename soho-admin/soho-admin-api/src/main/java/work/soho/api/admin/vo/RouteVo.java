@@ -16,6 +16,6 @@ public class RouteVo {
 
     @Data
     public static class Langues {
-        public String name;
+        private String name;
     }
 }
