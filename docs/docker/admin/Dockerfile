@@ -5,5 +5,5 @@ LABEL maintainer="i@liufang.org.cn" \
 COPY ./soho-admin/soho-admin-biz/target/soho-admin-biz-1.0-SNAPSHOT.jar /root/
 WORKDIR /root/
 ARG CONFIG_PROFILE="dev"
-ENV SPRING_CLOUD_CONFIG_PROFILE="-Dspring.cloud.config.profile=${CONFIG_PROFILE}"
+ENV SPRING_CLOUD_CONFIG_PROFILE="-Dspring.profiles.active=${CONFIG_PROFILE}"
 CMD java -jar ${SPRING_CLOUD_CONFIG_PROFILE} /root/soho-admin-biz-1.0-SNAPSHOT.jar
