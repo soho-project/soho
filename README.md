@@ -4,7 +4,7 @@ SOHO后台管理系统
 预览地址
 -------
 
-预览地址： http://demo.soho.work/
+预览地址： http://demo.site-school.com/
 
 
 项目规范
