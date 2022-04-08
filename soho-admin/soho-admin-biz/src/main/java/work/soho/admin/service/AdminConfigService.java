@@ -9,5 +9,21 @@ import com.baomidou.mybatisplus.extension.service.IService;
 * @createDate 2022-04-05 23:01:25
 */
 public interface AdminConfigService extends IService<AdminConfig> {
+    /**
+     * 获取字符串值
+     *
+     * @param key
+     * @return
+     */
+    String getByKey(String key);
 
+    /**
+     * 获取对象值
+     *
+     * @param key
+     * @param clazz
+     * @param <T>
+     * @return
+     */
+    <T> T getByKey(String key, Class<T> clazz);
 }
