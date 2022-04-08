@@ -104,9 +104,13 @@ public class AdminResourceController {
      * TODO 根据登录用户进行过滤
      */
     @GetMapping("/tree")
-    public R<TreeResourceVo> getResourceTree() {
+    public R<TreeResourceVo> getResourceTree(String language) {
         List<AdminResource> list = adminResourceService.list();
         Map<Long, List<AdminResource>> parentList = new HashMap<>();
+        //检查language, 默认为中文
+        if(language == null || "".equals(language)) {
+            language = "zh";
+        }
         //构造parent -> son list
         for (AdminResource item: list) {
             Long parentId = item.getBreadcrumbParentId();
@@ -117,7 +121,7 @@ public class AdminResourceController {
         }
 
         //构造treevo
-        return R.success(getTree(0l, parentList).get(0));
+        return R.success(getTree(0l, parentList, language).get(0));
     }
 
     /**
@@ -127,16 +131,21 @@ public class AdminResourceController {
      * @param parentMap
      * @return
      */
-    private List<TreeResourceVo> getTree(Long parentId,Map<Long, List<AdminResource>> parentMap) {
+    private List<TreeResourceVo> getTree(Long parentId,Map<Long, List<AdminResource>> parentMap, String language) {
         List<TreeResourceVo> tree = new ArrayList<>();
         if(parentMap.get(parentId) != null) {
             for (AdminResource resource: parentMap.get(parentId)) {
                 TreeResourceVo resourceVo = new TreeResourceVo();
                 resourceVo.setKey(String.valueOf(resource.getId()));
-                resourceVo.setTitle(resource.getName());
+                if(language.equals("en")) {
+                    resourceVo.setTitle(resource.getName());
+                } else {
+                    resourceVo.setTitle(resource.getZhName());
+                }
+
                 resourceVo.setValue(String.valueOf(resource.getId()));
                 //递归查询子资源
-                resourceVo.setChildren(getTree(resource.getId(), parentMap));
+                resourceVo.setChildren(getTree(resource.getId(), parentMap, language));
                 tree.add(resourceVo);
             }
         }
