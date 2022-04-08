@@ -27,7 +27,7 @@ public class IpUtils {
             list.add(BigInteger.valueOf(ipToLong(ip)));
         }
         Collections.sort(list);
-        if(list.size()>0) {
+        if(!list.isEmpty()) {
             return list.get(list.size()-1).longValue();
         }
         return 0;
@@ -51,7 +51,7 @@ public class IpUtils {
      * @return
      */
     public String longToIP(long longIp) {
-        StringBuffer sb = new StringBuffer("");
+        StringBuilder sb = new StringBuilder();
         // 直接右移24位
         sb.append(String.valueOf((longIp >>> 24)));
         sb.append(".");
@@ -72,7 +72,7 @@ public class IpUtils {
      * @return
      */
     public static List<String> getLocalIPList() {
-        List<String> ipList = new ArrayList<String>();
+        List<String> ipList = new ArrayList<>();
         try {
             Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
             NetworkInterface networkInterface;
@@ -84,7 +84,7 @@ public class IpUtils {
                 inetAddresses = networkInterface.getInetAddresses();
                 while (inetAddresses.hasMoreElements()) {
                     inetAddress = inetAddresses.nextElement();
-                    if (inetAddress != null && inetAddress instanceof Inet4Address) { // IPV4
+                    if (inetAddress instanceof Inet4Address) { // IPV4
                         ip = inetAddress.getHostAddress();
                         ipList.add(ip);
                     }

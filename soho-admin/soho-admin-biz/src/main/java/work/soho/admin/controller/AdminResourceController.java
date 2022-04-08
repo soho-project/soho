@@ -91,7 +91,7 @@ public class AdminResourceController {
         LambdaQueryWrapper<AdminResource> lqw = new LambdaQueryWrapper<>();
         lqw.eq(AdminResource::getBreadcrumbParentId, dbAdminResource.getId());
         List<AdminResource> list = adminResourceService.list(lqw);
-        if(list.size()>0) {
+        if(!list.isEmpty()) {
             return R.error("还有子节点，无法删除");
         }
         adminResourceService.removeById(dbAdminResource.getId());

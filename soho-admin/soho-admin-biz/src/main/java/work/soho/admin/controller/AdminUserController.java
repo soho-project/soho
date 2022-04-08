@@ -8,25 +8,18 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
-import org.springframework.security.core.parameters.P;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.commons.CommonsMultipartFile;
-import work.soho.admin.domain.AdminRole;
 import work.soho.admin.domain.AdminRoleUser;
 import work.soho.admin.domain.AdminUser;
-import work.soho.admin.service.AdminRoleService;
 import work.soho.admin.service.AdminRoleUserService;
 import work.soho.admin.service.AdminUserService;
 import work.soho.admin.service.impl.UserDetailsServiceImpl;
-import work.soho.api.admin.result.AdminPage;
 import work.soho.api.admin.vo.AdminUserVo;
 import work.soho.api.admin.vo.CurrentAdminUserVo;
 import work.soho.common.core.result.R;
 import work.soho.common.data.upload.utils.UploadUtils;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -81,7 +74,7 @@ public class AdminUserController extends BaseController {
             BeanUtils.copyProperties(item, vo);
             voList.add(vo);
         });
-        PageSerializable pageSerializable = new PageSerializable(voList);
+        PageSerializable<AdminUserVo> pageSerializable = new PageSerializable<>(voList);
         pageSerializable.setTotal(((Page<AdminUser>)list).getTotal());
         return R.success(pageSerializable);
     }

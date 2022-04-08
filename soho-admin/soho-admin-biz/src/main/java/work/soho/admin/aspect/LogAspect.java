@@ -1,15 +1,15 @@
 package work.soho.admin.aspect;
 
-import com.littlenb.snowflake.sequence.IdGenerator;
+import io.jsonwebtoken.lang.Assert;
 import lombok.extern.log4j.Log4j2;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import work.soho.admin.annotation.Log;
+import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
 
 import java.lang.reflect.Method;
@@ -21,14 +21,12 @@ import java.util.Map;
 @Component
 @Configuration
 public class LogAspect {
-    @Autowired
-    private IdGenerator generator;
 
     @Around(value = "@annotation(work.soho.admin.annotation.Log)")
     public Object around(ProceedingJoinPoint invocation) throws Throwable {
-        String requestId = String.valueOf(generator.nextId());
+        String requestId = String.valueOf(IDGeneratorUtils.snowflake());
         Log l = getLog(invocation);
-        String jsonParams = getJsonParams(l, invocation);
+        String jsonParams = getJsonParams(invocation);
         try {
             Object result = invocation.proceed();
             log.debug("[{}] [{}] method: [{}] params: [{}] response: [{}]",l.value(), requestId, invocation.getSignature(), jsonParams, JacksonUtils.toJson(result));
@@ -45,7 +43,7 @@ public class LogAspect {
      * @param invocation
      * @return
      */
-     public String getJsonParams(Log l, ProceedingJoinPoint invocation) {
+     public String getJsonParams(ProceedingJoinPoint invocation) {
         Object[] args = invocation.getArgs();
         String[] argNames = ((MethodSignature)invocation.getSignature()).getParameterNames();
         Map<String, Object> paramsMap = new HashMap<>();
@@ -64,7 +62,6 @@ public class LogAspect {
      */
     private Log getLog(ProceedingJoinPoint invocation) {
         String methodName=invocation.getSignature().getName();
-        Object[] args=invocation.getArgs();
         Class<?> classTarget=invocation.getTarget().getClass();
         Class<?>[] par=((MethodSignature) invocation.getSignature()).getParameterTypes();
         try {
