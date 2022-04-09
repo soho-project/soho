@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @Api(tags = "菜单管理")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/v1/admin-resource")
+@RequestMapping("/admin/adminResource")
 public class AdminResourceController {
     private final AdminResourceService adminResourceService;
 

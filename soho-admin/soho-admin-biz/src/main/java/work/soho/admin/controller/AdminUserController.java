@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/user")
+@RequestMapping("/admin/adminUser")
 public class AdminUserController extends BaseController {
     private final UserDetailsServiceImpl userDetailsService;
     private final AdminUserService adminUserService;
