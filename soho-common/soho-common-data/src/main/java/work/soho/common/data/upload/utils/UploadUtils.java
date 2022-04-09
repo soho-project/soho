@@ -2,6 +2,7 @@ package work.soho.common.data.upload.utils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.data.upload.Upload;
@@ -12,7 +13,7 @@ import java.util.Calendar;
 
 @Service
 public class UploadUtils {
-    @Autowired
+    @Autowired(required = false)
     private Upload uploadService;
 
     private static UploadUtils uploadUtils;
@@ -31,6 +32,7 @@ public class UploadUtils {
      * @return
      */
     public static String upload(String filePath, String fileContent) {
+        Assert.notNull(uploadUtils.uploadService, "请先配置上传相关信息");
         return uploadUtils.uploadService.uploadFile(filePath, fileContent);
     }
 

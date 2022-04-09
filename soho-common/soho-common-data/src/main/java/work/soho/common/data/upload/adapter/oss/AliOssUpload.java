@@ -5,13 +5,17 @@ import com.aliyun.oss.model.PutObjectRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import work.soho.common.data.upload.Upload;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
+@Primary
 @RequiredArgsConstructor
 @Service
+@ConditionalOnBean(AliOssProperties.class)
 public class AliOssUpload implements Upload {
     private final OSS oss;
     private final AliOssProperties aliOssProperties;

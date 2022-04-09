@@ -4,7 +4,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
-@ConfigurationProperties(prefix = "oss")
+@ConfigurationProperties(prefix = "upload.oss")
 public class AliOssProperties {
     private String endpoint;
     private String accessKeyId;

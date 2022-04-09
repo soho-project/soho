@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(prefix = "upload", name = "type", havingValue = "oss")
+@ConditionalOnProperty(prefix = "upload.oss", name = "enable", havingValue = "true")
 @EnableConfigurationProperties(AliOssProperties.class)
 public class AliOssConfiguration {
     /**
