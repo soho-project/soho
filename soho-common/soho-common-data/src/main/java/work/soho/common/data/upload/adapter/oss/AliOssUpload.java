@@ -1,6 +1,7 @@
 package work.soho.common.data.upload.adapter.oss;
 
 import com.aliyun.oss.OSS;
+import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.model.PutObjectRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -17,9 +18,12 @@ import java.io.InputStream;
 @Service
 @ConditionalOnBean(AliOssProperties.class)
 public class AliOssUpload implements Upload {
-    private final OSS oss;
     private final AliOssProperties aliOssProperties;
     private final Logger logger = LoggerFactory.getLogger(AliOssUpload.class);
+
+    public OSS getClient() {
+        return new OSSClientBuilder().build(aliOssProperties.getEndpoint(), aliOssProperties.getAccessKeyId(), aliOssProperties.getAccessKeySecret());
+    }
 
     @Override
     public String uploadFile(String filePath, String content) {
@@ -31,7 +35,7 @@ public class AliOssUpload implements Upload {
         try {
             PutObjectRequest putObjectRequest = new PutObjectRequest(aliOssProperties.getBucketName(), filePath
                     , inputStream);
-            oss.putObject(putObjectRequest);
+            getClient().putObject(putObjectRequest);
             return aliOssProperties.getUrlPrefix() + filePath;
         } catch (Exception e) {
             logger.error(e.toString());

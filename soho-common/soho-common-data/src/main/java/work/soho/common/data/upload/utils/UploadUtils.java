@@ -6,6 +6,8 @@ import org.springframework.util.Assert;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.data.upload.Upload;
+import work.soho.common.data.upload.UploadManage;
+
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,15 +15,15 @@ import java.util.Calendar;
 
 @Service
 public class UploadUtils {
-    @Autowired(required = false)
-    private Upload uploadService;
+    @Autowired
+    private UploadManage uploadManage;
 
     private static UploadUtils uploadUtils;
 
     @PostConstruct
     public void init() {
         uploadUtils = this;
-        uploadUtils.uploadService = this.uploadService;
+        uploadUtils.uploadManage = this.uploadManage;
     }
 
     /**
@@ -32,8 +34,19 @@ public class UploadUtils {
      * @return
      */
     public static String upload(String filePath, String fileContent) {
-        Assert.notNull(uploadUtils.uploadService, "请先配置上传相关信息");
-        return uploadUtils.uploadService.uploadFile(filePath, fileContent);
+        return upload(uploadUtils.uploadManage.getDefaultChannelName(), filePath, fileContent);
+    }
+
+    /**
+     * 上传字符串内容到指定存储桶
+     *
+     * @param channelName
+     * @param filePath
+     * @param fileContent
+     * @return
+     */
+    public static String upload(String channelName, String filePath, String fileContent) {
+        return uploadUtils.uploadManage.get(channelName).uploadFile(filePath, fileContent);
     }
 
     /**
@@ -44,7 +57,18 @@ public class UploadUtils {
      * @return
      */
     public static String upload(String filePath, InputStream inputStream) {
-        return uploadUtils.uploadService.uploadFile(filePath, inputStream);
+        return upload(uploadUtils.uploadManage.getDefaultChannelName(), filePath, inputStream);
+    }
+
+    /**
+     * 上传文件
+     *
+     * @param filePath
+     * @param inputStream
+     * @return
+     */
+    public static String upload(String channelName, String filePath, InputStream inputStream) {
+        return uploadUtils.uploadManage.get(channelName).uploadFile(filePath, inputStream);
     }
 
     /**
@@ -55,6 +79,18 @@ public class UploadUtils {
      * @return
      */
     public static String upload(String dirPath, MultipartFile file) {
+        return upload(uploadUtils.uploadManage.getDefaultChannelName(), dirPath, file);
+    }
+
+    /**
+     * 上传文件到指定通道
+     *
+     * @param channelName
+     * @param dirPath
+     * @param file
+     * @return
+     */
+    public static String upload(String channelName, String dirPath, MultipartFile file) {
         String originFileName = file.getOriginalFilename();
         if(originFileName == null) {
             return null;
@@ -62,7 +98,7 @@ public class UploadUtils {
         String ext = originFileName.substring(originFileName.lastIndexOf("."));
         dirPath = dirPath + "/" + generateRandomFilename() + ext;
         try {
-            return upload(dirPath, file.getInputStream());
+            return upload(channelName, dirPath, file.getInputStream());
         } catch (IOException ioException) {
             ioException.printStackTrace();
         }

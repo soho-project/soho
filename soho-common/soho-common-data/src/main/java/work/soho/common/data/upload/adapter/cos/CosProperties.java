@@ -4,7 +4,6 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
-@ConfigurationProperties(prefix = "upload.cos")
 public class CosProperties {
     private String secretId;
     private String secretKey;
