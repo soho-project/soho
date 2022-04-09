@@ -70,7 +70,7 @@ public class AdminRoleController extends BaseController{
 	}
 
 	@ApiOperation("获取角色选中的资源")
-	@GetMapping("/role-resources")
+	@GetMapping("/roleResources")
 	public R<List<String>> getRoleResourceIds(Long id) {
 		List<AdminRoleResource> list = adminRoleResourceService.list(new LambdaQueryWrapper<AdminRoleResource>().eq(AdminRoleResource::getRoleId, id));
 		List<String> ids = list.stream().map(item->String.valueOf(item.getResourceId())).collect(Collectors.toList());
