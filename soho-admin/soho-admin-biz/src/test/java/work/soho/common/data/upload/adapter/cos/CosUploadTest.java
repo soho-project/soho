@@ -9,6 +9,8 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import work.soho.admin.AdminApplication;
+import work.soho.common.data.upload.UploadManage;
+import work.soho.common.data.upload.utils.UploadUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -16,14 +18,27 @@ import static org.junit.jupiter.api.Assertions.*;
 @WebAppConfiguration("src/main/resources")
 @SpringBootTest(classes = AdminApplication.class)
 class CosUploadTest {
+//    @Autowired
+//    private CosUpload cosUpload;
+
     @Autowired
-    private CosUpload cosUpload;
+    private UploadManage uploadManage;
 
     @Autowired
     private WebApplicationContext webApplicationContext;
 
+//    @Test
+//    public void upload() {
+//        cosUpload.uploadFile("/test/hello.txt", "hello world");
+//    }
+
     @Test
-    public void upload() {
-        cosUpload.uploadFile("/test/hello.txt", "hello world");
+    public void uploadManage() {
+        uploadManage.get("cos2").uploadFile("test/uploadManage.txt", "hello world, upload by manage");
+    }
+
+    @Test
+    public void utils() {
+        UploadUtils.upload("test/utils.txt", "hello utils");
     }
 }
