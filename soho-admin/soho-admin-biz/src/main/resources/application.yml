@@ -53,3 +53,34 @@ springfox:
 
 token:
   secret: sxxxxxxxxdddddddddaret
+
+#upload:
+#  enable: true
+#  defaultChannel: oss
+#  channels:
+#    oss:
+#      enable: true
+#      type: oss
+#      config:
+#        endpoint: oss-cn-shenzhen.aliyuncs.com
+#        accessKeyId: xxxx
+#        accessKeySecret: xxxx
+#        bucketName: xxxx
+#        urlPrefix: https://xxxx.aliyuncs.com/
+#    cos:
+#      type: cos
+#      enable: true
+#      config:
+#        secretId: xxxx
+#        secretKey: xxxx
+#        region: ap-guangzhou
+#        bucketName: soho-admin-demo-1258009624
+#        urlPrefix: https://xxxx.file.myqcloud.com/
+#    qiniu:
+#      type: qiniu
+#      enable: true
+#      config:
+#        accessKey: xxx
+#        secretKey: xxxx
+#        bucket: xxxx
+#        urlPrefix: http://ra86b7o3s.hn-bkt.clouddn.com/

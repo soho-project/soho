@@ -1,12 +1,10 @@
 package work.soho.common.data.upload.adapter.cos;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import work.soho.admin.AdminApplication;
 import work.soho.common.data.upload.UploadManage;
@@ -18,19 +16,12 @@ import static org.junit.jupiter.api.Assertions.*;
 @WebAppConfiguration("src/main/resources")
 @SpringBootTest(classes = AdminApplication.class)
 class CosUploadTest {
-//    @Autowired
-//    private CosUpload cosUpload;
 
     @Autowired
     private UploadManage uploadManage;
 
     @Autowired
     private WebApplicationContext webApplicationContext;
-
-//    @Test
-//    public void upload() {
-//        cosUpload.uploadFile("/test/hello.txt", "hello world");
-//    }
 
     @Test
     public void uploadManage() {
@@ -40,5 +31,17 @@ class CosUploadTest {
     @Test
     public void utils() {
         UploadUtils.upload("test/utils.txt", "hello utils");
+        //阿里云上传
+        UploadUtils.upload("oss", "test/utils.txt", "hello utils");
+        UploadUtils.upload("cos", "test/utils.txt", "hello utils");
+        //腾讯云上传
+        UploadUtils.upload("cos2", "test/utils.txt", "hello utils");
+    }
+
+    @Test
+    public void qiniu() {
+        String fullPath = UploadUtils.upload("qiniu", "test/utils.txt", "hello utils");
+        System.out.println(fullPath);
+        assertNotNull(fullPath);
     }
 }
