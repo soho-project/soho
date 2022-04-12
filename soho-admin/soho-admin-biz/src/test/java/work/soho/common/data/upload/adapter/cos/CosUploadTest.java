@@ -44,4 +44,11 @@ class CosUploadTest {
         System.out.println(fullPath);
         assertNotNull(fullPath);
     }
+
+    @Test
+    public void file() {
+        String fullPath = UploadUtils.upload("file", "test/utils.txt", "hello utils");
+        System.out.println(fullPath);
+        assertNotNull(fullPath);
+    }
 }
