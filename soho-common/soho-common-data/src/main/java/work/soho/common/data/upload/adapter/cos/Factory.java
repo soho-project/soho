@@ -18,7 +18,7 @@ public class Factory implements FactoryAdapter {
         Arrays.stream(CosProperties.class.getDeclaredFields()).forEach(item->{
             item.setAccessible(true);
             try {
-                item.set(cosProperties, environment.getRequiredProperty("upload." + name + ".config."+item.getName()));
+                item.set(cosProperties, environment.getRequiredProperty("upload.channels." + name + ".config."+item.getName()));
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }

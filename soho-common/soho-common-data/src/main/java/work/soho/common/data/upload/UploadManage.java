@@ -18,11 +18,11 @@ public class UploadManage {
      * @return
      */
     public Upload get(String name) {
-        Boolean enable = environment.getProperty("upload." + name + ".enable", Boolean.class, false);
+        Boolean enable = environment.getProperty("upload.channels." + name + ".enable", Boolean.class, false);
         if(Boolean.FALSE.equals(enable)) {
             throw new IllegalInstantException("请指定正确的上传方式");
         }
-        String type = environment.getProperty("upload." + name + ".type");
+        String type = environment.getProperty("upload.channels." + name + ".type");
         if(type == null) {
             throw new IllegalInstantException("请指定正确的上传类型");
         }

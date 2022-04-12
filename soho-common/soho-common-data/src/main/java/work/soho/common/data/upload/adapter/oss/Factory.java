@@ -20,7 +20,7 @@ public class Factory implements FactoryAdapter {
         Arrays.stream(AliOssProperties.class.getDeclaredFields()).forEach(item->{
             item.setAccessible(true);
             try {
-                item.set(aliOssProperties, environment.getRequiredProperty("upload." + name + ".config."+item.getName()));
+                item.set(aliOssProperties, environment.getRequiredProperty("upload.channels." + name + ".config."+item.getName()));
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }

@@ -2,10 +2,8 @@ package work.soho.common.data.upload.utils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.common.core.util.IDGeneratorUtils;
-import work.soho.common.data.upload.Upload;
 import work.soho.common.data.upload.UploadManage;
 
 import javax.annotation.PostConstruct;
