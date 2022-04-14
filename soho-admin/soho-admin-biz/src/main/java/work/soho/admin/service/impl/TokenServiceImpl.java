@@ -3,12 +3,13 @@ package work.soho.admin.service.impl;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.apache.commons.lang3.StringUtils;
+//import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import work.soho.admin.domain.AdminUser;
+import work.soho.common.core.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Date;

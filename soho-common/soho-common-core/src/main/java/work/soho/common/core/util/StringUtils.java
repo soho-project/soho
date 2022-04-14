@@ -1,9 +1,22 @@
 package work.soho.common.core.util;
 
+import cn.hutool.core.text.StrFormatter;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class StringUtils {
+
+    /**
+     * 格式化字符串
+     *
+     * @param template
+     * @param params
+     * @return
+     */
+    public String format(String template, Object... params) {
+        return params !=null && params.length>0 && !isEmpty(template) ? StrFormatter.format(template, params) : template;
+    }
+
     /**
      * 空字符串判断
      *

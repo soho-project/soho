@@ -38,8 +38,16 @@ public class R<T> {
 		return result(2000, Constant.SUCCESS, data);
 	}
 
+	public static <T> R<T> error(int code, String msg) {
+		return error(code, msg, null);
+	}
+
+	public static <T> R<T> error(int code, String msg, T data) {
+		return result(code, msg, data);
+	}
+
 	public static <T> R<T> error(String msg, T data) {
-		return result(5001, msg, data);
+		return error(5001, msg, data);
 	}
 
 	public static <T> R<T> error(String msg) {

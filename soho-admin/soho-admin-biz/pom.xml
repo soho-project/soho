@@ -118,7 +118,10 @@
             <artifactId>activation</artifactId>
             <version>1.1.1</version>
         </dependency>
-
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-boot-starter</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
