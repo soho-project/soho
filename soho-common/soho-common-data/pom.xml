@@ -59,5 +59,9 @@
             <groupId>com.qiniu</groupId>
             <artifactId>qiniu-java-sdk</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+        </dependency>
     </dependencies>
 </project>
