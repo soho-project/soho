@@ -39,7 +39,7 @@ public class LogAspect {
 
     /**
      * before method
-     *  @param l
+     *
      * @param invocation
      * @return
      */
