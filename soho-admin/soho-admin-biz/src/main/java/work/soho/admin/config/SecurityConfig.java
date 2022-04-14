@@ -12,6 +12,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import work.soho.admin.filter.AuthenticationEntryPointImpl;
 import work.soho.admin.filter.JwtAuthFilter;
 
 /**
@@ -31,8 +32,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
     /**
      * 认证失败处理类
      */
-//    @Autowired
-//    private AuthenticationEntryPointImpl unauthorizedHandler;
+    @Autowired
+    private AuthenticationEntryPointImpl unauthorizedHandler;
 
     /**
      * 退出处理类
@@ -87,7 +88,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                 // CRSF禁用，因为不使用session
                 .csrf().disable()
                 // 认证失败处理类
-               // .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
+                .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
                 // 基于token，所以不需要session
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 // 过滤请求
