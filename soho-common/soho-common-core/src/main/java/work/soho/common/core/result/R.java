@@ -54,6 +54,10 @@ public class R<T> {
 		return error(msg, null);
 	}
 
+	public static <T> R<T> error() {
+		return error(Constant.ERROR);
+	}
+
 	public static class Constant {
 
 		private Constant() {
@@ -62,13 +66,6 @@ public class R<T> {
 		public static final String SUCCESS = "success";
 
 		public static final String ERROR = "error";
-
-		public static final String CODE = "code";
-
-		public static final String MSG = "msg";
-
-		public static final String DATA = "data";
-
 	}
 
 }
