@@ -16,7 +16,7 @@ public class IDGeneratorUtils {
      *
      * @return
      */
-    public static Long snowflake() {
+    public Long snowflake() {
         return idGenerator.nextId();
     }
 }
