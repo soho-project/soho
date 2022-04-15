@@ -4,5 +4,10 @@
       "name": "swagger.enable",
       "type": "java.lang.Boolean",
       "description": "是否启用swagger; 默认不启用"
+    },
+    {
+      "name": "redisson.nodeAddress",
+      "type": "java.lang.String",
+      "description": "配置redis地址；例如：redis://127.0.0.1:6379"
     }
   ] }
