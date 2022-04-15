@@ -9,3 +9,7 @@ SOHO后台管理系统
 
 - 预览地址： http://demo.site-school.com/
 - 前端仓库地址：https://gitee.com/fang/soho-admin-front
+
+![img_2.png](docs/images/img_2.png)
+![img_1.png](docs/images/img_1.png)
+![img.png](docs/images/img.png)
