@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 /**
 * @author i
 * @description 针对表【hello】的数据库操作Service实现
-* @createDate 2022-04-05 20:29:18
+* @createDate 2022-04-16 22:41:04
 */
 @Service
 public class HelloServiceImpl extends ServiceImpl<HelloMapper, Hello>

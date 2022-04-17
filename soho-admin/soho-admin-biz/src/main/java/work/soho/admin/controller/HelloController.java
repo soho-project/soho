@@ -1,88 +1,47 @@
 package work.soho.admin.controller;
 
-
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.List;
-import java.util.Arrays;
-
-import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
-import work.soho.common.core.result.R;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.view.xslt.XsltView;
 import work.soho.admin.domain.Hello;
 import work.soho.admin.service.HelloService;
+import work.soho.admin.view.DefaultExcelView;
+import work.soho.common.data.excel.annotation.ExcelExport;
+import work.soho.common.data.excel.model.ExcelModel;
 
-/**
- * helloController
- *
- * @author i
- */
-@RequiredArgsConstructor
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Controller
 @RestController
-@RequestMapping("/admin/hello" )
+@RequiredArgsConstructor
 public class HelloController extends BaseController {
-
     private final HelloService helloService;
 
-    /**
-     * 查询hello列表
-     */
-    @GetMapping("/list")
-    public R<PageSerializable<Hello>> list(Hello hello)
-    {
-        startPage();
-        LambdaQueryWrapper<Hello> lqw = new LambdaQueryWrapper<>();
-
-        if (hello.getId() != null){
-            lqw.eq(Hello::getId ,hello.getId());
-        }
-        if (StringUtils.isNotBlank(hello.getName())){
-            lqw.like(Hello::getName ,hello.getName());
-        }
-        if (StringUtils.isNotBlank(hello.getValue())){
-            lqw.like(Hello::getValue ,hello.getValue());
-        }
-        List<Hello> list = helloService.list(lqw);
-        return R.success(new PageSerializable<>(list));
+    @GetMapping("/hello/excel")
+    @ExcelExport(fileName = "test.xsl", modelClass = Hello.class)
+    public Object exportHelloList() {
+        List<Hello> list = helloService.list();
+        return list;
     }
 
-    /**
-     * 获取hello详细信息
-     */
-    @GetMapping(value = "/{id}" )
-    public R<Hello> getInfo(@PathVariable("id" ) Long id) {
-        return R.success(helloService.getById(id));
+    @GetMapping("/hello/excel2")
+    public ModelAndView excel() {
+        List<Hello> list = helloService.list();
+        ExcelModel excelModel = new ExcelModel();
+        excelModel.setFileName("test.xls").addSheet(list, Hello.class).addSheet(list, Hello.class);
+        return new ModelAndView(new DefaultExcelView(), excelModel);
     }
 
-    /**
-     * 新增hello
-     */
-    @PostMapping
-    public R<Boolean> add(@RequestBody Hello hello) {
-        return R.success(helloService.save(hello));
-    }
-
-    /**
-     * 修改hello
-     */
-    @PutMapping
-    public R<Boolean> edit(@RequestBody Hello hello) {
-        return R.success(helloService.updateById(hello));
-    }
-
-    /**
-     * 删除hello
-     */
-    @DeleteMapping("/{ids}" )
-    public R<Boolean> remove(@PathVariable Long[] ids) {
-        return R.success(helloService.removeByIds(Arrays.asList(ids)));
+    @GetMapping("/hello/excel3")
+    @ExcelExport(fileName = "test.xsl", modelClass = Hello.class)
+    public Object exportHelloList2() {
+        List<Hello> list = helloService.list();
+        return new ExcelModel().addSheet(list);
     }
 }
