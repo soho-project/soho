@@ -31,7 +31,7 @@ class CrudTest {
 			adminUser.setNickName("a");
 			adminUser.setRealName("fang.liu");
 			adminUser.setEmail("i@liufang.org.cn");
-			adminUser.setPhone(158731L);
+			adminUser.setPhone("");
 			adminUser.setPassword("123456");
 			adminUser.setCreatedTime(new Timestamp(System.currentTimeMillis()));
 			adminUser.setUpdatedTime(new Timestamp(System.currentTimeMillis()));

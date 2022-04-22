@@ -1,20 +1,28 @@
 package work.soho.admin.controller;
 
+import cn.hutool.db.DaoTemplate;
+import cn.hutool.json.JSONUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import work.soho.admin.domain.AdminUserLoginLog;
 import work.soho.admin.service.AdminConfigService;
+import work.soho.admin.service.AdminUserLoginLogService;
 import work.soho.admin.service.impl.TokenServiceImpl;
 import work.soho.admin.service.impl.UserDetailsServiceImpl;
 import work.soho.api.admin.vo.AdminUserLoginVo;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.IpUtils;
+import work.soho.common.core.util.RequestUtil;
 import work.soho.common.data.captcha.utils.CaptchaUtils;
 
 import javax.annotation.Resource;
+import java.util.Date;
 import java.util.Map;
 
 @Api(tags = "用户鉴权")
@@ -23,6 +31,7 @@ import java.util.Map;
 public class AuthController {
     private final TokenServiceImpl tokenService;
     private final AdminConfigService adminConfigService;
+    private final AdminUserLoginLogService adminUserLoginLogService;
     @Resource
     private AuthenticationManager authenticationManager;
 
@@ -45,12 +54,21 @@ public class AuthController {
             if(useCaptcha) {
                 CaptchaUtils.dropCaptcha();
             }
+
         } catch (Exception e) {
             e.printStackTrace();
             return R.error("登录失败");
         }
         UserDetailsServiceImpl.UserDetailsImpl loginUser = (UserDetailsServiceImpl.UserDetailsImpl) authentication.getPrincipal();
         Map<String, String> token = tokenService.createTokenInfo(loginUser);
+        //创建登录日志
+        AdminUserLoginLog adminUserLoginLog = new AdminUserLoginLog();
+        adminUserLoginLog.setAdminUserId(Long.parseLong(loginUser.getId()));
+        adminUserLoginLog.setClientIp(IpUtils.getClientIp());
+        adminUserLoginLog.setCreatedTime(new Date());
+        adminUserLoginLog.setToken(JSONUtil.toJsonStr(token));
+        adminUserLoginLog.setClientUserAgent(RequestUtil.getHeader("User-Agent"));
+        adminUserLoginLogService.save(adminUserLoginLog);
         return R.success(token);
     }
 

@@ -1,62 +1,64 @@
 package work.soho.admin.domain;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
+
 import java.time.LocalDateTime;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import io.swagger.annotations.ApiModelProperty;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 /**
  * 管理员通知
+ *
  * @TableName admin_notification
  */
-@TableName(value ="admin_notification")
 @Data
 public class AdminNotification implements Serializable {
     /**
-     * 
+     * ID
      */
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+    @ApiModelProperty("ID")
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
     /**
      * 接收人
      */
-    @TableField(value = "admin_user_id")
+    @ApiModelProperty("接收人")
     private Integer adminUserId;
 
     /**
      * 标题
      */
-    @TableField(value = "title")
+    @ApiModelProperty("标题")
     private String title;
 
     /**
      * 创建者 0 为系统发送
      */
-    @TableField(value = "create_admin_user_id")
+    @ApiModelProperty("创建者 0 为系统发送")
     private Integer createAdminUserId;
 
     /**
      * 通知内容
      */
-    @TableField(value = "content")
+    @ApiModelProperty("通知内容")
     private String content;
 
     /**
      * 创建时间
      */
-    @TableField(value = "cteated_time")
+    @ApiModelProperty("创建时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime cteatedTime;
 
     /**
      * 是否已读 0 未读 1 已读
      */
-    @TableField(value = "is_read")
+    @ApiModelProperty("是否已读 0 未读 1 已读")
     private Integer isRead;
 
-    @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
 }
