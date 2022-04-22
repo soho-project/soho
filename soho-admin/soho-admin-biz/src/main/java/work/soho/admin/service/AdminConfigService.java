@@ -26,4 +26,15 @@ public interface AdminConfigService extends IService<AdminConfig> {
      * @return
      */
     <T> T getByKey(String key, Class<T> clazz);
+
+    /**
+     * 获取对象值， 支持默认值
+     *
+     * @param key
+     * @param clazz
+     * @param defaultValue
+     * @param <T>
+     * @return
+     */
+    <T> T getByKey(String key, Class<T> clazz, T defaultValue);
 }

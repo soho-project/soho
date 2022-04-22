@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 import work.soho.admin.domain.Hello;
 import work.soho.admin.service.HelloService;
+import work.soho.common.data.captcha.utils.CaptchaUtils;
 import work.soho.common.data.excel.annotation.ExcelExport;
 import work.soho.common.data.excel.model.ExcelModel;
 import work.soho.common.data.excel.view.DefaultExcelView;
@@ -55,24 +56,10 @@ public class HelloController extends BaseController {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         try {
-            // 将生成的验证码保存在session中
-            String createText = defaultKaptcha.createText();
-            request.getSession().setAttribute("rightCode", createText);
-            BufferedImage bi = defaultKaptcha.createImage(createText);
-            ImageIO.write(bi, "jpg", out);
+            CaptchaUtils.createAndSend();
         } catch (Exception e) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-
-        captcha = out.toByteArray();
-        response.setHeader("Cache-Control", "no-store");
-        response.setHeader("Pragma", "no-cache");
-        response.setDateHeader("Expires", 0);
-        response.setContentType("image/jpeg");
-        ServletOutputStream sout = response.getOutputStream();
-        sout.write(captcha);
-        sout.flush();
-        sout.close();
     }
 }

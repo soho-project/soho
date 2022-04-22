@@ -6,6 +6,7 @@ import org.springframework.core.env.Environment;
 import work.soho.common.core.support.SpringContextHolder;
 import work.soho.common.core.util.IpUtils;
 import work.soho.common.core.util.ResponseUtil;
+import work.soho.common.data.captcha.storage.Redis;
 import work.soho.common.data.captcha.storage.Session;
 import work.soho.common.data.captcha.storage.StorageInterface;
 
@@ -19,6 +20,19 @@ import java.io.IOException;
 @UtilityClass
 public class CaptchaUtils {
     /**
+     * 获取验证码识别ID
+     *
+     * @return
+     */
+    private String getKey() {
+        Environment environment = SpringContextHolder.getBean(Environment.class);
+        String key =environment.getProperty("captcha.keyName");
+        key = key == null ? "default-captcha" : key;
+        key = IpUtils.getClientIp() + ":" + key;
+        return key;
+    }
+
+    /**
      * 创建且发送验证码
      *
      * @param response
@@ -27,13 +41,11 @@ public class CaptchaUtils {
     public String createAndSend() throws IOException {
         byte[] captcha = null;
         HttpServletResponse response = ResponseUtil.getResponse();
-        Environment environment = SpringContextHolder.getBean(Environment.class);
+
         DefaultKaptcha defaultKaptcha = SpringContextHolder.getBean(DefaultKaptcha.class);
-        StorageInterface storageInterface = SpringContextHolder.getBean(Session.class);
+        StorageInterface storageInterface = SpringContextHolder.getBean(Redis.class);
         //识别跟踪ID
-        String key =environment.getProperty("captcha.keyName");
-        key = key == null ? "default-captcha" : key;
-        key = IpUtils.getClientIp() + ":" + key;
+        String key =getKey();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         String createText = null;
         try {
@@ -57,5 +69,23 @@ public class CaptchaUtils {
         sout.flush();
         sout.close();
         return createText;
+    }
+
+    /**
+     * 检查验证码是否有效
+     *
+     * @param captcha
+     * @return
+     */
+    public Boolean checking(String captcha) {
+        StorageInterface storageInterface = SpringContextHolder.getBean(Redis.class);
+        String key = getKey();
+        return captcha.equals(storageInterface.get(key));
+    }
+
+    public void dropCaptcha() {
+        StorageInterface storageInterface = SpringContextHolder.getBean(Redis.class);
+        String key = getKey();
+        storageInterface.drop(key);
     }
 }

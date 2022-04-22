@@ -26,6 +26,9 @@ public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, Admin
         LambdaQueryWrapper<AdminConfig> lqw = new LambdaQueryWrapper<>();
         lqw.eq(AdminConfig::getKey, key);
         AdminConfig adminConfig = getOne(lqw);
+        if(adminConfig == null) {
+            return null;
+        }
         return adminConfig.getValue();
     }
 
@@ -38,8 +41,29 @@ public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, Admin
      * @return
      */
     public <T> T getByKey(String key, Class<T> clazz) {
+        return getByKey(key, clazz, null);
+    }
+
+    /**
+     * 获取值，支持默认值
+     *
+     * @param key
+     * @param clazz
+     * @param defaultValue
+     * @param <T>
+     * @return
+     */
+    public <T> T getByKey(String key, Class<T> clazz, T defaultValue) {
         String value = getByKey(key);
-        return JacksonUtils.toBean(value, clazz);
+        try {
+            if(value == null && defaultValue != null) {
+                return defaultValue;
+            }
+            return JacksonUtils.toBean(value, clazz);
+        } catch (Exception e) {
+            //ignore
+        }
+        return defaultValue;
     }
 }
 
