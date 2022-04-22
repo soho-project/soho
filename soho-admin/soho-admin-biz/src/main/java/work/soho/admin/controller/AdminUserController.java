@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.util.MimeType;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -133,6 +135,11 @@ public class AdminUserController extends BaseController {
     @PostMapping("/upload-avatar")
     public Object uploadAvatar(@RequestParam(value = "avatar")MultipartFile file) {
         try {
+            MimeType mimeType = MimeTypeUtils.parseMimeType(file.getContentType());
+            if(!mimeType.getType().equals("image")) {
+                return R.error("请传递正确的图片格式");
+            }
+            System.out.println(file.getContentType());
             String url = UploadUtils.upload("user/avatar", file);
             return R.success(url);
         } catch (Exception ioException) {
