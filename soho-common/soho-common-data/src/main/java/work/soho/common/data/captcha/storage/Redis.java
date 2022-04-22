@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class Redis implements StorageInterface {
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate redisTemplate;
 
     @Override
     public void set(String key, Object value) {
@@ -20,5 +20,10 @@ public class Redis implements StorageInterface {
     @Override
     public Object get(String key) {
         return redisTemplate.opsForValue().get(key);
+    }
+
+    @Override
+    public void drop(String key) {
+        redisTemplate.delete(key);
     }
 }
