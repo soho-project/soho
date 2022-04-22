@@ -1,40 +1,102 @@
 package work.soho.admin.domain;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import lombok.Data;
-
 import java.io.Serializable;
 import java.util.Date;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import io.swagger.annotations.ApiModelProperty;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Data;
+
+/**
+ * 
+ *
+ * @TableName admin_user
+ */
 @Data
 public class AdminUser implements Serializable {
 
-	@TableId(type = IdType.AUTO)
-	private Long id;
 
-	private String username;
+    /**
+     * ID
+     */
+    @ApiModelProperty("ID")
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
-	private String avatar;
+    /**
+     * 用户名
+     */
+    @ApiModelProperty("用户名")
+    private String username;
 
-	private String nickName;
+    /**
+     * 手机号
+     */
+    @ApiModelProperty("手机号")
+    private String phone;
 
-	private String realName;
+    /**
+     * 昵称
+     */
+    @ApiModelProperty("昵称")
+    private String nickName;
 
-	private String email;
+    /**
+     * 真实姓名
+     */
+    @ApiModelProperty("真实姓名")
+    private String realName;
 
-	private Long phone;
+    /**
+     * 头像
+     */
+    @ApiModelProperty("头像")
+    private String avatar;
 
-	private String password;
+    /**
+     * 邮箱地址
+     */
+    @ApiModelProperty("邮箱地址")
+    private String email;
 
-	private Date updatedTime;
+    /**
+     * 
+     */
+    @ApiModelProperty("密码")
+    private String password;
 
-	private Date createdTime;
+    /**
+     * 更新时间
+     */
+    @ApiModelProperty("更新时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date updatedTime;
 
-	private Integer age;
+    /**
+     * 创建时间
+     */
+    @ApiModelProperty("创建时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date createdTime;
 
-	private Integer sex;
+    /**
+     * 性别
+     */
+    @ApiModelProperty("性别")
+    private Integer sex;
 
-	private Integer isDeleted;
+    /**
+     * 年龄
+     */
+    @ApiModelProperty("年龄")
+    private Integer age;
+
+    /**
+     * 软删除标记
+     */
+    @ApiModelProperty("软删除标记")
+    private Integer isDeleted;
 
 }

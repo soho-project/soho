@@ -18,6 +18,8 @@ import work.soho.admin.domain.AdminRole;
 import work.soho.api.admin.vo.AdminRoleVo;
 import work.soho.api.admin.vo.OptionsRoleVo;
 import work.soho.common.core.result.R;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -92,7 +94,7 @@ public class AdminRoleController extends BaseController{
 				.collect(Collectors.toList());
 
 		//新增关联资源
-		for (Long rid: CollUtil.subtract(adminRoleVo.getResourceIds(), oldResourceIds)) {
+		for (Long rid: CollUtil.subtract(adminRoleVo.getResourceIds() == null ? new ArrayList<>() : adminRoleVo.getResourceIds(), oldResourceIds)) {
 			AdminRoleResource adminRoleResource = new AdminRoleResource();
 			adminRoleResource.setResourceId(rid);
 			adminRoleResource.setRoleId(adminRole.getId());

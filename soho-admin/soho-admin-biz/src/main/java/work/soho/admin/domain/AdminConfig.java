@@ -1,70 +1,76 @@
 package work.soho.admin.domain;
 
-import com.baomidou.mybatisplus.annotation.*;
-
 import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.util.Date;
 
+import java.time.LocalDateTime;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
-import lombok.ToString;
 
 /**
- * 
+ * 系统配置表
+ *
  * @TableName admin_config
  */
-@TableName(value ="admin_config")
 @Data
-@ToString
 public class AdminConfig implements Serializable {
+
+
     /**
-     * 
+     * ID
      */
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+    @ApiModelProperty("ID")
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
     /**
      * 配置文件分组名
      */
-    @TableField(value = "group_key")
+    @ApiModelProperty("配置文件分组名")
     private String groupKey;
 
     /**
      * 配置信息唯一识别key
      */
+    @ApiModelProperty("配置信息唯一识别key")
     @TableField(value = "`key`")
     private String key;
 
     /**
      * 配置信息值
      */
-    @TableField(value = "value")
+    @ApiModelProperty("配置信息值")
     private String value;
 
+    /**
+     * 说明
+     */
+    @ApiModelProperty("说明")
     @TableField(value = "`explain`")
     private String explain;
 
     /**
      * 配置信息类型
      */
-    @TableField(value = "type")
+    @ApiModelProperty("配置信息类型")
     private Integer type;
 
     /**
      * 更新时间
      */
-    @TableField(value = "updated_time", fill = FieldFill.UPDATE)
+    @ApiModelProperty("更新时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date updatedTime;
+    private LocalDateTime updatedTime;
 
     /**
      * 创建时间
      */
-    @TableField(value = "created_time", fill = FieldFill.INSERT)
+    @ApiModelProperty("创建时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date createdTime;
+    private LocalDateTime createdTime;
 
-    @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
 }
