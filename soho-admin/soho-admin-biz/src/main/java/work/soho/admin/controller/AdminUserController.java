@@ -13,8 +13,12 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import work.soho.admin.domain.AdminRole;
+import work.soho.admin.domain.AdminRoleResource;
 import work.soho.admin.domain.AdminRoleUser;
 import work.soho.admin.domain.AdminUser;
+import work.soho.admin.service.AdminRoleResourceService;
+import work.soho.admin.service.AdminRoleService;
 import work.soho.admin.service.AdminRoleUserService;
 import work.soho.admin.service.AdminUserService;
 import work.soho.admin.service.impl.UserDetailsServiceImpl;
@@ -33,7 +37,9 @@ import java.util.stream.Collectors;
 public class AdminUserController extends BaseController {
     private final UserDetailsServiceImpl userDetailsService;
     private final AdminUserService adminUserService;
+    private final AdminRoleService adminRoleService;
     private final AdminRoleUserService adminRoleUserService;
+    private final AdminRoleResourceService adminRoleResourceService;
     private static final Logger logger = LoggerFactory.getLogger(AdminUserController.class);
 
     @GetMapping("/user")
@@ -41,11 +47,27 @@ public class AdminUserController extends BaseController {
         try {
             UserDetailsServiceImpl.UserDetailsImpl userDetails = (UserDetailsServiceImpl.UserDetailsImpl) userDetailsService.getLoginUserDetails();
             AdminUser adminUser = adminUserService.getById(userDetails.getId());
+            //获取当前用户所有角色下的资源ID
+            List<AdminRoleUser> userRoleList = adminRoleUserService.list(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, adminUser.getId())
+                    .eq(AdminRoleUser::getStatus, 1));
+            List<Long> adminRoleIds = userRoleList.stream().map(AdminRoleUser::getRoleId).collect(Collectors.toList());
+
+            //获取ID最小的角色
+            Long minRoleId = java.util.Collections.min(adminRoleIds);
+            AdminRole adminRole = adminRoleService.getById(Math.toIntExact(minRoleId));
+
+            //获取用户资源
+            List<Long> userResourceIds = new ArrayList<>();
+            if(!adminRoleIds.isEmpty()) {
+                userResourceIds = adminRoleResourceService.list(new LambdaQueryWrapper<AdminRoleResource>()
+                        .in(AdminRoleResource::getRoleId, adminRoleIds)).stream().map(AdminRoleResource::getResourceId).collect(Collectors.toList());
+            }
+
             CurrentAdminUserVo currentAdminUserVo = new CurrentAdminUserVo();
             currentAdminUserVo.setId(adminUser.getId());
             currentAdminUserVo.setUsername(adminUser.getUsername());
             currentAdminUserVo.setAvatar(adminUser.getAvatar());
-            currentAdminUserVo.setPermissions(new CurrentAdminUserVo.Permissions().setRole("admin"));
+            currentAdminUserVo.setPermissions(new CurrentAdminUserVo.Permissions().setRole(adminRole.getName()).setVisit((ArrayList<Long>) userResourceIds));
             return R.success(currentAdminUserVo);
         } catch (Exception e) {
             return R.error("请登录");
