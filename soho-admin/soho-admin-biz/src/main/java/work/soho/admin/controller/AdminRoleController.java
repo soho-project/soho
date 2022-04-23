@@ -82,6 +82,11 @@ public class AdminRoleController extends BaseController{
 	@ApiOperation("更新用户角色")
 	@PutMapping("")
 	public R<Boolean> update(@RequestBody AdminRoleVo adminRoleVo) {
+		//fixed adminRoleVo resourceIds is null
+		if(adminRoleVo.getResourceIds() == null) {
+			adminRoleVo.setResourceIds(new ArrayList<>());
+		}
+
 		AdminRole adminRole = new AdminRole();
 		BeanUtils.copyProperties(adminRoleVo, adminRole);
 		adminRoleService.updateById(adminRole);
