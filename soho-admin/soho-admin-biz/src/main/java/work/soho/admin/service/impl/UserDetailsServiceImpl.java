@@ -29,7 +29,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             assert adminUser != null;
             userDetails.setUsername(String.valueOf(adminUser.getPhone()));
             userDetails.setPassword(adminUser.getPassword());
-            userDetails.setId(String.valueOf(adminUser.getId()));
+            userDetails.setId(adminUser.getId());
             return userDetails;
         }
         return null;
@@ -49,7 +49,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Data
     public static class UserDetailsImpl implements UserDetails {
-        private String id;
+        private Long id;
         private String password;
         private String username;
 
@@ -68,7 +68,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             return username;
         }
 
-        public String getId() {
+        public Long getId() {
             return id;
         }
 

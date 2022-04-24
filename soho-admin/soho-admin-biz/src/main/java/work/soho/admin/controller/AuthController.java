@@ -63,7 +63,7 @@ public class AuthController {
         Map<String, String> token = tokenService.createTokenInfo(loginUser);
         //创建登录日志
         AdminUserLoginLog adminUserLoginLog = new AdminUserLoginLog();
-        adminUserLoginLog.setAdminUserId(Long.parseLong(loginUser.getId()));
+        adminUserLoginLog.setAdminUserId(loginUser.getId());
         adminUserLoginLog.setClientIp(IpUtils.getClientIp());
         adminUserLoginLog.setCreatedTime(new Date());
         adminUserLoginLog.setToken(JSONUtil.toJsonStr(token));

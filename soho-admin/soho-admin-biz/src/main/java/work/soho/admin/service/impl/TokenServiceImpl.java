@@ -41,7 +41,7 @@ public class TokenServiceImpl {
         {
             Claims claims = parseToken(token);
             UserDetailsServiceImpl.UserDetailsImpl user = new UserDetailsServiceImpl.UserDetailsImpl();
-            user.setId((String) claims.get("uid"));
+            user.setId(Long.parseLong((String) claims.get("uid")));
             user.setUsername((String) claims.get("uname"));
             return user;
         }

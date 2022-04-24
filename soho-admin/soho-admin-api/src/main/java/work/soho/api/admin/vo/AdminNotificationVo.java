@@ -1,34 +1,26 @@
-package work.soho.admin.domain;
+package work.soho.api.admin.vo;
 
-import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+import lombok.experimental.Accessors;
 
 import java.time.LocalDateTime;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import io.swagger.annotations.ApiModelProperty;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
-
-/**
- * 管理员通知
- *
- * @TableName admin_notification
- */
 @Data
-public class AdminNotification implements Serializable {
+@Accessors(chain = true)
+public class AdminNotificationVo {
     /**
      * ID
      */
     @ApiModelProperty("ID")
-    @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
      * 接收人
      */
     @ApiModelProperty("接收人")
-    private Long adminUserId;
+    private String adminUser;
 
     /**
      * 标题
@@ -40,7 +32,7 @@ public class AdminNotification implements Serializable {
      * 创建者 0 为系统发送
      */
     @ApiModelProperty("创建者 0 为系统发送")
-    private Long createAdminUserId;
+    private String createAdminUser;
 
     /**
      * 通知内容
@@ -60,5 +52,4 @@ public class AdminNotification implements Serializable {
      */
     @ApiModelProperty("是否已读 0 未读 1 已读")
     private Integer isRead;
-
 }

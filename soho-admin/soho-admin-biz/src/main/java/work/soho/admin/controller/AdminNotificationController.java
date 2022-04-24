@@ -2,9 +2,16 @@ package work.soho.admin.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -13,6 +20,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import work.soho.admin.domain.AdminUser;
+import work.soho.admin.service.AdminUserService;
+import work.soho.admin.service.impl.UserDetailsServiceImpl;
+import work.soho.api.admin.request.AdminNotificationCreateRequest;
+import work.soho.api.admin.vo.AdminNotificationVo;
+import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
 import work.soho.common.core.result.R;
@@ -31,12 +44,13 @@ import work.soho.admin.service.AdminNotificationService;
 public class AdminNotificationController extends BaseController {
 
     private final AdminNotificationService adminNotificationService;
+    private final AdminUserService adminUserService;
 
     /**
      * 查询管理员通知列表
      */
     @GetMapping("/list")
-    public R<PageSerializable<AdminNotification>> list(AdminNotification adminNotification)
+    public R<PageSerializable<AdminNotificationVo>> list(AdminNotification adminNotification)
     {
         startPage();
         LambdaQueryWrapper<AdminNotification> lqw = new LambdaQueryWrapper<AdminNotification>();
@@ -63,7 +77,25 @@ public class AdminNotificationController extends BaseController {
             lqw.eq(AdminNotification::getIsRead ,adminNotification.getIsRead());
         }
         List<AdminNotification> list = adminNotificationService.list(lqw);
-        return R.success(new PageSerializable<>(list));
+        PageSerializable pageSerializable = new PageSerializable<>();
+        if(!list.isEmpty()) {
+            //获取所有的管理员ID
+            List<Long> adminUserIds = list.stream().map(AdminNotification::getAdminUserId).collect(Collectors.toList());
+            adminUserIds.addAll(list.stream().map(AdminNotification::getCreateAdminUserId).collect(Collectors.toList()));
+            HashMap<Long, String> adminUserHashMap = new HashMap<>();
+            adminUserService.list(new LambdaQueryWrapper<AdminUser>().in(AdminUser::getId, adminUserIds)).forEach(user->{
+                adminUserHashMap.put(user.getId(), user.getUsername());
+            });
+            List<Object> data = list.stream().map(item->{
+                AdminNotificationVo adminNotificationVo = BeanUtils.copy(item, AdminNotificationVo.class);
+                adminNotificationVo.setAdminUser(adminUserHashMap.get(item.getAdminUserId()));
+                adminNotificationVo.setCreateAdminUser(adminUserHashMap.get(item.getCreateAdminUserId()));
+                return adminNotificationVo;
+            }).collect(Collectors.toList());
+            pageSerializable.setList(data);
+        }
+
+        return R.success(pageSerializable);
     }
 
     /**
@@ -78,8 +110,24 @@ public class AdminNotificationController extends BaseController {
      * 新增管理员通知
      */
     @PostMapping
-    public R<Boolean> add(@RequestBody AdminNotification adminNotification) {
-        return R.success(adminNotificationService.save(adminNotification));
+    public R<Boolean> add(@RequestBody AdminNotificationCreateRequest adminNotificationCreateRequest) {
+        Long[] adminUserIds = adminNotificationCreateRequest.getAdminUserIds();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsServiceImpl.UserDetailsImpl loginUser = (UserDetailsServiceImpl.UserDetailsImpl) authentication.getPrincipal();
+
+        if(adminUserIds != null && adminUserIds.length>0) {
+            for (int i = 0; i < adminUserIds.length; i++) {
+                AdminNotification adminNotification = new AdminNotification();
+                adminNotification.setTitle(adminNotificationCreateRequest.getTitle());
+                adminNotification.setContent(adminNotificationCreateRequest.getContent());
+                adminNotification.setCreateAdminUserId(loginUser.getId());
+                adminNotification.setAdminUserId(adminUserIds[i]);
+                adminNotification.setCteatedTime(LocalDateTime.now());
+                adminNotificationService.save(adminNotification);
+            }
+
+        }
+        return R.success(true);
     }
 
     /**
