@@ -22,11 +22,13 @@ import work.soho.admin.service.AdminRoleService;
 import work.soho.admin.service.AdminRoleUserService;
 import work.soho.admin.service.AdminUserService;
 import work.soho.admin.service.impl.UserDetailsServiceImpl;
+import work.soho.api.admin.vo.AdminUserOptionVo;
 import work.soho.api.admin.vo.AdminUserVo;
 import work.soho.api.admin.vo.CurrentAdminUserVo;
 import work.soho.common.core.result.R;
 import work.soho.common.data.upload.utils.UploadUtils;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -72,6 +74,14 @@ public class AdminUserController extends BaseController {
         } catch (Exception e) {
             return R.error("请登录");
         }
+    }
+
+    @ApiOperation("用户选项接口")
+    @GetMapping("userOptions")
+    public R<List<AdminUserOptionVo>> userOption() {
+        List<AdminUser> adminUserList = adminUserService.list();
+        List<AdminUserOptionVo> list = (List<AdminUserOptionVo>) work.soho.common.core.util.BeanUtils.copyList(adminUserList, AdminUserOptionVo.class);
+        return R.success(list);
     }
 
     @GetMapping("list")
