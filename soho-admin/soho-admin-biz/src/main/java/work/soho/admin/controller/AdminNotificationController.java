@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.domain.AdminUser;
 import work.soho.admin.service.AdminUserService;
 import work.soho.admin.service.impl.UserDetailsServiceImpl;
+import work.soho.admin.utils.SecurityUtils;
 import work.soho.api.admin.request.AdminNotificationCreateRequest;
 import work.soho.api.admin.vo.AdminNotificationVo;
 import work.soho.common.core.util.BeanUtils;
@@ -112,15 +113,12 @@ public class AdminNotificationController extends BaseController {
     @PostMapping
     public R<Boolean> add(@RequestBody AdminNotificationCreateRequest adminNotificationCreateRequest) {
         Long[] adminUserIds = adminNotificationCreateRequest.getAdminUserIds();
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsServiceImpl.UserDetailsImpl loginUser = (UserDetailsServiceImpl.UserDetailsImpl) authentication.getPrincipal();
-
         if(adminUserIds != null && adminUserIds.length>0) {
             for (int i = 0; i < adminUserIds.length; i++) {
                 AdminNotification adminNotification = new AdminNotification();
                 adminNotification.setTitle(adminNotificationCreateRequest.getTitle());
                 adminNotification.setContent(adminNotificationCreateRequest.getContent());
-                adminNotification.setCreateAdminUserId(loginUser.getId());
+                adminNotification.setCreateAdminUserId(SecurityUtils.getLoginUserId());
                 adminNotification.setAdminUserId(adminUserIds[i]);
                 adminNotification.setCteatedTime(LocalDateTime.now());
                 adminNotificationService.save(adminNotification);
