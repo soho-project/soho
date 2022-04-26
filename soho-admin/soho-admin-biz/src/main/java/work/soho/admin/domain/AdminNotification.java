@@ -53,7 +53,7 @@ public class AdminNotification implements Serializable {
      */
     @ApiModelProperty("创建时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime cteatedTime;
+    private LocalDateTime createdTime;
 
     /**
      * 是否已读 0 未读 1 已读
