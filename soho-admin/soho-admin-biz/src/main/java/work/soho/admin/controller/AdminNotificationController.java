@@ -10,8 +10,6 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -22,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.domain.AdminUser;
 import work.soho.admin.service.AdminUserService;
-import work.soho.admin.service.impl.UserDetailsServiceImpl;
 import work.soho.admin.utils.SecurityUtils;
 import work.soho.api.admin.request.AdminNotificationCreateRequest;
 import work.soho.api.admin.vo.AdminNotificationVo;
@@ -71,12 +68,43 @@ public class AdminNotificationController extends BaseController {
         if (StringUtils.isNotBlank(adminNotification.getContent())){
             lqw.like(AdminNotification::getContent ,adminNotification.getContent());
         }
-        if (adminNotification.getCteatedTime() != null){
-            lqw.eq(AdminNotification::getCteatedTime ,adminNotification.getCteatedTime());
+        if (adminNotification.getCreatedTime() != null){
+            lqw.eq(AdminNotification::getCreatedTime ,adminNotification.getCreatedTime());
         }
         if (adminNotification.getIsRead() != null){
             lqw.eq(AdminNotification::getIsRead ,adminNotification.getIsRead());
         }
+        List<AdminNotification> list = adminNotificationService.list(lqw);
+        PageSerializable pageSerializable = new PageSerializable<>();
+        if(!list.isEmpty()) {
+            //获取所有的管理员ID
+            List<Long> adminUserIds = list.stream().map(AdminNotification::getAdminUserId).collect(Collectors.toList());
+            adminUserIds.addAll(list.stream().map(AdminNotification::getCreateAdminUserId).collect(Collectors.toList()));
+            HashMap<Long, String> adminUserHashMap = new HashMap<>();
+            adminUserService.list(new LambdaQueryWrapper<AdminUser>().in(AdminUser::getId, adminUserIds)).forEach(user->{
+                adminUserHashMap.put(user.getId(), user.getUsername());
+            });
+            List<Object> data = list.stream().map(item->{
+                AdminNotificationVo adminNotificationVo = BeanUtils.copy(item, AdminNotificationVo.class);
+                adminNotificationVo.setAdminUser(adminUserHashMap.get(item.getAdminUserId()));
+                adminNotificationVo.setCreateAdminUser(adminUserHashMap.get(item.getCreateAdminUserId()));
+                return adminNotificationVo;
+            }).collect(Collectors.toList());
+            pageSerializable.setList(data);
+        }
+
+        return R.success(pageSerializable);
+    }
+
+    /**
+     * 查询当前用户消息
+     */
+    @GetMapping("/myNotification")
+    public R<PageSerializable<AdminNotificationVo>> myNotification(AdminNotification adminNotification)
+    {
+        startPage();
+        LambdaQueryWrapper<AdminNotification> lqw = new LambdaQueryWrapper<AdminNotification>();
+        lqw.eq(AdminNotification::getAdminUserId, SecurityUtils.getLoginUserId());
         List<AdminNotification> list = adminNotificationService.list(lqw);
         PageSerializable pageSerializable = new PageSerializable<>();
         if(!list.isEmpty()) {
@@ -120,7 +148,7 @@ public class AdminNotificationController extends BaseController {
                 adminNotification.setContent(adminNotificationCreateRequest.getContent());
                 adminNotification.setCreateAdminUserId(SecurityUtils.getLoginUserId());
                 adminNotification.setAdminUserId(adminUserIds[i]);
-                adminNotification.setCteatedTime(LocalDateTime.now());
+                adminNotification.setCreatedTime(LocalDateTime.now());
                 adminNotificationService.save(adminNotification);
             }
 
