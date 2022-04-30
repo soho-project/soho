@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -105,6 +106,7 @@ public class AdminNotificationController extends BaseController {
         startPage();
         LambdaQueryWrapper<AdminNotification> lqw = new LambdaQueryWrapper<AdminNotification>();
         lqw.eq(AdminNotification::getAdminUserId, SecurityUtils.getLoginUserId());
+        lqw.eq(AdminNotification::getIsRead, 0);
         List<AdminNotification> list = adminNotificationService.list(lqw);
         PageSerializable pageSerializable = new PageSerializable<>();
         if(!list.isEmpty()) {
@@ -170,5 +172,30 @@ public class AdminNotificationController extends BaseController {
     @DeleteMapping("/{ids}" )
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(adminNotificationService.removeByIds(Arrays.asList(ids)));
+    }
+
+    @ApiOperation("已读消息标记")
+    @GetMapping("/read/{ids}")
+    public R<Boolean> read(@PathVariable Long[] ids) {
+        for (int i = 0; i < ids.length; i++) {
+            AdminNotification adminNotification = adminNotificationService.getById(ids[i]);
+            if(adminNotification == null) continue;
+            adminNotification.setIsRead(1);
+            adminNotificationService.updateById(adminNotification);
+        }
+        return R.success();
+    }
+
+    @ApiOperation("已读消息标记")
+    @GetMapping("readAll")
+    public R<Boolean> readAll() {
+        LambdaQueryWrapper<AdminNotification> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(AdminNotification::getAdminUserId, SecurityUtils.getLoginUserId());
+        lqw.eq(AdminNotification::getIsRead, 0);
+
+        AdminNotification adminNotification = new AdminNotification();
+        adminNotification.setIsRead(1);
+
+        return R.success(adminNotificationService.update(adminNotification, lqw));
     }
 }
