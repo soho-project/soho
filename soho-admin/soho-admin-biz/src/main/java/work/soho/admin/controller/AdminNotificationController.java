@@ -4,6 +4,7 @@ package work.soho.admin.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Arrays;
@@ -124,6 +125,8 @@ public class AdminNotificationController extends BaseController {
                 return adminNotificationVo;
             }).collect(Collectors.toList());
             pageSerializable.setList(data);
+        } else {
+            pageSerializable.setList(new ArrayList());
         }
 
         return R.success(pageSerializable);
