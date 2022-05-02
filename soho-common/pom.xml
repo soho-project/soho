@@ -15,6 +15,7 @@
         <module>soho-common-dependencies</module>
         <module>soho-common-core</module>
         <module>soho-common-data</module>
+        <module>soho-common-security</module>
     </modules>
 
     <properties>

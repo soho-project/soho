@@ -1,9 +1,9 @@
-package work.soho.admin.utils;
+package work.soho.admin.common.security.utils;
 
 import lombok.experimental.UtilityClass;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import work.soho.admin.service.impl.UserDetailsServiceImpl;
+import work.soho.admin.common.security.service.SohoSecurityUserDetailsService;
 
 @UtilityClass
 public class SecurityUtils {
@@ -12,10 +12,9 @@ public class SecurityUtils {
      *
      * @return
      */
-    public UserDetailsServiceImpl.UserDetailsImpl getLoginUser() {
+    public SohoSecurityUserDetailsService.UserDetailsImpl getLoginUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsServiceImpl.UserDetailsImpl loginUser = (UserDetailsServiceImpl.UserDetailsImpl) authentication.getPrincipal();
-        return loginUser;
+        return (SohoSecurityUserDetailsService.UserDetailsImpl) authentication.getPrincipal();
     }
 
     /**
