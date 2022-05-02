@@ -70,6 +70,7 @@ http://localhost:8080/api-docs/swagger-ui/
     |--soho-common
         |--soho-common-bom (版本管理)
         |--soho-common-core (核心包)
+        |--soho-common-security (鉴权依赖包)
         、、、(common包待补充)
 ```
 
