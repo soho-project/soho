@@ -7,6 +7,7 @@ import org.redisson.config.TransportMode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 /**
  * https://github.com/redisson/redisson/wiki/2.-%E9%85%8D%E7%BD%AE%E6%96%B9%E6%B3%95
@@ -17,6 +18,7 @@ public class RedissonConfig {
     private String redisHost;
 
     @Bean
+    @Lazy
     public RedissonClient getRedissonClient() {
         Config config = new Config();
         config.setTransportMode(TransportMode.NIO);
