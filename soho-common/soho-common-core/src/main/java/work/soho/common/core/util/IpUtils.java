@@ -19,7 +19,6 @@ public class IpUtils {
         /**
          * 获取客户端IP
          *
-         * @param request 请求对象
          * @return IP地址
          */
         public static String getClientIp()
@@ -27,7 +26,7 @@ public class IpUtils {
             HttpServletRequest request = RequestUtil.getRequest();
             if (request == null)
             {
-                return "unknown";
+                return null;
             }
             String ip = request.getHeader("x-forwarded-for");
             if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip))
