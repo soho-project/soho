@@ -13,11 +13,8 @@ import work.soho.common.data.excel.annotation.ExcelExport;
 import work.soho.common.data.excel.model.ExcelModel;
 import work.soho.common.data.excel.view.DefaultExcelView;
 
-import javax.imageio.ImageIO;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 
@@ -26,7 +23,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HelloController extends BaseController {
     private final HelloService helloService;
-    private final DefaultKaptcha defaultKaptcha;
 
     @GetMapping("/hello/excel")
     @ExcelExport(fileName = "test.xsl", modelClass = Hello.class)
@@ -48,18 +44,5 @@ public class HelloController extends BaseController {
     public Object exportHelloList2() {
         List<Hello> list = helloService.list();
         return new ExcelModel().addSheet(list);
-    }
-
-    @GetMapping("/captcha")
-    public void defaultKaptcha(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        byte[] captcha = null;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-        try {
-            CaptchaUtils.createAndSend();
-        } catch (Exception e) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return;
-        }
     }
 }
