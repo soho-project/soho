@@ -17,7 +17,7 @@ public class AdminUserVo {
     private String nickName;
     private String avatar;
     private String realName;
-    private Long phone;
+    private String phone;
     private Integer sex;
     private Integer age;
     private String email;
