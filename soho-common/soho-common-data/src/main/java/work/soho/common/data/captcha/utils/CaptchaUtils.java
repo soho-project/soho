@@ -7,7 +7,6 @@ import work.soho.common.core.support.SpringContextHolder;
 import work.soho.common.core.util.IpUtils;
 import work.soho.common.core.util.ResponseUtil;
 import work.soho.common.data.captcha.storage.Redis;
-import work.soho.common.data.captcha.storage.Session;
 import work.soho.common.data.captcha.storage.StorageInterface;
 
 import javax.imageio.ImageIO;
@@ -15,7 +14,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 
 @UtilityClass
 public class CaptchaUtils {
@@ -35,10 +33,9 @@ public class CaptchaUtils {
     /**
      * 创建且发送验证码
      *
-     * @param response
      * @return
      */
-    public String createAndSend() throws IOException {
+    public String createAndSend() throws Exception {
         byte[] captcha = null;
         HttpServletResponse response = ResponseUtil.getResponse();
 
@@ -55,8 +52,7 @@ public class CaptchaUtils {
             BufferedImage bi = defaultKaptcha.createImage(createText);
             ImageIO.write(bi, "jpg", out);
         } catch (Exception e) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return createText;
+            throw e;
         }
 
         captcha = out.toByteArray();
