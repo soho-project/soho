@@ -1,10 +1,12 @@
 package work.soho.common.data.sms;
 
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 import java.util.HashMap;
 
 @Data
+@Accessors(chain = true)
 public class Message {
     /**
      * 接收短信手机号
@@ -28,5 +30,5 @@ public class Message {
      */
     private String outId;
 
-    private HashMap<String, Object> params;
+    private HashMap<String, String> params;
 }

@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * 阿里云短信发送接口实现
  */
-public class AliyunSend implements Sender {
+public class AliyunSender implements Sender {
     private AliyunProperties aliyunProperties;
 
     /**
