@@ -6,6 +6,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import work.soho.admin.AdminApplication;
 import work.soho.common.core.util.IDGeneratorUtils;
+import work.soho.common.data.sms.ChannelManager;
 import work.soho.common.data.sms.Message;
 
 import java.util.HashMap;
@@ -16,6 +17,11 @@ import static org.junit.jupiter.api.Assertions.*;
 @WebAppConfiguration("src/main/resources")
 @SpringBootTest(classes = AdminApplication.class)
 class SmsUtilsTest {
+    /**
+     * 腾讯通道短信发送测试
+     *
+     * @throws Exception
+     */
     @Test
     public void testSendSmsByName() throws Exception {
         //tencent
@@ -27,10 +33,15 @@ class SmsUtilsTest {
                 .setTemplateCode("1392711")
                 .setOutId(String.valueOf(IDGeneratorUtils.snowflake().longValue()))
                 .setParams(map);
-        String outId = SmsUtils.sendSms("tencent", message);
+        String outId = SmsUtils.sendSms(ChannelManager.TYPE_TENCENT, message);
         System.out.println("短信发送，外部单号：" + outId);
     }
 
+    /**
+     * 默认通道短信发送
+     *
+     * @throws Exception
+     */
     @Test
     public void testAliyunSms() throws Exception {
         HashMap<String, String> map  = new HashMap<>();
