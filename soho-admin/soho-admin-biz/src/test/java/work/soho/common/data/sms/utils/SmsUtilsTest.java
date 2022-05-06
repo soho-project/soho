@@ -33,7 +33,7 @@ class SmsUtilsTest {
                 .setTemplateCode("1392711")
                 .setOutId(String.valueOf(IDGeneratorUtils.snowflake().longValue()))
                 .setParams(map);
-        String outId = SmsUtils.sendSms(ChannelManager.TYPE_TENCENT, message);
+        String outId = SmsUtils.sendSms("tencent", message);
         System.out.println("短信发送，外部单号：" + outId);
     }
 
