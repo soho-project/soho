@@ -12,8 +12,8 @@ public class ChannelManager {
     private final static String CONFIG_PREFIX = "sms.channels.";
     private final static HashMap<String, Class<? extends Sender>> channelTypes = new HashMap<>();
 
-    private final static String TYPE_TENCENT = "tencent";
-    private final static String TYPE_ALIYUN = "aliyun";
+    public final static String TYPE_TENCENT = "tencent";
+    public final static String TYPE_ALIYUN = "aliyun";
 
     static {
         //配置支持的短信渠道
