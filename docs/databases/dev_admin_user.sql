@@ -1,3 +1,0 @@
-insert into dev.admin_user (id, username, phone, nick_name, real_name, avatar, email, password, updated_time, created_time, sex, age, is_deleted)
-values  (1, 'admin', '15873164073', 'adminNickNamaa', 'fang.liu', 'https://igogo-test.oss-cn-shenzhen.aliyuncs.com/user/avatar/2022_4_7_190464236.jpg', 'i@liufang.org.cn', '$2a$10$bPy9GxOynsydi64yULtvfee9zuoCFf0cb/VoXrhnrvoTa3wHOOLky', '2022-01-23 17:32:56', '2022-01-23 17:32:56', 1, 195, 0),
-        (2, 'guest', '15833333333', '打发十aa', null, 'https://igogo-test.oss-cn-shenzhen.aliyuncs.com/user/avatar/2022_4_23_30063941451255808.jpg', '555i@liufang.org.cn', '$2a$10$VeTSOwXxjfSDxcEKQgG9nuWVQRwkp3iS0DVDfB6xgbFHPIqi9dR7m', '2022-03-27 20:49:48', '2022-03-27 20:49:48', 2, 3, 0);

@@ -14,3 +14,9 @@ SOHO后台管理系统
 ![img_2.png](docs/images/img_2.png)
 ![img_1.png](docs/images/img_1.png)
 ![img.png](docs/images/img.png)
+
+TODO
+-----
+
+- 独立鉴权模块
+- 微服务支持

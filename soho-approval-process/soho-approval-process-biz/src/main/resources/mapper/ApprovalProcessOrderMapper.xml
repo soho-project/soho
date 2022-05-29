@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.approvalprocess.mapper.ApprovalProcessOrderMapper">
+
+    <resultMap id="BaseResultMap" type="work.soho.approvalprocess.domain.ApprovalProcessOrder">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="approvalProcessId" column="approval_process_id" jdbcType="INTEGER"/>
+            <result property="outNo" column="out_no" jdbcType="VARCHAR"/>
+            <result property="status" column="status" jdbcType="TINYINT"/>
+            <result property="serialNumber" column="serial_number" jdbcType="INTEGER"/>
+            <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,approval_process_id,out_no,
+        status,serial_number,created_time
+    </sql>
+
+    <select id="myList" resultType="work.soho.approvalprocess.domain.ApprovalProcessOrder">
+        select apo.* from approval_process_order as apo
+        where 1=1
+        and (
+            1=1
+        <if test="applyUserId!=null">
+            and apo.apply_user_id=#{applyUserId}
+        </if>
+        )
+        <if test="nodeListStatus!=null">
+            and exists (
+                select 1 from approval_process_order_node apon where apo.id = apon.order_id and
+                apon.user_id=#{userId} and
+                apon.status in
+                <foreach collection="nodeListStatus" separator="," open="(" close=")" item="status">
+                    #{status}
+                </foreach>
+            )
+        </if>
+        order by apo.id desc
+    </select>
+</mapper>
