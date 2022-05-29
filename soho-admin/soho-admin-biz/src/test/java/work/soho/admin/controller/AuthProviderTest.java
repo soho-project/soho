@@ -39,6 +39,11 @@ class AuthProviderTest {
         System.out.println(new BCryptPasswordEncoder().encode("123456"));
     }
 
+    /**
+     * 登录测试
+     *
+     * @throws Exception
+     */
     @Test
     void login() throws Exception {
         HashMap<String, String> request = new HashMap<>();
