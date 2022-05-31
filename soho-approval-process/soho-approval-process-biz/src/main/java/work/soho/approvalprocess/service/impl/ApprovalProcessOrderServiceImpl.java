@@ -24,9 +24,12 @@ import work.soho.common.core.util.BeanUtils;
 import work.soho.approvalprocess.domain.enums.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
 * @author i
@@ -87,7 +90,7 @@ public class ApprovalProcessOrderServiceImpl extends ServiceImpl<ApprovalProcess
     }
 
     @Override
-    public void approve(Long userId, ApprovalProcessOrderNode approvalProcessOrderNode, ApprovalProcessOrderNodeApplyStatusEnum applyStatus) {
+    public void approve(Long userId, ApprovalProcessOrderNode approvalProcessOrderNode, ApprovalProcessOrderNodeApplyStatusEnum applyStatus, Long insertUserId) {
         ApprovalProcessOrder approvalProcessOrder = getById(approvalProcessOrderNode.getOrderId());
         Assert.notNull(approvalProcessOrder, "没有找到审批单");
         List<ApprovalProcessOrderNode> nodes = getActiveOrderNodeList(approvalProcessOrder);
@@ -100,10 +103,19 @@ public class ApprovalProcessOrderServiceImpl extends ServiceImpl<ApprovalProcess
                     //同意审批
                     approvalProcessOrderNode.setStatus(ApprovalProcessOrderNodeApplyStatusEnum.AGREE.getStatus());
                 } else if(applyStatus.equals(ApprovalProcessOrderNodeApplyStatusEnum.PASS_ON)) {
-                    //TODO 转交审批
+                    Assert.notNull(insertUserId, "转交请传递转交人用户ID");
+                    //TOOD 转交处理
+                    ApprovalProcessOrderNode insertNode = new ApprovalProcessOrderNode();
+                    insertNode.setUserId(insertUserId);
+                    insertNode.setSourceUserId(approvalProcessOrderNode.getUserId());
+                    //接下来的流程会修改这个节点的状态
+                    insertNode.setStatus(ApprovalProcessOrderNodeApplyStatusEnum.WAITING.getStatus());
+                    insertNode.setOrderId(approvalProcessOrderNode.getOrderId());
+                    insertNode.setCreatedTime(LocalDateTime.now());
+                    insertNode(approvalProcessOrderNode, insertNode);
+                    approvalProcessOrderNode.setStatus(ApprovalProcessOrderNodeApplyStatusEnum.PASS_ON.getStatus());
                 }
                 approvalProcessOrderNode.setApprovalTime(LocalDateTime.now());
-                System.out.println(approvalProcessOrderNode);
                 approvalProcessOrderNodeService.updateById(approvalProcessOrderNode);
                 //获取下一节点， 修改下一节点状态为， 待处理状态
                 LambdaQueryWrapper<ApprovalProcessOrderNode> lqw = new LambdaQueryWrapper<>();
@@ -133,12 +145,44 @@ public class ApprovalProcessOrderServiceImpl extends ServiceImpl<ApprovalProcess
                     approvalProcessOrder.setApplyStatus(ApprovalProcessOrderApplyStatusEnum.REJECT.getStatus());
                     approvalProcessOrder.setStatus(ApprovalProcessOrderStatusEnum.FINISH.getStatus());
                 } else {
-                    //TOOD 转交处理
+                    //nothing
                 }
                 updateById(approvalProcessOrder);
                 SpringContextHolder.getApplicationContext().publishEvent(new ApprovalEvent(approvalProcessOrder));
             }
         });
+    }
+
+    /**
+     * 新增节点
+     *
+     * @param originNode 源节点
+     * @param insertNode 新增节点
+     */
+    private void insertNode(ApprovalProcessOrderNode originNode, ApprovalProcessOrderNode insertNode) {
+        //获取当前申请单所有节点
+        List<ApprovalProcessOrderNode> nodes = approvalProcessOrderNodeService.list(new LambdaQueryWrapper<ApprovalProcessOrderNode>().eq(ApprovalProcessOrderNode::getOrderId, originNode.getOrderId()));
+        Map<Long, ApprovalProcessOrderNode> nodeMap = nodes.stream().collect(Collectors.toMap(ApprovalProcessOrderNode::getSourceUserId, item->item));
+        Long sourceId = originNode.getUserId();
+        List<ApprovalProcessOrderNode> changeNodes = new ArrayList<>();
+        ApprovalProcessOrderNode approvalProcessOrderNode = null;
+        //插入节点的下一节点
+        ApprovalProcessOrderNode nextNode = nodeMap.get(originNode.getUserId());
+        Integer nextSerialNumber = originNode.getSerialNumber() + 1;
+        insertNode.setSerialNumber(nextSerialNumber++);
+        insertNode.setSourceUserId(originNode.getUserId());
+
+        nextNode.setSourceUserId(insertNode.getUserId());
+
+        while((approvalProcessOrderNode = nodeMap.get(sourceId)) != null) {
+            sourceId = approvalProcessOrderNode.getUserId();
+            approvalProcessOrderNode.setSerialNumber(nextSerialNumber++);
+            changeNodes.add(approvalProcessOrderNode);
+        }
+
+        //插入新增节点
+        approvalProcessOrderNodeService.save(insertNode);
+        approvalProcessOrderNodeService.updateBatchById(changeNodes);
     }
 
     /**

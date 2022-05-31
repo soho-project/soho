@@ -16,4 +16,7 @@ public class ApprovalRequest {
 
     @ApiModelProperty("审批状态")
     private Integer status;
+
+    @ApiModelProperty("下一审批人；状态为转交的时候必选")
+    private Long nextUserId;
 }
