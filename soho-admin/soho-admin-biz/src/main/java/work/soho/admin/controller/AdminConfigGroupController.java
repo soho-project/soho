@@ -4,6 +4,8 @@ package work.soho.admin.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.util.List;
 import java.util.Arrays;
+
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +30,7 @@ import work.soho.admin.service.AdminConfigGroupService;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/adminConfigGroup" )
+@Api(tags = "配置分组")
 public class AdminConfigGroupController extends BaseController {
 
     private final AdminConfigGroupService adminConfigGroupService;

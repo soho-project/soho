@@ -1,6 +1,5 @@
 package work.soho.approvalprocess.controller;
 
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
@@ -8,7 +7,6 @@ import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
-import org.apache.catalina.security.SecurityUtil;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.common.security.utils.SecurityUtils;
@@ -40,7 +38,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/approvalProcessOrder")
-@Api("审批单管理")
+@Api(tags = "审批单管理")
 public class ApprovalProcessOrderController {
     private final ApprovalProcessService approvalProcessService;
     private final ApprovalProcessOrderService approvalProcessOrderService;
