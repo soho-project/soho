@@ -46,6 +46,6 @@ class ApprovalProcessOrderServiceImplTest {
         approvalProcessOrderNode.setStatus(ApprovalProcessOrderNodeApplyStatusEnum.PENDING.getStatus());
         approvalProcessOrderNodeService.updateById(approvalProcessOrderNode);
 
-        approvalProcessOrderServer.approve(2l, approvalProcessOrderNode, ApprovalProcessOrderNodeApplyStatusEnum.AGREE);
+        approvalProcessOrderServer.approve(2l, approvalProcessOrderNode, ApprovalProcessOrderNodeApplyStatusEnum.AGREE, null);
     }
 }

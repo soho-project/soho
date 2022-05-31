@@ -29,8 +29,9 @@ public interface ApprovalProcessOrderService extends IService<ApprovalProcessOrd
      * @param userId
      * @param approvalProcessOrderNode
      * @param applyStatus
+     * @param insertUserId
      */
-    void approve(Long userId, ApprovalProcessOrderNode approvalProcessOrderNode, ApprovalProcessOrderNodeApplyStatusEnum applyStatus);
+    void approve(Long userId, ApprovalProcessOrderNode approvalProcessOrderNode, ApprovalProcessOrderNodeApplyStatusEnum applyStatus, Long insertUserId);
 
     /**
      * 获取当前审批节点

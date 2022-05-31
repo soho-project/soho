@@ -96,7 +96,8 @@ public class ApprovalProcessOrderController {
         approvalProcessOrderNode.setReply(approvalRequest.getReply());
         Assert.notNull(approvalProcessOrderNode, "没有找到对应的审批单信息");
         ApprovalProcessOrderNodeApplyStatusEnum approvalProcessOrderNodeApplyStatusEnum = ApprovalProcessOrderNodeApplyStatusEnum.getByStatus(approvalRequest.getStatus());
-        approvalProcessOrderService.approve(SecurityUtils.getLoginUserId(), approvalProcessOrderNode, approvalProcessOrderNodeApplyStatusEnum);
+        approvalProcessOrderService.approve(SecurityUtils.getLoginUserId(), approvalProcessOrderNode,
+                approvalProcessOrderNodeApplyStatusEnum, approvalRequest.getNextUserId());
         return R.success();
     }
 
