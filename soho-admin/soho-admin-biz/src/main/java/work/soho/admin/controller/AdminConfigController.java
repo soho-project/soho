@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Arrays;
 
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,6 +31,7 @@ import work.soho.admin.service.AdminConfigService;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/adminConfig" )
+@Api(tags = "系统配置信息")
 public class AdminConfigController extends BaseController {
 
     private final AdminConfigService adminConfigService;

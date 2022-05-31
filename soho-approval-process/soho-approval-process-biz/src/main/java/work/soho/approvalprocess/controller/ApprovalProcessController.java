@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/approvalProcess")
-@Api("审批流管理")
+@Api(tags = "审批流管理")
 public class ApprovalProcessController {
     private final ApprovalProcessService approvalProcessService;
     private final ApprovalProcessNodeService approvalProcessNodeService;

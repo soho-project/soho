@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,6 +42,7 @@ import work.soho.admin.service.AdminNotificationService;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/adminNotification" )
+@Api(tags = "系统消息")
 public class AdminNotificationController extends BaseController {
 
     private final AdminNotificationService adminNotificationService;

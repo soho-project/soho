@@ -1,5 +1,6 @@
 package work.soho.admin.controller;
 
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import java.io.IOException;
 @Controller
 @RestController
 @RequiredArgsConstructor
+@Api(tags = "验证码")
 public class CaptchaController {
     private final static Logger logger = LoggerFactory.getLogger(CaptchaController.class);
 

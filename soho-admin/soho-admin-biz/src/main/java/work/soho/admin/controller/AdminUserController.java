@@ -3,6 +3,7 @@ package work.soho.admin.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/adminUser")
+@Api(tags = "系统用户管理")
 public class AdminUserController extends BaseController {
     private final UserDetailsServiceImpl userDetailsService;
     private final AdminUserService adminUserService;
