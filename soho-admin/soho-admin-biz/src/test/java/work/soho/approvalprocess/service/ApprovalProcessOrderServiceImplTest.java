@@ -28,10 +28,11 @@ class ApprovalProcessOrderServiceImplTest {
     @Test
     void create() {
         LinkedList<ApprovalProcessOrderVo.ContentItem> list = new LinkedList<>();
-        list.add(new ApprovalProcessOrderVo.ContentItem().setKey("TITLE").setTitle("标题").setContent("这里是测试标题"));
-        list.add(new ApprovalProcessOrderVo.ContentItem().setKey("CONTENT").setTitle("内容").setContent("这里是测试审批内容"));
+        list.add(new ApprovalProcessOrderVo.ContentItem().setKey("CONTENT").setTitle("内容").setContent("世界这么大，我想去看看！"));
+        list.add(new ApprovalProcessOrderVo.ContentItem().setKey("START_TIME").setTitle("开始时间").setContent("2022-06-03 00:00:00"));
+        list.add(new ApprovalProcessOrderVo.ContentItem().setKey("END_TIME").setTitle("结束时间").setContent("2023-06-03 00:00:00"));
         ApprovalProcessOrderVo approvalProcessOrderVo = new ApprovalProcessOrderVo();
-        approvalProcessOrderVo.setApprovalProcessNo("true");
+        approvalProcessOrderVo.setApprovalProcessNo("1");
         approvalProcessOrderVo.setOutNo(String.valueOf(IDGeneratorUtils.snowflake().longValue()));
         approvalProcessOrderVo.setApplyUserId(1l);
         approvalProcessOrderVo.setContentItemList(list);
