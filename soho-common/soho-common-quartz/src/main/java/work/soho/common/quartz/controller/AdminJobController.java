@@ -1,6 +1,7 @@
 package work.soho.common.quartz.controller;
 
 import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Arrays;
 
@@ -110,6 +111,8 @@ public class AdminJobController {
      */
     @PostMapping
     public R<Boolean> add(@RequestBody AdminJob adminJob) {
+        adminJob.setUpdatedTime(LocalDateTime.now());
+        adminJob.setCreatedTime(adminJob.getUpdatedTime());
         boolean result = adminJobService.save(adminJob);
         if(result) {
             JobUtil.buildJob(scheduler, adminJob);
@@ -122,6 +125,7 @@ public class AdminJobController {
      */
     @PutMapping
     public R<Boolean> edit(@RequestBody AdminJob adminJob) {
+        adminJob.setUpdatedTime(LocalDateTime.now());
         boolean result = adminJobService.updateById(adminJob);
         if(result) {
             JobUtil.buildJob(scheduler, adminJob);
