@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication(scanBasePackages = {"work.soho"})
 @MapperScan({"work.soho.admin.mapper"
 		, "work.soho.approvalprocess.mapper"
+		, "work.soho.common.quartz.mapper"
 		, "com.baomidou.mybatisplus.samples.quickstart.mapper"})
 public class AdminApplication {
 	public static void main(String[] args) {

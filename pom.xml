@@ -13,6 +13,7 @@
         <module>soho-admin</module>
         <module>soho-common</module>
         <module>soho-approval-process</module>
+<!--        <module>soho-common/soho-common-quartz</module>-->
 <!--        <module>soho-framework</module>-->
     </modules>
 
