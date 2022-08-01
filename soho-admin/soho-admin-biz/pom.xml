@@ -66,6 +66,11 @@
             <groupId>work.soho</groupId>
             <artifactId>soho-common-data</artifactId>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-quartz</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
 
         <dependency>
             <groupId>org.reflections</groupId>
@@ -75,10 +80,6 @@
         <dependency>
             <groupId>com.lmax</groupId>
             <artifactId>disruptor</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
