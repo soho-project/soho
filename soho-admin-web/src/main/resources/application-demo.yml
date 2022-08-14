@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:mysql://10.0.12.8:3306/demo-soho?useUnicode=true&characterEncoding=utf-8&autoReconnect=true&failOverReadOnly=false
+    username: demo
+    password: demo
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  redis:
+    database: 0
+    host: 10.0.12.8
+    port: 6379
+    password:
+upload:
+  type: oss
+  oss:
+    enable: true
+    endpoint: oss-cn-shenzhen.aliyuncs.com
+    access-key-id: LTAI5t94HpzenYDMRKHAnAF8
+    access-key-secret: peGhHVTr6CI163HUr3AlwvcDuBNhA4
+    bucket-name: igogo-test
+    url-prefix: https://igogo-test.oss-cn-shenzhen.aliyuncs.com/
+  cos:
+    enable: true
+    secret-id: AKIDnPlrgEVWGkywd3C3ey1mHVR6VcSMzNUk
+    secret-key: 4sQgfNoztWt0qPikVzC8nBI9j12nHUQ5
+    region: ap-guangzhou
+    bucket-name: soho-admin-demo-1258009624
+    url-prefix: https://soho-admin-demo-1258009624.file.myqcloud.com/
+# 10.0.12.8
+redisson:
+  nodeAddress: redis://10.0.12.8:6379
