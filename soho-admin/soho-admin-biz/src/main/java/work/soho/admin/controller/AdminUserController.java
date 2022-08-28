@@ -14,6 +14,7 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import work.soho.api.admin.annotation.Node;
 import work.soho.admin.domain.AdminRole;
 import work.soho.admin.domain.AdminRoleResource;
 import work.soho.admin.domain.AdminRoleUser;
@@ -45,6 +46,7 @@ public class AdminUserController extends BaseController {
     private final AdminRoleResourceService adminRoleResourceService;
     private static final Logger logger = LoggerFactory.getLogger(AdminUserController.class);
 
+    @Node("adminUser:user")
     @GetMapping("/user")
     public R<CurrentAdminUserVo> user() {
         try {
@@ -78,6 +80,7 @@ public class AdminUserController extends BaseController {
     }
 
     @ApiOperation("用户选项接口")
+    @Node("adminUser:list")
     @GetMapping("userOptions")
     public R<List<AdminUserOptionVo>> userOption() {
         List<AdminUser> adminUserList = adminUserService.list();
@@ -114,6 +117,7 @@ public class AdminUserController extends BaseController {
         return R.success(pageSerializable);
     }
 
+    @Node("adminUser:update")
     @PutMapping()
     public Object update(@RequestBody AdminUserVo adminUserVo) {
         try {
@@ -124,6 +128,7 @@ public class AdminUserController extends BaseController {
         }
     }
 
+    @Node("adminUser:create")
     @PostMapping()
     public Object create(@RequestBody AdminUserVo adminUserVo) {
         try {
@@ -135,6 +140,7 @@ public class AdminUserController extends BaseController {
     }
 
     @ApiOperation("用户详细信息")
+    @Node("adminUser:details")
     @GetMapping()
     public R<AdminUserVo> details(Long id) {
         AdminUserVo adminUserVo = new AdminUserVo();
@@ -153,6 +159,7 @@ public class AdminUserController extends BaseController {
      * @param id
      * @return
      */
+    @Node("adminUser:delete")
     @DeleteMapping("{id}")
     public Object delete(@PathVariable("id") Long id) {
         AdminUser adminUser = adminUserService.getById(id);
@@ -164,6 +171,7 @@ public class AdminUserController extends BaseController {
         return R.success("保存成功");
     }
 
+    @Node("adminUser:uploadAvatar")
     @ApiOperation("用户头像上传接口")
     @PostMapping("/upload-avatar")
     public Object uploadAvatar(@RequestParam(value = "avatar")MultipartFile file) {

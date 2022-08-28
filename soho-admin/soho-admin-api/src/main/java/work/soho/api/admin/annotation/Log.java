@@ -1,4 +1,4 @@
-package work.soho.admin.annotation;
+package work.soho.api.admin.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,10 +7,7 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Node {
-    String value();
-    String name();
-    long visible() default 1;
-    long order() default 300;
-    String describe();
+public @interface Log {
+    String value() default "";
+
 }

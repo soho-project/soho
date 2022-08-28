@@ -6,7 +6,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
-import work.soho.admin.annotation.Node;
+import work.soho.api.admin.annotation.Node;
 import work.soho.admin.domain.AdminResource;
 import work.soho.admin.service.AdminResourceService;
 import work.soho.api.admin.vo.RouteVo;
@@ -24,7 +24,7 @@ public class AdminResourceController {
     private final AdminResourceService adminResourceService;
 
     @ApiOperation("同步菜单")
-    @Node(value = "admin-resource-sync", name = "同比项目资源", describe = "")
+    @Node(value = "admin-resource-sync", name = "同比项目资源")
     @GetMapping("/admin-resource/sync")
     public R<Boolean> syncResource() {
         adminResourceService.syncResource2Db();

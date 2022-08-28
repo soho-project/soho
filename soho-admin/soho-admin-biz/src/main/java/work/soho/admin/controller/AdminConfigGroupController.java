@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import work.soho.api.admin.annotation.Node;
 import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.Page;
 import work.soho.common.core.result.R;
@@ -38,6 +39,7 @@ public class AdminConfigGroupController extends BaseController {
     /**
      * 查询admin_config_group列表
      */
+    @Node("adminConfigGroup:list")
     @GetMapping("/list")
     public R<Page<AdminConfigGroup>> list(AdminConfigGroup adminConfigGroup)
     {
@@ -63,6 +65,7 @@ public class AdminConfigGroupController extends BaseController {
     /**
      * 获取admin_config_group详细信息
      */
+    @Node("adminCofigGroup:getInfo")
     @GetMapping(value = "/{id}" )
     public R<AdminConfigGroup> getInfo(@PathVariable("id" ) Long id) {
         return R.success(adminConfigGroupService.getById(id));
@@ -71,6 +74,7 @@ public class AdminConfigGroupController extends BaseController {
     /**
      * 新增admin_config_group
      */
+    @Node("adminConfigGroup:add")
     @PostMapping
     public R<Boolean> add(@RequestBody AdminConfigGroup adminConfigGroup) {
         return R.success(adminConfigGroupService.save(adminConfigGroup));
@@ -79,6 +83,7 @@ public class AdminConfigGroupController extends BaseController {
     /**
      * 修改admin_config_group
      */
+    @Node("adminConfigGroup:edit")
     @PutMapping
     public R<Boolean> edit(@RequestBody AdminConfigGroup adminConfigGroup) {
         return R.success(adminConfigGroupService.updateById(adminConfigGroup));
@@ -87,6 +92,7 @@ public class AdminConfigGroupController extends BaseController {
     /**
      * 删除admin_config_group
      */
+    @Node("adminConfigGroup:remove")
     @DeleteMapping("/{ids}" )
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(adminConfigGroupService.removeByIds(Arrays.asList(ids)));

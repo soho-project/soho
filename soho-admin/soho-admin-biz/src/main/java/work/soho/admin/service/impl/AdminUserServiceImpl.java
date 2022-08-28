@@ -8,8 +8,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import work.soho.admin.domain.AdminResource;
+import work.soho.admin.domain.AdminRoleResource;
 import work.soho.admin.domain.AdminRoleUser;
 import work.soho.admin.mapper.AdminUserMapper;
+import work.soho.admin.service.AdminResourceService;
 import work.soho.admin.service.AdminRoleUserService;
 import work.soho.admin.service.AdminUserService;
 import work.soho.admin.domain.AdminUser;
@@ -18,12 +21,15 @@ import work.soho.common.core.util.StringUtils;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser> implements AdminUserService {
     private final AdminRoleUserService adminRoleUserService;
+    private final AdminRoleResourceServiceImpl adminRoleResourceService;
+    private final AdminResourceService adminResourceService;
 
     @Override
     public AdminUser getByLoginName(String loginName) {
@@ -70,5 +76,34 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
                 }
             });
         }
+    }
+
+    /**
+     * 获取用户资源
+     *
+     * @param uid
+     * @return
+     */
+    public Map<String, AdminResource> getResourceByUid(Long uid) {
+        LambdaQueryWrapper<AdminRoleUser> ruLqw = new LambdaQueryWrapper();
+        ruLqw.eq(AdminRoleUser::getUserId, uid);
+        List<AdminRoleUser> roleUsers = adminRoleUserService.list();
+        if(roleUsers.size() == 0) {
+            return null;
+        }
+        List<Long> roleIds = roleUsers.stream().map(item->item.getRoleId()).collect(Collectors.toList());
+        //获取角色对应的资源ID
+        LambdaQueryWrapper<AdminRoleResource> arLqw = new LambdaQueryWrapper<>();
+        arLqw.in(AdminRoleResource::getRoleId, roleIds);
+        List<AdminRoleResource> adminRoleResourcesList = adminRoleResourceService.list(arLqw);
+        if(adminRoleResourcesList.size() == 0) {
+            return null;
+        }
+        List<Long> resourceIds = adminRoleResourcesList.stream().map(item->item.getResourceId()).collect(Collectors.toList());
+        //获取菜单信息
+        LambdaQueryWrapper<AdminResource> adminResourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        adminResourceLambdaQueryWrapper.in(AdminResource::getId, resourceIds);
+        List<AdminResource> list = adminResourceService.list(adminResourceLambdaQueryWrapper);
+        return list.stream().collect(Collectors.toMap(AdminResource::getRoute, v->v));
     }
 }

@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import work.soho.api.admin.annotation.Node;
 import work.soho.admin.common.security.utils.SecurityUtils;
 import work.soho.admin.domain.AdminUser;
 import work.soho.admin.service.AdminUserService;
@@ -51,6 +52,7 @@ public class AdminNotificationController extends BaseController {
     /**
      * 查询管理员通知列表
      */
+    @Node("adminNotification:list")
     @GetMapping("/list")
     public R<PageSerializable<AdminNotificationVo>> list(AdminNotification adminNotification)
     {
@@ -103,6 +105,7 @@ public class AdminNotificationController extends BaseController {
     /**
      * 查询当前用户消息
      */
+    @Node("adminNotification:myNotification")
     @GetMapping("/myNotification")
     public R<PageSerializable<AdminNotificationVo>> myNotification(AdminNotification adminNotification)
     {
@@ -137,6 +140,7 @@ public class AdminNotificationController extends BaseController {
     /**
      * 获取管理员通知详细信息
      */
+    @Node("adminNotification:getInfo")
     @GetMapping(value = "/{id}" )
     public R<AdminNotification> getInfo(@PathVariable("id" ) Long id) {
         return R.success(adminNotificationService.getById(id));
@@ -145,6 +149,7 @@ public class AdminNotificationController extends BaseController {
     /**
      * 新增管理员通知
      */
+    @Node("adminNotification:add")
     @PostMapping
     public R<Boolean> add(@RequestBody AdminNotificationCreateRequest adminNotificationCreateRequest) {
         Long[] adminUserIds = adminNotificationCreateRequest.getAdminUserIds();
@@ -166,6 +171,7 @@ public class AdminNotificationController extends BaseController {
     /**
      * 修改管理员通知
      */
+    @Node("adminNotification:edit")
     @PutMapping
     public R<Boolean> edit(@RequestBody AdminNotification adminNotification) {
         return R.success(adminNotificationService.updateById(adminNotification));
@@ -174,11 +180,13 @@ public class AdminNotificationController extends BaseController {
     /**
      * 删除管理员通知
      */
+    @Node("adminNotification:remove")
     @DeleteMapping("/{ids}" )
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(adminNotificationService.removeByIds(Arrays.asList(ids)));
     }
 
+    @Node("adminNotification:read")
     @ApiOperation("已读消息标记")
     @GetMapping("/read/{ids}")
     public R<Boolean> read(@PathVariable Long[] ids) {
@@ -191,6 +199,7 @@ public class AdminNotificationController extends BaseController {
         return R.success();
     }
 
+    @Node("adminNotification:readAll")
     @ApiOperation("已读消息标记")
     @GetMapping("readAll")
     public R<Boolean> readAll() {
