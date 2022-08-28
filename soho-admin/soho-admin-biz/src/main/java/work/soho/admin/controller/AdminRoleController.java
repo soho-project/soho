@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import work.soho.api.admin.annotation.Node;
 import work.soho.admin.domain.AdminRoleResource;
 import work.soho.admin.domain.AdminRoleUser;
 import work.soho.admin.service.AdminRoleResourceService;
@@ -40,6 +41,7 @@ public class AdminRoleController extends BaseController{
 	 * @param name
 	 * @return
 	 */
+	@Node("adminRole:list")
 	@ApiOperation("角色列表")
 	@GetMapping("list")
 	public R<PageSerializable<AdminRole>> list(String name) {
@@ -79,6 +81,7 @@ public class AdminRoleController extends BaseController{
 		return R.success(ids);
 	}
 
+	@Node("adminRole:update")
 	@ApiOperation("更新用户角色")
 	@PutMapping("")
 	public R<Boolean> update(@RequestBody AdminRoleVo adminRoleVo) {
@@ -115,6 +118,7 @@ public class AdminRoleController extends BaseController{
 		return R.success();
 	}
 
+	@Node("adminRole:insert")
 	@ApiOperation("新增角色")
 	@PostMapping("")
 	public R<Boolean> insert(@RequestBody AdminRoleVo adminRoleVo) {
@@ -133,6 +137,7 @@ public class AdminRoleController extends BaseController{
 		return R.success();
 	}
 
+	@Node("adminRole:delete")
 	@ApiOperation("更新角色资源")
 	@DeleteMapping("/{ids}")
 	public R<Boolean> delete(@PathVariable("ids") Long[] ids) {

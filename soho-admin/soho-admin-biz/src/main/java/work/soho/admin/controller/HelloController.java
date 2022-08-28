@@ -2,6 +2,7 @@ package work.soho.admin.controller;
 
 import com.google.code.kaptcha.impl.DefaultKaptcha;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +25,7 @@ import java.util.List;
 public class HelloController extends BaseController {
     private final HelloService helloService;
 
+//    @PreAuthorize("")
     @GetMapping("/hello/excel")
     @ExcelExport(fileName = "test.xsl", modelClass = Hello.class)
     public Object exportHelloList() {

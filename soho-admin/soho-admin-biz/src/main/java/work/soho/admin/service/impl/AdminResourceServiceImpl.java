@@ -3,12 +3,8 @@ package work.soho.admin.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import work.soho.admin.annotation.Node;
 import work.soho.admin.mapper.AdminResourceMapper;
 import work.soho.admin.domain.AdminResource;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import work.soho.admin.service.AdminResourceService;
 

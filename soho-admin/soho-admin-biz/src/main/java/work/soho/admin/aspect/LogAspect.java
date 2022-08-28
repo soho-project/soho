@@ -1,6 +1,5 @@
 package work.soho.admin.aspect;
 
-import io.jsonwebtoken.lang.Assert;
 import lombok.extern.log4j.Log4j2;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -8,7 +7,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
-import work.soho.admin.annotation.Log;
+import work.soho.api.admin.annotation.Log;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
 
@@ -22,7 +21,7 @@ import java.util.Map;
 @Configuration
 public class LogAspect {
 
-    @Around(value = "@annotation(work.soho.admin.annotation.Log)")
+    @Around(value = "@annotation(work.soho.api.admin.annotation.Log)")
     public Object around(ProceedingJoinPoint invocation) throws Throwable {
         String requestId = String.valueOf(IDGeneratorUtils.snowflake());
         Log l = getLog(invocation);

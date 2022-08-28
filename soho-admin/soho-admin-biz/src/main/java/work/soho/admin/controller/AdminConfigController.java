@@ -7,7 +7,6 @@ import java.util.Arrays;
 
 import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import work.soho.api.admin.annotation.Node;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.core.result.R;
 import work.soho.admin.domain.AdminConfig;
@@ -39,6 +39,7 @@ public class AdminConfigController extends BaseController {
     /**
      * 查询admin_config列表
      */
+    @Node("adminConfig:list")
     @GetMapping("/list")
     public R<PageSerializable<AdminConfig>> list(AdminConfig adminConfig)
     {
@@ -73,6 +74,7 @@ public class AdminConfigController extends BaseController {
     /**
      * 获取admin_config详细信息
      */
+    @Node("adminConfig:getInfo")
     @GetMapping(value = "/{id}" )
     public R<AdminConfig> getInfo(@PathVariable("id" ) Long id) {
         return R.success(adminConfigService.getById(id));
@@ -81,6 +83,7 @@ public class AdminConfigController extends BaseController {
     /**
      * 新增admin_config
      */
+    @Node("adminConfig:add")
     @PostMapping
     public R<Boolean> add(@RequestBody AdminConfig adminConfig) {
         return R.success(adminConfigService.save(adminConfig));
@@ -89,6 +92,7 @@ public class AdminConfigController extends BaseController {
     /**
      * 修改admin_config
      */
+    @Node("adminConfig:edit")
     @PutMapping
     public R<Boolean> edit(@RequestBody AdminConfig adminConfig) {
         return R.success(adminConfigService.updateById(adminConfig));
@@ -97,6 +101,7 @@ public class AdminConfigController extends BaseController {
     /**
      * 删除admin_config
      */
+    @Node("adminConfig:remove")
     @DeleteMapping("/{ids}" )
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(adminConfigService.removeByIds(Arrays.asList(ids)));
