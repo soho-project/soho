@@ -13,7 +13,7 @@ import work.soho.common.core.util.JacksonUtils;
 * @description 针对表【admin_config】的数据库操作Service实现
 * @createDate 2022-04-05 23:01:25
 */
-@Service
+@Service("sohoConfig")
 public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, AdminConfig>
     implements AdminConfigService{
     /**

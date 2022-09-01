@@ -1,15 +1,18 @@
 package work.soho.admin;
 
+import io.swagger.models.auth.In;
 import org.junit.jupiter.api.Test;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Set;
 
+import org.springframework.context.annotation.Scope;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.test.context.ContextConfiguration;
@@ -17,13 +20,28 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.api.admin.annotation.Node;
 import work.soho.admin.service.impl.AdminResourceServiceImpl;
+import work.soho.common.core.support.SpringContextHolder;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
 @SpringBootTest(classes = AdminApplication.class)
+@Scope()
 public class ClassTest {
     @Autowired
     AdminResourceServiceImpl adminResourceServiceImpl;
+
+    @Value("#{@sohoConfig.getByKey('key2')}")
+    String test;
+
+    @Value("#{@sohoConfig.getByKey('int')}")
+    Integer intvalue;
+
+    @Test
+    public void valueTest() {
+        System.out.println(test);
+        System.out.println(intvalue);
+//        SpringContextHolder.getApplicationContext()
+    }
 
     @Test
     public void searchAnnotation() {
