@@ -19,7 +19,7 @@ public class BaseController {
             return;
         }
         HttpServletRequest request = servletRequestAttributes.getRequest();
-        String pageNumString = request.getParameter("page");
+        String pageNumString = request.getParameter("pageNum");
         String pageSizeString = request.getParameter("pageSize");
         if(!StringUtils.isEmpty(pageSizeString)) {
             pageNum = Integer.parseInt(pageNumString);
