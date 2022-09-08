@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.utils.SecurityUtils;
 import work.soho.api.admin.request.AdminContentRequest;
 import work.soho.api.admin.request.BetweenDateRequest;
@@ -24,6 +25,7 @@ import work.soho.common.core.result.R;
 import work.soho.api.admin.annotation.Node;
 import work.soho.admin.domain.AdminContent;
 import work.soho.admin.service.AdminContentService;
+import work.soho.common.data.upload.utils.UploadUtils;
 
 /**
  * 系统内容表Controller
@@ -94,5 +96,12 @@ public class AdminContentController extends BaseController {
     @Node(value = "adminContent::remove", name = "系统内容表删除")
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(adminContentService.removeByIds(Arrays.asList(ids)));
+    }
+
+    @PostMapping("upload")
+    @Node(value = "adminContent::upload", name = "附件上传")
+    public R<String> upload(MultipartFile file) {
+        String filePath = UploadUtils.upload("test", file);
+        return R.success(filePath);
     }
 }
