@@ -41,6 +41,12 @@ public class AdminContent implements Serializable {
     private String keywords;
 
     /**
+     * 缩略图
+     */
+    @TableField(value = "thumbnail")
+    private String thumbnail;
+
+    /**
      * 文章内容
      */
     @TableField(value = "body")

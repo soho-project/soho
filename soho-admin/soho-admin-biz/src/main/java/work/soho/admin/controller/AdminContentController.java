@@ -7,14 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.utils.SecurityUtils;
 import work.soho.api.admin.request.AdminContentRequest;
@@ -100,7 +93,7 @@ public class AdminContentController extends BaseController {
 
     @PostMapping("upload")
     @Node(value = "adminContent::upload", name = "附件上传")
-    public R<String> upload(MultipartFile file) {
+    public R<String> upload(@RequestParam(value = "thumbnail")MultipartFile file) {
         String filePath = UploadUtils.upload("test", file);
         return R.success(filePath);
     }
