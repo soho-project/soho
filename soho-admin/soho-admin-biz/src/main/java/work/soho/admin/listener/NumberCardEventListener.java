@@ -5,12 +5,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import work.soho.admin.domain.AdminNotification;
+import work.soho.admin.domain.AdminUser;
 import work.soho.admin.domain.AdminUserLoginLog;
 import work.soho.admin.service.AdminNotificationService;
 import work.soho.admin.service.AdminUserLoginLogService;
 import work.soho.admin.service.AdminUserService;
 import work.soho.admin.utils.SecurityUtils;
 import work.soho.api.admin.event.DashboardEvent;
+import work.soho.api.admin.vo.DashboardUserCardVo;
 import work.soho.api.admin.vo.NumberCardVo;
 
 import java.math.BigDecimal;
@@ -72,6 +74,38 @@ public class NumberCardEventListener {
         userClientCount.setTitle("当日登录");
         event.addNumberCard(userClientCount);
 
+    }
+
+    @EventListener
+    public void userInfoCards(DashboardEvent event) {
+        DashboardUserCardVo dashboardUserCardVo = new DashboardUserCardVo();
+        AdminUser adminUser = adminUserService.getById(SecurityUtils.getLoginUserId());
+        dashboardUserCardVo.setUserId(adminUser.getId());
+        dashboardUserCardVo.setUsername(adminUser.getUsername());
+        dashboardUserCardVo.setAvatar(adminUser.getAvatar());
+        //查询用户登录总次数
+        DashboardUserCardVo.Info totalInfo = new DashboardUserCardVo.Info();
+        totalInfo.setTitle("用户总登录次数");
+        LambdaQueryWrapper<AdminUserLoginLog> totalLqw = new LambdaQueryWrapper<>();
+        totalLqw.eq(AdminUserLoginLog::getAdminUserId, adminUser.getId());
+        totalInfo.setValue(adminUserLoginLogService.count(totalLqw));
+        dashboardUserCardVo.getListInfo().add(totalInfo);
+        //查询用户当日登录次数
+        DashboardUserCardVo.Info todayInfo = new DashboardUserCardVo.Info();
+        totalInfo.setTitle("用户总登录次数");
+        LambdaQueryWrapper<AdminUserLoginLog> todayLqw = new LambdaQueryWrapper<>();
+        todayLqw.eq(AdminUserLoginLog::getAdminUserId, adminUser.getId());
+        Calendar c = Calendar.getInstance();
+        c.set(Calendar.HOUR_OF_DAY, 0);
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
+        todayLqw.gt(AdminUserLoginLog::getCreatedTime, c);
+
+        todayInfo.setValue(adminUserLoginLogService.count(todayLqw));
+        dashboardUserCardVo.getListInfo().add(totalInfo);
+
+        event.getListUserCard().add(dashboardUserCardVo);
     }
 
 }

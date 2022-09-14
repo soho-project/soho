@@ -2,10 +2,9 @@ package work.soho.api.admin.event;
 
 import lombok.Data;
 import org.springframework.context.ApplicationEvent;
+import work.soho.api.admin.vo.DashboardUserCardVo;
 import work.soho.api.admin.vo.NumberCardVo;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -27,9 +26,9 @@ public class DashboardEvent extends ApplicationEvent {
     private LinkedList<List> listKVCards = new LinkedList<>();
 
     /**
-     * 评论卡列表
+     * 用户信息卡片
      */
-//    private LinkedHashMap<LinkedHashMap> listComments = new LinkedHashMap<>();
+    private LinkedList<DashboardUserCardVo> listUserCard = new LinkedList<>();
 
     public DashboardEvent(Object source) {
         super(source);
