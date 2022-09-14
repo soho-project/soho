@@ -76,6 +76,18 @@
             <version>0.0.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-admin-api</artifactId>
+        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>club.zhcs</groupId>-->
+<!--            <artifactId>axe-sigar</artifactId>-->
+<!--            <version>1.5.14.1</version>-->
+<!--            <type>pom</type>-->
+<!--        </dependency>-->
+
     </dependencies>
 
 </project>
