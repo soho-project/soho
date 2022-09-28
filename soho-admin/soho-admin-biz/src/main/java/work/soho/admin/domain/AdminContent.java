@@ -20,7 +20,7 @@ public class AdminContent implements Serializable {
      */
     @TableField(value = "id")
     @TableId(type = IdType.AUTO)
-    private Integer id;
+    private Long id;
 
     /**
      * 文章标题
@@ -68,7 +68,7 @@ public class AdminContent implements Serializable {
      * 文章分类ID
      */
     @TableField(value = "category_id")
-    private Integer categoryId;
+    private Long categoryId;
 
     /**
      * 添加的管理员ID
@@ -87,6 +87,30 @@ public class AdminContent implements Serializable {
      */
     @TableField(value = "is_top")
     private Integer isTop;
+
+    /**
+     * 加星数量
+     */
+    @TableField(value = "star")
+    private Integer star;
+
+    /**
+     * like数量
+     */
+    @TableField(value = "likes")
+    private Integer likes;
+
+    /**
+     * 踩数据
+     */
+    @TableField(value = "dis_likes")
+    private Integer disLikes;
+
+    /**
+     * 评论数量
+     */
+    @TableField(value = "comments_count")
+    private Integer commentsCount;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
