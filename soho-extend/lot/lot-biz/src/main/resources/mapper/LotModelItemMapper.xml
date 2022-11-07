@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.lot.mapper.LotModelItemMapper">
+
+    <resultMap id="BaseResultMap" type="work.soho.lot.domain.LotModelItem">
+            <result property="id" column="id" jdbcType="INTEGER"/>
+            <result property="modelId" column="model_id" jdbcType="INTEGER"/>
+            <result property="title" column="title" jdbcType="VARCHAR"/>
+            <result property="unit" column="unit" jdbcType="VARCHAR"/>
+            <result property="paramsName" column="params_name" jdbcType="VARCHAR"/>
+            <result property="tips" column="tips" jdbcType="VARCHAR"/>
+            <result property="extendedData" column="pin" jdbcType="VARCHAR"/>
+            <result property="type" column="type" jdbcType="VARCHAR"/>
+            <result property="updatedTime" column="updated_time" jdbcType="TIMESTAMP"/>
+            <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,model_id,title,
+        unit,params_name,tips,
+        extended_data,type,updated_time,
+        created_time
+    </sql>
+</mapper>

@@ -87,6 +87,7 @@ public class TokenServiceImpl {
                 .setClaims(claims)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(new Date().getTime() + getTokenLeaseTerm()))
+                .claim("authorities", loginUser.getAuthorities())
                 .signWith(SignatureAlgorithm.HS512, secret).compact();
         return token;
     }
