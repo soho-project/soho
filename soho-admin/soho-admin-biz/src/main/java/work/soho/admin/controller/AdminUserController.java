@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
@@ -161,6 +162,7 @@ public class AdminUserController extends BaseController {
      */
     @Node("adminUser:delete")
     @DeleteMapping("{id}")
+    @Transactional(rollbackFor = Exception.class)
     public Object delete(@PathVariable("id") Long id) {
         AdminUser adminUser = adminUserService.getById(id);
         if(adminUser==null) {
@@ -168,6 +170,10 @@ public class AdminUserController extends BaseController {
         }
         adminUser.setIsDeleted(1);
         adminUserService.updateById(adminUser);
+        //删除关联角色
+        LambdaQueryWrapper<AdminRoleUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(AdminRoleUser::getUserId, adminUser.getId());
+        adminRoleUserService.remove(lambdaQueryWrapper);
         return R.success("保存成功");
     }
 

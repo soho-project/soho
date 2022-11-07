@@ -11,7 +11,7 @@ public class PageUtils {
     public void startPage() {
         int pageSize = 20;
         int pageNum = 1;
-        String pageNumStr = RequestUtil.getRequest().getParameter("pageNum");
+        String pageNumStr = RequestUtil.getRequest().getParameter("page");
         String pageSizeStr = RequestUtil.getRequest().getParameter("pageSize");
         if(StringUtils.isNotEmpty(pageNumStr)) {
             pageNum = Integer.parseInt(pageNumStr);

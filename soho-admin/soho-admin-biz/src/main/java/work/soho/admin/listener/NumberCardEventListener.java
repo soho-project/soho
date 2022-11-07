@@ -92,7 +92,7 @@ public class NumberCardEventListener {
         dashboardUserCardVo.getListInfo().add(totalInfo);
         //查询用户当日登录次数
         DashboardUserCardVo.Info todayInfo = new DashboardUserCardVo.Info();
-        totalInfo.setTitle("用户总登录次数");
+        todayInfo.setTitle("用户当日录次数");
         LambdaQueryWrapper<AdminUserLoginLog> todayLqw = new LambdaQueryWrapper<>();
         todayLqw.eq(AdminUserLoginLog::getAdminUserId, adminUser.getId());
         Calendar c = Calendar.getInstance();
@@ -103,7 +103,7 @@ public class NumberCardEventListener {
         todayLqw.gt(AdminUserLoginLog::getCreatedTime, c);
 
         todayInfo.setValue(adminUserLoginLogService.count(todayLqw));
-        dashboardUserCardVo.getListInfo().add(totalInfo);
+        dashboardUserCardVo.getListInfo().add(todayInfo);
 
         event.getListUserCard().add(dashboardUserCardVo);
     }

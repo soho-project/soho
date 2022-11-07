@@ -43,7 +43,7 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
     public void saveOrUpdate(AdminUserVo adminUserVo) {
         AdminUser adminUser = getById(adminUserVo.getId());
         if(adminUser==null) {
-            throw new IllegalArgumentException("没有找到对应的用户");
+            adminUser = new AdminUser();
         }
         BeanUtils.copyProperties(adminUserVo, adminUser);
         if(StringUtils.isNotEmpty(adminUser.getPassword())) {
@@ -57,11 +57,12 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
         List<AdminRoleUser> adminRoleList = adminRoleUserService.list(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, adminUser.getId()));
         List<Long> oldRoleIds = adminRoleList.stream().map(AdminRoleUser::getRoleId).collect(Collectors.toList());
         if(adminUserVo.getRoleIds() != null) {
+            AdminUser finalAdminUser = adminUser;
             adminUserVo.getRoleIds().forEach(roleId -> {
                 if(!oldRoleIds.contains(roleId)) {
                     //不包含该值，新增
                     AdminRoleUser adminRoleUser = new AdminRoleUser();
-                    adminRoleUser.setUserId(adminUser.getId());
+                    adminRoleUser.setUserId(finalAdminUser.getId());
                     adminRoleUser.setRoleId(roleId);
                     adminRoleUser.setCreatedTime(new Date());
                     adminRoleUser.setStatus(1);
@@ -69,9 +70,10 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
                 }
             });
             //删除更新中不存在的角色
+            AdminUser finalAdminUser1 = adminUser;
             oldRoleIds.forEach(roleId -> {
                 if(!adminUserVo.getRoleIds().contains(roleId)) {
-                    adminRoleUserService.remove(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, adminUser.getId())
+                    adminRoleUserService.remove(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, finalAdminUser1.getId())
                             .eq(AdminRoleUser::getRoleId, roleId));
                 }
             });
