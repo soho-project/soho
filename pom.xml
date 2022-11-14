@@ -15,7 +15,6 @@
         <module>soho-approval-process</module>
         <module>soho-admin-web</module>
         <module>soho-extend</module>
-        <module>soho-extend</module>
 
         <!--        <module>soho-common/soho-common-quartz</module>-->
 <!--        <module>soho-framework</module>-->
@@ -138,6 +137,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.7.5</version>
             </plugin>
         </plugins>
     </build>
