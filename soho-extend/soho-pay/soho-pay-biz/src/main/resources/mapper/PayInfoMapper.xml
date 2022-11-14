@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.pay.biz.mapper.PayInfoMapper">
+
+    <resultMap id="BaseResultMap" type="work.soho.pay.biz.domain.PayInfo">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="title" column="title" jdbcType="VARCHAR"/>
+            <result property="name" column="name" jdbcType="VARCHAR"/>
+            <result property="accountAppId" column="account_app_id" jdbcType="VARCHAR"/>
+            <result property="accountId" column="account_id" jdbcType="VARCHAR"/>
+            <result property="accountPrivateKey" column="account_private_key" jdbcType="VARCHAR"/>
+            <result property="accountSerialNumber" column="account_serial_number" jdbcType="VARCHAR"/>
+            <result property="accountPublicKey" column="account_public_key" jdbcType="VARCHAR"/>
+            <result property="accountImg" column="account_img" jdbcType="VARCHAR"/>
+            <result property="clientType" column="client_type" jdbcType="VARCHAR"/>
+            <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
+            <result property="updatedTime" column="updated_time" jdbcType="TIMESTAMP"/>
+            <result property="platform" column="platform" jdbcType="VARCHAR"/>
+            <result property="status" column="status" jdbcType="TINYINT"/>
+            <result property="adapterName" column="adapter_name" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,title,name,
+        account_app_id,account_id,account_private_key,account_serial_number,
+        account_public_key,account_img,client_type,
+        created_time,updated_time,platform,
+        status,adapter_name
+    </sql>
+</mapper>
