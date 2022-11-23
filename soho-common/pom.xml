@@ -12,11 +12,12 @@
     <artifactId>soho-common</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>soho-common-dependencies</module>
+        <module>soho-common-pom</module>
         <module>soho-common-core</module>
         <module>soho-common-data</module>
         <module>soho-common-security</module>
         <module>soho-common-quartz</module>
+        <module>soho-approval-process</module>
     </modules>
 
     <properties>

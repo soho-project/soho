@@ -1,6 +1,7 @@
 ﻿spring:
   profiles:
-    active: @profiles.active@
+ #   active: @profiles.active@active
+    active: dev
   application:
     name: @artifactId@
   mvc:

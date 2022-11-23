@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.example.biz.mapper.ExampleCategoryMapper">
+
+    <resultMap id="BaseResultMap" type="work.soho.example.biz.domain.ExampleCategory">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="title" column="title" jdbcType="VARCHAR"/>
+            <result property="parentId" column="parent_id" jdbcType="INTEGER"/>
+            <result property="updatedTime" column="updated_time" jdbcType="TIMESTAMP"/>
+            <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
+            <result property="onlyDate" column="only_date" jdbcType="DATE"/>
+            <result property="payDatetime" column="pay_datetime" jdbcType="TIMESTAMP"/>
+            <result property="img" column="img" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,title,parent_id,
+        updated_time,created_time,only_date,
+        pay_datetime,img
+    </sql>
+</mapper>

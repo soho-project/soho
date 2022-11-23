@@ -1,14 +1,11 @@
 package work.soho.approvalprocess.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import work.soho.admin.AdminApplication;
-import work.soho.approvalprocess.SohoApprovalProcessBizApplication;
 import work.soho.approvalprocess.domain.ApprovalProcessOrderNode;
 import work.soho.approvalprocess.domain.enums.ApprovalProcessOrderNodeApplyStatusEnum;
 import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
