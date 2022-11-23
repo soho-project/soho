@@ -3,24 +3,23 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>soho</artifactId>
+        <artifactId>soho-extend</artifactId>
         <groupId>work.soho</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
-    <packaging>pom</packaging>
     <modelVersion>4.0.0</modelVersion>
+    <version>1.0-SNAPSHOT</version>
 
-    <artifactId>soho-extend</artifactId>
-
+    <artifactId>soho-example</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>soho-example-api</module>
+        <module>soho-example-biz</module>
+    </modules>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
     </properties>
 
-    <modules>
-        <module>soho-lot</module>
-        <module>soho-pay</module>
-        <module>soho-example</module>
-    </modules>
 </project>
