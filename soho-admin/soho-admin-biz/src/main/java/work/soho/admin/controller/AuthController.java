@@ -40,7 +40,7 @@ public class AuthController {
     @GetMapping("/login/config")
     public R<HashMap<String, Object>> authConfig() {
         HashMap<String, Object> config = new HashMap<>();
-        config.put("useCaptcha", sohoConfig.getByKey("use_captcha", Boolean.class, Boolean.TRUE));
+        config.put("useCaptcha", sohoConfig.getByKey(LOGIN_USE_CAPTCHA, Boolean.class, Boolean.TRUE));
         return R.success(config);
     }
 
