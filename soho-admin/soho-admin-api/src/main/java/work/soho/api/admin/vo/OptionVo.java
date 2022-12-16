@@ -3,23 +3,16 @@ package work.soho.api.admin.vo;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
-public class OptionVo <T, X>{
-    private T key;
+/**
+ * 选项单元
+ *
+ * select radio 等
+ *
+ * @param <T>
+ * @param <X>
+ */
+@Data
+public class OptionVo <X, T>{
     private X value;
-
-    public void setKey(T key) {
-        this.key = key;
-    }
-
-    public void setValue(X value) {
-        this.value = value;
-    }
-
-    public T getKey() {
-        return key;
-    }
-
-    public X getValue() {
-        return value;
-    }
+    private T label;
 }

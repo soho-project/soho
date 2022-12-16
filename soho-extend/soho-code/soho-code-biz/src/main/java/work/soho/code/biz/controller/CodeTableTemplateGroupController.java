@@ -117,15 +117,18 @@ public class CodeTableTemplateGroupController {
      */
     @GetMapping("options")
     @Node(value = "codeTableTemplateGroup::options", name = "模本分组;;option:id~nameOptions")
-    public R<HashMap<Integer, String>> options() {
+    public R<LinkedList<OptionVo<Integer, String>>> options() {
         LambdaQueryWrapper<CodeTableTemplateGroup> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.orderByAsc(CodeTableTemplateGroup::getSort);
         List<CodeTableTemplateGroup> list = codeTableTemplateGroupService.list(lambdaQueryWrapper);
-
-        HashMap<Integer, String> map = new HashMap<>();
+        System.out.println(list);
+        LinkedList<OptionVo<Integer, String>> optionVos = new LinkedList<>();
         for(CodeTableTemplateGroup item: list) {
-            map.put(item.getId(), item.getName());
+            OptionVo<Integer, String> option = new OptionVo<>();
+            option.setValue(item.getId());
+            option.setLabel(item.getName());
+            optionVos.add(option);
         }
-        return R.success(map);
+        return R.success(optionVos);
     }
 }

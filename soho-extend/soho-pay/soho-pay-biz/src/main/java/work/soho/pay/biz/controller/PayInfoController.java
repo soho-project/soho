@@ -3,8 +3,6 @@ package work.soho.pay.biz.controller;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import work.soho.api.admin.vo.OptionVo;
-import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
@@ -146,14 +144,8 @@ public class PayInfoController {
     @GetMapping("options")
     public R<HashMap<Integer, String>> options() {
         List<PayInfo> list = payInfoService.list();
-        List<OptionVo<Integer, String>> options = new ArrayList<>();
-
         HashMap<Integer, String> map = new HashMap<>();
         for(PayInfo item: list) {
-//            OptionVo<Integer, String> optionVo = new OptionVo<>();
-//            optionVo.setKey(item.getId());
-//            optionVo.setValue(item.getTitle());
-//            options.add(optionVo);
 
             map.put(item.getId(), item.getTitle());
         }

@@ -127,16 +127,16 @@ public class CodeTableTemplateController {
      */
     @GetMapping("options")
     @Node(value = "codeTableTemplate::options", name = "代码表模板;;option:id~titleOptions")
-    public R<HashMap<Integer, String>> options(CodeTableTemplate codeTableTemplate) {
+    public R<LinkedHashMap<String, String>> options(CodeTableTemplate codeTableTemplate) {
         LambdaQueryWrapper<CodeTableTemplate> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         if(codeTableTemplate.getGroupId() != null) {
             lambdaQueryWrapper.eq(CodeTableTemplate::getGroupId, codeTableTemplate.getGroupId());
         }
         lambdaQueryWrapper.orderByAsc(CodeTableTemplate::getSort);
         List<CodeTableTemplate> list = codeTableTemplateService.list(lambdaQueryWrapper);
-        HashMap<Integer, String> map = new HashMap<>();
+        LinkedHashMap<String, String> map = new LinkedHashMap<>();
         for(CodeTableTemplate item: list) {
-            map.put(item.getId(), item.getTitle());
+            map.put(String.valueOf(item.getId()), item.getTitle());
         }
         return R.success(map);
     }

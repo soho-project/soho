@@ -19,12 +19,9 @@ import work.soho.common.core.result.R;
 import work.soho.api.admin.annotation.Node;
 import work.soho.user.biz.domain.UserInfo;
 import work.soho.user.biz.service.UserInfoService;
-import java.util.ArrayList;
 import java.util.HashMap;
-import work.soho.api.admin.vo.OptionVo;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.api.admin.vo.TreeNodeVo;
+
 /**
  * 用户信息;;option:id~usernameController
  *
@@ -132,7 +129,6 @@ public class UserInfoController {
     @Node(value = "userInfo::options", name = "用户信息;;option:id~usernameOptions")
     public R<HashMap<Integer, String>> options() {
         List<UserInfo> list = userInfoService.list();
-        List<OptionVo<Integer, String>> options = new ArrayList<>();
 
         HashMap<Integer, String> map = new HashMap<>();
         for(UserInfo item: list) {

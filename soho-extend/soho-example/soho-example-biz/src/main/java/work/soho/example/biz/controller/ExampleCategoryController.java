@@ -21,7 +21,6 @@ import work.soho.example.biz.domain.ExampleCategory;
 import work.soho.example.biz.service.ExampleCategoryService;
 import java.util.ArrayList;
 import java.util.HashMap;
-import work.soho.api.admin.vo.OptionVo;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import java.util.stream.Collectors;
 import work.soho.api.admin.vo.TreeNodeVo;
@@ -123,7 +122,6 @@ public class ExampleCategoryController {
     @Node(value = "exampleCategory::options", name = "自动化样例分类表;;option:id~title,tree:id~title~parent_id,frontHome:treeOptions")
     public R<HashMap<Integer, String>> options() {
         List<ExampleCategory> list = exampleCategoryService.list();
-        List<OptionVo<Integer, String>> options = new ArrayList<>();
 
         HashMap<Integer, String> map = new HashMap<>();
         for(ExampleCategory item: list) {
