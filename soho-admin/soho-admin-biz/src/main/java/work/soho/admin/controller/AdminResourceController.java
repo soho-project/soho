@@ -50,7 +50,7 @@ public class AdminResourceController {
 
             LambdaQueryWrapper<AdminResource> lqw = new LambdaQueryWrapper<>();
             lqw.eq(AdminResource::getType, 1); //前端节点
-            lqw.eq(AdminResource::getVisible, 1); //可见菜单
+//            lqw.eq(AdminResource::getVisible, 1); //可见菜单
             lqw.orderByAsc(AdminResource::getSort);
             List<AdminResource> list = adminResourceService.list(lqw);
             List<AdminResource> needList = new ArrayList<>();
@@ -123,6 +123,7 @@ public class AdminResourceController {
                 RouteVo.Langues zh = new RouteVo.Langues();
                 zh.setName(item.getZhName());
                 routeVo.setZh(zh);
+                routeVo.setVisible(item.getVisible() == 1);
                 return routeVo;
             }).collect(Collectors.toList());
         } catch (Exception e) {

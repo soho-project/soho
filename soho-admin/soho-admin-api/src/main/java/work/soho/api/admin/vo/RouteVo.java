@@ -13,6 +13,7 @@ public class RouteVo {
     private Long breadcrumbParentId;
     private Long menuParentId;
     private Langues zh;
+    private Boolean visible;
 
     @Data
     public static class Langues {
