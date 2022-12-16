@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.code.biz.mapper.CodeTableTemplateGroupMapper">
+
+    <resultMap id="BaseResultMap" type="work.soho.code.biz.domain.CodeTableTemplateGroup">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="title" column="title" jdbcType="VARCHAR"/>
+            <result property="name" column="name" jdbcType="VARCHAR"/>
+            <result property="basePath" column="base_path" jdbcType="VARCHAR"/>
+            <result property="mainFunction" column="main_function" jdbcType="VARCHAR"/>
+            <result property="explain" column="explain" jdbcType="VARCHAR"/>
+            <result property="updatedTime" column="updated_time" jdbcType="TIMESTAMP"/>
+            <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
+            <result property="sort" column="sort" javaType="INTEGER" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,title,name,
+        main_function,explain,updated_time,
+        created_time,sort
+    </sql>
+</mapper>
