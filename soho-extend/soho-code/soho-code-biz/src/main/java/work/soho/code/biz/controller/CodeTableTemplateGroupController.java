@@ -1,5 +1,7 @@
 package work.soho.code.biz.controller;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -130,5 +132,52 @@ public class CodeTableTemplateGroupController {
             optionVos.add(option);
         }
         return R.success(optionVos);
+    }
+
+    /**
+     * 获取项目所有模块目录
+     *
+     * @param groupId
+     * @return
+     */
+    @GetMapping("getBaseDirTree")
+    public R<TreeNodeVo<String, String, String, String>> getModuleTree(Integer groupId) throws IOException {
+        //递归查询 pom 文件目录
+        CodeTableTemplateGroup group = codeTableTemplateGroupService.getById(groupId);
+        return R.success(this.loopDir(group.getBasePath()));
+    }
+
+    /**
+     * 获取目录树
+     *
+     * @param parentDir
+     * @return
+     * @throws IOException
+     */
+    public TreeNodeVo<String, String, String, String> loopDir(String parentDir) throws IOException {
+        File file = new File(parentDir);
+        //忽略依赖包目录; .开头  或者 node_modules 开头的忽略
+        if(file.getName().equals("node_modules") || file.getName().startsWith(".")) {
+            return null;
+        }
+        System.out.println(parentDir);
+        TreeNodeVo<String, String, String, String> nodeVo = new TreeNodeVo<>(file.getCanonicalPath(), file.getCanonicalPath(), null, file.getName());
+        if(file.isDirectory()) {
+            //TODO 检查当前目录下是否存在模块标志性文件
+            if(file.listFiles() != null) {
+                for(File f:file.listFiles()) {
+                    if(f.isFile()) {
+                        continue;
+                    }
+                    TreeNodeVo sonNode = loopDir(f.getCanonicalPath());
+                    if(sonNode != null) {
+                        nodeVo.getChildren().add(sonNode);
+                    }
+                }
+            }
+        } else {
+            return null;
+        }
+        return nodeVo;
     }
 }

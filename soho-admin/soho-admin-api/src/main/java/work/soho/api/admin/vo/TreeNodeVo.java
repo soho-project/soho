@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -15,7 +16,7 @@ public class TreeNodeVo<T,F,C,X> {
 
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    List<TreeNodeVo> children;
+    List<TreeNodeVo> children = new ArrayList<>();
 
     public TreeNodeVo(T id, F id1, C parentId, X title) {
         this.key = id;
