@@ -215,11 +215,12 @@ public class CodeTableController {
     @PostMapping("saveCode")
     public R<Boolean> saveCodes(@RequestBody CodeTableTemplateSaveCodeRequest request) {
         try {
-            HashMap<String, String> files = getFiles(request, true);
+            HashMap<String, String> files = getFiles(request, false);
             Iterator<String> it = files.keySet().iterator();
             while(it.hasNext()) {
                 String filePath = it.next();
-                FileUtil.writeBytes(files.get(filePath).getBytes(), new File(filePath));
+                String realPath =   request.getPath() + "/" + filePath ;
+                FileUtil.writeBytes(files.get(filePath).getBytes(), new File(realPath));
             }
             return R.success();
         } catch (Exception e) {
@@ -321,8 +322,8 @@ public class CodeTableController {
                     //代码写入文件系统
                     CodeTableTemplateGroup codeTableTemplateGroup = codeTableTemplateGroupService.getById(codeTableTemplate.getGroupId());
                     basePath = codeTableTemplateGroup.getBasePath();
-                    if(request.getPrePath() != null) {
-                        basePath += request.getPrePath();
+                    if(request.getPath() != null) {
+                        basePath += request.getPath();
                     }
                     basePath += fileName;
                 }

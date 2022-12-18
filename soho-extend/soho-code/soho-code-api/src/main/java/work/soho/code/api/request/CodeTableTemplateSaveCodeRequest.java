@@ -8,5 +8,5 @@ import java.util.ArrayList;
 public class CodeTableTemplateSaveCodeRequest {
     private Integer id;
     private ArrayList<Integer> templateId;
-    private String prePath;
+    private String path;
 }
