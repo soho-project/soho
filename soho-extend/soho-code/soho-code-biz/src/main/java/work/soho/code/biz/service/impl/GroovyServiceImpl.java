@@ -15,6 +15,8 @@ import work.soho.code.biz.service.GroovyService;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngineManager;
+import java.util.HashMap;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @Service
@@ -41,20 +43,45 @@ public class GroovyServiceImpl implements GroovyService {
      */
     public <T> T invoke03(String scriptText, String func, Object... objs){
         try {
-//            ScriptEngineManager factory = new ScriptEngineManager();
-//            Bindings bindings = factory.getEngineByName("groovy").createBindings();
-//            bindings.put("context", this);
-            Binding binding = new Binding();
+//            Binding binding = new Binding();
+//            binding.setVariable("context", this);
+//            binding.setVariable("creator", "fang.liu");
+//
+//            GroovyShell groovyShell = new GroovyShell(binding);
+//            binding.setVariable("shell", groovyShell);
+//            Script script = groovyShell.parse(scriptText);
+//            Object result = InvokerHelper.invokeMethod(script, func, objs);
+//            return (T) result;
+            return invoke(scriptText, new HashMap(), func, objs);
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    /**
+     * 带环境变量进行绑定
+     *
+     * @param scriptText
+     * @param binds
+     * @param func
+     * @param objs
+     * @return
+     * @param <T>
+     */
+    public <T> T invoke(String scriptText, Map binds, String func, Object... objs){
+        try {
+            Binding binding = new Binding(binds);
             binding.setVariable("context", this);
             binding.setVariable("creator", "fang.liu");
 
             GroovyShell groovyShell = new GroovyShell(binding);
             binding.setVariable("shell", groovyShell);
             Script script = groovyShell.parse(scriptText);
-            Object result = InvokerHelper.invokeMethod(script, func, objs);
-            return (T) result;
+            return (T) InvokerHelper.invokeMethod(script, func, objs);
         } catch (Exception e) {
             log.error(e);
+            e.printStackTrace();
             throw e;
         }
     }
@@ -69,9 +96,13 @@ public class GroovyServiceImpl implements GroovyService {
      * @param <T>
      */
     public <T> T runById(Integer id, String func, Object... objects) {
-        CodeTableTemplate codeTableTemplate =  codeTableTemplateService.getById(id);
-        return invoke03(codeTableTemplate.getCode(), func, objects);
+        return runById(id, new HashMap(), func, objects);
     }
+
+    @Override
+    public <T> T runById(Integer id, Map binds, String func, Object... objects) {
+        CodeTableTemplate codeTableTemplate =  codeTableTemplateService.getById(id);
+        return invoke(codeTableTemplate.getCode(), binds, func, objects);    }
 
     /**
      *  根据名字执行脚本模板

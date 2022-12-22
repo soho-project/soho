@@ -6,4 +6,5 @@ import lombok.Data;
 public class CodeTableTemplateRunTestRequest {
     private String code;
     private String fileName;
+    private Integer tableId;
 }
