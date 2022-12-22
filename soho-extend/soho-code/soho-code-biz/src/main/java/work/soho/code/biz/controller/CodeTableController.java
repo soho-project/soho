@@ -181,7 +181,7 @@ public class CodeTableController {
      * @return
      */
     @GetMapping("codeFile")
-    public R<HashMap<String, Object>> getCode(Integer id, Integer templateId) {
+    public R<HashMap<String, Object>> getCode(Integer id, Integer templateId, String codeNamespace) {
         try {
             HashMap<String, Object> res = new HashMap<>();
             CodeTableVo codeTableVo = codeTableService.getTableVoById(id);
@@ -194,14 +194,17 @@ public class CodeTableController {
                 return R.error("执行模板不存在");
             }
 
-            String code = groovyService.runById(templateId, "getCode", codeTableVo);
-            String fileName = groovyService.runById(templateId, "getFileName", codeTableVo);
+            HashMap<String, String> binds = new HashMap<>();
+            binds.put("baseNamespace", codeNamespace);
+            String code = groovyService.runById(templateId, binds, "getCode", codeTableVo);
+            String fileName = groovyService.runById(templateId, binds,"getFileName", codeTableVo);
             res.put("body", code);
             res.put("fileName", fileName);
             res.put("id", id);
             res.put("templateId", templateId);
             return R.success(res);
         } catch (Exception e) {
+            e.printStackTrace();
             return R.error(e.getMessage());
         }
     }
@@ -297,6 +300,9 @@ public class CodeTableController {
      */
     private HashMap<String, String> getFiles(CodeTableTemplateSaveCodeRequest request, Boolean realPath) throws InvalidPropertiesFormatException {
         HashMap<String, String> files = new HashMap<>();
+        HashMap<String, String> binds = new HashMap<>();
+        binds.put("baseNamespace", request.getCodeNamespace()); //基本命名空间
+        binds.put("basePath", request.getPath()); //基本写入路径
 
         for(Integer templateId: request.getTemplateId()) {
             try {
@@ -310,8 +316,8 @@ public class CodeTableController {
                     throw  new InvalidPropertiesFormatException("模板ID（"+templateId+"）不存在");
                 }
 
-                String code = groovyService.runById(templateId, "getCode", codeTableVo);
-                String fileName = groovyService.runById(templateId, "getFileName", codeTableVo);
+                String code = groovyService.runById(templateId, binds, "getCode", codeTableVo);
+                String fileName = groovyService.runById(templateId,  binds,"getFileName", codeTableVo);
                 //从group获取基本路径
                 if(codeTableTemplate.getGroupId() == null) {
                     continue;
@@ -330,6 +336,7 @@ public class CodeTableController {
 
                 files.put(basePath, code);
             } catch (Exception e) {
+                e.printStackTrace();
                 throw e;
             }
         }

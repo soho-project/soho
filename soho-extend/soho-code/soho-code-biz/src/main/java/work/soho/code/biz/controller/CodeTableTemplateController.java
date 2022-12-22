@@ -6,6 +6,7 @@ import work.soho.code.api.request.CodeTableTemplateRunTestRequest;
 import work.soho.code.api.vo.CodeTableVo;
 import work.soho.code.biz.domain.CodeTable;
 import work.soho.code.biz.domain.CodeTableTemplateGroup;
+import work.soho.code.biz.service.CodeTableService;
 import work.soho.code.biz.service.DbService;
 import work.soho.code.biz.service.GroovyService;
 import work.soho.common.core.util.BeanUtils;
@@ -45,6 +46,8 @@ import work.soho.api.admin.vo.TreeNodeVo;
 public class CodeTableTemplateController {
 
     private final CodeTableTemplateService codeTableTemplateService;
+
+    private final CodeTableService codeTableService;
 
     private final GroovyService groovyService;
 
@@ -130,6 +133,7 @@ public class CodeTableTemplateController {
     @Node(value = "codeTableTemplate::options", name = "代码表模板;;option:id~titleOptions")
     public R<LinkedHashMap<String, String>> options(CodeTableTemplate codeTableTemplate) {
         LambdaQueryWrapper<CodeTableTemplate> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(CodeTableTemplate::getStatus, 1);
         if(codeTableTemplate.getGroupId() != null) {
             lambdaQueryWrapper.eq(CodeTableTemplate::getGroupId, codeTableTemplate.getGroupId());
         }
@@ -150,11 +154,13 @@ public class CodeTableTemplateController {
     @PostMapping("runTest")
     public R<String> runTest(@RequestBody CodeTableTemplateRunTestRequest runTestRequest) {
         try {
-            CodeTableVo tableVo = dbService.getTableByName("pay_info");
+            CodeTableVo tableVo = codeTableService.getTableVoById(runTestRequest.getTableId());
             System.out.println(tableVo);
-            //TODO 保存数据
+
+            HashMap<String , String > binds = new HashMap<>();
+            binds.put("baseNamespace", "work.soho.");
             CodeTable codeTable = BeanUtils.copy(tableVo, CodeTable.class);
-            String result = groovyService.invoke03(runTestRequest.getCode(), "main", tableVo);
+            String result = groovyService.invoke(runTestRequest.getCode(), binds, "main", tableVo);
             if(result == null) {
                 throw new RuntimeException("run error: result is null");
             }

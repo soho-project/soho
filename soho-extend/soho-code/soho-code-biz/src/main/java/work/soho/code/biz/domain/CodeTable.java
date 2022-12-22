@@ -17,7 +17,7 @@ public class CodeTable implements Serializable {
     /**
      *
      */
-    @TableId(value = "id", type = IdType.AUTO)
+     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     /**
