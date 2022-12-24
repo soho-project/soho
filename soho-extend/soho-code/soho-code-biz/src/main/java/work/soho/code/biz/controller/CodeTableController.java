@@ -204,8 +204,14 @@ public class CodeTableController {
             res.put("templateId", templateId);
             return R.success(res);
         } catch (Exception e) {
+            String error = e.getMessage();
+            //输出最近5行
+            for(int i=0; i<e.getStackTrace().length && i<4; i++) {
+                error += "\n";
+                error += e.getStackTrace()[i].toString();
+            }
             e.printStackTrace();
-            return R.error(e.getMessage());
+            return R.error(error);
         }
     }
 
@@ -227,7 +233,7 @@ public class CodeTableController {
             }
             return R.success();
         } catch (Exception e) {
-            return R.error(e.getMessage());
+            return R.error(e.toString());
         }
     }
 
@@ -243,7 +249,7 @@ public class CodeTableController {
             HashMap<String, String> files = getFiles(request, false);
             return R.success(files);
         } catch (Exception e) {
-            return R.error(e.getMessage());
+            return R.error(e.toString());
         }
     }
 
