@@ -34,7 +34,7 @@ public class CodeTableServiceImpl extends ServiceImpl<CodeTableMapper, CodeTable
         }
         CodeTableVo codeTableVo = BeanUtils.copy(codeTable, CodeTableVo.class);
         //获取表字段信息
-        List<CodeTableColumn> columnList = codeTableColumnMapper.selectList(new LambdaQueryWrapper<CodeTableColumn>().eq(CodeTableColumn::getTableId, codeTable.getId()));
+        List<CodeTableColumn> columnList = codeTableColumnMapper.selectList(new LambdaQueryWrapper<CodeTableColumn>().eq(CodeTableColumn::getTableId, codeTable.getId()).orderByAsc(CodeTableColumn::getId));
         columnList.forEach(item->{
             CodeTableVo.Column column = BeanUtils.copy(item, CodeTableVo.Column.class);
             codeTableVo.getColumnList().add(column);

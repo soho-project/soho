@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.time.LocalDateTime;
 
 import cn.hutool.core.io.FileUtil;
+import lombok.extern.log4j.Log4j2;
 import work.soho.code.api.request.CodeTableTemplateSaveCodeRequest;
 import work.soho.code.api.vo.CodeTableVo;
 import work.soho.code.biz.domain.CodeTableColumn;
@@ -48,6 +49,7 @@ import javax.servlet.http.HttpServletResponse;
  * @author fang
  * @date 2022-11-30 15:47:28
  */
+@Log4j2
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/codeTable" )
@@ -229,6 +231,7 @@ public class CodeTableController {
             while(it.hasNext()) {
                 String filePath = it.next();
                 String realPath =   request.getPath() + "/" + filePath ;
+                log.info("保存文件到磁盘: {}", realPath);
                 FileUtil.writeBytes(files.get(filePath).getBytes(), new File(realPath));
             }
             return R.success();
