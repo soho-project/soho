@@ -86,6 +86,7 @@ public class CodeTableColumnController {
         if (codeTableColumn.getScale() != null){
             lqw.eq(CodeTableColumn::getScale ,codeTableColumn.getScale());
         }
+        lqw.orderByAsc(CodeTableColumn::getId);
         List<CodeTableColumn> list = codeTableColumnService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }
