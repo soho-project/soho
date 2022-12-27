@@ -119,6 +119,7 @@ public class AdminResourceController {
             return needList.stream().map(item->{
                 RouteVo routeVo = new RouteVo();
                 BeanUtils.copyProperties(item, routeVo);
+                routeVo.setIcon(item.getIconName());
                 routeVo.setMenuParentId(routeVo.getBreadcrumbParentId());
                 RouteVo.Langues zh = new RouteVo.Langues();
                 zh.setName(item.getZhName());
