@@ -16,13 +16,6 @@ import java.util.LinkedList;
 @Data
 public class ApprovalProcessOrderVo {
     /**
-     * id
-     */
-    @ApiModelProperty("id")
-    @TableId(type = IdType.AUTO)
-    private Integer id;
-
-    /**
      * 审批单ID
      */
     @ApiModelProperty("审批单ID")
@@ -41,7 +34,7 @@ public class ApprovalProcessOrderVo {
     private String outNo;
 
     @ApiModelProperty("审批内容； json字符串")
-    private LinkedList<ContentItem> contentItemList;
+    private LinkedList<ContentItem> contentItemList = new LinkedList<>();
 
     /**
      * 创建时间
