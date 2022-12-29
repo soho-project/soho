@@ -148,7 +148,11 @@ public class ApprovalProcessOrderServiceImpl extends ServiceImpl<ApprovalProcess
                     //nothing
                 }
                 updateById(approvalProcessOrder);
-                SpringContextHolder.getApplicationContext().publishEvent(new ApprovalEvent(approvalProcessOrder));
+
+                ApprovalProcess approvalProcess = approvalProcessService.getById(approvalProcessOrder.getApprovalProcessId());
+                ApprovalEvent approvalEvent = new ApprovalEvent(approvalProcessOrder);
+                approvalEvent.setApprovalProcessNo(approvalProcess.getNo());
+                SpringContextHolder.getApplicationContext().publishEvent(approvalEvent);
             }
         });
     }
