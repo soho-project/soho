@@ -22,12 +22,10 @@ import work.soho.common.core.support.SpringContextHolder;
 import work.soho.common.core.util.BeanUtils;
 
 import work.soho.approvalprocess.domain.enums.*;
+import work.soho.common.core.util.JacksonUtils;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -58,9 +56,26 @@ public class ApprovalProcessOrderServiceImpl extends ServiceImpl<ApprovalProcess
         System.out.println(order);
         Assert.isNull(order, "该审批单已经存在， 请勿重复提交");
 
+        //整理处理内容条目; 补回数据类型信息
+        List<HashMap> meteDataList = JSONUtil.toList(approvalProcess.getMetadata(), HashMap.class);
+        Map<String, HashMap> meteDataHashMap = meteDataList.stream().collect(Collectors.toMap(k->(String)k.get("key"), v->v));
+        LinkedList<HashMap<String, String>> items = new LinkedList<>();
+        for(ApprovalProcessOrderVo.ContentItem item: approvalProcessOrderVo.getContentItemList()) {
+            //检查字段是否存在
+            if(meteDataHashMap.containsKey(item.getKey())) {
+                HashMap<String, String> tmp = new HashMap<>();
+                tmp.put("key", item.getKey());
+                tmp.put("title", item.getTitle());
+                tmp.put("content", item.getContent());
+                tmp.put("type", (String)meteDataHashMap.get(item.getKey()).get("type"));
+                tmp.put("title", (String)meteDataHashMap.get(item.getKey()).get("title"));
+                items.add(tmp);
+            }
+        }
+
         ApprovalProcessOrder approvalProcessOrder = BeanUtils.copy(approvalProcessOrderVo, ApprovalProcessOrder.class);
         approvalProcessOrder.setCreatedTime(LocalDateTime.now());
-        approvalProcessOrder.setContent(JSONUtil.toJsonStr(approvalProcessOrderVo.getContentItemList()));
+        approvalProcessOrder.setContent(JSONUtil.toJsonStr(items));
         approvalProcessOrder.setStatus(ApprovalProcessOrderStatusEnum.PENDING.getStatus());
         approvalProcessOrder.setApplyStatus(ApprovalProcessOrderApplyStatusEnum.PENDING.getStatus());
         approvalProcessOrder.setApprovalProcessId(approvalProcess.getId());
