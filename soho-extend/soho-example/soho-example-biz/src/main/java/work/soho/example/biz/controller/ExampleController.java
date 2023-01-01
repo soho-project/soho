@@ -2,7 +2,11 @@ package work.soho.example.biz.controller;
 
 import java.time.LocalDateTime;
 
+import work.soho.admin.common.security.utils.SecurityUtils;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import work.soho.approvalprocess.service.ApprovalProcessOrderService;
+import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
+import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.util.List;
@@ -35,6 +39,8 @@ import work.soho.example.biz.service.ExampleService;
 public class ExampleController {
 
     private final ExampleService exampleService;
+
+    private final ApprovalProcessOrderService approvalProcessOrderService;
 
     /**
      * 查询自动化样例表列表
@@ -111,5 +117,40 @@ public class ExampleController {
     @Node(value = "example::remove", name = "自动化样例表删除")
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(exampleService.removeByIds(Arrays.asList(ids)));
+    }
+
+    /**
+     * 修改自动化样例表
+     */
+    @PutMapping("apply")
+    @Node(value = "example::apply", name = "自动化样例申请")
+    public R<Boolean> apply(@RequestBody Example example) {
+        try {
+            example.setUpdatedTime(LocalDateTime.now());
+            exampleService.updateById(example);
+
+            ApprovalProcessOrderVo vo  = new ApprovalProcessOrderVo();
+            vo.setApplyUserId(SecurityUtils.getLoginUserId());
+            vo.setOutNo(example.getId().toString());
+            vo.setApprovalProcessNo("4");
+            vo.setCreatedTime(LocalDateTime.now());
+            vo.setApprovalProcessId(4);
+
+            ApprovalProcessOrderVo.ContentItem item = new ApprovalProcessOrderVo.ContentItem();
+            item.setKey("TITLE");
+            item.setContent(example.getTitle());
+            vo.getContentItemList().add(item);
+            ApprovalProcessOrderVo.ContentItem contentItem = new ApprovalProcessOrderVo.ContentItem();
+            contentItem.setKey("CONTENT");
+            contentItem.setContent(example.getContent());
+            vo.getContentItemList().add(contentItem);
+
+            approvalProcessOrderService.create(vo);
+
+            return R.success();
+        } catch (Exception e) {
+            return R.error(e.getMessage());
+        }
+
     }
 }
