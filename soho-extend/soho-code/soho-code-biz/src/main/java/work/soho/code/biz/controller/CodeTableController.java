@@ -198,8 +198,12 @@ public class CodeTableController {
 
             HashMap<String, String> binds = new HashMap<>();
             binds.put("baseNamespace", codeNamespace);
-            String code = groovyService.runById(templateId, binds, "getCode", codeTableVo);
             String fileName = groovyService.runById(templateId, binds,"getFileName", codeTableVo);
+            if(fileName == null) {
+                return R.error("该文件无法生成，文件路径不能为空");
+            }
+            String code = groovyService.runById(templateId, binds, "getCode", codeTableVo);
+
             res.put("body", code);
             res.put("fileName", fileName);
             res.put("id", id);
@@ -327,6 +331,11 @@ public class CodeTableController {
 
                 String code = groovyService.runById(templateId, binds, "getCode", codeTableVo);
                 String fileName = groovyService.runById(templateId,  binds,"getFileName", codeTableVo);
+                //跳过路径为空文件
+                if(fileName == null) {
+                    continue;
+                }
+
                 //从group获取基本路径
                 if(codeTableTemplate.getGroupId() == null) {
                     continue;
