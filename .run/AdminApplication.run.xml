@@ -1,6 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="AdminApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
-    <option name="ACTIVE_PROFILES" />
+    <option name="ACTIVE_PROFILES" value="dev" />
+    <option name="DEBUG_MODE" value="true" />
     <module name="soho-admin-biz" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="work.soho.admin.AdminApplication" />
     <method v="2">

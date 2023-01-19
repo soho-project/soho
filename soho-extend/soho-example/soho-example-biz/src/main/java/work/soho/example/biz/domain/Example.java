@@ -19,13 +19,18 @@ public class Example implements Serializable {
     /**
      *
      */
-    @TableId
+    @TableId(type = IdType.AUTO)
     private Integer id;
 
     /**
      * 标题
      */
     private String title;
+
+    /**
+     * 状态；0:待审核,1:已通过,2:已拒绝
+     */
+    private Integer status;
 
     /**
      * 分类ID;;frontType:treeSelect,foreign:example_category.id~title
