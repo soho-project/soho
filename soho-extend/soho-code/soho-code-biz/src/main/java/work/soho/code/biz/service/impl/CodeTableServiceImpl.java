@@ -73,7 +73,9 @@ public class CodeTableServiceImpl extends ServiceImpl<CodeTableMapper, CodeTable
                 case "char":
                 case "blob":
                 case "text":
-                    columnStr += "("+column.getLength()+")";
+                    if(column.getLength() != null) {
+                        columnStr += "("+column.getLength()+")";
+                    }
                     break;
                 case "decimal": //带小数点
                 case "float":
@@ -121,7 +123,7 @@ public class CodeTableServiceImpl extends ServiceImpl<CodeTableMapper, CodeTable
         //去除最后一个逗号
         sb.replace(sb.lastIndexOf(","), sb.lastIndexOf(",")+1, "");
         //表其他属性
-        sb.append("\n) ENGINE=InnoDB CHARSET=utf8 COMMENT='"+codeTableVo.getComment()+"'");
+        sb.append("\n) ENGINE=InnoDB CHARSET=utf8 COMMENT='"+codeTableVo.getComment()+"';");
         return sb.toString();
     }
 }
