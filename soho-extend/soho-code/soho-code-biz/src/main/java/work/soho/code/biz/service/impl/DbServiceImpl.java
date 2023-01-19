@@ -189,4 +189,13 @@ public class DbServiceImpl implements DbService {
     public void createTable(String sql) {
         jdbcTemplate.execute(sql);
     }
+
+    /**
+     * 删除指定表
+     *
+     * @param tableName
+     */
+    public void dropTable(String tableName) {
+        jdbcTemplate.execute("drop table if exists `" + tableName + "`;");
+    }
 }

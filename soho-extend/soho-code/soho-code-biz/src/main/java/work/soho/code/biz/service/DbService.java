@@ -7,9 +7,16 @@ import java.util.HashMap;
 import java.util.List;
 
 public interface DbService {
-    public List<Object> getTableNames();
+    List<Object> getTableNames();
 
-    public CodeTableVo getTableByName(String name);
+    CodeTableVo getTableByName(String name);
 
     void createTable(String sql);
+
+    /**
+     * 删除指定表
+     *
+     * @param tableName
+     */
+    void dropTable(String tableName);
 }

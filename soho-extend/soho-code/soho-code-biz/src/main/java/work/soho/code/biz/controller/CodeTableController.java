@@ -4,10 +4,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 
 import cn.hutool.core.io.FileUtil;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import work.soho.code.api.request.CodeTableTemplateSaveCodeRequest;
 import work.soho.code.api.vo.CodeTableVo;
 import work.soho.code.biz.domain.CodeTableColumn;
@@ -65,6 +70,7 @@ public class CodeTableController {
     private final GroovyService groovyService;
 
     private final DbService dbService;
+    private final JdbcTemplate jdbcTemplate;
 
     /**
      * 查询代码表;;option:id~name列表
@@ -162,16 +168,26 @@ public class CodeTableController {
      * @return
      */
     @GetMapping("exec")
-    public R<Boolean> exec(Integer id) {
+    public R<Boolean> exec(Integer id, Boolean drop) throws SQLException {
+        Connection connection = jdbcTemplate.getDataSource().getConnection();
         try {
+            connection.setAutoCommit(false);
             CodeTable codeTable = codeTableService.getById(id);
             if(codeTable == null) {
                 return R.error("表不存在， 请检查");
             }
+            if(drop) {
+                dbService.dropTable(codeTable.getName());
+            }
+            log.info(codeTableService.getSqlById(id));
             dbService.createTable(codeTableService.getSqlById(id));
+            connection.commit();
             return R.success();
         } catch (Exception e) {
+            connection.rollback();
             return R.error(e.getMessage());
+        } finally {
+            connection.setAutoCommit(true);
         }
     }
 
