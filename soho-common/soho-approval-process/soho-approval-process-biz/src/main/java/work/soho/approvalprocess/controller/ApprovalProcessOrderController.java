@@ -29,6 +29,7 @@ import work.soho.approvalprocess.vo.MyProvalProcessOrderVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
+import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
@@ -84,7 +85,7 @@ public class ApprovalProcessOrderController {
             orderMyListDto.setApplyUserId(userId);
         }
 
-        PageHelper.startPage(request.getParameterMap());
+        PageUtils.startPage();
         List<ApprovalProcessOrder> list = approvalProcessOrderService.myList(orderMyListDto);
         return listToVo(list);
     }
