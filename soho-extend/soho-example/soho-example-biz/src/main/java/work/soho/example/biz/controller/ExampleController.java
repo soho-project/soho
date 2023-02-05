@@ -60,8 +60,8 @@ public class ExampleController {
         if (example.getCategoryId() != null){
             lqw.eq(Example::getCategoryId ,example.getCategoryId());
         }
-        if (StringUtils.isNotBlank(example.getPayId())){
-            lqw.like(Example::getPayId ,example.getPayId());
+        if (StringUtils.isNotBlank(example.getOptionId())){
+            lqw.like(Example::getOptionId ,example.getOptionId());
         }
         if (StringUtils.isNotBlank(example.getContent())){
             lqw.like(Example::getContent ,example.getContent());
