@@ -80,3 +80,6 @@ token:
 #        secretKey: xxxx
 #        bucket: xxxx
 #        urlPrefix: http://ra86b7o3s.hn-bkt.clouddn.com/
+
+redisson:
+  nodeAddress: redis://localhost:6379
