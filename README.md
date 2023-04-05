@@ -7,18 +7,18 @@ SOHO后台管理系统
 预览地址
 -------
 
-- 预览地址： http://demo.site-school.com/
+- 预览地址： https://www.soho.work/
+- 文档地址： https://docs.soho.work/
 - 前端仓库地址：https://gitee.com/fang/soho-admin-front
 - [相关技术文档](docs/main.md)
 
 ![img_2.png](docs/images/img_2.png)
-![img_1.png](docs/images/img_1.png)
+![img_5.png](docs/images/img_5.png)
 ![img.png](docs/images/img.png)
 ![img.png](docs/images/img_3.png)
 ![img_1.png](docs/images/img_4.png)
 
-TODO
------
+加入我们
+-------
 
-- 独立鉴权模块
-- 微服务支持
+QQ群：569407926
