@@ -106,6 +106,10 @@ public class CodeTableColumnController {
     @PostMapping
     @Node(value = "codeTableColumn::add", name = "代码表字段新增")
     public R<Boolean> add(@RequestBody CodeTableColumn codeTableColumn) {
+        //小数点位不能为空
+        if(codeTableColumn.getScale() == null) {
+            codeTableColumn.setScale(0);
+        }
         return R.success(codeTableColumnService.save(codeTableColumn));
     }
 
