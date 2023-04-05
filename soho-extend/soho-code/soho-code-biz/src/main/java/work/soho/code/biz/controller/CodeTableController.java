@@ -93,6 +93,7 @@ public class CodeTableController {
         if (StringUtils.isNotBlank(codeTable.getComment())){
             lqw.like(CodeTable::getComment ,codeTable.getComment());
         }
+        lqw.orderByDesc(CodeTable::getId);
         List<CodeTable> list = codeTableService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }
