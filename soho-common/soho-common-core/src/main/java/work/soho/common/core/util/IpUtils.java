@@ -143,7 +143,7 @@ public class IpUtils {
      *
      * example:
      * <pre>
-     *     subnet:  192.168.0.0/24
+     *     subnet:  192.168.0.5/24
      *     checkIp: 192.168.0.6
      * </pre>
      *
