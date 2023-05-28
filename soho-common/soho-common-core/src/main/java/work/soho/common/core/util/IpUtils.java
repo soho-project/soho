@@ -137,4 +137,26 @@ public class IpUtils {
         }
         return ipList;
     }
+
+    /**
+     * 检查该IP是否在该子网内
+     *
+     * example:
+     * <pre>
+     *     subnet:  192.168.0.0/24
+     *     checkIp: 192.168.0.6
+     * </pre>
+     *
+     * @param subnet
+     * @param checkIp
+     * @return
+     */
+    public static boolean inSubnet(String subnet, String checkIp) {
+        String[] parts = subnet.split("/");
+        Long longIp = IpUtils.ipToLong(checkIp);
+        Long matchIp = IpUtils.ipToLong(parts[0]);
+        Integer matchLen = Integer.parseInt(parts[1]);
+        Integer outLen = 32 - matchLen;
+        return (longIp>>outLen) == (matchIp>>outLen);
+    }
 }
