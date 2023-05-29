@@ -89,7 +89,7 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
     public Map<String, AdminResource> getResourceByUid(Long uid) {
         LambdaQueryWrapper<AdminRoleUser> ruLqw = new LambdaQueryWrapper();
         ruLqw.eq(AdminRoleUser::getUserId, uid);
-        List<AdminRoleUser> roleUsers = adminRoleUserService.list();
+        List<AdminRoleUser> roleUsers = adminRoleUserService.list(ruLqw);
         if(roleUsers.size() == 0) {
             return null;
         }
