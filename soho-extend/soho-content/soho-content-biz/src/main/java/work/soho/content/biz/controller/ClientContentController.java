@@ -14,6 +14,8 @@ import work.soho.content.biz.domain.AdminContent;
 import work.soho.content.biz.domain.AdminContentCategory;
 import work.soho.content.biz.service.AdminContentCategoryService;
 import work.soho.content.biz.service.AdminContentService;
+import work.soho.user.api.dto.UserInfoDto;
+import work.soho.user.api.service.UserApiService;
 
 import java.util.List;
 import java.util.Map;
@@ -25,7 +27,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ClientContentController {
     private final AdminContentService adminContentService;
-//    private final AdminUserService adminUserService;
+    private final UserApiService userApiService ;
     private final AdminContentCategoryService adminContentCategoryService;
 
     @GetMapping("hello")
@@ -98,11 +100,10 @@ public class ClientContentController {
             return R.error("请传递有效文章ID");
         }
         AdminContentVo adminContentVo = BeanUtils.copy(adminContent, AdminContentVo.class);
-        //获取用户信息
-//        AdminUser adminUser = adminUserService.getById(adminContent.getUserId());
-//        if(adminUser!=null) {
-//            adminContentVo.setUsername(adminUser.getUsername());
-//        }
+        UserInfoDto user = userApiService.getUserById(adminContent.getUserId());
+        if(user != null) {
+            adminContentVo.setUsername(user.getUsername());
+        }
         //获取文章导航信息
         List<AdminContentCategory> navaList = adminContentCategoryService.getCategorysBySonId(adminContent.getCategoryId());
         for (AdminContentCategory adminContentCategory: navaList) {
