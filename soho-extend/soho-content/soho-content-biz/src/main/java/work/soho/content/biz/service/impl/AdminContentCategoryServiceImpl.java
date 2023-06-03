@@ -1,11 +1,11 @@
-package work.soho.admin.service.impl;
+package work.soho.content.biz.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
-import work.soho.admin.domain.AdminContentCategory;
-import work.soho.admin.service.AdminContentCategoryService;
-import work.soho.admin.mapper.AdminContentCategoryMapper;
+
 import org.springframework.stereotype.Service;
+import work.soho.content.biz.domain.AdminContentCategory;
+import work.soho.content.biz.mapper.AdminContentCategoryMapper;
+import work.soho.content.biz.service.AdminContentCategoryService;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.List;
 */
 @Service
 public class AdminContentCategoryServiceImpl extends ServiceImpl<AdminContentCategoryMapper, AdminContentCategory>
-    implements AdminContentCategoryService{
+    implements AdminContentCategoryService {
     public List<AdminContentCategory> getCategorysBySonId(Long id) {
         LinkedList<AdminContentCategory> list = new LinkedList<>();
         AdminContentCategory adminContentCategory = null;

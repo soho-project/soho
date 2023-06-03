@@ -1,4 +1,4 @@
-package work.soho.admin.domain;
+package work.soho.content.biz.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;

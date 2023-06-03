@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="work.soho.admin.mapper.AdminContentCategoryMapper">
+<mapper namespace="work.soho.content.biz.mapper.AdminContentCategoryMapper">
 
-    <resultMap id="BaseResultMap" type="work.soho.admin.domain.AdminContentCategory">
+    <resultMap id="BaseResultMap" type="work.soho.content.biz.domain.AdminContentCategory">
             <result property="id" column="id" jdbcType="INTEGER"/>
             <result property="name" column="name" jdbcType="VARCHAR"/>
             <result property="parentId" column="parent_id" jdbcType="INTEGER"/>

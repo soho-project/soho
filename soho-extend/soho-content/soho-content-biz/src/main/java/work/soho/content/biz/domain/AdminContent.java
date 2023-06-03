@@ -1,4 +1,4 @@
-package work.soho.admin.domain;
+package work.soho.content.biz.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -16,7 +16,7 @@ import lombok.Data;
 @Data
 public class AdminContent implements Serializable {
     /**
-     * 
+     *
      */
     @TableField(value = "id")
     @TableId(type = IdType.AUTO)

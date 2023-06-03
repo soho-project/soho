@@ -1,12 +1,12 @@
-package work.soho.admin.listener;
+package work.soho.content.biz.listener;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import work.soho.admin.domain.AdminContent;
-import work.soho.admin.service.AdminContentService;
 import work.soho.api.admin.event.DashboardEvent;
+import work.soho.content.biz.domain.AdminContent;
+import work.soho.content.biz.service.AdminContentService;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;

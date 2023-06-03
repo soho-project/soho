@@ -1,27 +1,20 @@
-package work.soho.admin.controller;
+package work.soho.content.biz.controller;
 
-import cn.hutool.core.util.PageUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.util.PageObjectUtil;
 import io.swagger.annotations.Api;
-import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import work.soho.admin.domain.AdminContent;
-import work.soho.admin.domain.AdminContentCategory;
-import work.soho.admin.domain.AdminUser;
-import work.soho.admin.service.AdminContentCategoryService;
-import work.soho.admin.service.AdminContentService;
-import work.soho.admin.service.AdminUserService;
 import work.soho.api.admin.vo.AdminContentCategoryListVo;
 import work.soho.api.admin.vo.AdminContentVo;
 import work.soho.api.admin.vo.NavVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
+import work.soho.content.biz.domain.AdminContent;
+import work.soho.content.biz.domain.AdminContentCategory;
+import work.soho.content.biz.service.AdminContentCategoryService;
+import work.soho.content.biz.service.AdminContentService;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,7 +25,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ClientContentController {
     private final AdminContentService adminContentService;
-    private final AdminUserService adminUserService;
+//    private final AdminUserService adminUserService;
     private final AdminContentCategoryService adminContentCategoryService;
 
     @GetMapping("hello")
@@ -106,10 +99,10 @@ public class ClientContentController {
         }
         AdminContentVo adminContentVo = BeanUtils.copy(adminContent, AdminContentVo.class);
         //获取用户信息
-        AdminUser adminUser = adminUserService.getById(adminContent.getUserId());
-        if(adminUser!=null) {
-            adminContentVo.setUsername(adminUser.getUsername());
-        }
+//        AdminUser adminUser = adminUserService.getById(adminContent.getUserId());
+//        if(adminUser!=null) {
+//            adminContentVo.setUsername(adminUser.getUsername());
+//        }
         //获取文章导航信息
         List<AdminContentCategory> navaList = adminContentCategoryService.getCategorysBySonId(adminContent.getCategoryId());
         for (AdminContentCategory adminContentCategory: navaList) {

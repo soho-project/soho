@@ -1,4 +1,4 @@
-package work.soho.admin.controller;
+package work.soho.content.biz.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -6,19 +6,20 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Arrays;
+
+import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import work.soho.admin.utils.SecurityUtils;
-import work.soho.api.admin.request.AdminContentRequest;
-import work.soho.api.admin.request.BetweenDateRequest;
-import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
+import work.soho.admin.common.security.utils.SecurityUtils;
 import work.soho.api.admin.annotation.Node;
-import work.soho.admin.domain.AdminContent;
-import work.soho.admin.service.AdminContentService;
+import work.soho.api.admin.request.AdminContentRequest;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
+import work.soho.content.biz.domain.AdminContent;
+import work.soho.content.biz.service.AdminContentService;
+
 
 /**
  * 系统内容表Controller
@@ -29,7 +30,7 @@ import work.soho.common.data.upload.utils.UploadUtils;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/adminContent" )
-public class AdminContentController extends BaseController {
+public class AdminContentController {
 
     private final AdminContentService adminContentService;
 
@@ -40,9 +41,8 @@ public class AdminContentController extends BaseController {
     @Node(value = "adminContent::list", name = "系统内容表列表")
     public R<PageSerializable<AdminContent>> list(AdminContentRequest adminContentRequest)
     {
-        startPage();
         LambdaQueryWrapper<AdminContent> lqw = new LambdaQueryWrapper<>();
-
+        PageUtils.startPage();
         lqw.between(adminContentRequest.getStartTime()!=null,AdminContent::getCreatedTime, adminContentRequest.getStartTime(), adminContentRequest.getEndTime());
         lqw.like(adminContentRequest.getTitle()!=null, AdminContent::getTitle, adminContentRequest.getTitle());
         lqw.eq(adminContentRequest.getCategoryId()!=null, AdminContent::getCategoryId, adminContentRequest.getCategoryId());

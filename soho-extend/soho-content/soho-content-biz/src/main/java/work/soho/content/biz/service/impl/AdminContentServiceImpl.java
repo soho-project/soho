@@ -1,10 +1,11 @@
-package work.soho.admin.service.impl;
+package work.soho.content.biz.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import work.soho.admin.domain.AdminContent;
-import work.soho.admin.service.AdminContentService;
-import work.soho.admin.mapper.AdminContentMapper;
+
 import org.springframework.stereotype.Service;
+import work.soho.content.biz.domain.AdminContent;
+import work.soho.content.biz.mapper.AdminContentMapper;
+import work.soho.content.biz.service.AdminContentService;
 
 /**
 * @author i
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Service;
 */
 @Service
 public class AdminContentServiceImpl extends ServiceImpl<AdminContentMapper, AdminContent>
-    implements AdminContentService{
+    implements AdminContentService {
 
 }
 

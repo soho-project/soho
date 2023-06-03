@@ -1,7 +1,7 @@
-package work.soho.admin.service;
+package work.soho.content.biz.service;
 
-import work.soho.admin.domain.AdminContent;
 import com.baomidou.mybatisplus.extension.service.IService;
+import work.soho.content.biz.domain.AdminContent;
 
 /**
 * @author i

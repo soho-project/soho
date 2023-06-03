@@ -1,7 +1,7 @@
-package work.soho.admin.mapper;
+package work.soho.content.biz.mapper;
 
-import work.soho.admin.domain.AdminContent;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import work.soho.content.biz.domain.AdminContent;
 
 /**
 * @author i
