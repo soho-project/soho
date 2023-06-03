@@ -4,10 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils;
 import work.soho.admin.domain.AdminResource;
 import work.soho.admin.domain.AdminRoleResource;
 import work.soho.admin.domain.AdminRoleUser;
@@ -16,13 +14,16 @@ import work.soho.admin.service.AdminResourceService;
 import work.soho.admin.service.AdminRoleUserService;
 import work.soho.admin.service.AdminUserService;
 import work.soho.admin.domain.AdminUser;
+import work.soho.admin.utils.TreeUtils;
 import work.soho.api.admin.service.AdminInfoApiService;
 import work.soho.api.admin.vo.AdminUserVo;
+import work.soho.common.core.util.HashMapUtils;
 import work.soho.common.core.util.StringUtils;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -88,7 +89,7 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
      * @param uid
      * @return
      */
-    public Map<String, AdminResource> getResourceByUid(Long uid) {
+    public HashMap<String, AdminResource> getResourceByUid(Long uid) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         LambdaQueryWrapper<AdminRoleUser> ruLqw = new LambdaQueryWrapper();
         ruLqw.eq(AdminRoleUser::getUserId, uid);
         List<AdminRoleUser> roleUsers = adminRoleUserService.list(ruLqw);
@@ -104,11 +105,19 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
             return null;
         }
         List<Long> resourceIds = adminRoleResourcesList.stream().map(item->item.getResourceId()).collect(Collectors.toList());
+
+        TreeUtils<Long, AdminResource> treeUtils = new TreeUtils();
+        Class<?> c = AdminResource.class;
+        treeUtils.loadData(adminResourceService.list(), c.getMethod("getId"), c.getMethod("getBreadcrumbParentId"));
+        List<AdminResource> myList = treeUtils.getAllTreeNodeWidthIds(resourceIds);
+        HashMap<String, AdminResource> map = (HashMap<String, AdminResource>) HashMapUtils.fromList(myList, "route");
+        return map;
+
         //获取菜单信息
-        LambdaQueryWrapper<AdminResource> adminResourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        adminResourceLambdaQueryWrapper.in(AdminResource::getId, resourceIds);
-        List<AdminResource> list = adminResourceService.list(adminResourceLambdaQueryWrapper);
-        return list.stream().collect(Collectors.toMap(AdminResource::getRoute, v->v));
+//        LambdaQueryWrapper<AdminResource> adminResourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
+//        adminResourceLambdaQueryWrapper.in(AdminResource::getId, resourceIds);
+//        List<AdminResource> list = adminResourceService.list(adminResourceLambdaQueryWrapper);
+//        return list.stream().collect(Collectors.toMap(AdminResource::getRoute, v->v));
     }
 
     @Override
