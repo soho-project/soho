@@ -1,5 +1,6 @@
 package work.soho.admin.controller;
 
+import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageSerializable;
@@ -15,6 +16,7 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import work.soho.admin.common.security.utils.SecurityUtils;
 import work.soho.api.admin.annotation.Node;
 import work.soho.admin.domain.AdminRole;
 import work.soho.admin.domain.AdminRoleResource;
@@ -153,6 +155,28 @@ public class AdminUserController extends BaseController {
         adminUserVo.setRoleIds(roleIds);
         return R.success(adminUserVo);
     }
+
+    @ApiOperation("管理员自己的信息")
+    @GetMapping("myself")
+    public R<AdminUserVo> myselfDatails() {
+        Long userId = SecurityUtils.getLoginUserId();
+        return R.success(work.soho.common.core.util.BeanUtils.copy(adminUserService.getById(userId), AdminUserVo.class));
+    }
+
+    @ApiOperation("更新自己信息")
+    @PutMapping("myself")
+    public Object updateSelf(@RequestBody AdminUserVo adminUserVo) {
+        try {
+            AdminUser adminUser = adminUserService.getById(SecurityUtils.getLoginUserId());
+            Assert.notNull(adminUser, "系统异常，用户不存在");
+            adminUserVo.setId(adminUser.getId());
+            adminUserService.saveOrUpdate(adminUserVo);
+            return R.success("保存成功");
+        } catch (IllegalArgumentException e) {
+            return R.error(e.getMessage());
+        }
+    }
+
 
     /**
      * 删除用户
