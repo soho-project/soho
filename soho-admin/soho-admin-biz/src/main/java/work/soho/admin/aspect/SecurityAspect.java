@@ -8,10 +8,10 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
+import work.soho.admin.common.security.utils.SecurityUtils;
 import work.soho.api.admin.annotation.Node;
 import work.soho.admin.domain.AdminResource;
 import work.soho.admin.service.AdminUserService;
-import work.soho.admin.utils.SecurityUtils;
 import work.soho.common.core.result.R;
 
 import java.lang.reflect.Method;
