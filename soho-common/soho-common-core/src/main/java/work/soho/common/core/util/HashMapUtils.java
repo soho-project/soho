@@ -16,7 +16,7 @@ public class HashMapUtils {
      * @param fieldName key字段名
      * @return
      */
-    public HashMap<Object, Object> fromList(List<Object> list, String fieldName) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    public HashMap<?, ?> fromList(List<?> list, String fieldName) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         HashMap<Object, Object> hashMap = new HashMap<>();
         for (Object item:list) {
             String firstLetter = fieldName.substring(0, 1).toUpperCase();
@@ -34,7 +34,7 @@ public class HashMapUtils {
      * @param hashMap
      * @return
      */
-    public List<Object> valueToList(HashMap<Object, Object> hashMap) {
+    public List<Object> valueToList(HashMap<?, ?> hashMap) {
         List<Object> list = new ArrayList<>();
         if(hashMap != null) {
             for (Object key: hashMap.keySet()

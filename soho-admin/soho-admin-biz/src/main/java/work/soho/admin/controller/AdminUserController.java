@@ -49,7 +49,6 @@ public class AdminUserController extends BaseController {
     private final AdminRoleResourceService adminRoleResourceService;
     private static final Logger logger = LoggerFactory.getLogger(AdminUserController.class);
 
-    @Node("adminUser:user")
     @GetMapping("/user")
     public R<CurrentAdminUserVo> user() {
         try {
@@ -78,6 +77,7 @@ public class AdminUserController extends BaseController {
             currentAdminUserVo.setPermissions(new CurrentAdminUserVo.Permissions().setRole(adminRole.getName()).setVisit((ArrayList<Long>) userResourceIds));
             return R.success(currentAdminUserVo);
         } catch (Exception e) {
+            e.printStackTrace();
             return R.error("请登录");
         }
     }

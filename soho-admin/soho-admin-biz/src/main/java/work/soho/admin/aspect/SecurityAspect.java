@@ -15,6 +15,7 @@ import work.soho.admin.utils.SecurityUtils;
 import work.soho.common.core.result.R;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
 
 @Log4j2
@@ -35,9 +36,9 @@ public class SecurityAspect {
             if(uid != 1l) {
                 //进行权限检查
                 String key = node.value();
-                Map<String, AdminResource> map = adminUserService.getResourceByUid(uid);
+                HashMap<String, AdminResource> map = adminUserService.getResourceByUid(uid);
                 if(map.get(key)==null) {
-                    return R.error("请登录");
+                    return R.error(2401, "未授权访问");
                 }
             }
         }
