@@ -1,7 +1,6 @@
-package work.soho.admin.controller;
+package work.soho.content.biz.controller;
 
 
-import cn.hutool.core.lang.tree.Tree;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 import java.time.LocalDateTime;
@@ -9,7 +8,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.poi.ss.formula.functions.T;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -19,13 +17,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.api.admin.vo.TreeContentCategoryVo;
-import work.soho.common.core.util.BeanUtils;
+import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
 import work.soho.common.core.result.R;
 import work.soho.api.admin.annotation.Node;
-import work.soho.admin.domain.AdminContentCategory;
-import work.soho.admin.service.AdminContentCategoryService;
+import work.soho.content.biz.domain.AdminContentCategory;
+import work.soho.content.biz.service.AdminContentCategoryService;
 
 /**
  * 内容分类Controller
@@ -36,7 +34,7 @@ import work.soho.admin.service.AdminContentCategoryService;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/adminContentCategory" )
-public class AdminContentCategoryController extends BaseController {
+public class AdminContentCategoryController {
 
     private final AdminContentCategoryService adminContentCategoryService;
 
@@ -47,7 +45,7 @@ public class AdminContentCategoryController extends BaseController {
     @Node(value = "adminContentCategory::list", name = "内容分类列表")
     public R<PageSerializable<AdminContentCategory>> list(AdminContentCategory adminContentCategory)
     {
-        startPage();
+        PageUtils.startPage();
         LambdaQueryWrapper<AdminContentCategory> lqw = new LambdaQueryWrapper<AdminContentCategory>();
 
         if (adminContentCategory.getId() != null){

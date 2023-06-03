@@ -24,5 +24,6 @@
         <module>soho-example</module>
         <module>soho-user</module>
         <module>soho-code</module>
+        <module>soho-content</module>
     </modules>
 </project>
