@@ -64,5 +64,10 @@
             <groupId>work.soho</groupId>
             <artifactId>soho-common-data</artifactId>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-user-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>
