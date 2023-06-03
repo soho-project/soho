@@ -16,6 +16,7 @@ import work.soho.admin.service.AdminResourceService;
 import work.soho.admin.service.AdminRoleUserService;
 import work.soho.admin.service.AdminUserService;
 import work.soho.admin.domain.AdminUser;
+import work.soho.api.admin.service.AdminInfoApiService;
 import work.soho.api.admin.vo.AdminUserVo;
 import work.soho.common.core.util.StringUtils;
 
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser> implements AdminUserService {
+public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser> implements AdminUserService, AdminInfoApiService {
     private final AdminRoleUserService adminRoleUserService;
     private final AdminRoleResourceServiceImpl adminRoleResourceService;
     private final AdminResourceService adminResourceService;
@@ -107,5 +108,12 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
         adminResourceLambdaQueryWrapper.in(AdminResource::getId, resourceIds);
         List<AdminResource> list = adminResourceService.list(adminResourceLambdaQueryWrapper);
         return list.stream().collect(Collectors.toMap(AdminResource::getRoute, v->v));
+    }
+
+    @Override
+    public AdminUserVo getAdminById(Long id) {
+        AdminUserVo adminUserVo = new AdminUserVo();
+        BeanUtils.copyProperties(getById(id), adminUserVo);
+        return adminUserVo;
     }
 }
