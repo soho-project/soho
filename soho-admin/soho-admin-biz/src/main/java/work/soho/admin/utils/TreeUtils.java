@@ -4,10 +4,8 @@ import cn.hutool.core.lang.Assert;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class TreeUtils<I, N> {
 
@@ -93,6 +91,51 @@ public class TreeUtils<I, N> {
         return l;
     }
 
+    /**
+     * 获取指定节点所有的父节点不含自身
+     *
+     * @param id
+     * @return
+     */
+    public List<N> getAllParentById(I id) throws InvocationTargetException, IllegalAccessException {
+        List<N> list = new ArrayList<>();
+        N node = null;
+        I currentId = id;
+        while((node = map.get(currentId)) != null) {
+            I parentId = (I) parentIdMethod.invoke(node);
+            node = (N) map.get(parentId);
+            if(node != null) {
+                list.add(node);
+                currentId = (I) idMethod.invoke(node);
+            } else {
+                break;
+            }
+        }
+        return list;
+    }
 
-
+    /**
+     * 获取所有的父节点不含自身
+     *
+     * @param ids
+     * @return
+     * @throws InvocationTargetException
+     * @throws IllegalAccessException
+     */
+    public List<N> getAllParentByIds(List<I> ids) throws InvocationTargetException, IllegalAccessException {
+        List<N> list = new ArrayList<>();
+        for(I id: ids) {
+            list.addAll(getAllParentById(id));
+        }
+        //去重返回
+        return list.stream().map(i-> {
+            try {
+                return idMethod.invoke(i);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        }).collect(Collectors.toSet()).stream().map(id -> map.get(id)).collect(Collectors.toList());
+    }
 }

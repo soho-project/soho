@@ -34,12 +34,17 @@ public class TreeTest {
         ArrayList<Long> ids = new ArrayList<>();
         ids.add(2l);
         ids.add(19l);
-        ids.add(27l);
+        ids.add(29l);
 
         List<AdminResource> myList = treeUtils.getAllTreeNodeWidthIds(ids);
         HashMap<String, AdminResource> map = (HashMap<String, AdminResource>) HashMapUtils.fromList(myList, "route");
+
+        List<AdminResource> parentList = treeUtils.getAllParentByIds(ids);
+
         System.out.println(myList);
         System.out.println("hello");
         System.out.println(map);
+        System.out.println("===================");
+        System.out.println(parentList);
     }
 }
