@@ -33,7 +33,7 @@ public class AdminResourceController {
     private final AdminRoleResourceService adminRoleResourceService;
 
     @ApiOperation("同步菜单")
-    @Node(value = "admin-resource-sync", name = "同比项目资源")
+    @Node(value = "resource::admin-resource-sync", name = "同步项目资源")
     @GetMapping("/admin-resource/sync")
     public R<Boolean> syncResource() {
         adminResourceService.syncResource2Db();
@@ -45,6 +45,7 @@ public class AdminResourceController {
      *
      * @return
      */
+    @Node(value = "resource::routeVoList", name = "路由资源列表")
     @GetMapping("/routes")
     public List<RouteVo> routeVoList() {
         Long userId = SecurityUtils.getLoginUserId();
@@ -125,6 +126,7 @@ public class AdminResourceController {
 
     @ApiOperation("资源详情")
     @GetMapping()
+    @Node(value = "resource::details", name = "详情")
     public R<AdminResource> getDetails(Long id) {
         AdminResource adminResource = adminResourceService.getById(id);
         return R.success(adminResource);
@@ -132,6 +134,7 @@ public class AdminResourceController {
 
     @ApiOperation("更新资源")
     @PutMapping
+    @Node(value = "resource::update", name = "更新")
     public R<Boolean> update(@RequestBody AdminResource adminResource) {
         //TODO 资源检查
         adminResourceService.updateById(adminResource);
@@ -146,6 +149,7 @@ public class AdminResourceController {
      */
     @PostMapping
     @ApiOperation("创建资源")
+    @Node(value = "resource::create", name = "新增")
     public R<AdminResource> create(@RequestBody AdminResource adminResource) {
         adminResource.setCreatedTime(new Date());
         adminResourceService.save(adminResource);
@@ -154,6 +158,7 @@ public class AdminResourceController {
 
     @ApiOperation("删除指定资源")
     @DeleteMapping()
+    @Node(value = "resource::delete", name = "删除")
     public R<Boolean> delete(@RequestBody AdminResource adminResource) {
         AdminResource dbAdminResource = adminResourceService.getById(adminResource.getId());
         //检查是否有子节点
