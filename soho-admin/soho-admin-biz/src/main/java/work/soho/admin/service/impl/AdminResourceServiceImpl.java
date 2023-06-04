@@ -67,7 +67,7 @@ public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, A
             if(parentResource == null) continue;
             //确定名称
             String nodeName = node.name();
-            if(nodeName == null) {
+            if(nodeName == null || "".equals(nodeName)) {
                 if(operateName.equals("list")) {
                     nodeName = "列表";
                 }else if(operateName.equals("edit")) {
