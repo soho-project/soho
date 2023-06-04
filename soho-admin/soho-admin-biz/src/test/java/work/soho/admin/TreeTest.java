@@ -1,15 +1,13 @@
 package work.soho.admin;
 
-import cn.hutool.core.collection.ListUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import work.soho.admin.domain.AdminResource;
 import work.soho.admin.service.AdminResourceService;
-import work.soho.admin.utils.TreeUtils;
+import work.soho.common.core.util.TreeUtils;
 import work.soho.common.core.util.HashMapUtils;
 
 import java.lang.reflect.InvocationTargetException;
