@@ -14,7 +14,7 @@ import work.soho.admin.service.AdminResourceService;
 import work.soho.admin.service.AdminRoleUserService;
 import work.soho.admin.service.AdminUserService;
 import work.soho.admin.domain.AdminUser;
-import work.soho.admin.utils.TreeUtils;
+import work.soho.common.core.util.TreeUtils;
 import work.soho.api.admin.service.AdminInfoApiService;
 import work.soho.api.admin.vo.AdminUserVo;
 import work.soho.common.core.util.HashMapUtils;

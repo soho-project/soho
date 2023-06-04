@@ -1,4 +1,4 @@
-package work.soho.admin.utils;
+package work.soho.common.core.util;
 
 import cn.hutool.core.lang.Assert;
 

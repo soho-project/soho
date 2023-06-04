@@ -14,7 +14,7 @@ import work.soho.admin.domain.AdminRoleUser;
 import work.soho.admin.service.AdminResourceService;
 import work.soho.admin.service.AdminRoleResourceService;
 import work.soho.admin.service.AdminRoleUserService;
-import work.soho.admin.utils.TreeUtils;
+import work.soho.common.core.util.TreeUtils;
 import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.vo.RouteVo;
 import work.soho.api.admin.vo.TreeResourceVo;
