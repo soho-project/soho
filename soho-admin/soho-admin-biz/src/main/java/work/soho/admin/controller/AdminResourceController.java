@@ -14,6 +14,7 @@ import work.soho.admin.domain.AdminRoleUser;
 import work.soho.admin.service.AdminResourceService;
 import work.soho.admin.service.AdminRoleResourceService;
 import work.soho.admin.service.AdminRoleUserService;
+import work.soho.admin.utils.TreeUtils;
 import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.vo.RouteVo;
 import work.soho.api.admin.vo.TreeResourceVo;
@@ -52,7 +53,7 @@ public class AdminResourceController {
                         .eq(AdminResource::getType, 1) // 1 前端节点
                         .eq(AdminResource::getVisible, 1) // 1 可见菜单
         );
-
+        //格式转换
         List<RouteVo> routeDTOList = list.stream().map(item -> {
             RouteVo route = new RouteVo();
             BeanUtils.copyProperties(item, route);
@@ -64,9 +65,6 @@ public class AdminResourceController {
             route.setVisible(item.getVisible() == 1);
             return route;
         }).collect(Collectors.toList());
-
-        // 按 parentId 分组
-        Map<Long, List<RouteVo>> resourceMap = routeDTOList.stream().collect(Collectors.groupingBy(RouteVo::getBreadcrumbParentId));
 
         // 非 admin 用户
         if(!Objects.equals(1L, userId)){
@@ -86,36 +84,23 @@ public class AdminResourceController {
             );
 
             // 角色绑定的菜单IDS
-            Set<Long> roleResourceRouteIds = roleResourceList.stream().map(AdminRoleResource::getResourceId).collect(Collectors.toSet());
+            List<Long> roleResourceRouteIds = roleResourceList.stream().map(AdminRoleResource::getResourceId).collect(Collectors.toList());
 
-            // 有权限的菜单
-            List<RouteVo> hasRoleResource = routeDTOList.stream().filter(e -> roleResourceRouteIds.contains(e.getId())).collect(Collectors.toList());
-            Set<Long> collect = hasRoleResource.stream().map(RouteVo::getBreadcrumbParentId).collect(Collectors.toSet());
-            roleResourceRouteIds.addAll(collect);
+            try {
+                Class<?> c = RouteVo.class;
+                TreeUtils<Long, RouteVo> treeUtils = new TreeUtils();
+                treeUtils.loadData(routeDTOList, c.getMethod("getId"), c.getMethod("getBreadcrumbParentId"));
+                List<RouteVo> needList = treeUtils.getAllTreeNodeWidthIds(roleResourceRouteIds);
+                needList.addAll(treeUtils.getAllParentByIds(roleResourceRouteIds));
+                routeDTOList = needList;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
-            // 角色菜单全选子节点不会存入数据库，需要把子节点找出来
-            Set<Long> parentIds = roleResourceRouteIds.stream().filter(e -> Objects.isNull(resourceMap.get(e))).collect(Collectors.toSet());
-            Set<Long> childrenSet = routeDTOList.stream().filter(route -> parentIds.contains(route.getBreadcrumbParentId())).map(RouteVo::getId).collect(Collectors.toSet());
-            roleResourceRouteIds.addAll(childrenSet);
-
-            // 菜单筛选
-            routeDTOList = routeDTOList.stream().filter(route -> roleResourceRouteIds.contains(route.getId())).collect(Collectors.toList());
         }
 
-        // 设置子节点
-        routeDTOList.forEach(route -> route.setChildren(resourceMap.get(route.getId())));
-
-        // 筛选树节点
-        List<RouteVo> treeRoute = routeDTOList.stream().filter(route -> Objects.equals(1L, route.getBreadcrumbParentId())).collect(Collectors.toList());
-
-        List<RouteVo> data = new ArrayList<>();
-        // 树节点转list
-        this.treeToList(treeRoute, data);
         // 排序
-        data = data.stream().sorted(Comparator.comparingInt(RouteVo::getSort)).collect(Collectors.toList());
-
-        // 返回菜单数据
-        return data;
+        return routeDTOList.stream().sorted(Comparator.comparingInt(RouteVo::getSort)).collect(Collectors.toList());
     }
 
     private void treeToList (List<RouteVo> tree, List<RouteVo> result){
