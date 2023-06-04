@@ -39,7 +39,7 @@ public class AdminConfigGroupController extends BaseController {
     /**
      * 查询admin_config_group列表
      */
-    @Node("adminConfigGroup:list")
+    @Node(value = "config::listGroup", name = "分组列表")
     @GetMapping("/list")
     public R<Page<AdminConfigGroup>> list(AdminConfigGroup adminConfigGroup)
     {
@@ -65,7 +65,7 @@ public class AdminConfigGroupController extends BaseController {
     /**
      * 获取admin_config_group详细信息
      */
-    @Node("adminCofigGroup:getInfo")
+    @Node(value = "config::getInfoGroup", name = "分组详情")
     @GetMapping(value = "/{id}" )
     public R<AdminConfigGroup> getInfo(@PathVariable("id" ) Long id) {
         return R.success(adminConfigGroupService.getById(id));
@@ -74,7 +74,7 @@ public class AdminConfigGroupController extends BaseController {
     /**
      * 新增admin_config_group
      */
-    @Node("adminConfigGroup:add")
+    @Node(value = "config::addGroup", name = "新增分组")
     @PostMapping
     public R<Boolean> add(@RequestBody AdminConfigGroup adminConfigGroup) {
         return R.success(adminConfigGroupService.save(adminConfigGroup));
@@ -83,7 +83,7 @@ public class AdminConfigGroupController extends BaseController {
     /**
      * 修改admin_config_group
      */
-    @Node("adminConfigGroup:edit")
+    @Node(value = "config::editGroup", name = "编辑分组")
     @PutMapping
     public R<Boolean> edit(@RequestBody AdminConfigGroup adminConfigGroup) {
         return R.success(adminConfigGroupService.updateById(adminConfigGroup));
@@ -92,7 +92,7 @@ public class AdminConfigGroupController extends BaseController {
     /**
      * 删除admin_config_group
      */
-    @Node("adminConfigGroup:remove")
+    @Node(value = "config::removeGroup", name = "删除分组")
     @DeleteMapping("/{ids}" )
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(adminConfigGroupService.removeByIds(Arrays.asList(ids)));
