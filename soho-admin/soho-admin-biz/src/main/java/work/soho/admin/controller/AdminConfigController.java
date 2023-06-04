@@ -39,7 +39,7 @@ public class AdminConfigController extends BaseController {
     /**
      * 查询admin_config列表
      */
-    @Node("adminConfig:list")
+    @Node("config::list")
     @GetMapping("/list")
     public R<PageSerializable<AdminConfig>> list(AdminConfig adminConfig)
     {
@@ -74,7 +74,7 @@ public class AdminConfigController extends BaseController {
     /**
      * 获取admin_config详细信息
      */
-    @Node("adminConfig:getInfo")
+    @Node("config::getInfo")
     @GetMapping(value = "/{id}" )
     public R<AdminConfig> getInfo(@PathVariable("id" ) Long id) {
         return R.success(adminConfigService.getById(id));
@@ -83,7 +83,7 @@ public class AdminConfigController extends BaseController {
     /**
      * 新增admin_config
      */
-    @Node("adminConfig:add")
+    @Node("config::add")
     @PostMapping
     public R<Boolean> add(@RequestBody AdminConfig adminConfig) {
         return R.success(adminConfigService.save(adminConfig));
@@ -92,7 +92,7 @@ public class AdminConfigController extends BaseController {
     /**
      * 修改admin_config
      */
-    @Node("adminConfig:edit")
+    @Node("config::edit")
     @PutMapping
     public R<Boolean> edit(@RequestBody AdminConfig adminConfig) {
         return R.success(adminConfigService.updateById(adminConfig));
@@ -101,7 +101,7 @@ public class AdminConfigController extends BaseController {
     /**
      * 删除admin_config
      */
-    @Node("adminConfig:remove")
+    @Node("config::remove")
     @DeleteMapping("/{ids}" )
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(adminConfigService.removeByIds(Arrays.asList(ids)));
