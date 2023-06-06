@@ -18,10 +18,9 @@ import lombok.Data;
 @Data
 public class LotProductValue implements Serializable {
     /**
-     * 
+     *
      */
-    @TableField(value = "id")
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     /**

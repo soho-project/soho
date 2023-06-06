@@ -16,9 +16,9 @@ import lombok.Data;
 @Data
 public class AdminJobLog implements Serializable {
     /**
-     * 
+     *
      */
-    @TableField(value = "id")
+    @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     /**

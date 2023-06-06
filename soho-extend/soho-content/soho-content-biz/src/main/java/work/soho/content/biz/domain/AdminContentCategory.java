@@ -18,8 +18,7 @@ public class AdminContentCategory implements Serializable {
     /**
      * 分类ID
      */
-    @TableField(value = "id")
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
     /**

@@ -18,8 +18,7 @@ public class AdminContent implements Serializable {
     /**
      *
      */
-    @TableField(value = "id")
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
     /**
