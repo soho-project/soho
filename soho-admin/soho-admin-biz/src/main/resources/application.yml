@@ -83,3 +83,4 @@ token:
 
 redisson:
   nodeAddress: redis://localhost:6379
+
