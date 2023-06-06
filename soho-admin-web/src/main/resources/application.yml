@@ -21,11 +21,13 @@
         max-idle: 8
         max-wait: -1ms
         min-idle: 0
+redisson:
+  nodeAddress: redis://192.168.0.7:6379
 server:
   servlet:
     encoding:
       charset: utf-8
-  port: 6677
+  port: 6678
 
 mybatis:
   mapper-locations: classpath:mapper/*.xml

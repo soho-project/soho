@@ -20,8 +20,7 @@ public class LotModel implements Serializable {
     /**
      * ID
      */
-    @TableField(value = "id")
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     /**

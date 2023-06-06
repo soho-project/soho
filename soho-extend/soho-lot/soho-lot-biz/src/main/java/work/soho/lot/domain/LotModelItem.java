@@ -11,17 +11,16 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 /**
- * 
+ *
  * @TableName lot_model_item
  */
 @TableName(value ="lot_model_item")
 @Data
 public class LotModelItem implements Serializable {
     /**
-     * 
+     *
      */
-    @TableField(value = "id")
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     /**
