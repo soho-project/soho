@@ -33,6 +33,74 @@
 
     <dependencyManagement>
         <dependencies>
+            <!--业务模块            -->
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-admin-api</artifactId>
+                <version>${soho-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-admin-biz</artifactId>
+                <version>${soho-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-approval-process-biz</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-common-core</artifactId>
+                <version>${soho-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-common-security</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-common-data</artifactId>
+                <version>${soho-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-common-quartz</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-content-biz</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-lot-biz</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-pay-biz</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-example-biz</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-user-biz</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-code-biz</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <!--/业务模块            -->
 
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -42,36 +110,10 @@
                 <type>pom</type>
             </dependency>
             <dependency>
-                <groupId>work.soho</groupId>
-                <artifactId>soho-admin-api</artifactId>
-                <version>${soho-common.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>work.soho</groupId>
-                <artifactId>soho-common-core</artifactId>
-                <version>${soho-common.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>work.soho</groupId>
-                <artifactId>soho-common-security</artifactId>
-                <version>0.0.1-SNAPSHOT</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>work.soho</groupId>
-                <artifactId>soho-common-data</artifactId>
-                <version>${soho-common.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.mapstruct</groupId>
                 <artifactId>mapstruct</artifactId>
