@@ -4,10 +4,7 @@ import cn.hutool.core.codec.Base64;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.List;
@@ -58,6 +55,9 @@ public class BeanUtils {
 	 */
 	@SneakyThrows
 	public static byte[] serializeBean(Object obj) {
+		if(!(obj instanceof Serializable)) {
+			throw new RuntimeException("请实现 Serializable 接口");
+		}
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ObjectOutputStream oos = new ObjectOutputStream(baos);
 		oos.writeObject(obj);
