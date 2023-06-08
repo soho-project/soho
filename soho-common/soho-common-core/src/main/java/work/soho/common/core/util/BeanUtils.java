@@ -1,8 +1,13 @@
 package work.soho.common.core.util;
 
+import cn.hutool.core.codec.Base64;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.List;
@@ -45,4 +50,55 @@ public class BeanUtils {
 		return sourceList.stream().map(source -> copy(source, targetClass)).collect(Collectors.toList());
 	}
 
+	/**
+	 * 序列化bean
+	 *
+	 * @param obj
+	 * @return
+	 */
+	@SneakyThrows
+	public static byte[] serializeBean(Object obj) {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = new ObjectOutputStream(baos);
+		oos.writeObject(obj);
+		return baos.toByteArray();
+	}
+
+	/**
+	 * 序列化bean到String
+	 *
+	 * @param obj
+	 * @return
+	 */
+	public static String serializeBean2String(Object obj) {
+		return Base64.encode(serializeBean(obj));
+	}
+
+	/**
+	 * 反序列化bean
+	 *
+	 * @param bytes
+	 * @param clazz
+	 * @return
+	 * @param <T>
+	 */
+	@SneakyThrows
+	public static  <T> T deserializeBean(byte[] bytes, Class<T> clazz) {
+		ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		ObjectInputStream ois = new ObjectInputStream(bais);
+		Object obj = ois.readObject();
+		return clazz.cast(obj);
+	}
+
+	/**
+	 * 从字符串反序列化bean
+	 *
+	 * @param data
+	 * @param clazz
+	 * @return
+	 * @param <T>
+	 */
+	public static  <T> T deserializeBeanFromString(String data, Class<T> clazz) {
+		return deserializeBean(Base64.decode(data), clazz);
+	}
 }
