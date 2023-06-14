@@ -15,7 +15,7 @@
         <disruptor.version>3.4.4</disruptor.version>
         <mybatis-spring.version>2.2.1</mybatis-spring.version>
         <mybatis.version>3.5.9</mybatis.version>
-        <guava.version>31.0.1-jre</guava.version>
+        <guava.version>32.0.0-jre</guava.version>
         <mapstruct.version>1.4.2.Final</mapstruct.version>
         <mapstruct-lombok.version>0.2.0</mapstruct-lombok.version>
         <pagehelper.version>1.4.1</pagehelper.version>
