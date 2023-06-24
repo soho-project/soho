@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import work.soho.api.admin.annotation.Node;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.RequestUtil;
 import work.soho.common.core.util.StringUtils;
@@ -64,6 +65,7 @@ public class AdminJobController {
      * 查询admin_job列表
      */
     @GetMapping("/list")
+    @Node("adminJob:list")
     public R<PageSerializable<AdminJob>> list(AdminJob adminJob)
     {
         PageHelper.startPage(RequestUtil.getRequest());
@@ -102,6 +104,7 @@ public class AdminJobController {
      * 获取admin_job详细信息
      */
     @GetMapping(value = "/{id}" )
+    @Node("adminJob:getInfo")
     public R<AdminJob> getInfo(@PathVariable("id" ) Long id) {
         return R.success(adminJobService.getById(id));
     }
@@ -110,6 +113,7 @@ public class AdminJobController {
      * 新增admin_job
      */
     @PostMapping
+    @Node("adminJob:add")
     public R<Boolean> add(@RequestBody AdminJob adminJob) {
         adminJob.setUpdatedTime(LocalDateTime.now());
         adminJob.setCreatedTime(adminJob.getUpdatedTime());
@@ -124,6 +128,7 @@ public class AdminJobController {
      * 修改admin_job
      */
     @PutMapping
+    @Node("adminJob:update")
     public R<Boolean> edit(@RequestBody AdminJob adminJob) {
         adminJob.setUpdatedTime(LocalDateTime.now());
         boolean result = adminJobService.updateById(adminJob);
@@ -137,6 +142,7 @@ public class AdminJobController {
      * 删除admin_job
      */
     @DeleteMapping("/{ids}" )
+    @Node("adminJob:delete")
     public R<Boolean> remove(@PathVariable Long[] ids) {
         for (int i = 0; i < ids.length; i++) {
             AdminJob adminJob = adminJobService.getById(ids[i]);
@@ -146,6 +152,7 @@ public class AdminJobController {
     }
 
     @GetMapping("/run/{id}")
+    @Node("adminJob:run")
     public R<Boolean> run(@PathVariable(name = "id") Integer id) {
         AdminJob adminJob = adminJobService.getById(id);
         JobUtil.runJob(scheduler, adminJob);

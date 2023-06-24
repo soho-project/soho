@@ -96,6 +96,10 @@
             <version>3.5.2</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-admin-api</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

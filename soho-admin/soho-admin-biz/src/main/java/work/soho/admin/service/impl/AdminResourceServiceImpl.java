@@ -3,6 +3,7 @@ package work.soho.admin.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
@@ -21,6 +22,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
+@Log4j2
 @RequiredArgsConstructor
 public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, AdminResource> implements AdminResourceService{
 
@@ -40,46 +42,45 @@ public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, A
         Map<RequestMappingInfo, HandlerMethod> map = requestMappingHandlerMapping.getHandlerMethods();
         Set<RequestMappingInfo> keys = map.keySet();
         for (RequestMappingInfo info: keys ) {
-            System.out.println("------------------------");
+            log.info("request mapping info----------------{}", info);
             System.out.println(info);
             HandlerMethod method = map.get(info);
 //            System.out.println(method.getMethod().getPar);
             Node node = method.getMethod().getAnnotation(Node.class);
             if(node == null) continue;
             String tableName = getTableName(node.value());
-            System.out.println(tableName);
+            log.info(tableName);
             if(tableName == null) {
-                System.out.println("没找到表明， 跳过节点");
+                log.info("没找到表明， 跳过节点");
             }
             String operateName = getOperateName(node.value());
             //检查数据库是否存在该节点
             AdminResource currentNode = adminResourceMapper.selectOne(new LambdaQueryWrapper<AdminResource>().eq(AdminResource::getRoute, node.value()));
             if(currentNode != null) {
-                System.out.println("节点存在：" + currentNode.getRoute());
+                log.info("节点存在：" + currentNode.getRoute());
                 continue;
             }
             //检查是否存在父节点
             AdminResource parentResource = adminResourceMapper.selectOne(new LambdaQueryWrapper<AdminResource>().eq(AdminResource::getRoute, "/" + getTableName(node.value()))
                     .orderByAsc(AdminResource::getId).last(" limit 1")
             );
-            System.out.println("--------------------------------------");
-            System.out.println(parentResource);
+            log.info("父节点： {}", parentResource);
             if(parentResource == null) continue;
             //确定名称
             String nodeName = node.name();
             if(nodeName == null || "".equals(nodeName)) {
                 if(operateName.equals("list")) {
                     nodeName = "列表";
-                }else if(operateName.equals("edit")) {
+                }else if(operateName.equals("edit") || "update".equals(operateName)) {
                     nodeName = "编辑";
                 }else if(operateName.equals("remove")) {
                     nodeName = "删除";
                 }else if("add".equals(operateName)) {
-                    operateName = "添加";
+                    nodeName = "添加";
                 }else if("options".equals(operateName)) {
-                    operateName = "选项";
-                }else if("details".equals(operateName)) {
-                    operateName = "详情";
+                    nodeName = "选项";
+                }else if("details".equals(operateName) || "getInfo".equals(operateName)) {
+                    nodeName = "详情";
                 }else{
                     continue;
                 }
@@ -88,7 +89,7 @@ public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, A
             currentNode = new AdminResource();
             currentNode.setSort(100);
             currentNode.setRoute(node.value());
-            currentNode.setName(node.name());
+            currentNode.setName(nodeName);
             currentNode.setVisible(0);
             currentNode.setCreatedTime(new Date());
             currentNode.setBreadcrumbParentId(parentResource.getId());
