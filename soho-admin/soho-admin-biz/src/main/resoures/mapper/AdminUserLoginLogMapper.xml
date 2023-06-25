@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.admin.mapper.AdminUserLoginLogMapper">
+    <resultMap id="BaseResultMap" type="work.soho.admin.domain.AdminUserLoginLog">
+        <id property="id" column="id" jdbcType="int"/>
+        <id property="adminUserId" column="admin_user_id" jdbcType="int"/>
+        <id property="clientIp" column="client_ip" jdbcType="varchar"/>
+        <id property="clientUserAgent" column="client_user_agent" jdbcType="varchar"/>
+        <id property="token" column="token" jdbcType="varchar"/>
+        <id property="createdTime" column="created_time" jdbcType="datetime"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,admin_user_id,client_ip,client_user_agent,token,created_time
+    </sql>
+</mapper>

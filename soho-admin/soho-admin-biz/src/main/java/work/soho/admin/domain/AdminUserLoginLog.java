@@ -1,62 +1,52 @@
 package work.soho.admin.domain;
 
-import java.io.Serializable;
-
-import java.time.LocalDateTime;
-import java.util.Date;
-
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
-import io.swagger.annotations.ApiModelProperty;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import java.io.Serializable;
 import lombok.Data;
-import nonapi.io.github.classgraph.json.Id;
+import java.time.LocalDateTime;
 
-/**
- * 用户登录日志
- *
- * @TableName admin_user_login_log
- */
+@TableName(value ="admin_user_login_log")
 @Data
 public class AdminUserLoginLog implements Serializable {
-
+    /**
+    * ID;;
+    */
+    @TableId(value = "id", type = IdType.AUTO)
+    private Integer id;
 
     /**
-     * ID
-     */
-    @ApiModelProperty("ID")
-    @TableId(type = IdType.AUTO)
-    private Long id;
-
-    /**
-     * 后台用户ID
-     */
-    @ApiModelProperty("后台用户ID")
+    * 后台用户ID;admin_user.id~username;frontType:select,
+    */
+    @TableField(value = "admin_user_id")
     private Long adminUserId;
 
     /**
-     * 客户端IP地址考虑IPv6字段适当放宽
-     */
-    @ApiModelProperty("客户端IP地址考虑IPv6字段适当放宽")
+    * 客户端IP地址考虑IPv6字段适当放宽
+    */
+    @TableField(value = "client_ip")
     private String clientIp;
 
     /**
-     * 客户端设备信息
-     */
-    @ApiModelProperty("客户端设备信息")
+    * 客户端软件信息
+    */
+    @TableField(value = "client_user_agent")
     private String clientUserAgent;
 
     /**
-     * 给用户发放的token
-     */
-    @ApiModelProperty("给用户发放的token")
+    * 给用户发放的token
+    */
+    @TableField(value = "token")
     private String token;
 
     /**
-     * 创建时间
-     */
-    @ApiModelProperty("创建时间")
+    * 创建时间
+    */
+    @TableField(value = "created_time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date createdTime;
+    private LocalDateTime createdTime;
 
 }

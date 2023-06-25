@@ -20,6 +20,7 @@ import work.soho.common.core.util.RequestUtil;
 import work.soho.common.data.captcha.utils.CaptchaUtils;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -72,7 +73,7 @@ public class AuthController {
         AdminUserLoginLog adminUserLoginLog = new AdminUserLoginLog();
         adminUserLoginLog.setAdminUserId(loginUser.getId());
         adminUserLoginLog.setClientIp(IpUtils.getClientIp());
-        adminUserLoginLog.setCreatedTime(new Date());
+        adminUserLoginLog.setCreatedTime(LocalDateTime.now());
         adminUserLoginLog.setToken(JSONUtil.toJsonStr(token));
         adminUserLoginLog.setClientUserAgent(RequestUtil.getHeader("User-Agent"));
         adminUserLoginLogService.save(adminUserLoginLog);
