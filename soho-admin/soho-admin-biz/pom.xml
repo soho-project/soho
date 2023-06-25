@@ -166,10 +166,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <includeSystemScope>true</includeSystemScope>
-                    <mainClass>work.soho.admin.AdminApplication</mainClass>
-                </configuration>
             </plugin>
 
         </plugins>
