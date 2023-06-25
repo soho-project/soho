@@ -8,4 +8,4 @@ WORKDIR /root/
 ARG CONFIG_PROFILE="dev"
 ENV SPRING_CLOUD_CONFIG_PROFILE="-Dspring.profiles.active=${CONFIG_PROFILE}"
 #CMD java -jar ${SPRING_CLOUD_CONFIG_PROFILE} /root/soho-admin-web-1.0-SNAPSHOT.jar
-CMD java -jar ${SPRING_CLOUD_CONFIG_PROFILE} /root/soho-admin-biz-1.0-SNAPSHOT.jar
+CMD java -jar ${SPRING_CLOUD_CONFIG_PROFILE} /root/soho-admin-web-1.0-SNAPSHOT.jar
