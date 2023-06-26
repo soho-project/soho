@@ -11,6 +11,7 @@
 
     <artifactId>soho-admin-biz</artifactId>
     <packaging>jar</packaging>
+    <version>1.0-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -66,10 +67,6 @@
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-boot-starter</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
         <!--Token生成与解析-->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
@@ -109,7 +106,6 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
-            <version>5.7.3</version>
             <scope>test</scope>
         </dependency>
 
@@ -134,12 +130,6 @@
 
         <dependency>
             <groupId>work.soho</groupId>
-            <artifactId>soho-common-security</artifactId>
-            <scope>compile</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>work.soho</groupId>
             <artifactId>soho-common-core</artifactId>
         </dependency>
         <dependency>
@@ -150,7 +140,10 @@
             <groupId>work.soho</groupId>
             <artifactId>soho-common-data</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-security</artifactId>
+        </dependency>
 
     </dependencies>
     <build>
@@ -158,14 +151,6 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
         </plugins>
