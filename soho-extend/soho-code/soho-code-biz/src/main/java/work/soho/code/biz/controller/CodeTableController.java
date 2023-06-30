@@ -407,6 +407,7 @@ public class CodeTableController {
 
         for(int i=0; i<tableNames.length; i++) {
             CodeTableVo tableVo = dbService.getTableByName(tableNames[i]);
+
             //保存数据
             CodeTable codeTable = BeanUtils.copy(tableVo, CodeTable.class);
             //检查是否存在

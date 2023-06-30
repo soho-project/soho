@@ -75,10 +75,31 @@ public class DbServiceImpl implements DbService {
                 codeTableVo.getColumnList().add(column);
             }
         }
-        System.out.println("run.....");
+
+        //处理匹配主键信息
+        p = Pattern.compile("PRIMARY KEY \\((.*)\\)");
+        matcher = p.matcher(sql);
+        while(matcher.find()) {
+            String[] parts = matcher.group(1).replace("`", "").split(",");
+            for (int i = 0; i < parts.length; i++) {
+                int finalI = i;
+                codeTableVo.getColumnList().stream().forEach(item -> {
+                    if(item.getName().equals(parts[finalI])) {
+                        item.setIsPk(1);
+                    }
+                });
+            }
+        }
+
         return codeTableVo;
     }
 
+    /**
+     * 解析字段信息
+     *
+     * @param str
+     * @return
+     */
     private CodeTableVo.Column paseColumn(String str) {
         CodeTableVo.Column column = new CodeTableVo.Column();
         str = str.trim();
