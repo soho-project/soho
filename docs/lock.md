@@ -11,10 +11,22 @@
 
 ## 使用
 
+### 工具类方式
+
     //加锁
     LockUtils.getLockClient().getLock("lockName").lock()
     //解锁
     LockUtils.getLockClient().getLock("lockName").unlock()
+
+### AOP注解方式
+
+    在Bean方法上面添加 @Lock 注解该方法即拥有排他锁； 如果其他线程持有锁，该线程会阻塞等待锁释放； 故而考虑到系统吞吐能力应该尽可能小粒度加锁.
+    锁名称支持 SPEL 表达式；
+
+        @Lock("'pre-key-' + #name")
+        public void hello(String name) {
+            System.out.println("hello............." + name);
+        }
 
 ## 更多信息
 
