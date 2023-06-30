@@ -15,6 +15,7 @@ import work.soho.test.TestApp;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ContextConfiguration
@@ -40,7 +41,18 @@ class CodeTableControllerTest {
     }
 
     @Test
-    void getCode() {
+    void getCode() throws Exception {
+        System.out.println("load table");
+        mockMvc.perform(get("/admin/codeTable/codeFile")
+                        .param("id", "155439143")
+                        .param("templateId", "1170362382")
+                        .param("codeNamespace", "work.soho.admin.biz")
+                        .contentType("application/json"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("2000"))
+                .andExpect(jsonPath("$.payload.fileName").value("src/pages/admin_user_login_log/index.js"))
+                .andReturn();
     }
 
     @Test
