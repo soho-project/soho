@@ -18,6 +18,7 @@
         <module>soho-common-security</module>
         <module>soho-common-quartz</module>
         <module>soho-approval-process</module>
+        <module>soho-common-test</module>
     </modules>
 
     <properties>
