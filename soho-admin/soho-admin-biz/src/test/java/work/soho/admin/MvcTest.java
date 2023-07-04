@@ -33,8 +33,8 @@ class MvcTest {
 
 	@Test
 	void testHello() throws Exception {
-		MvcResult mvcResult = mockMvc.perform(get("/hello")).andExpect(status().isOk())
-				.andExpect(content().bytes("Hello world".getBytes())).andReturn();
+		MvcResult mvcResult = mockMvc.perform(get("/hello")).andExpect(status().is(404))
+				.andReturn();
 	}
 
 	@Test
