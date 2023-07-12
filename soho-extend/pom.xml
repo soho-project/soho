@@ -25,5 +25,6 @@
         <module>soho-user</module>
         <module>soho-code</module>
         <module>soho-content</module>
+        <module>soho-long-link</module>
     </modules>
 </project>
