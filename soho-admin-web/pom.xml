@@ -56,6 +56,11 @@
             <groupId>work.soho</groupId>
             <artifactId>soho-code-biz</artifactId>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-long-link-biz</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
         <!--/ 本项目依赖包；请勿添加非本项目依赖包-->
     </dependencies>
     <build>
