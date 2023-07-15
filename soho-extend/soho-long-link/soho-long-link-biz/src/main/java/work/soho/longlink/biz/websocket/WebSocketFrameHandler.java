@@ -8,6 +8,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import lombok.RequiredArgsConstructor;
 import work.soho.longlink.api.authentication.Authentication;
 import work.soho.longlink.api.chanel.MessageChanel;
+import work.soho.longlink.biz.connect.ConnectManager;
 import work.soho.longlink.biz.util.ServerUtil;
 
 import java.net.InetSocketAddress;
@@ -20,6 +21,8 @@ import java.util.Locale;
 public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
     private final Authentication authentication;
     private final MessageChanel messageChanel;
+
+    private final ConnectManager connectManager;
 
     private final static String OK = "+OK";
     private final static String ERR = "+ERR";
@@ -58,6 +61,8 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
                 if(uid == null) {
                     ctx.channel().writeAndFlush(new TextWebSocketFrame(ERR));
                 } else {
+                    connectManager.addConnect(ctx);
+                    connectManager.bindUid(getConnectId(ctx), uid);
                     ctx.channel().writeAndFlush(new TextWebSocketFrame(OK));
                 }
             } else {
@@ -78,5 +83,13 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
         } else {
             super.userEventTriggered(ctx, evt);
         }
+    }
+
+    @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("通道卸载");
+        connectManager.removeConnect(getConnectId(ctx));
+        connectManager.removeConnectIdFromUid(getConnectId(ctx), uid);
+        super.channelUnregistered(ctx);
     }
 }
