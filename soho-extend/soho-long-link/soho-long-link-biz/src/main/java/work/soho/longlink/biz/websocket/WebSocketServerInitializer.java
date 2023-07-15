@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import work.soho.longlink.api.authentication.Authentication;
 import work.soho.longlink.api.chanel.MessageChanel;
+import work.soho.longlink.biz.connect.ConnectManager;
 
 @Component
 @RequiredArgsConstructor
@@ -22,6 +23,8 @@ public class WebSocketServerInitializer  extends ChannelInitializer<SocketChanne
     private final Authentication authentication;
 
     private final MessageChanel messageChanel;
+
+    private final ConnectManager connectManager;
 
     private SslContext sslCtx = null;
 
@@ -40,6 +43,6 @@ public class WebSocketServerInitializer  extends ChannelInitializer<SocketChanne
         pipeline.addLast(new WebSocketIndexPageHandler(WEBSOCKET_PATH));
         pipeline.addLast(new WebSocketServerCompressionHandler());
         pipeline.addLast(new WebSocketServerProtocolHandler(WEBSOCKET_PATH, null, true));
-        pipeline.addLast(new WebSocketFrameHandler(authentication, messageChanel));
+        pipeline.addLast(new WebSocketFrameHandler(authentication, messageChanel, connectManager));
     }
 }

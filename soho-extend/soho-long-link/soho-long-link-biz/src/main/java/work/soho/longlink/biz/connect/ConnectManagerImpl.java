@@ -43,6 +43,17 @@ public class ConnectManagerImpl implements ConnectManager {
     }
 
     @Override
+    public void removeConnectIdFromUid(String connectId, String uid) {
+        if(uid == null) {
+            return;
+        }
+        HashSet<String> setConnectId = connectIdUidMap.get(uid);
+        if(setConnectId != null) {
+            setConnectId.remove(connectId);
+        }
+    }
+
+    @Override
     public HashSet<String> getConnectIdListByUid(String uid) {
         return connectIdUidMap.get(uid);
     }

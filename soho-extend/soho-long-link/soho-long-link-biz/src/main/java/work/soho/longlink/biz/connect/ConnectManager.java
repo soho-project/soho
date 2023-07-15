@@ -44,6 +44,14 @@ public interface ConnectManager {
     void bindUid(String connectId, String uid);
 
     /**
+     * 解除连接用户绑定
+     *
+     * @param connectId
+     * @param uid
+     */
+    void removeConnectIdFromUid(String connectId, String uid);
+
+    /**
      * 获取指定用户ID所有连接
      *
      * @param uid
