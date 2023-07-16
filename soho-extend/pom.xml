@@ -26,5 +26,6 @@
         <module>soho-code</module>
         <module>soho-content</module>
         <module>soho-long-link</module>
+        <module>soho-chat</module>
     </modules>
 </project>

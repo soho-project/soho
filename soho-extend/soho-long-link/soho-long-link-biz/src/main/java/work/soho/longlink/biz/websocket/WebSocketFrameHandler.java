@@ -26,6 +26,8 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
 
     private final static String OK = "+OK";
     private final static String ERR = "+ERR";
+    private final static String PING = "ping";
+    private final static String PONG = "pong";
 
     private String connectId = null;
 
@@ -65,6 +67,10 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
                     connectManager.bindUid(getConnectId(ctx), uid);
                     ctx.channel().writeAndFlush(new TextWebSocketFrame(OK));
                 }
+            } else if("ping".equals(request)) {
+                ctx.channel().writeAndFlush(new TextWebSocketFrame(PONG));
+            } else if ("pong".equals(request)) {
+                //ignore
             } else {
 //                ctx.channel().writeAndFlush(new TextWebSocketFrame(request.toUpperCase(Locale.US)));
                 messageChanel.onMessage(request, getConnectId(ctx), uid);
