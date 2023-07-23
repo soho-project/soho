@@ -3,3 +3,5 @@
 **/*.-dev.yml
 **/*.-demo.yml
 **/*.-local.yml
+/soho-common/soho-common-test/src/main/resources/application-local.yml
+/soho-common/soho-common-test/src/main/resources/application-dev.yml
