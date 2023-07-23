@@ -16,7 +16,7 @@ public class ChatUser implements Serializable {
     * 聊天用户ID
     */
     @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+    private Long id;
 
     /**
     * 用户名
@@ -54,6 +54,6 @@ public class ChatUser implements Serializable {
     * 原始用户ID;;
     */
     @TableField(value = "origin_id")
-    private Integer originId;
+    private String originId;
 
 }
