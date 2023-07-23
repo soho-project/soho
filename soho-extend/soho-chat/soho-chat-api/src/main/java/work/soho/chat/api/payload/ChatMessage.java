@@ -1,4 +1,4 @@
-package work.soho.chat.api;
+package work.soho.chat.api.payload;
 
 import lombok.Data;
 

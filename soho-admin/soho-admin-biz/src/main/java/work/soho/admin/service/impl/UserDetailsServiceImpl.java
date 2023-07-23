@@ -1,11 +1,13 @@
 package work.soho.admin.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import work.soho.admin.common.security.service.SohoSecurityUserDetailsService;
+import work.soho.admin.common.security.service.SohoUserDetailsService;
+import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.admin.domain.AdminUser;
 import work.soho.admin.service.AdminUserService;
 
@@ -14,19 +16,30 @@ import work.soho.admin.service.AdminUserService;
  */
 @Service
 @RequiredArgsConstructor
-public class UserDetailsServiceImpl implements SohoSecurityUserDetailsService {
+public class UserDetailsServiceImpl implements SohoUserDetailsService {
     private final AdminUserService adminUserService;
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public SohoUserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         AdminUser adminUser = adminUserService.getByLoginName(username);
         if(adminUser != null) {
-            UserDetailsImpl userDetails = new UserDetailsImpl();
+            SohoUserDetails userDetails = new SohoUserDetails();
             userDetails.setUsername(String.valueOf(adminUser.getPhone()));
             userDetails.setPassword(adminUser.getPassword());
             userDetails.setId(adminUser.getId());
+            userDetails.setAuthorities(AuthorityUtils.createAuthorityList("admin"));
             return userDetails;
         }
+        return null;
+    }
+
+    @Override
+    public String getUserRoleName() {
+        return "admin";
+    }
+
+    @Override
+    public UserDetails loadUserByToken(String token) {
         return null;
     }
 
@@ -36,7 +49,7 @@ public class UserDetailsServiceImpl implements SohoSecurityUserDetailsService {
      * @return
      */
     public UserDetails getLoginUserDetails() {
-        return (UserDetailsServiceImpl.UserDetailsImpl) SecurityContextHolder.getContext()
+        return (UserDetails) SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getPrincipal();
     }

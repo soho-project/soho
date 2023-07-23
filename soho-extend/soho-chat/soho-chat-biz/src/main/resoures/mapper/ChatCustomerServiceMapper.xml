@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.chat.biz.mapper.ChatCustomerServiceMapper">
+    <resultMap id="BaseResultMap" type="work.soho.chat.biz.domain.ChatCustomerService">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="userId" column="user_id" jdbcType="INTEGER"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,user_id,status,updated_time,created_time
+    </sql>
+</mapper>

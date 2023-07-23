@@ -16,6 +16,7 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.admin.common.security.utils.SecurityUtils;
 import work.soho.api.admin.annotation.Node;
 import work.soho.admin.domain.AdminRole;
@@ -52,7 +53,7 @@ public class AdminUserController extends BaseController {
     @GetMapping("/user")
     public R<CurrentAdminUserVo> user() {
         try {
-            UserDetailsServiceImpl.UserDetailsImpl userDetails = (UserDetailsServiceImpl.UserDetailsImpl) userDetailsService.getLoginUserDetails();
+            SohoUserDetails userDetails = (SohoUserDetails) userDetailsService.getLoginUserDetails();
             AdminUser adminUser = adminUserService.getById(userDetails.getId());
             //获取当前用户所有角色下的资源ID
             List<AdminRoleUser> userRoleList = adminRoleUserService.list(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, adminUser.getId())

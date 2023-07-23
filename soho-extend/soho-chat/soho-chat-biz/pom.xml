@@ -1,7 +1,9 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>soho-extend</artifactId>
+        <artifactId>soho-chat</artifactId>
         <groupId>work.soho</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
@@ -11,19 +13,8 @@
     <packaging>jar</packaging>
 
     <name>soho-chat-biz</name>
-    <url>http://maven.apache.org</url>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>3.8.1</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>work.soho</groupId>
             <artifactId>soho-long-link-api</artifactId>
@@ -39,5 +30,60 @@
             <groupId>work.soho</groupId>
             <artifactId>soho-common-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.theokanning.openai-gpt3-java</groupId>
+            <artifactId>api</artifactId>
+            <version>0.14.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.theokanning.openai-gpt3-java</groupId>
+            <artifactId>client</artifactId>
+            <version>0.14.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.theokanning.openai-gpt3-java</groupId>
+            <artifactId>service</artifactId>
+            <version>0.14.0</version>
+        </dependency>
+
+        <!--    test-->
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-test</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-long-link-biz</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-extension</artifactId>
+            <version>3.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-admin-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-security</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-security</artifactId>
+        </dependency>
+        <!--    /test-->
     </dependencies>
+
+
 </project>
