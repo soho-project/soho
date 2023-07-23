@@ -96,4 +96,15 @@ public class ChatUserController {
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(chatUserService.removeByIds(Arrays.asList(ids)));
     }
+
+    /**
+     * 创建Token
+     *
+     * @param id
+     * @return
+     */
+    @GetMapping("/token")
+    public R<Map<String,String>> createToken(Long id) {
+        return R.success(chatUserService.getTokenInfoByUserId(id));
+    }
 }

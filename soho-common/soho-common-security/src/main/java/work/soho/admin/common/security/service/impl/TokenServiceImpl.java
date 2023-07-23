@@ -8,6 +8,7 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import work.soho.admin.common.security.service.SohoTokenService;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.common.core.util.StringUtils;
 
@@ -16,7 +17,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class TokenServiceImpl {
+public class TokenServiceImpl implements SohoTokenService {
     private final static String HEADER = "Authorization";
 
     /**
