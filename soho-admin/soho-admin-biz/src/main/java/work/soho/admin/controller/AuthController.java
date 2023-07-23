@@ -7,12 +7,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.web.bind.annotation.*;
+import work.soho.admin.common.security.service.impl.TokenServiceImpl;
+import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.admin.domain.AdminUserLoginLog;
 import work.soho.admin.service.AdminConfigService;
 import work.soho.admin.service.AdminUserLoginLogService;
-import work.soho.admin.service.impl.TokenServiceImpl;
-import work.soho.admin.service.impl.UserDetailsServiceImpl;
 import work.soho.api.admin.vo.AdminUserLoginVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.IpUtils;
@@ -57,7 +58,7 @@ public class AuthController {
             }
             // 该方法会去调用UserDetailsServiceImpl.loadUserByUsername
             authentication = authenticationManager
-                    .authenticate(new UsernamePasswordAuthenticationToken(adminUserLoginVo.getUsername(), adminUserLoginVo.getPassword()));
+                    .authenticate(new UsernamePasswordAuthenticationToken(adminUserLoginVo.getUsername(), adminUserLoginVo.getPassword(), AuthorityUtils.createAuthorityList("admin") ));
             //登录成功，删除验证码
             if(useCaptcha) {
                 CaptchaUtils.dropCaptcha();
@@ -67,7 +68,7 @@ public class AuthController {
             e.printStackTrace();
             return R.error("登录失败");
         }
-        UserDetailsServiceImpl.UserDetailsImpl loginUser = (UserDetailsServiceImpl.UserDetailsImpl) authentication.getPrincipal();
+        SohoUserDetails loginUser = (SohoUserDetails) authentication.getPrincipal();
         Map<String, String> token = tokenService.createTokenInfo(loginUser);
         //创建登录日志
         AdminUserLoginLog adminUserLoginLog = new AdminUserLoginLog();

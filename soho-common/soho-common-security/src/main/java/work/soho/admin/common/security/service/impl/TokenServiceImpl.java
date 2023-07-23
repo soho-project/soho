@@ -1,20 +1,19 @@
-package work.soho.admin.service.impl;
+package work.soho.admin.common.security.service.impl;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-//import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import work.soho.admin.domain.AdminUser;
+import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.common.core.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class TokenServiceImpl {
@@ -34,15 +33,23 @@ public class TokenServiceImpl {
      *
      * @return 用户信息
      */
-    public UserDetailsServiceImpl.UserDetailsImpl getLoginUser(HttpServletRequest request)
-    {// 获取请求携带的令牌
+    public SohoUserDetails getLoginUser(HttpServletRequest request)
+    {
+        // 获取请求携带的令牌
         String token = getToken(request);
         if (StringUtils.isNotEmpty(token))
         {
             Claims claims = parseToken(token);
-            UserDetailsServiceImpl.UserDetailsImpl user = new UserDetailsServiceImpl.UserDetailsImpl();
+            SohoUserDetails user = new SohoUserDetails();
             user.setId(Long.valueOf(claims.get("uid").toString()));
             user.setUsername((String) claims.get("uname"));
+            //从token还原认证角色信息
+            List<String> authoritiesList = ((ArrayList<?>) claims.get("authorities"))
+                    .stream()
+                    .flatMap(item -> ((Map<?, ?>) item).values().stream())
+                    .map(Object::toString)
+                    .collect(Collectors.toList());
+            user.setAuthorities(AuthorityUtils.createAuthorityList(authoritiesList.toArray(new String[0])));
             return user;
         }
         return null;
@@ -53,7 +60,7 @@ public class TokenServiceImpl {
      *
      * @return
      */
-    public UserDetailsServiceImpl.UserDetailsImpl getLoginUser() {
+    public SohoUserDetails getLoginUser() {
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
         return getLoginUser(request);
     }
@@ -78,7 +85,7 @@ public class TokenServiceImpl {
      * @param loginUser
      * @return
      */
-    public String createToken(UserDetailsServiceImpl.UserDetailsImpl loginUser)
+    public String createToken(SohoUserDetails loginUser)
     {
         Map<String, Object> claims = new HashMap<>();
         claims.put("uid", loginUser.getId());
@@ -98,7 +105,7 @@ public class TokenServiceImpl {
      * @param loginUser
      * @return
      */
-    public Map<String, String> createTokenInfo(UserDetailsServiceImpl.UserDetailsImpl loginUser) {
+    public Map<String, String> createTokenInfo(SohoUserDetails loginUser) {
         HashMap<String, String> map = new HashMap<String, String>();
         map.put("token", createToken(loginUser));
         map.put("iat", String.valueOf(new Date().getTime()));

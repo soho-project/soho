@@ -82,3 +82,15 @@ token:
 #        secretKey: xxxx
 #        bucket: xxxx
 #        urlPrefix: http://ra86b7o3s.hn-bkt.clouddn.com/
+
+# chat模块相关配置
+chat:
+  ai:
+    proxy:
+      hostname: 127.0.0.1
+      port: 7890
+      username:
+      password:
+    account:
+      chatAiEndpoint: https://api.openai.com
+      chatAiToken: sk-xxxxxxxxxxxxxxxxxxxx

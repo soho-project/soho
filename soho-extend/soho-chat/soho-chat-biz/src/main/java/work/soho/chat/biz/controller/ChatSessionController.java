@@ -1,0 +1,120 @@
+package work.soho.chat.biz.controller;
+
+import java.time.LocalDateTime;
+import work.soho.common.core.util.PageUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import java.util.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import work.soho.common.core.util.StringUtils;
+import com.github.pagehelper.PageSerializable;
+import work.soho.common.core.result.R;
+import work.soho.api.admin.annotation.Node;
+import work.soho.chat.biz.domain.ChatSession;
+import work.soho.chat.biz.service.ChatSessionService;
+import java.util.ArrayList;
+import java.util.HashMap;
+import work.soho.api.admin.vo.OptionVo;
+import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import java.util.stream.Collectors;
+import work.soho.api.admin.vo.TreeNodeVo;
+/**
+ * 聊天会话Controller
+ *
+ * @author fang
+ */
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/admin/chatSession" )
+public class ChatSessionController {
+
+    private final ChatSessionService chatSessionService;
+
+    /**
+     * 查询聊天会话列表
+     */
+    @GetMapping("/list")
+    @Node(value = "chatSession::list", name = "聊天会话列表")
+    public R<PageSerializable<ChatSession>> list(ChatSession chatSession, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
+    {
+        PageUtils.startPage();
+        LambdaQueryWrapper<ChatSession> lqw = new LambdaQueryWrapper<ChatSession>();
+        if (chatSession.getId() != null){
+            lqw.eq(ChatSession::getId ,chatSession.getId());
+        }
+        if (chatSession.getType() != null){
+            lqw.eq(ChatSession::getType ,chatSession.getType());
+        }
+        if (chatSession.getStatus() != null){
+            lqw.eq(ChatSession::getStatus ,chatSession.getStatus());
+        }
+        if (chatSession.getTitle() != null){
+            lqw.eq(ChatSession::getTitle ,chatSession.getTitle());
+        }
+        if (chatSession.getAvatar() != null){
+            lqw.eq(ChatSession::getAvatar ,chatSession.getAvatar());
+        }
+        if (chatSession.getUpdatedTime() != null){
+            lqw.eq(ChatSession::getUpdatedTime ,chatSession.getUpdatedTime());
+        }
+        if (chatSession.getCreatedTime() != null){
+            lqw.eq(ChatSession::getCreatedTime ,chatSession.getCreatedTime());
+        }
+
+        if(betweenCreatedTimeRequest.getStartTime()!= null) {
+            lqw.gt(ChatSession::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
+        }
+        if(betweenCreatedTimeRequest.getEndTime()!= null) {
+            lqw.le(ChatSession::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
+        }
+
+        List<ChatSession> list = chatSessionService.list(lqw);
+        return R.success(new PageSerializable<>(list));
+    }
+
+    /**
+     * 获取聊天会话详细信息
+     */
+    @GetMapping(value = "/{id}" )
+    @Node(value = "chatSession::getInfo", name = "聊天会话详细信息")
+    public R<ChatSession> getInfo(@PathVariable("id" ) Long id) {
+        return R.success(chatSessionService.getById(id));
+    }
+
+    /**
+     * 新增聊天会话
+     */
+    @PostMapping
+    @Node(value = "chatSession::add", name = "聊天会话新增")
+    public R<Boolean> add(@RequestBody ChatSession chatSession) {
+        chatSession.setCreatedTime(LocalDateTime.now());
+        chatSession.setUpdatedTime(LocalDateTime.now());
+        return R.success(chatSessionService.save(chatSession));
+    }
+
+    /**
+     * 修改聊天会话
+     */
+    @PutMapping
+    @Node(value = "chatSession::edit", name = "聊天会话修改")
+    public R<Boolean> edit(@RequestBody ChatSession chatSession) {
+        chatSession.setUpdatedTime(LocalDateTime.now());
+        return R.success(chatSessionService.updateById(chatSession));
+    }
+
+    /**
+     * 删除聊天会话
+     */
+    @DeleteMapping("/{ids}" )
+    @Node(value = "chatSession::remove", name = "聊天会话删除")
+    public R<Boolean> remove(@PathVariable Long[] ids) {
+        return R.success(chatSessionService.removeByIds(Arrays.asList(ids)));
+    }
+}

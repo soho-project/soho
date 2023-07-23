@@ -53,3 +53,16 @@ token:
 redisson:
   nodeAddress: redis://localhost:6379
 
+
+# chat模块相关配置
+chat:
+  ai:
+    proxy:
+      hostname: 127.0.0.1
+      port: 7890
+      username:
+      password:
+    account:
+      chatAiEndpoint: https://chat.ai
+#      chatAiToken: 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
+      chatAiToken: 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

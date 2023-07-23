@@ -27,8 +27,10 @@
         <oss.version>3.10.2</oss.version>
         <qcloud.version>5.6.54</qcloud.version>
         <qiniu.version>[7.7.0, 7.7.99]</qiniu.version>
-        <okhttp.version>4.10.0</okhttp.version>
+<!--        <okhttp.version>4.10.0</okhttp.version>-->
+        <okhttp.version>3.14.9</okhttp.version>
         <spring-boot.version>2.6.2</spring-boot.version>
+        <azure-ai-openai.version>1.0.0-beta.2</azure-ai-openai.version>
     </properties>
 
     <dependencyManagement>
@@ -217,6 +219,11 @@
                 <groupId>com.squareup.okhttp3</groupId>
                 <artifactId>okhttp</artifactId>
                 <version>${okhttp.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.azure</groupId>
+                <artifactId>azure-ai-openai</artifactId>
+                <version>${azure-ai-openai.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
