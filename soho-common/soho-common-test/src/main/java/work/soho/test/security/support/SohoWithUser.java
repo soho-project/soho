@@ -16,8 +16,8 @@ import java.lang.annotation.*;
 @WithSecurityContext(factory = SohoWithMockUserSecurityContextFactory.class)
 public @interface SohoWithUser {
     /**
-     * Convenience mechanism for specifying the username. The default is "user". If
-     * {@link #username()} is specified it will be used instead of {@link #value()}
+     * 用户ID
+     *
      * @return
      */
     @AliasFor("id")
@@ -30,6 +30,11 @@ public @interface SohoWithUser {
      */
     String username() default "test";
 
+    /**
+     * 用户ID
+     *
+     * @return
+     */
     @AliasFor("value")
     long id() default 1l;
 
