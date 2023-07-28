@@ -20,7 +20,8 @@ public @interface SohoWithUser {
      * {@link #username()} is specified it will be used instead of {@link #value()}
      * @return
      */
-    String value() default "user";
+    @AliasFor("id")
+    long value() default 1;
 
     /**
      * 测试用用户名
@@ -29,6 +30,7 @@ public @interface SohoWithUser {
      */
     String username() default "test";
 
+    @AliasFor("value")
     long id() default 1l;
 
     /**
