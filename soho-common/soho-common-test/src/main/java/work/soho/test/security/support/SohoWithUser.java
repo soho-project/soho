@@ -21,7 +21,7 @@ public @interface SohoWithUser {
      * @return
      */
     @AliasFor("id")
-    long value() default 1;
+    long value() default 1l;
 
     /**
      * 测试用用户名
