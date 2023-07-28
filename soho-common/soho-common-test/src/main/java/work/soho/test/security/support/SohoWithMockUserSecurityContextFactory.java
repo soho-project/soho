@@ -17,7 +17,7 @@ import java.util.List;
 public class SohoWithMockUserSecurityContextFactory  implements WithSecurityContextFactory<SohoWithUser> {
     @Override
     public SecurityContext createSecurityContext(SohoWithUser withUser) {
-        String username = StringUtils.hasLength(withUser.username()) ? withUser.username() : withUser.value();
+        String username = withUser.username();
         Assert.notNull(username, () -> withUser + " cannot have null username on both username and value properties");
         List<GrantedAuthority> grantedAuthorities = new ArrayList<>();
         grantedAuthorities.add(new SimpleGrantedAuthority(withUser.role()));
