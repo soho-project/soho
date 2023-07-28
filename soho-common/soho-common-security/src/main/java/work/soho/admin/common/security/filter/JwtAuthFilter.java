@@ -25,7 +25,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         SohoUserDetails loginUser = tokenService.getLoginUser(request);
         if (loginUser!=null && (SecurityContextHolder.getContext().getAuthentication() == null)) {
             RememberMeAuthenticationToken  rememberMeAuthenticationToken = new RememberMeAuthenticationToken(tokenService.getToken(request)
-                    , loginUser, AuthorityUtils.createAuthorityList("admin"));
+                    , loginUser, loginUser.getAuthorities());
 
             rememberMeAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(rememberMeAuthenticationToken);
