@@ -68,13 +68,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                 // 对于登录login 验证码captchaImage 和其他放行的目录 允许匿名访问"/citylife/front/**"
                 .antMatchers("/login", "/login/**", "/captcha", "/client/api/**").permitAll()
                 .antMatchers("/admin/**").hasAuthority("admin") //后台接口请使用 /admin/ 前缀开头路劲
+                .antMatchers("/chat/**").hasAuthority("chat") //聊天模块鉴权
                 .antMatchers(
                         HttpMethod.GET,
                         "/*.html",
                         "/**/*.html",
                         "/**/*.css",
                         "/**/*.js",
-                        "/admin/user/user"
+                        "/admin/user/user",
+                        "/guest/**"
                 )
                 .permitAll()
                 .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
