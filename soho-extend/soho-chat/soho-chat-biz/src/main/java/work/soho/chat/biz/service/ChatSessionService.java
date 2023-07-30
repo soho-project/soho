@@ -2,7 +2,36 @@ package work.soho.chat.biz.service;
 
 import work.soho.chat.biz.domain.ChatSession;
 import com.baomidou.mybatisplus.extension.service.IService;
+import work.soho.chat.biz.domain.ChatSessionUser;
+import work.soho.chat.biz.enums.ChatSessionEnums;
+
+import java.util.List;
 
 public interface ChatSessionService extends IService<ChatSession> {
+    /**
+     * 根据条件查询会话
+     *
+     * @param uid
+     * @param toUid
+     * @return
+     */
+    ChatSession findCustomerServiceSession(Long uid, Long toUid);
 
+    /**
+     * 创建会话
+     *
+     * @param uid
+     * @param uids
+     * @param type
+     * @return
+     */
+    ChatSession createSession(Long uid, List<Long> uids, ChatSessionEnums.Type type);
+
+    /**
+     * 查找会话中的客服用户
+     *
+     * @param sessionId
+     * @return
+     */
+    ChatSessionUser findCustomerService(Long sessionId);
 }

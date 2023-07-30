@@ -15,11 +15,11 @@
     <name>soho-chat-biz</name>
 
     <dependencies>
-        <dependency>
-            <groupId>work.soho</groupId>
-            <artifactId>soho-chat-biz</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>work.soho</groupId>-->
+<!--            <artifactId>soho-chat-biz</artifactId>-->
+<!--            <version>1.0-SNAPSHOT</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>work.soho</groupId>
             <artifactId>soho-long-link-api</artifactId>
@@ -55,6 +55,10 @@
             <artifactId>service</artifactId>
             <version>0.14.0</version>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-security</artifactId>
+        </dependency>
 
         <!--    test-->
         <dependency>
@@ -80,12 +84,8 @@
         </dependency>
         <dependency>
             <groupId>work.soho</groupId>
-            <artifactId>soho-common-security</artifactId>
+            <artifactId>soho-admin-biz</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>work.soho</groupId>
-            <artifactId>soho-common-security</artifactId>
         </dependency>
         <!--    /test-->
     </dependencies>

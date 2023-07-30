@@ -1,6 +1,9 @@
 package work.soho.chat.biz.service.impl;
 
+import cn.hutool.core.io.FileUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.theokanning.openai.audio.CreateTranslationRequest;
+import com.theokanning.openai.audio.TranslationResult;
 import com.theokanning.openai.client.OpenAiApi;
 import com.theokanning.openai.completion.CompletionRequest;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
@@ -14,8 +17,10 @@ import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import retrofit2.Retrofit;
+import work.soho.chat.biz.enums.ChatGptModelEnums;
 import work.soho.chat.biz.service.ChatAiService;
 
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.time.Duration;
@@ -48,6 +53,9 @@ public class ChatAiServiceImpl implements ChatAiService {
 
     @Value("${chat.ai.account.chatAiToken}")
     private String chatAiKey;
+
+    @Value("#{@sohoConfig.getByKey('chat-system-text')}")
+    private String chatSystemText;
 
     private String deploymentOrModelId = "gpt-3.5-turbo-16k";
 
@@ -97,7 +105,7 @@ public class ChatAiServiceImpl implements ChatAiService {
 //                "如果用户问订单状态就回复: queryOrderStatus([订单号])" +
 //                "如果用户询问产品信息回复: queryGoods([商品名])"));
 //
-        messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), "你是Java程序员，根据用户提供的要求输出代码。如果是要求创建图片请输出 createImage([图片描述])"));
+        messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), chatSystemText));
 
         final ChatMessage systemMessage = new ChatMessage(ChatMessageRole.USER.value(), ask);
         messages.add(systemMessage);
@@ -167,5 +175,15 @@ public class ChatAiServiceImpl implements ChatAiService {
         } else {
             return null;
         }
+    }
+
+    @Override
+    public String audio2Text(String url) {
+        log.info("解析音频文件：{}", url);
+        OpenAiService openAiService = getService();
+        CreateTranslationRequest request = new CreateTranslationRequest();
+        request.setModel("whisper-1");
+        TranslationResult result = openAiService.createTranslation(request, new File(url));
+        return result.getText();
     }
 }

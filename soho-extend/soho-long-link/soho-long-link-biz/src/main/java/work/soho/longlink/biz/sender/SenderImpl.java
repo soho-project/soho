@@ -17,6 +17,9 @@ public class SenderImpl implements Sender {
     @Override
     public void sendToUid(String uid, String msg) {
         Set<String> uidSet = connectManager.getConnectIdListByUid(uid);
+        if(uidSet == null) {
+            return;
+        }
         uidSet.stream().forEach(connectId -> {
             sendToConnectId(connectId, msg);
         });

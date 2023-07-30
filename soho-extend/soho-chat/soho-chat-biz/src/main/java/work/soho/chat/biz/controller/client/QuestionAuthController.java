@@ -1,19 +1,27 @@
 package work.soho.chat.biz.controller.client;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.admin.common.security.utils.SecurityUtils;
+import work.soho.chat.api.Constants;
+import work.soho.chat.biz.domain.ChatUser;
+import work.soho.chat.biz.service.ChatUserService;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.IDGeneratorUtils;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/client/api/auth")
+@RequestMapping("/guest/chat/auth")
+@RequiredArgsConstructor
 public class QuestionAuthController {
     /**
      * token密钥
@@ -21,17 +29,31 @@ public class QuestionAuthController {
     @Value("${token.secret:defaultValue}")
     private String secret;
 
-    /**
-     * 获取访客token
-     */
-    @PostMapping
-    public R<Map> token() {
-        SohoUserDetails sohoUserDetails = new SohoUserDetails();
-        sohoUserDetails.setId(IDGeneratorUtils.snowflake().longValue());
-        sohoUserDetails.setUsername(String.valueOf(sohoUserDetails.getId()));
-        sohoUserDetails.setAuthorities(AuthorityUtils.createAuthorityList("chat"));
+    private final ChatUserService chatUserService;
 
-        Map<String, String> tokenInfo = SecurityUtils.createTokenInfo(sohoUserDetails, 3600 * 24 * 30, secret);
-        return R.success(tokenInfo);
+    /**
+     * 获取访客TOKEN
+     *
+     * @param clientId
+     * @return
+     */
+    @GetMapping("/token")
+    public R<Map<String,String>> createToken(String clientId) {
+        LambdaQueryWrapper<ChatUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatUser::getOriginId, clientId);
+        lambdaQueryWrapper.eq(ChatUser::getOriginType, Constants.ORIGIN_ROLE_GUEST);
+        ChatUser chatUser = chatUserService.getOne(lambdaQueryWrapper);
+        if(chatUser == null) {
+            chatUser = new ChatUser();
+            chatUser.setOriginId(clientId);
+            chatUser.setOriginType(Constants.ORIGIN_ROLE_GUEST);
+            chatUser.setCreatedTime(LocalDateTime.now());
+            chatUser.setUpdatedTime(LocalDateTime.now());
+            chatUser.setNickname(IDGeneratorUtils.snowflake().toString());
+            chatUser.setUsername(IDGeneratorUtils.snowflake().toString());
+            chatUserService.save(chatUser);
+        }
+
+        return R.success(chatUserService.getTokenInfoByUserId(chatUser.getId()));
     }
 }

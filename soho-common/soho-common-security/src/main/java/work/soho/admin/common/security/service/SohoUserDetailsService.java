@@ -21,12 +21,4 @@ public interface SohoUserDetailsService {
      * @return
      */
     String getUserRoleName();
-
-    /**
-     * 根据token获取用户信息
-     *
-     * @param token
-     * @return
-     */
-    UserDetails loadUserByToken(String token);
 }

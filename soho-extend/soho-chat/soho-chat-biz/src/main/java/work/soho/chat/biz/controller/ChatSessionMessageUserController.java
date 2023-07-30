@@ -1,0 +1,96 @@
+package work.soho.chat.biz.controller;
+
+import java.time.LocalDateTime;
+import work.soho.common.core.util.PageUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import java.util.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import work.soho.common.core.util.StringUtils;
+import com.github.pagehelper.PageSerializable;
+import work.soho.common.core.result.R;
+import work.soho.api.admin.annotation.Node;
+import work.soho.chat.biz.domain.ChatSessionMessageUser;
+import work.soho.chat.biz.service.ChatSessionMessageUserService;
+import java.util.ArrayList;
+import java.util.HashMap;
+import work.soho.api.admin.vo.OptionVo;
+import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import java.util.stream.Collectors;
+import work.soho.api.admin.vo.TreeNodeVo;
+/**
+ * Controller
+ *
+ * @author fang
+ */
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/admin/chatSessionMessageUser" )
+public class ChatSessionMessageUserController {
+
+    private final ChatSessionMessageUserService chatSessionMessageUserService;
+
+    /**
+     * 查询列表
+     */
+    @GetMapping("/list")
+    @Node(value = "chatSessionMessageUser::list", name = "chat_session_message_user列表")
+    public R<PageSerializable<ChatSessionMessageUser>> list(ChatSessionMessageUser chatSessionMessageUser, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
+    {
+        PageUtils.startPage();
+        LambdaQueryWrapper<ChatSessionMessageUser> lqw = new LambdaQueryWrapper<ChatSessionMessageUser>();
+        lqw.eq(chatSessionMessageUser.getId() != null, ChatSessionMessageUser::getId ,chatSessionMessageUser.getId());
+        lqw.eq(chatSessionMessageUser.getMessageId() != null, ChatSessionMessageUser::getMessageId ,chatSessionMessageUser.getMessageId());
+        lqw.eq(chatSessionMessageUser.getUid() != null, ChatSessionMessageUser::getUid ,chatSessionMessageUser.getUid());
+        lqw.eq(chatSessionMessageUser.getIsRead() != null, ChatSessionMessageUser::getIsRead ,chatSessionMessageUser.getIsRead());
+        lqw.eq(chatSessionMessageUser.getUpdatedTime() != null, ChatSessionMessageUser::getUpdatedTime ,chatSessionMessageUser.getUpdatedTime());
+        lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, ChatSessionMessageUser::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
+        lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, ChatSessionMessageUser::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
+        lqw.orderByDesc(ChatSessionMessageUser::getId);
+        List<ChatSessionMessageUser> list = chatSessionMessageUserService.list(lqw);
+        return R.success(new PageSerializable<>(list));
+    }
+
+    /**
+     * 获取详细信息
+     */
+    @GetMapping(value = "/{id}" )
+    @Node(value = "chatSessionMessageUser::getInfo", name = "chat_session_message_user详细信息")
+    public R<ChatSessionMessageUser> getInfo(@PathVariable("id" ) Long id) {
+        return R.success(chatSessionMessageUserService.getById(id));
+    }
+
+    /**
+     * 新增
+     */
+    @PostMapping
+    @Node(value = "chatSessionMessageUser::add", name = "chat_session_message_user新增")
+    public R<Boolean> add(@RequestBody ChatSessionMessageUser chatSessionMessageUser) {
+        return R.success(chatSessionMessageUserService.save(chatSessionMessageUser));
+    }
+
+    /**
+     * 修改
+     */
+    @PutMapping
+    @Node(value = "chatSessionMessageUser::edit", name = "chat_session_message_user修改")
+    public R<Boolean> edit(@RequestBody ChatSessionMessageUser chatSessionMessageUser) {
+        return R.success(chatSessionMessageUserService.updateById(chatSessionMessageUser));
+    }
+
+    /**
+     * 删除
+     */
+    @DeleteMapping("/{ids}" )
+    @Node(value = "chatSessionMessageUser::remove", name = "chat_session_message_user删除")
+    public R<Boolean> remove(@PathVariable Long[] ids) {
+        return R.success(chatSessionMessageUserService.removeByIds(Arrays.asList(ids)));
+    }
+}

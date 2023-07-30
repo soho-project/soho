@@ -38,11 +38,6 @@ public class UserDetailsServiceImpl implements SohoUserDetailsService {
         return "admin";
     }
 
-    @Override
-    public UserDetails loadUserByToken(String token) {
-        return null;
-    }
-
     /**
      * 获取当前已登录的用户信息
      *
