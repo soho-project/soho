@@ -68,6 +68,7 @@ public class ChatCustomerServiceController {
         if(betweenCreatedTimeRequest.getEndTime()!= null) {
             lqw.lt(ChatCustomerService::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
         }
+        lqw.orderByDesc(ChatCustomerService::getId);
 
         List<ChatCustomerService> list = chatCustomerServiceService.list(lqw);
         return R.success(new PageSerializable<>(list));

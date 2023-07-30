@@ -74,7 +74,7 @@ public class ChatSessionController {
         if(betweenCreatedTimeRequest.getEndTime()!= null) {
             lqw.le(ChatSession::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
         }
-
+        lqw.orderByDesc(ChatSession::getId);
         List<ChatSession> list = chatSessionService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }
