@@ -36,6 +36,8 @@ import static com.theokanning.openai.service.OpenAiService.*;
 @Log4j2
 @Service
 public class ChatAiServiceImpl implements ChatAiService {
+    @Value("${chat.ai.proxy.enable}")
+    private Boolean proxyEnable;
     @Value("${chat.ai.proxy.hostname}")
     private String proxyHostname;
 
@@ -143,11 +145,14 @@ public class ChatAiServiceImpl implements ChatAiService {
 
     private OpenAiService getService() {
         ObjectMapper mapper = defaultObjectMapper();
-        Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyHostname, proxyPort));
-        OkHttpClient client = defaultClient(chatAiKey, Duration.ofMinutes(100))
-                .newBuilder()
-                .proxy(proxy)
-                .build();
+        OkHttpClient.Builder builder = defaultClient(chatAiKey, Duration.ofMinutes(100))
+                .newBuilder();
+        if(proxyEnable) {
+            Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyHostname, proxyPort));
+            builder.proxy(proxy);
+        }
+
+        OkHttpClient client = builder.build();
         Retrofit retrofit = defaultRetrofit(client, mapper);
         OpenAiApi api = retrofit.create(OpenAiApi.class);
 

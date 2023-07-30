@@ -91,6 +91,8 @@ chat:
       port: 7890
       username:
       password:
+      enable: true
     account:
       chatAiEndpoint: https://api.openai.com
       chatAiToken: sk-xxxxxxxxxxxxxxxxxxxx
+
