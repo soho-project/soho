@@ -7,4 +7,6 @@ import java.util.Map;
 
 public interface ChatUserService extends IService<ChatUser> {
     Map<String, String> getTokenInfoByUserId(Long userId);
+
+    ChatUser getByUsername(String username);
 }

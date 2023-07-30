@@ -39,4 +39,11 @@ public class ChatUserServiceImpl extends ServiceImpl<ChatUserMapper, ChatUser>
         sohoUserDetails.setAuthorities(AuthorityUtils.createAuthorityList(Constants.ROLE_NAME));
         return sohoTokenService.createTokenInfo(sohoUserDetails);
     }
+
+    @Override
+    public ChatUser getByUsername(String username) {
+        LambdaQueryWrapper<ChatUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatUser::getUsername, username);
+        return getOne(lambdaQueryWrapper);
+    }
 }

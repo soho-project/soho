@@ -16,19 +16,19 @@ public class ChatSessionUser implements Serializable {
     * null
     */
     @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+    private Long id;
 
     /**
     * 会话ID
     */
     @TableField(value = "session_id")
-    private Integer sessionId;
+    private Long sessionId;
 
     /**
     * 用户ID
     */
     @TableField(value = "user_id")
-    private Integer userId;
+    private Long userId;
 
     /**
     * 更新时间

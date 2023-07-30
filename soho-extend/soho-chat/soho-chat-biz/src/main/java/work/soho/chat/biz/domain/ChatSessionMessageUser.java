@@ -9,9 +9,9 @@ import java.io.Serializable;
 import lombok.Data;
 import java.time.LocalDateTime;
 
-@TableName(value ="chat_customer_service")
+@TableName(value ="chat_session_message_user")
 @Data
-public class ChatCustomerService implements Serializable {
+public class ChatSessionMessageUser implements Serializable {
     /**
     * null
     */
@@ -19,16 +19,22 @@ public class ChatCustomerService implements Serializable {
     private Integer id;
 
     /**
-    * null
+    * 消息ID
     */
-    @TableField(value = "user_id")
-    private Long userId;
+    @TableField(value = "message_id")
+    private Long messageId;
 
     /**
-    * 客服状态;1:下线,2:活跃,3:禁用;frontType:select
+    * 用户ID
     */
-    @TableField(value = "status")
-    private Integer status;
+    @TableField(value = "uid")
+    private Long uid;
+
+    /**
+    * 是否已读
+    */
+    @TableField(value = "is_read")
+    private Integer isRead;
 
     /**
     * 更新时间

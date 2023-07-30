@@ -9,26 +9,32 @@ import java.io.Serializable;
 import lombok.Data;
 import java.time.LocalDateTime;
 
-@TableName(value ="chat_customer_service")
+@TableName(value ="chat_session_message")
 @Data
-public class ChatCustomerService implements Serializable {
+public class ChatSessionMessage implements Serializable {
     /**
     * null
     */
-    @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
     /**
-    * null
+    * 消息发送用户ID
     */
-    @TableField(value = "user_id")
-    private Long userId;
+    @TableField(value = "from_uid")
+    private Long fromUid;
 
     /**
-    * 客服状态;1:下线,2:活跃,3:禁用;frontType:select
+    * 会话ID
     */
-    @TableField(value = "status")
-    private Integer status;
+    @TableField(value = "session_id")
+    private Long sessionId;
+
+    /**
+    * 消息内容
+    */
+    @TableField(value = "content")
+    private String content;
 
     /**
     * 更新时间

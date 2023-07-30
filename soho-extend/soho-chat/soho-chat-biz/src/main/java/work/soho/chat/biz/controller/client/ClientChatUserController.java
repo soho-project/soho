@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/client/api/chatUser")
+@RequestMapping("/chat/chat/chatUser")
 @RequiredArgsConstructor
 public class ClientChatUserController {
 

@@ -51,7 +51,7 @@ public class LongLinkListen {
             chatMessage.setFromUid(messageEvent.getUid());
             chatMessage.setToSessionId(messageEvent.getUid());
 
-            sender.sendToUid("1", JacksonUtils.toJson(chatMessage));
+            sender.sendToUid(messageEvent.getUid(), JacksonUtils.toJson(chatMessage));
         } catch (Exception e) {
             e.printStackTrace();
         }

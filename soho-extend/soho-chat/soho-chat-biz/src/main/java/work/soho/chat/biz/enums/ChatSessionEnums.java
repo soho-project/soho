@@ -10,7 +10,10 @@ public class ChatSessionEnums {
     public enum Type {
         PRIVATE_CHAT(1,"私聊"),
         GROUP_CHAT(2,"群聊"),
-        GROUP_(3,"群组");
+        GROUP_(3,"群组"),
+        CUSTOMER_SERVICE(4,"客服"),
+
+        ;
         private int id;
         private String name;
 
