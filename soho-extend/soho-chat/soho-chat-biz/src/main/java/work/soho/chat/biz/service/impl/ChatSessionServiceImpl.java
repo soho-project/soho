@@ -1,5 +1,6 @@
 package work.soho.chat.biz.service.impl;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -26,6 +27,9 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
     private final ChatSessionUserMapper chatSessionUserMapper;
 
     private final ChatCustomerServiceMapper chatCustomerServiceMapper;
+
+    @Value("#{@sohoConfig.getByKey('chat-default-customer-service-avatar')")
+    private String defaultCustomerAvatar;
 
     /**
      * 查询客服会话
@@ -78,7 +82,7 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
         chatSession.setUpdatedTime(LocalDateTime.now());
         chatSession.setType(type.getId());
         chatSession.setTitle("会话"); //生成会话名字
-        chatSession.setAvatar("https://gw.alicdn.com/tfs/TB1U7FBiAT2gK0jSZPcXXcKkpXa-108-108.jpg");
+        chatSession.setAvatar(defaultCustomerAvatar);
         save(chatSession);
 
         uids.add(uid);
