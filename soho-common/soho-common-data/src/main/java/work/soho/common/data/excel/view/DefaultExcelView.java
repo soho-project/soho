@@ -78,7 +78,11 @@ public class DefaultExcelView extends AbstractXlsView {
                         }else if(v instanceof Long) {
                             row.createCell(celNum).setCellValue((Long)v);
                         } else {
-                            row.createCell(celNum).setCellValue(String.valueOf(v));
+                            //忽略 null 值
+                            if(v != null) {
+                                row.createCell(celNum).setCellValue(String.valueOf(v));
+                            }
+
                         }
                         celNum++;
                     } catch (IllegalAccessException e) {
