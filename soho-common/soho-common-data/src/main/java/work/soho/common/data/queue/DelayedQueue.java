@@ -26,6 +26,6 @@ public class DelayedQueue {
      * @throws InterruptedException
      */
     public DelayedMessage take() throws InterruptedException {
-        return (DelayedMessage) queue.take().getMessage();
+        return queue.take();
     }
 }
