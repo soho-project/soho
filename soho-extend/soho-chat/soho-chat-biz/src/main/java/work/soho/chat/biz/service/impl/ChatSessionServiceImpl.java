@@ -28,7 +28,7 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
 
     private final ChatCustomerServiceMapper chatCustomerServiceMapper;
 
-    @Value("#{@sohoConfig.getByKey('chat-default-customer-service-avatar')")
+    @Value("#{@sohoConfig.getByKey('chat-default-customer-service-avatar')}")
     private String defaultCustomerAvatar;
 
     /**
