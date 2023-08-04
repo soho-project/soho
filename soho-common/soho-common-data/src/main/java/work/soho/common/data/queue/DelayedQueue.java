@@ -28,4 +28,13 @@ public class DelayedQueue {
     public DelayedMessage take() throws InterruptedException {
         return queue.take();
     }
+
+    /**
+     * get queue
+     *
+     * @return
+     */
+    public BlockingQueue<DelayedMessage> getQueue() {
+        return queue;
+    }
 }
