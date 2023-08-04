@@ -96,3 +96,9 @@ chat:
       chatAiEndpoint: https://api.openai.com
       chatAiToken: sk-xxxxxxxxxxxxxxxxxxxx
 
+# soho 核心相关配置
+soho:
+  delayed-queue:
+    store:
+      enable: true
+      drive: black-hole
