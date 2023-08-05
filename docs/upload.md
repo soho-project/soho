@@ -43,6 +43,23 @@
                 secretKey: xxxx
                 bucket: xxxx
                 urlPrefix: http://ra86b7o3s.hn-bkt.clouddn.com/
+        file:
+          type: file
+          enable: true
+          config:
+            baseDir: D:\data\
+            urlPrefix: http://ra86b7o3s.hn-bkt.clouddn.com/
+        smb:
+          type: smb
+          enable: true
+          config:
+            hostname: [主机名]
+            username: [用户名]
+            password: [密码]
+            shareName: [共享明]
+            domain: DOMAIN
+            urlPrefix: http://res.liufang.org.cn/
+            pathPrefix: [路径前缀，可为空]
 
 使用用例
 =======
