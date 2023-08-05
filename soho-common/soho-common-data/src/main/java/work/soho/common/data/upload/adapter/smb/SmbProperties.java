@@ -10,4 +10,5 @@ public class SmbProperties {
     private String password;
     private String domain = "DOMAIN";
     private String urlPrefix;
+    private String pathPrefix;
 }

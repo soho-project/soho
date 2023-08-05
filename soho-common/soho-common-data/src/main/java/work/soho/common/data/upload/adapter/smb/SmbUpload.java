@@ -43,14 +43,15 @@ public class SmbUpload implements Upload {
             Session session = connection.authenticate(ac);
             // Connect to Share
             try (DiskShare share = (DiskShare) session.connectShare(smbProperties.getShareName())) {
-                Path path = Paths.get(filePath);
+                String savePath = smbProperties.getPathPrefix() + filePath;
+                Path path = Paths.get(savePath);
                 Path directoryPath = path.getParent();
                 //检查创建目录
                 if(!share.folderExists(directoryPath.toString())) {
                     mkdirs(share, directoryPath);
                 }
                 File file = share.openFile(
-                        filePath,
+                        savePath,
                         EnumSet.of(AccessMask.GENERIC_WRITE),
                         EnumSet.of(FileAttributes.FILE_ATTRIBUTE_NORMAL),
                         SMB2ShareAccess.ALL,
