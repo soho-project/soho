@@ -66,8 +66,9 @@ public class ChatAiServiceImpl implements ChatAiService {
         //问答方式
 //        completion(userInput);
         //聊天方式获取
-        return chatCompletion(userInput);
+//        return chatCompletion(userInput);
 //        return null;
+        return "回显消息：" + userInput;
     }
 
     @Override

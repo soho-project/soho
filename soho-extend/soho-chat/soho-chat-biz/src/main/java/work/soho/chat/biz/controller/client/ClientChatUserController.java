@@ -2,9 +2,11 @@ package work.soho.chat.biz.controller.client;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.chat.api.Constants;
 import work.soho.chat.biz.domain.ChatUser;
 import work.soho.chat.biz.service.ChatUserService;
@@ -44,5 +46,15 @@ public class ClientChatUserController {
         }
 
         return R.success(chatUserService.getTokenInfoByUserId(chatUser.getId()));
+    }
+
+    /**
+     * 获取当前登录用户信息
+     *
+     * @return
+     */
+    @GetMapping()
+    public R<ChatUser> userInfo(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        return R.success(chatUserService.getById(sohoUserDetails.getId()));
     }
 }

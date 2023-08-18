@@ -1,5 +1,6 @@
 package work.soho.common.core.util;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
@@ -42,6 +43,27 @@ public class JacksonUtils {
 		}
 		try {
 			return clazz.isInstance(json) ? (T) json : MAPPER.readValue(json, clazz);
+		}
+		catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	 * json to bean
+	 *
+	 * @param json
+	 * @param typeReference
+	 * @return
+	 * @param <T>
+	 */
+	public <T> T toBean(String json, TypeReference<T> typeReference) {
+		if (json == null || json.isEmpty() || typeReference == null) {
+			return null;
+		}
+		try {
+			return MAPPER.readValue(json, typeReference);
 		}
 		catch (JsonProcessingException e) {
 			e.printStackTrace();

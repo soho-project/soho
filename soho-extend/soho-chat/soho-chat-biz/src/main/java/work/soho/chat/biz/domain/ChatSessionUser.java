@@ -44,4 +44,28 @@ public class ChatSessionUser implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
 
+    /**
+     * 会话显示头像
+     */
+    @TableField(value = "avatar")
+    private String avatar;
+
+    /**
+     * 会话显示标题
+     */
+    @TableField(value = "title")
+    private String title;
+
+    /**
+     * 会话显示昵称
+     */
+    @TableField(value = "session_nickname")
+    private String sessionNickname;
+
+    /**
+     * 会话用户查看会话最后时间
+     */
+    @TableField(value = "last_look_message_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime lastLookMessageTime;
 }

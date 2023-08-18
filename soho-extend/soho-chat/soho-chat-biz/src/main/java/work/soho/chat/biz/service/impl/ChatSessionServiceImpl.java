@@ -1,10 +1,12 @@
 package work.soho.chat.biz.service.impl;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import work.soho.chat.api.payload.ChatMessage;
 import work.soho.chat.biz.domain.ChatCustomerService;
 import work.soho.chat.biz.domain.ChatSession;
 import work.soho.chat.biz.domain.ChatSessionUser;
@@ -13,13 +15,18 @@ import work.soho.chat.biz.mapper.ChatCustomerServiceMapper;
 import work.soho.chat.biz.mapper.ChatSessionMapper;
 import work.soho.chat.biz.mapper.ChatSessionUserMapper;
 import work.soho.chat.biz.service.ChatSessionService;
+import work.soho.common.core.util.JacksonUtils;
+import work.soho.longlink.api.sender.Sender;
 
 import java.time.LocalDateTime;
+import java.util.InvalidPropertiesFormatException;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
+@Log4j2
 @Service
 public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatSession>
     implements ChatSessionService{
@@ -27,6 +34,11 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
     private final ChatSessionUserMapper chatSessionUserMapper;
 
     private final ChatCustomerServiceMapper chatCustomerServiceMapper;
+
+    /**
+     * 消息发送接口
+     */
+    private final Sender sender;
 
     @Value("#{@sohoConfig.getByKey('chat-default-customer-service-avatar')}")
     private String defaultCustomerAvatar;
@@ -89,6 +101,27 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
 
         //保存会话用户
         for (Long toUid: uids) {
+            //获取会话对方昵称
+            String title = "";
+            if(
+                    type.getId() == ChatSessionEnums.Type.CUSTOMER_SERVICE.getId()
+                    || type.getId() == ChatSessionEnums.Type.PRIVATE_CHAT.getId()
+            ) {
+                Optional<Long> firstNotEqual = uids.stream()
+                        .filter(u -> !u.equals(uid))
+                        .findFirst();
+                firstNotEqual.ifPresentOrElse(
+                        value -> {
+
+                        },
+                        () -> {
+                            //ignore
+                        }
+                );
+            } else {
+                //TODO 组群聊，创建群聊头像
+            }
+
             ChatSessionUser chatSessionUser = new ChatSessionUser();
             chatSessionUser.setSessionId(chatSession.getId());
             chatSessionUser.setUserId(toUid);
@@ -124,4 +157,35 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
         return chatSessionUser.get();
     }
 
+    /**
+     * 查询指定会话的用户信息
+     *
+     * @param sessionId
+     * @return
+     */
+    public List<ChatSessionUser> getSessionUser(String sessionId) {
+        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, sessionId);
+        return chatSessionUserMapper.selectList(lambdaQueryWrapper);
+    }
+
+    /**
+     * 聊天处理
+     *
+     * @param inputChatMessage
+     */
+    public void chat(ChatMessage inputChatMessage) {
+       List<ChatSessionUser> sessionUsers = getSessionUser(inputChatMessage.getToSessionId());
+       for(ChatSessionUser chatSessionUser: sessionUsers) {
+           log.info("当前转发消息用户信息： {}", chatSessionUser);
+           //检查是否为发送用户
+           if(chatSessionUser.getUserId().equals(Long.valueOf(inputChatMessage.getFromUid()))) {
+               //这是发送人
+               //ignore
+           } else {
+               //推送消息到信道给到指定用户
+               sender.sendToUid(String.valueOf(chatSessionUser.getUserId()), JacksonUtils.toJson(inputChatMessage));
+           }
+       }
+    }
 }
