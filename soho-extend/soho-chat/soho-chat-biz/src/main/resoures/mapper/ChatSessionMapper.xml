@@ -11,8 +11,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id property="avatar" column="avatar" jdbcType="VARCHAR"/>
         <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
         <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="lastMessageTime" column="last_message_time" javaType="DATE" />
     </resultMap>
     <sql id="Base_Column_List">
-        id,type,status,title,avatar,updated_time,created_time
+        id,type,status,title,avatar,updated_time,created_time,last_message_time
     </sql>
 </mapper>

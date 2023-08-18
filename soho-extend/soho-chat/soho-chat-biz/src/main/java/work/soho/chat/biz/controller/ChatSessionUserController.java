@@ -64,7 +64,7 @@ public class ChatSessionUserController {
 
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, ChatSessionUser::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, ChatSessionUser::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
-
+        lqw.orderByDesc(ChatSessionUser::getId);
         List<ChatSessionUser> list = chatSessionUserService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }

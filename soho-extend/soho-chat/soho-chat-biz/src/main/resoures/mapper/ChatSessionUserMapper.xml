@@ -9,8 +9,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id property="userId" column="user_id" jdbcType="INTEGER"/>
         <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
         <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="avatar" column="avatar" jdbcType="VARCHAR" />
+        <id property="title" column="title" jdbcType="VARCHAR" />
+        <id property="sessionNickname" column="session_nickname" javaType="VARCHAR" />
+        <id property="lastLookMessageTime" column="last_look_message_time" javaType="DATE" />
     </resultMap>
     <sql id="Base_Column_List">
-        id,session_id,user_id,updated_time,created_time
+        id,session_id,user_id,updated_time,created_time,avatar,title,session_nickname,last_look_message_time
     </sql>
 </mapper>

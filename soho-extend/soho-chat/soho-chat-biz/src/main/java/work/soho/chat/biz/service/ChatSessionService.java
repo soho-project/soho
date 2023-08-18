@@ -1,5 +1,6 @@
 package work.soho.chat.biz.service;
 
+import work.soho.chat.api.payload.ChatMessage;
 import work.soho.chat.biz.domain.ChatSession;
 import com.baomidou.mybatisplus.extension.service.IService;
 import work.soho.chat.biz.domain.ChatSessionUser;
@@ -34,4 +35,19 @@ public interface ChatSessionService extends IService<ChatSession> {
      * @return
      */
     ChatSessionUser findCustomerService(Long sessionId);
+
+    /**
+     * 获取指定会话的用户
+     *
+     * @param sessionId
+     * @return
+     */
+    List<ChatSessionUser> getSessionUser(String sessionId);
+
+    /**
+     * 聊天消息分发
+     *
+     * @param inputChatMessage
+     */
+    void chat(ChatMessage inputChatMessage);
 }
