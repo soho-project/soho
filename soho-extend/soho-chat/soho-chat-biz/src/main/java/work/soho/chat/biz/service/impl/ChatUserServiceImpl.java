@@ -40,6 +40,22 @@ public class ChatUserServiceImpl extends ServiceImpl<ChatUserMapper, ChatUser>
         return sohoTokenService.createTokenInfo(sohoUserDetails);
     }
 
+    /**
+     * 根据原始用户信息获取Token信息
+     *
+     * @param originId
+     * @param originType
+     * @return
+     */
+    public Map<String, String> getTokenInfo(String originId, String originType) {
+        LambdaQueryWrapper<ChatUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatUser::getOriginType, originType)
+                .eq(ChatUser::getOriginId, originId);
+        ChatUser chatUser = getOne(lambdaQueryWrapper);
+        Assert.notNull(chatUser, "用户不存在");
+        return getTokenInfoByUserId(chatUser.getId());
+    }
+
     @Override
     public ChatUser getByUsername(String username) {
         LambdaQueryWrapper<ChatUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
