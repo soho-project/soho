@@ -1,5 +1,6 @@
 package work.soho.chat.biz.controller.client;
 
+import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,9 @@ import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import work.soho.chat.biz.domain.ChatSession;
+import work.soho.chat.biz.domain.ChatSessionMessage;
 import work.soho.chat.biz.domain.ChatSessionUser;
+import work.soho.chat.biz.service.ChatSessionMessageService;
 import work.soho.chat.biz.service.ChatSessionService;
 import work.soho.chat.biz.service.ChatSessionUserService;
 import work.soho.chat.biz.vo.UserSessionVO;
@@ -33,6 +36,8 @@ public class ClientChatSessionController {
     private final ChatSessionService chatSessionService;
 
     private final ChatSessionUserService chatSessionUserService;
+
+    private final ChatSessionMessageService chatSessionMessageService;
 
     /**
      * 查询聊天会话列表
@@ -105,7 +110,6 @@ public class ClientChatSessionController {
      * 更新用户会话最后查看时间
      *
      * @param sessionId
-     * @param lastLookMessageTime
      * @param sohoUserDetails
      * @return
      */
@@ -119,5 +123,37 @@ public class ClientChatSessionController {
         chatSessionUser.setUpdatedTime(LocalDateTime.now());
         chatSessionUserService.updateById(chatSessionUser);
         return R.success(true);
+    }
+
+    /**
+     * 获取会话历史消息
+     *
+     * @param sessionId
+     * @param lastMessageId  最后一个ID
+     * @param sohoUserDetails
+     * @return
+     */
+    @GetMapping("/history-message")
+    public R<List<ChatSessionMessage>> historyMessage(Long sessionId, Long lastMessageId, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatSession chatSession = chatSessionService.getById(sessionId);
+        Assert.notNull(chatSession, "会话不存在");
+        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionUser::getUserId, sohoUserDetails.getId());
+        lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, sessionId);
+        ChatSessionUser chatSessionUser = chatSessionUserService.getOne(lambdaQueryWrapper);
+        Assert.notNull(chatSessionUser, "会话不存在");
+
+        //读取用户历史消息
+        LambdaQueryWrapper<ChatSessionMessage> sessionMessageLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        sessionMessageLambdaQueryWrapper.eq(ChatSessionMessage::getSessionId, sessionId);
+        if(lastMessageId!=null) {
+            sessionMessageLambdaQueryWrapper.lt(ChatSessionMessage::getId, lastMessageId);
+        }
+        sessionMessageLambdaQueryWrapper.orderByDesc(ChatSessionMessage::getId);
+        sessionMessageLambdaQueryWrapper.last("limit 100");
+        List<ChatSessionMessage> list = chatSessionMessageService.list(sessionMessageLambdaQueryWrapper);
+        //对结果进行顺序排序
+        list.sort((o1, o2) -> Long.compare(o1.getId(), o2.getId()));
+        return R.success(list);
     }
 }

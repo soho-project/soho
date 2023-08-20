@@ -1,6 +1,9 @@
 package work.soho.chat.biz.controller;
 
 import java.time.LocalDateTime;
+
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.util.*;
@@ -107,5 +110,16 @@ public class ChatUserController {
     @GetMapping("/token")
     public R<Map<String,String>> createToken(Long id) {
         return R.success(chatUserService.getTokenInfoByUserId(id));
+    }
+
+    /**
+     * 获取管理员用户聊天TOKEN
+     *
+     * @param sohoUserDetails
+     * @return
+     */
+    @GetMapping("/token-from-admin")
+    public R<Map<String, String>> loginToken(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        return R.success(chatUserService.getTokenInfo(String.valueOf(sohoUserDetails.getId()), "admin"));
     }
 }
