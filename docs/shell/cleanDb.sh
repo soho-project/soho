@@ -5,7 +5,11 @@ cd ../databases
 
 for item in `ls ./*.sql`; do
   rm -f tmp.sql
-  cat $item |grep -v 'INSERT INTO `pay_info`' > tmp.sql
+  cat $item |grep -v 'INSERT INTO `pay_info`' \
+   |grep -v 'INSERT INTO `pay_order`' \
+   |grep -v 'INSERT INTO `chat_session_message`' \
+   |grep -v 'INSERT INTO `chat_session_message_user`' \
+   > tmp.sql
   rm -f $item
   mv tmp.sql $item
 done
