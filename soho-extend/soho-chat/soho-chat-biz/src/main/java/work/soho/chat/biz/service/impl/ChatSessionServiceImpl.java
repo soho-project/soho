@@ -19,9 +19,7 @@ import work.soho.common.core.util.JacksonUtils;
 import work.soho.longlink.api.sender.Sender;
 
 import java.time.LocalDateTime;
-import java.util.InvalidPropertiesFormatException;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -77,6 +75,49 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
         chatSessionLambdaQueryWrapper.orderByDesc(ChatSession::getId);
         chatSessionLambdaQueryWrapper.last(" limit 1");
         return getOne(chatSessionLambdaQueryWrapper);
+    }
+
+    /**
+     * 查询好友会话
+     *
+     * @param uid
+     * @param toUid
+     * @return
+     */
+    public ChatSession findFriendSession(Long uid, Long toUid) {
+        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionUser::getUserId, uid);
+        List<ChatSessionUser> chatSessionUserList = chatSessionUserMapper.selectList(lambdaQueryWrapper);
+        List<Long> sessionIdList = chatSessionUserList.stream().map(ChatSessionUser::getSessionId).collect(Collectors.toList());
+        if(sessionIdList == null || sessionIdList.size() == 0) {
+            return null;
+        }
+
+        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper1 = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper1.in(ChatSessionUser::getSessionId, sessionIdList);
+        lambdaQueryWrapper1.eq(ChatSessionUser::getUserId, toUid);
+        List<ChatSessionUser> chatSessionUserList1 = chatSessionUserMapper.selectList(lambdaQueryWrapper1);
+        List<Long> sessionIdList1 = chatSessionUserList1.stream().map(ChatSessionUser::getSessionId).collect(Collectors.toList());
+        if(sessionIdList1 == null || sessionIdList1.size() == 0) {
+            //没有相同的会话则不存在私聊会话
+            return createSession(uid, new ArrayList<>(Arrays.asList(toUid)), ChatSessionEnums.Type.PRIVATE_CHAT);
+        }
+
+
+        //查询客服会话
+        LambdaQueryWrapper<ChatSession> chatSessionLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        chatSessionLambdaQueryWrapper.in(ChatSession::getId, sessionIdList1);
+        chatSessionLambdaQueryWrapper.eq(ChatSession::getType, ChatSessionEnums.Type.PRIVATE_CHAT.getId());
+        chatSessionLambdaQueryWrapper.eq(ChatSession::getStatus, ChatSessionEnums.Status.ACTIVE.getId());
+        chatSessionLambdaQueryWrapper.orderByDesc(ChatSession::getId);
+        chatSessionLambdaQueryWrapper.last(" limit 1");
+        ChatSession chatSession = getOne(chatSessionLambdaQueryWrapper);
+        //会话不存在择创建会话
+        if(chatSession == null) {
+            return createSession(uid, new ArrayList<>(Arrays.asList(toUid)), ChatSessionEnums.Type.PRIVATE_CHAT);
+        }
+
+        return chatSession;
     }
 
     /**

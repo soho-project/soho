@@ -8,12 +8,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.chat.api.Constants;
+import work.soho.chat.biz.domain.ChatSessionUser;
 import work.soho.chat.biz.domain.ChatUser;
 import work.soho.chat.biz.service.ChatUserService;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.IDGeneratorUtils;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -22,6 +24,8 @@ import java.util.Map;
 public class ClientChatUserController {
 
     private final ChatUserService chatUserService;
+
+//    private final ChatSessionUser cha;
 
     /**
      * 获取访客TOKEN
@@ -56,5 +60,29 @@ public class ClientChatUserController {
     @GetMapping()
     public R<ChatUser> userInfo(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         return R.success(chatUserService.getById(sohoUserDetails.getId()));
+    }
+
+    /**
+     * 获取好友列表
+     *
+     * @param sohoUserDetails
+     * @return
+     */
+    @GetMapping("/getFriendList")
+    public R<HashMap> friendList(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        //TODO 获取所有私聊会话ID
+
+        //TODO 获取好友用户信息
+
+        return null;
+    }
+
+    /**
+     * 获取群组列表
+     */
+    @GetMapping("/getGroupList")
+    public R<HashMap> groupList(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+
+        return null;
     }
 }
