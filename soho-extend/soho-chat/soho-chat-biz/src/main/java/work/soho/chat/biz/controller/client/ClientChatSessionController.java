@@ -90,6 +90,19 @@ public class ClientChatSessionController {
     }
 
     /**
+     * 好友聊天获取会话信息
+     *
+     * 好友聊天会话创建或者获取
+     *
+     * @param friendUid
+     * @return
+     */
+    @GetMapping(value = "/friendSessionInfo")
+    public R<ChatSession> getOrCreate(Long friendUid, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        return R.success(chatSessionService.findFriendSession(sohoUserDetails.getId(), friendUid.longValue()));
+    }
+
+    /**
      * 删除指定会话
      *
      * @param chatSession

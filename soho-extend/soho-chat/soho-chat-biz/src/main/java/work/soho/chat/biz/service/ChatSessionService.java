@@ -19,6 +19,15 @@ public interface ChatSessionService extends IService<ChatSession> {
     ChatSession findCustomerServiceSession(Long uid, Long toUid);
 
     /**
+     * 查找好友会话
+     *
+     * @param uid
+     * @param toUid
+     * @return
+     */
+    ChatSession findFriendSession(Long uid, Long toUid);
+
+    /**
      * 创建会话
      *
      * @param uid
