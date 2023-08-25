@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface ChatUserFriendService extends IService<ChatUserFriend> {
     List<UserFriendVO> getListByUid(Long uid);
+
+    Boolean applyFriend(Long uid, Long friendId);
 }
