@@ -1,5 +1,6 @@
 package work.soho.chat.biz.service.impl;
 
+import cn.hutool.core.lang.Assert;
 import org.springframework.stereotype.Service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -27,18 +28,19 @@ public class ChatUserFriendServiceImpl extends ServiceImpl<ChatUserFriendMapper,
      */
     private final ChatUserMapper chatUserMapper;
 
+
     /**
      * 获取指定用户好友
      *
      * @param uid
      */
     public List<UserFriendVO> getListByUid(Long uid) {
-        LambdaQueryWrapper<ChatUserFriend> lqw = new LambdaQueryWrapper<ChatUserFriend>();
+        LambdaQueryWrapper<ChatUserFriend> lqw = new LambdaQueryWrapper<>();
         lqw.eq(ChatUserFriend::getChatUid, uid);
         List<ChatUserFriend> list = list(lqw);
 
         List<Long> userIds = list.stream().map(ChatUserFriend::getFriendUid).collect(Collectors.toList());
-        if(userIds == null || userIds.size() == 0) {
+        if(userIds.isEmpty()) {
             return new ArrayList<>();
         }
 
@@ -56,5 +58,38 @@ public class ChatUserFriendServiceImpl extends ServiceImpl<ChatUserFriendMapper,
         });
 
         return result;
+    }
+
+    /**
+     * 申请好友
+     *
+     * TODO 实现申请过程；暂时直接添加为好友
+     *
+     * @param uid
+     * @param friendId
+     * @return
+     */
+    @Override
+    public Boolean applyFriend(Long uid, Long friendId) {
+        ChatUser chatUser = chatUserMapper.selectById(uid);
+        ChatUser friendUser = chatUserMapper.selectById(friendId);
+        Assert.notNull(chatUser);
+        Assert.notNull(friendUser);
+
+        //TODO 检查是否已经存在
+        ChatUserFriend chatUserFriend = new ChatUserFriend();
+        chatUserFriend.setChatUid(uid);
+        chatUserFriend.setFriendUid(friendId);
+        chatUserFriend.setNotesName(friendUser.getNickname());
+        saveOrUpdate(chatUserFriend);
+
+        //TODO 检查是否已经存在
+        ChatUserFriend chatUserFriend1 = new ChatUserFriend();
+        chatUserFriend1.setChatUid(friendId);
+        chatUserFriend1.setFriendUid(uid);
+        chatUserFriend1.setNotesName(chatUser.getNickname());
+        saveOrUpdate(chatUserFriend1);
+
+        return Boolean.TRUE;
     }
 }

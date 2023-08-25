@@ -8,9 +8,12 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.api.admin.annotation.Node;
+import work.soho.chat.biz.domain.ChatUser;
 import work.soho.chat.biz.domain.ChatUserFriend;
 import work.soho.chat.biz.service.ChatUserFriendService;
+import work.soho.chat.biz.service.ChatUserService;
 import work.soho.chat.biz.vo.UserFriendVO;
+import work.soho.chat.biz.vo.UserVO;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
@@ -24,6 +27,8 @@ import java.util.stream.Collectors;
 public class ClientChatFriendController {
     private final ChatUserFriendService chatUserFriendService;
 
+    private final ChatUserService chatUserService;
+
     /**
      * 查询好友列表
      */
@@ -31,6 +36,33 @@ public class ClientChatFriendController {
     public R<PageSerializable<UserFriendVO>> list(ChatUserFriend chatUserFriend, @AuthenticationPrincipal SohoUserDetails sohoUserDetails)
     {
         return R.success(new PageSerializable<>(chatUserFriendService.getListByUid(sohoUserDetails.getId())));
+    }
+
+    @GetMapping("/searchUser")
+    public R<List<UserVO>> findFendUser(String keyword, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        LambdaQueryWrapper<ChatUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        //根据id查找
+        lambdaQueryWrapper.eq(ChatUser::getId, keyword);
+        lambdaQueryWrapper.or().like(ChatUser::getUsername, "%" + keyword) //查找用户名
+                .or().like(ChatUser::getNickname, "%" + keyword)
+                .last("limit 100");
+        List<ChatUser> list = chatUserService.list(lambdaQueryWrapper);
+        List<UserVO> result = BeanUtils.copyList(list, UserVO.class);
+        //TODO 检查用户是否为当前请求用户好友
+        return R.success(result);
+    }
+
+    /**
+     * 申请好友
+     * @return
+     */
+    @GetMapping("/apply")
+    public R<Boolean> apply(Long friendId,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatUser chatUser = chatUserService.getById(friendId);
+        Assert.notNull(chatUser);
+        //添加好友
+        chatUserFriendService.applyFriend(sohoUserDetails.getId(), chatUser.getId());
+        return R.success(Boolean.TRUE);
     }
 
     @PutMapping()
