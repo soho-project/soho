@@ -113,6 +113,17 @@ public class ClientChatSessionController {
         chatSession = chatSessionService.getById(chatSession.getId());
         if(chatSession != null) {
             //验证会话是否属于当前用户
+            LambdaQueryWrapper<ChatSessionUser> chatSessionUserLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            chatSessionUserLambdaQueryWrapper.eq(ChatSessionUser::getUserId, sohoUserDetails)
+                            .eq(ChatSessionUser::getSessionId, chatSession.getId());
+            //TODO 会话类型判断
+            ChatSessionUser chatSessionUser = chatSessionUserService.getOne(chatSessionUserLambdaQueryWrapper);
+            Assert.notNull(chatSessionUser, "会话不存在");
+
+            //删除会话用户
+            LambdaQueryWrapper<ChatSessionUser> chatSessionUserLambdaQueryWrapper1 = new LambdaQueryWrapper<>();
+            chatSessionUserLambdaQueryWrapper1.eq(ChatSessionUser::getSessionId, chatSession.getId());
+            chatSessionUserService.remove(chatSessionUserLambdaQueryWrapper1);
 
             chatSessionService.removeById(chatSession.getId());
         }
@@ -173,4 +184,37 @@ public class ClientChatSessionController {
             return R.success(new ArrayList<>());
         }
     }
+
+    /**
+     * 编辑用户会话信息
+     *
+     * @param chatSessionUser
+     * @return
+     */
+    @PutMapping("/updateUser")
+    public R<Boolean> updateUser(ChatSessionUser chatSessionUser, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionUser::getUserId, sohoUserDetails.getId())
+                .eq(ChatSessionUser::getSessionId, chatSessionUser.getSessionId());
+        ChatSessionUser oldChatSessionUser = chatSessionUserService.getOne(lambdaQueryWrapper);
+        Assert.notNull(oldChatSessionUser, "无权访问");
+        chatSessionUser.setId(oldChatSessionUser.getId());
+        return R.success(chatSessionUserService.updateById(chatSessionUser));
+    }
+
+    /**
+     * 离开会话
+     *
+     * @param sessionId
+     * @param sohoUserDetails
+     * @return
+     */
+    @GetMapping("/leave")
+    public R<Boolean> leave(Long sessionId, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, sessionId)
+                .eq(ChatSessionUser::getUserId, sohoUserDetails.getId());
+        return R.success(chatSessionUserService.remove(lambdaQueryWrapper));
+    }
+
 }
