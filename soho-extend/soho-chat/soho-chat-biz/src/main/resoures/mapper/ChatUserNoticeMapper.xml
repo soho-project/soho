@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.chat.biz.mapper.ChatUserNoticeMapper">
+    <resultMap id="BaseResultMap" type="work.soho.chat.biz.domain.ChatUserNotice">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="chatUid" column="chat_uid" jdbcType="INTEGER"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="type" column="type" jdbcType="TINYINT"/>
+        <id property="trackingId" column="tracking_id" jdbcType="INTEGER"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,chat_uid,status,type,tracking_id,updated_time,created_time
+    </sql>
+</mapper>
