@@ -13,8 +13,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id property="title" column="title" jdbcType="VARCHAR" />
         <id property="sessionNickname" column="session_nickname" javaType="VARCHAR" />
         <id property="lastLookMessageTime" column="last_look_message_time" javaType="DATE" />
+        <id property="isTop" column="is_top" javaType="INTEGER" />
+        <id property="isNotDisturb" column="is_not_disturb" javaType="INTEGER" />
+        <id property="isShield" column="is_shield" javaType="INTEGER" />
     </resultMap>
     <sql id="Base_Column_List">
-        id,session_id,user_id,updated_time,created_time,avatar,title,session_nickname,last_look_message_time
+        id,session_id,user_id,updated_time,created_time,avatar,title,session_nickname,last_look_message_time,is_top,is_not_disturb,is_shield
     </sql>
 </mapper>

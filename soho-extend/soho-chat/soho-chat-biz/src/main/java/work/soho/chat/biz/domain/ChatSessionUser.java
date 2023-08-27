@@ -68,4 +68,22 @@ public class ChatSessionUser implements Serializable {
     @TableField(value = "last_look_message_time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastLookMessageTime;
+
+    /**
+     * 消息置顶
+     */
+    @TableField(value = "is_top")
+    private Integer isTop;
+
+    /**
+     * 免打扰
+     */
+    @TableField(value = "is_not_disturb")
+    private Integer isNotDisturb;
+
+    /**
+     * 屏蔽会话
+     */
+    @TableField(value = "is_shield")
+    private Integer isShield;
 }
