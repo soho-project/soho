@@ -120,6 +120,23 @@ public class ChatUserController {
      */
     @GetMapping("/token-from-admin")
     public R<Map<String, String>> loginToken(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        //检查用户是否存在
+        LambdaQueryWrapper<ChatUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatUser::getOriginId, sohoUserDetails.getId());
+        lambdaQueryWrapper.eq(ChatUser::getOriginType, "admin");
+        ChatUser chatUser = chatUserService.getOne(lambdaQueryWrapper);
+        if(chatUser == null) {
+            chatUser = new ChatUser();
+            chatUser.setUsername("admin-" + sohoUserDetails.getId());
+            chatUser.setNickname("admin-" + sohoUserDetails.getId());
+            chatUser.setOriginType("admin");
+            chatUser.setOriginId(String.valueOf(sohoUserDetails.getId()));
+            chatUser.setAvatar("https://randomuser.me/api/portraits/med/men/32.jpg");
+            chatUser.setIntroduction("管理用户");
+            chatUser.setUpdatedTime(LocalDateTime.now());
+            chatUser.setCreatedTime(LocalDateTime.now());
+            chatUserService.save(chatUser);
+        }
         return R.success(chatUserService.getTokenInfo(String.valueOf(sohoUserDetails.getId()), "admin"));
     }
 }

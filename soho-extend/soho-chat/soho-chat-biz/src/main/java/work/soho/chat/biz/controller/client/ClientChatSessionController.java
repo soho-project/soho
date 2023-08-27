@@ -148,25 +148,29 @@ public class ClientChatSessionController {
      */
     @GetMapping("/history-message")
     public R<List<ChatSessionMessage>> historyMessage(Long sessionId, Long lastMessageId, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
-        ChatSession chatSession = chatSessionService.getById(sessionId);
-        Assert.notNull(chatSession, "会话不存在");
-        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(ChatSessionUser::getUserId, sohoUserDetails.getId());
-        lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, sessionId);
-        ChatSessionUser chatSessionUser = chatSessionUserService.getOne(lambdaQueryWrapper);
-        Assert.notNull(chatSessionUser, "会话不存在");
+        try {
+            ChatSession chatSession = chatSessionService.getById(sessionId);
+            Assert.notNull(chatSession, "会话不存在");
+            LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+            lambdaQueryWrapper.eq(ChatSessionUser::getUserId, sohoUserDetails.getId());
+            lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, sessionId);
+            ChatSessionUser chatSessionUser = chatSessionUserService.getOne(lambdaQueryWrapper);
+            Assert.notNull(chatSessionUser, "会话不存在");
 
-        //读取用户历史消息
-        LambdaQueryWrapper<ChatSessionMessage> sessionMessageLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        sessionMessageLambdaQueryWrapper.eq(ChatSessionMessage::getSessionId, sessionId);
-        if(lastMessageId!=null) {
-            sessionMessageLambdaQueryWrapper.lt(ChatSessionMessage::getId, lastMessageId);
+            //读取用户历史消息
+            LambdaQueryWrapper<ChatSessionMessage> sessionMessageLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            sessionMessageLambdaQueryWrapper.eq(ChatSessionMessage::getSessionId, sessionId);
+            if(lastMessageId!=null) {
+                sessionMessageLambdaQueryWrapper.lt(ChatSessionMessage::getId, lastMessageId);
+            }
+            sessionMessageLambdaQueryWrapper.orderByDesc(ChatSessionMessage::getId);
+            sessionMessageLambdaQueryWrapper.last("limit 100");
+            List<ChatSessionMessage> list = chatSessionMessageService.list(sessionMessageLambdaQueryWrapper);
+            //对结果进行顺序排序
+            list.sort((o1, o2) -> Long.compare(o1.getId(), o2.getId()));
+            return R.success(list);
+        } catch (Exception e) {
+            return R.success(new ArrayList<>());
         }
-        sessionMessageLambdaQueryWrapper.orderByDesc(ChatSessionMessage::getId);
-        sessionMessageLambdaQueryWrapper.last("limit 100");
-        List<ChatSessionMessage> list = chatSessionMessageService.list(sessionMessageLambdaQueryWrapper);
-        //对结果进行顺序排序
-        list.sort((o1, o2) -> Long.compare(o1.getId(), o2.getId()));
-        return R.success(list);
     }
 }
