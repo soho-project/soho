@@ -6,11 +6,14 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.chat.biz.domain.ChatUserFriend;
 import work.soho.chat.biz.domain.ChatUserFriendApply;
 import work.soho.chat.biz.domain.ChatUserNotice;
 import work.soho.chat.biz.enums.ChatUserFriendApplyEnums;
+import work.soho.chat.biz.enums.ChatUserFriendEnums;
 import work.soho.chat.biz.enums.ChatUserNoticeEnums;
 import work.soho.chat.biz.service.ChatUserFriendApplyService;
+import work.soho.chat.biz.service.ChatUserFriendService;
 import work.soho.chat.biz.service.ChatUserNoticeService;
 import work.soho.common.core.result.R;
 
@@ -23,6 +26,8 @@ public class ClientChatUserFriendApplyController {
     private final ChatUserFriendApplyService chatUserFriendApplyService;
 
     private final ChatUserNoticeService chatUserNoticeService;
+
+    private final ChatUserFriendService chatUserFriendService;
 
 
     /**
@@ -64,6 +69,17 @@ public class ClientChatUserFriendApplyController {
         chatUserNotice.setCreatedTime(LocalDateTime.now());
         chatUserNotice.setCreatedTime(LocalDateTime.now());
         chatUserNoticeService.save(chatUserNotice);
+        //添加好友关系
+        ChatUserFriend chatUserFriend = new ChatUserFriend();
+        chatUserFriend.setFriendUid(chatUserFriendApply.getFriendUid());
+        chatUserFriend.setChatUid(chatUserFriendApply.getChatUid());
+        chatUserFriend.setNotesName("");
+        chatUserFriendService.save(chatUserFriend);
+        ChatUserFriend chatUserFriend1 = new ChatUserFriend();
+        chatUserFriend1.setFriendUid(chatUserFriendApply.getChatUid());
+        chatUserFriend1.setChatUid(chatUserFriendApply.getFriendUid());
+        chatUserFriend1.setNotesName("");
+        chatUserFriendService.save(chatUserFriend1);
 
         return R.success(true);
     }

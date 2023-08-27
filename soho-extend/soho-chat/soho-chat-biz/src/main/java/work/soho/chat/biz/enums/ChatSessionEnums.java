@@ -12,6 +12,7 @@ public class ChatSessionEnums {
         GROUP_CHAT(2,"群聊"),
         GROUP_(3,"群组"),
         CUSTOMER_SERVICE(4,"客服"),
+        SELF(5,"自己"),  //一般用来跨客户端通信
 
         ;
         private int id;

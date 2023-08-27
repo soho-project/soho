@@ -90,7 +90,7 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
         List<ChatSessionUser> chatSessionUserList = chatSessionUserMapper.selectList(lambdaQueryWrapper);
         List<Long> sessionIdList = chatSessionUserList.stream().map(ChatSessionUser::getSessionId).collect(Collectors.toList());
         if(sessionIdList == null || sessionIdList.size() == 0) {
-            return null;
+            return createSession(uid, new ArrayList<>(Arrays.asList(toUid)), ChatSessionEnums.Type.PRIVATE_CHAT);
         }
 
         LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper1 = new LambdaQueryWrapper<>();
