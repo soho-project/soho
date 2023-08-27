@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.chat.biz.mapper.ChatUserFriendApplyMapper">
+    <resultMap id="BaseResultMap" type="work.soho.chat.biz.domain.ChatUserFriendApply">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="chatUid" column="chat_uid" jdbcType="INTEGER"/>
+        <id property="friendUid" column="friend_uid" jdbcType="INTEGER"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="ask" column="ask" jdbcType="VARCHAR"/>
+        <id property="answer" column="answer" jdbcType="VARCHAR"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,chat_uid,friend_uid,status,ask,answer,updated_time,created_time
+    </sql>
+</mapper>

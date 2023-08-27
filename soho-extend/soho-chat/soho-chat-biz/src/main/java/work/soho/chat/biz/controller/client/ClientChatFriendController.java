@@ -57,8 +57,8 @@ public class ClientChatFriendController {
      * @return
      */
     @GetMapping("/apply")
-    public R<Boolean> apply(Long friendId,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
-        ChatUser chatUser = chatUserService.getById(friendId);
+    public R<Boolean> apply(Long friendUid,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatUser chatUser = chatUserService.getById(friendUid);
         Assert.notNull(chatUser);
         //添加好友
         chatUserFriendService.applyFriend(sohoUserDetails.getId(), chatUser.getId());
