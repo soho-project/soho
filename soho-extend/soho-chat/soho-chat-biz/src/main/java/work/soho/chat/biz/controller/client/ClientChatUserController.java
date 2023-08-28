@@ -11,7 +11,9 @@ import work.soho.chat.api.Constants;
 import work.soho.chat.biz.domain.ChatSessionUser;
 import work.soho.chat.biz.domain.ChatUser;
 import work.soho.chat.biz.service.ChatUserService;
+import work.soho.chat.biz.vo.DisplayUserVO;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
 
 import java.time.LocalDateTime;
@@ -60,6 +62,20 @@ public class ClientChatUserController {
     @GetMapping()
     public R<ChatUser> userInfo(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         return R.success(chatUserService.getById(sohoUserDetails.getId()));
+    }
+
+    /**
+     * 获取其他用户详情
+     *
+     * @param id
+     * @param sohoUserDetails
+     * @return
+     */
+    @GetMapping("/displayUser")
+    public R<DisplayUserVO> displayUser(Long id, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatUser chatUser = chatUserService.getById(id);
+        DisplayUserVO displayUserVO = BeanUtils.copy(chatUser, DisplayUserVO.class);
+        return R.success(displayUserVO);
     }
 
     /**

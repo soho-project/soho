@@ -14,6 +14,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id property="sex" column="sex" jdbcType="INTEGER"/>
         <id property="avatar" column="avatar" jdbcType="VARCHAR"/>
         <id property="introduction" column="introduction" jdbcType="VARCHAR"/>
+        <id property="age" column="age" jdbcType="INTEGER" />
+        <id property="address" column="address" jdbcType="VARCHAR" />
+        <id property="registerIp" column="register_ip" jdbcType="VARCHAR" />
+        <id property="loginIp" column="login_ip" jdbcType="VARCHAR" />
     </resultMap>
     <sql id="Base_Column_List">
         id,username,nickname,updated_time,created_time,origin_type,origin_id
