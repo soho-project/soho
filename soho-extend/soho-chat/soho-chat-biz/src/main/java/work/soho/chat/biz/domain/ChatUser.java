@@ -74,4 +74,28 @@ public class ChatUser implements Serializable {
     @TableField(value = "introduction")
     private String introduction;
 
+    /**
+     * 年龄
+     */
+    @TableField(value = "age")
+    private Integer age;
+
+    /**
+     * 地址
+     */
+    @TableField(value = "address")
+    private String address;
+
+    /**
+     * 注册IP
+     */
+    @TableField(value = "register_ip")
+    private String registerIp;
+
+    /**
+     * 登录IP
+     */
+    @TableField(value = "login_ip")
+    private String loginIp;
+
 }
