@@ -54,9 +54,26 @@ public class ChatSessionMessageServiceImpl extends ServiceImpl<ChatSessionMessag
             chatSessionMessageUser.setIsRead(ChatSessionMessageUserEnums.IsRead.UNREAD.getId());
             chatSessionMessageUser.setUpdatedTime(LocalDateTime.now());
             chatSessionMessageUser.setCreatedTime(LocalDateTime.now());
+            chatSessionMessageUser.setSessionId(sessionId);
             chatSessionMessageUserMapper.insert(chatSessionMessageUser);
         });
 
         return chatSessionMessage;
+    }
+
+    /**
+     * 删除指定用户回话消息
+     *
+     * @param id
+     * @param uid
+     * @return
+     */
+    @Override
+    public Boolean removeSessionMessageById(Long id, Long uid) {
+        LambdaQueryWrapper<ChatSessionMessageUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionMessageUser::getSessionId, id)
+                .eq(ChatSessionMessageUser::getUid, uid);
+        chatSessionMessageUserMapper.delete(lambdaQueryWrapper);
+        return true;
     }
 }
