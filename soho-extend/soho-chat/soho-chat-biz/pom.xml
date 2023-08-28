@@ -87,6 +87,10 @@
             <artifactId>soho-admin-biz</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-data</artifactId>
+        </dependency>
         <!--    /test-->
     </dependencies>
 

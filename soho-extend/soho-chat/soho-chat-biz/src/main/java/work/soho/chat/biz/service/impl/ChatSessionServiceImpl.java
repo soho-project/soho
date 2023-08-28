@@ -10,12 +10,16 @@ import work.soho.chat.api.payload.ChatMessage;
 import work.soho.chat.biz.domain.ChatCustomerService;
 import work.soho.chat.biz.domain.ChatSession;
 import work.soho.chat.biz.domain.ChatSessionUser;
+import work.soho.chat.biz.domain.ChatUser;
 import work.soho.chat.biz.enums.ChatSessionEnums;
 import work.soho.chat.biz.mapper.ChatCustomerServiceMapper;
 import work.soho.chat.biz.mapper.ChatSessionMapper;
 import work.soho.chat.biz.mapper.ChatSessionUserMapper;
+import work.soho.chat.biz.mapper.ChatUserMapper;
 import work.soho.chat.biz.service.ChatSessionService;
 import work.soho.common.core.util.JacksonUtils;
+import work.soho.common.data.avatar.utils.NinePatchAvatarGeneratorUtils;
+import work.soho.common.data.upload.utils.UploadUtils;
 import work.soho.longlink.api.sender.Sender;
 
 import java.time.LocalDateTime;
@@ -32,6 +36,8 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
     private final ChatSessionUserMapper chatSessionUserMapper;
 
     private final ChatCustomerServiceMapper chatCustomerServiceMapper;
+
+    private final ChatUserMapper chatUserMapper;
 
     /**
      * 消息发送接口
@@ -139,35 +145,42 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
         save(chatSession);
 
         uids.add(uid);
+        //查询用户信息
+        List<ChatUser> userList = chatUserMapper.selectBatchIds(uids);
+        Map<Long, ChatUser> mapUsers = userList.stream().collect(Collectors.toMap(ChatUser::getId, item->item));
+        //非好友会话拼装九宫格会话头像
+        String sessionAvatar = defaultCustomerAvatar;
+        if(type.getId() == ChatSessionEnums.Type.GROUP_CHAT.getId()
+            || type.getId() == ChatSessionEnums.Type.GROUP.getId()
+        ) {
+            String[] imageUrls = (String[]) userList.stream().limit(9).map(ChatUser::getAvatar).toArray();
+            //生成九宫格头像
+            sessionAvatar = UploadUtils.upload("/session/"+chatSession.getId()+"/avatar.png", NinePatchAvatarGeneratorUtils.create(150, 3, imageUrls));
+        } else if (type.getId() == ChatSessionEnums.Type.SELF.getId()) {
+            //自己的头像
+            sessionAvatar = mapUsers.get(uid).getAvatar();
+        }
+
+        //更新会话头像
+        chatSession.setAvatar(sessionAvatar);
+        updateById(chatSession);
 
         //保存会话用户
         for (Long toUid: uids) {
             //获取会话对方昵称
-            String title = "";
-            if(
-                    type.getId() == ChatSessionEnums.Type.CUSTOMER_SERVICE.getId()
-                    || type.getId() == ChatSessionEnums.Type.PRIVATE_CHAT.getId()
-            ) {
-                Optional<Long> firstNotEqual = uids.stream()
-                        .filter(u -> !u.equals(uid))
-                        .findFirst();
-                firstNotEqual.ifPresentOrElse(
-                        value -> {
-
-                        },
-                        () -> {
-                            //ignore
-                        }
-                );
-            } else {
-                //TODO 组群聊，创建群聊头像
-            }
-
             ChatSessionUser chatSessionUser = new ChatSessionUser();
             chatSessionUser.setSessionId(chatSession.getId());
             chatSessionUser.setUserId(toUid);
             chatSessionUser.setUpdatedTime(LocalDateTime.now());
             chatSessionUser.setCreatedTime(LocalDateTime.now());
+            chatSessionUser.setIsTop(0);
+            chatSessionUser.setIsNotDisturb(0);
+            //配置好友头像
+            if(type.getId() == ChatSessionEnums.Type.PRIVATE_CHAT.getId()) {
+                Long otherUid = uids.stream().filter(id -> id != toUid).findFirst().orElse(toUid);
+                chatSessionUser.setAvatar(mapUsers.get(otherUid).getAvatar());
+                chatSessionUser.setSessionNickname(mapUsers.get(otherUid).getNickname());
+            }
             chatSessionUserMapper.insert(chatSessionUser);
         }
 

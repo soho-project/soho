@@ -10,8 +10,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id property="isRead" column="is_read" jdbcType="TINYINT"/>
         <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
         <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="sessionId" column="session_id" jdbcType="INTEGER" />
     </resultMap>
     <sql id="Base_Column_List">
-        id,message_id,uid,is_read,updated_time,created_time
+        id,message_id,uid,is_read,updated_time,created_time,session_id
     </sql>
 </mapper>

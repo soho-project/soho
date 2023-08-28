@@ -12,4 +12,13 @@ public interface ChatSessionMessageService extends IService<ChatSessionMessage> 
      * @param content
      */
     ChatSessionMessage dispatchingMessage(Long fromUid,Long sessionId,String content);
+
+    /**
+     * 删除指定用户会话的消息
+     *
+     * @param id
+     * @param uid
+     * @return
+     */
+    Boolean removeSessionMessageById(Long id, Long uid);
 }

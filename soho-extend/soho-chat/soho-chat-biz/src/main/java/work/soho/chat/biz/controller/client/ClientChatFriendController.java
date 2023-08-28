@@ -76,4 +76,18 @@ public class ClientChatFriendController {
         chatUserFriendService.updateById(chatUserFriend);
         return R.success();
     }
+
+    /**
+     * 删除指定好友关系
+     *
+     * @param sohoUserDetails
+     * @return
+     */
+    @DeleteMapping("/{friendId}")
+    public R<Boolean> delete(@PathVariable Long friendId, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        LambdaQueryWrapper<ChatUserFriend> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatUserFriend::getChatUid, sohoUserDetails.getId())
+                .eq(ChatUserFriend::getFriendUid, friendId);
+        return R.success(chatUserFriendService.remove(lambdaQueryWrapper));
+    }
 }

@@ -11,8 +11,10 @@ import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import work.soho.chat.biz.domain.ChatSession;
 import work.soho.chat.biz.domain.ChatSessionMessage;
+import work.soho.chat.biz.domain.ChatSessionMessageUser;
 import work.soho.chat.biz.domain.ChatSessionUser;
 import work.soho.chat.biz.service.ChatSessionMessageService;
+import work.soho.chat.biz.service.ChatSessionMessageUserService;
 import work.soho.chat.biz.service.ChatSessionService;
 import work.soho.chat.biz.service.ChatSessionUserService;
 import work.soho.chat.biz.vo.UserSessionVO;
@@ -38,6 +40,8 @@ public class ClientChatSessionController {
     private final ChatSessionUserService chatSessionUserService;
 
     private final ChatSessionMessageService chatSessionMessageService;
+
+    private final ChatSessionMessageUserService chatSessionMessageUserService;
 
     /**
      * 查询聊天会话列表
@@ -183,6 +187,18 @@ public class ClientChatSessionController {
         } catch (Exception e) {
             return R.success(new ArrayList<>());
         }
+    }
+
+    /**
+     * 删除用户会话消息
+     *
+     * @param sohoUserDetails
+     * @return
+     */
+    @DeleteMapping("/delete-user-message/{id}")
+    public R<Boolean> deleteUserMessage(@PathVariable Long id, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        chatSessionMessageService.removeSessionMessageById(id, sohoUserDetails.getId());
+        return R.success(true);
     }
 
     /**
