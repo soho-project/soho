@@ -208,7 +208,7 @@ public class ClientChatSessionController {
      * @return
      */
     @PutMapping("/updateUser")
-    public R<Boolean> updateUser(ChatSessionUser chatSessionUser, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+    public R<Boolean> updateUser(@RequestBody ChatSessionUser chatSessionUser, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ChatSessionUser::getUserId, sohoUserDetails.getId())
                 .eq(ChatSessionUser::getSessionId, chatSessionUser.getSessionId());
@@ -216,6 +216,38 @@ public class ClientChatSessionController {
         Assert.notNull(oldChatSessionUser, "无权访问");
         chatSessionUser.setId(oldChatSessionUser.getId());
         return R.success(chatSessionUserService.updateById(chatSessionUser));
+    }
+
+    /**
+     * 获取会话用户信息
+     *
+     * @param sessionId
+     * @param sohoUserDetails
+     * @return
+     */
+    @GetMapping("/sessionUser")
+    public R<ChatSessionUser> sessionUser(Long sessionId, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionUser::getUserId, sohoUserDetails.getId())
+                .eq(ChatSessionUser::getSessionId, sessionId);
+        ChatSessionUser oldChatSessionUser = chatSessionUserService.getOne(lambdaQueryWrapper);
+        return R.success(oldChatSessionUser);
+    }
+
+    /**
+     * 用户退出会话
+     *
+     * @param chatSessionUser
+     * @param sohoUserDetails
+     * @return
+     */
+    @DeleteMapping("/exitSession")
+    public R<Boolean> exitSession(@RequestBody ChatSessionUser chatSessionUser, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        Assert.notNull(chatSessionUser.getSessionId(), "会话ID不能为空");
+        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, chatSessionUser.getSessionId())
+                .eq(ChatSessionUser::getUserId, sohoUserDetails.getId());
+        return R.success(chatSessionUserService.remove(lambdaQueryWrapper));
     }
 
     /**
