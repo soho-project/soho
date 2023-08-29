@@ -1,0 +1,96 @@
+package work.soho.chat.biz.controller;
+
+import java.time.LocalDateTime;
+import work.soho.common.core.util.PageUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import java.util.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import work.soho.common.core.util.StringUtils;
+import com.github.pagehelper.PageSerializable;
+import work.soho.common.core.result.R;
+import work.soho.api.admin.annotation.Node;
+import work.soho.chat.biz.domain.ChatGroupUser;
+import work.soho.chat.biz.service.ChatGroupUserService;
+import java.util.ArrayList;
+import java.util.HashMap;
+import work.soho.api.admin.vo.OptionVo;
+import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import java.util.stream.Collectors;
+import work.soho.api.admin.vo.TreeNodeVo;
+/**
+ * 群组用户Controller
+ *
+ * @author fang
+ */
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/admin/chatGroupUser" )
+public class ChatGroupUserController {
+
+    private final ChatGroupUserService chatGroupUserService;
+
+    /**
+     * 查询群组用户列表
+     */
+    @GetMapping("/list")
+    @Node(value = "chatGroupUser::list", name = "群组用户列表")
+    public R<PageSerializable<ChatGroupUser>> list(ChatGroupUser chatGroupUser, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
+    {
+        PageUtils.startPage();
+        LambdaQueryWrapper<ChatGroupUser> lqw = new LambdaQueryWrapper<ChatGroupUser>();
+        lqw.eq(chatGroupUser.getId() != null, ChatGroupUser::getId ,chatGroupUser.getId());
+        lqw.eq(chatGroupUser.getGroupId() != null, ChatGroupUser::getGroupId ,chatGroupUser.getGroupId());
+        lqw.eq(chatGroupUser.getChatUid() != null, ChatGroupUser::getChatUid ,chatGroupUser.getChatUid());
+        lqw.eq(chatGroupUser.getIsAdmin() != null, ChatGroupUser::getIsAdmin ,chatGroupUser.getIsAdmin());
+        lqw.like(StringUtils.isNotBlank(chatGroupUser.getNotesName()),ChatGroupUser::getNotesName ,chatGroupUser.getNotesName());
+        lqw.eq(chatGroupUser.getUpdatedTime() != null, ChatGroupUser::getUpdatedTime ,chatGroupUser.getUpdatedTime());
+        lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, ChatGroupUser::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
+        lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, ChatGroupUser::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
+        List<ChatGroupUser> list = chatGroupUserService.list(lqw);
+        return R.success(new PageSerializable<>(list));
+    }
+
+    /**
+     * 获取群组用户详细信息
+     */
+    @GetMapping(value = "/{id}" )
+    @Node(value = "chatGroupUser::getInfo", name = "群组用户详细信息")
+    public R<ChatGroupUser> getInfo(@PathVariable("id" ) Long id) {
+        return R.success(chatGroupUserService.getById(id));
+    }
+
+    /**
+     * 新增群组用户
+     */
+    @PostMapping
+    @Node(value = "chatGroupUser::add", name = "群组用户新增")
+    public R<Boolean> add(@RequestBody ChatGroupUser chatGroupUser) {
+        return R.success(chatGroupUserService.save(chatGroupUser));
+    }
+
+    /**
+     * 修改群组用户
+     */
+    @PutMapping
+    @Node(value = "chatGroupUser::edit", name = "群组用户修改")
+    public R<Boolean> edit(@RequestBody ChatGroupUser chatGroupUser) {
+        return R.success(chatGroupUserService.updateById(chatGroupUser));
+    }
+
+    /**
+     * 删除群组用户
+     */
+    @DeleteMapping("/{ids}" )
+    @Node(value = "chatGroupUser::remove", name = "群组用户删除")
+    public R<Boolean> remove(@PathVariable Long[] ids) {
+        return R.success(chatGroupUserService.removeByIds(Arrays.asList(ids)));
+    }
+}

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.chat.biz.mapper.ChatGroupMapper">
+    <resultMap id="BaseResultMap" type="work.soho.chat.biz.domain.ChatGroup">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="title" column="title" jdbcType="VARCHAR"/>
+        <id property="type" column="type" jdbcType="TINYINT"/>
+        <id property="masterChatUid" column="master_chat_uid" jdbcType="INTEGER"/>
+        <id property="avatar" column="avatar" jdbcType="VARCHAR"/>
+        <id property="introduction" column="introduction" jdbcType="VARCHAR"/>
+        <id property="proclamation" column="proclamation" jdbcType="VARCHAR"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,title,type,master_chat_uid,avatar,introduction,proclamation,updated_time,created_time
+    </sql>
+</mapper>
