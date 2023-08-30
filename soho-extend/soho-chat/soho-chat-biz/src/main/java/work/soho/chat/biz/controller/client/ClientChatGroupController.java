@@ -9,9 +9,15 @@ import org.springframework.web.bind.annotation.*;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import work.soho.chat.biz.domain.ChatGroup;
+import work.soho.chat.biz.domain.ChatGroupApply;
 import work.soho.chat.biz.domain.ChatGroupUser;
+import work.soho.chat.biz.domain.ChatUserNotice;
+import work.soho.chat.biz.enums.ChatGroupUserEnums;
+import work.soho.chat.biz.enums.ChatUserNoticeEnums;
+import work.soho.chat.biz.service.ChatGroupApplyService;
 import work.soho.chat.biz.service.ChatGroupService;
 import work.soho.chat.biz.service.ChatGroupUserService;
+import work.soho.chat.biz.service.ChatUserNoticeService;
 import work.soho.chat.biz.vo.ChatGroupVO;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.StringUtils;
@@ -30,6 +36,10 @@ public class ClientChatGroupController {
     private final ChatGroupService chatGroupService;
 
     private final ChatGroupUserService chatGroupUserService;
+
+    private final ChatGroupApplyService chatGroupApplyService;
+
+    private final ChatUserNoticeService chatUserNoticeService;
 
     @GetMapping("/list")
     public R<PageSerializable<ChatGroup>> list(ChatGroup chatGroup, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
@@ -141,5 +151,52 @@ public class ClientChatGroupController {
         uids.add(sohoUserDetails.getId());
         chatGroupService.joinGroup(id, uids);
         return R.success(true);
+    }
+
+    /**
+     * 申请入群
+     *
+     * @param sohoUserDetails
+     * @return
+     */
+    @PostMapping("/apply")
+    public R<ChatGroupApply> apply(@RequestBody ChatGroupApply chatGroupApply, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatGroup chatGroup = chatGroupService.getById(chatGroupApply.getGroupId());
+        Assert.notNull(chatGroup);
+        //TODO 检查当前用户不在群里面
+        chatGroupApply.setUpdatedTime(LocalDateTime.now());
+        chatGroupApply.setCreatedTime(LocalDateTime.now());
+        chatGroupApplyService.save(chatGroupApply);
+
+        //获取所有的群管理
+        LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatGroupUser::getGroupId, chatGroup.getId())
+                .eq(ChatGroupUser::getIsAdmin, ChatGroupUserEnums.IsAdmin.YES.getId());
+        List<ChatGroupUser> groupUsers = chatGroupUserService.list(lambdaQueryWrapper);
+
+        //创建发送通知
+        ChatUserNotice chatUserNotice = new ChatUserNotice();
+        chatUserNotice.setChatUid(sohoUserDetails.getId());
+        chatUserNotice.setStatus(ChatUserNoticeEnums.Status.PENDING_PROCESSING.getId());
+        chatUserNotice.setType(ChatUserNoticeEnums.Type.GROUP.getType());
+        chatUserNotice.setTrackingId(chatGroupApply.getId());
+        chatUserNotice.setUpdatedTime(LocalDateTime.now());
+        chatUserNotice.setCreatedTime(LocalDateTime.now());
+        chatUserNoticeService.save(chatUserNotice);
+
+        //给管理员发送通知
+        groupUsers.forEach(item->{
+            //创建发送通知
+            ChatUserNotice notice = new ChatUserNotice();
+            notice.setChatUid(item.getChatUid());
+            notice.setStatus(ChatUserNoticeEnums.Status.PENDING_PROCESSING.getId());
+            notice.setType(ChatUserNoticeEnums.Type.GROUP.getType());
+            notice.setTrackingId(chatGroupApply.getId());
+            notice.setUpdatedTime(LocalDateTime.now());
+            notice.setCreatedTime(LocalDateTime.now());
+            chatUserNoticeService.save(notice);
+        });
+
+        return R.success(chatGroupApply);
     }
 }
