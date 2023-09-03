@@ -68,4 +68,9 @@ public class ChatGroupApply implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
 
+    /**
+     * 申请单处理ID
+     */
+    @TableField(value = "apply_do_uid")
+    private Long applyDoUid;
 }
