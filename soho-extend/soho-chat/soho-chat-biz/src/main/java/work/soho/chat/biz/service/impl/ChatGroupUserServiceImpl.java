@@ -24,7 +24,7 @@ public class ChatGroupUserServiceImpl extends ServiceImpl<ChatGroupUserMapper, C
     public ChatGroupUser getByUid(Long id, Long uid) {
         LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ChatGroupUser::getGroupId, id)
-                .eq(ChatGroupUser::getChatUid, uid);
+                .eq(ChatGroupUser::getChatUid, uid).last("limit 1");
         return getOne(lambdaQueryWrapper);
     }
 }
