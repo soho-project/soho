@@ -6,6 +6,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.payload.Image;
 import work.soho.chat.api.payload.Text;
 import work.soho.chat.biz.service.ChatAiService;
 import work.soho.chat.biz.service.ChatService;
@@ -16,6 +17,7 @@ import work.soho.longlink.api.event.MessageEvent;
 import work.soho.longlink.api.sender.Sender;
 
 import java.util.Date;
+import java.util.Map;
 
 @Log4j2
 @Configuration
@@ -42,7 +44,17 @@ public class LongLinkListen {
 
             System.out.println(messageEvent.getPayload());
             log.info("payload: {}", messageEvent.getPayload());
-            ChatMessage upMessage = JacksonUtils.toBean(messageEvent.getPayload(), new TypeReference<ChatMessage<Text>>() {});
+            Map<Object, Object> map = JacksonUtils.toBean(messageEvent.getPayload(), Map.class);
+            ChatMessage upMessage = null;
+            switch ((String) ((Map)map.get("message")).get("type")) {
+                case "text":
+                    upMessage = JacksonUtils.toBean(messageEvent.getPayload(), new TypeReference<ChatMessage<Text>>() {});
+                    break;
+                case "image":
+                    upMessage = JacksonUtils.toBean(messageEvent.getPayload(), new TypeReference<ChatMessage<Image>>() {});
+                    break;
+            }
+//            ChatMessage upMessage = JacksonUtils.toBean(messageEvent.getPayload(), new TypeReference<ChatMessage<Text>>() {});
             upMessage.setFromUid(messageEvent.getUid());
 //            Text upMessage = JacksonUtils.toBean(messageEvent.getPayload(), Text.class);
             log.info("up message: {}", upMessage);
