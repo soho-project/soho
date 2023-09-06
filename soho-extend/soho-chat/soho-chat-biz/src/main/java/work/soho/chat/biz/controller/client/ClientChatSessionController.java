@@ -4,8 +4,12 @@ import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.util.MimeType;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
@@ -21,6 +25,7 @@ import work.soho.chat.biz.vo.UserSessionVO;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
+import work.soho.common.data.upload.utils.UploadUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,6 +36,7 @@ import java.util.stream.Collectors;
 /**
  * 客户端会话列表控制器
  */
+@Log4j2
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/chat/chat/chat-session")
@@ -265,4 +271,26 @@ public class ClientChatSessionController {
         return R.success(chatSessionUserService.remove(lambdaQueryWrapper));
     }
 
+    /**
+     * 上传聊天文件/图片
+     *
+     * @param file
+     * @return
+     */
+    @PostMapping("/upload")
+    public R<String> upload(@RequestParam(value = "upload")MultipartFile file) {
+        try {
+            MimeType mimeType = MimeTypeUtils.parseMimeType(file.getContentType());
+            if(!mimeType.getType().equals("image")) {
+                return R.error("请传递正确的图片格式");
+            }
+            //TODO 配置正确的文件路径
+            String url = UploadUtils.upload("user/avatar", file);
+            return R.success(url);
+        } catch (Exception ioException) {
+            log.error(ioException.toString());
+            ioException.printStackTrace();
+            return R.error("文件上传失败");
+        }
+    }
 }
