@@ -1,0 +1,56 @@
+package work.soho.chat.biz.utils;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.experimental.UtilityClass;
+import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.payload.File;
+import work.soho.chat.api.payload.Image;
+import work.soho.chat.api.payload.Text;
+import work.soho.common.core.util.JacksonUtils;
+import work.soho.longlink.api.event.MessageEvent;
+
+import java.util.Map;
+
+/**
+ * 消息解析工具类
+ */
+@UtilityClass
+public class MessageUtils {
+
+    /**
+     * 解析客户端消息
+     *
+     * @param jsonString
+     * @return
+     */
+    public ChatMessage fromString(String jsonString) {
+        Map<Object, Object> map = JacksonUtils.toBean(jsonString, Map.class);
+        ChatMessage upMessage = null;
+        switch ((String) ((Map)map.get("message")).get("type")) {
+            case "text":
+                upMessage = JacksonUtils.toBean(jsonString, new TypeReference<ChatMessage<Text>>() {});
+                break;
+            case "image":
+                upMessage = JacksonUtils.toBean(jsonString, new TypeReference<ChatMessage<Image>>() {});
+                break;
+            case "file":
+                upMessage = JacksonUtils.toBean(jsonString, new TypeReference<ChatMessage<File>>() {});
+                break;
+            default:
+                return null;
+        }
+        return upMessage;
+    }
+
+    /**
+     * 从MessageEvent解析会话消息
+     *
+     * @param messageEvent
+     * @return
+     */
+    public ChatMessage fromMessageEvent(MessageEvent messageEvent) {
+        ChatMessage chatMessage = fromString(messageEvent.getPayload());
+        chatMessage.setFromUid(messageEvent.getUid());
+        return chatMessage;
+    }
+}
