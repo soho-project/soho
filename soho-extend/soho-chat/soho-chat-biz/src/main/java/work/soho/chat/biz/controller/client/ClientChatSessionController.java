@@ -311,7 +311,7 @@ public class ClientChatSessionController {
             String url = UploadUtils.upload("user/upload", file);
             result.put("url", url);
             result.put("size", file.getSize());
-            result.put("name", file.getName());
+            result.put("name", file.getOriginalFilename());
             return R.success(result);
         } catch (Exception ioException) {
             log.error(ioException.toString());
