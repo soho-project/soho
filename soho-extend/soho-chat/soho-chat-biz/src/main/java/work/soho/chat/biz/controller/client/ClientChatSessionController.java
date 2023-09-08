@@ -79,7 +79,7 @@ public class ClientChatSessionController {
         lqw.eq(chatSession.getCreatedTime() != null, ChatSession::getCreatedTime ,chatSession.getCreatedTime());
         lqw.gt(betweenCreatedTimeRequest.getStartTime()!= null, ChatSession::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.le(betweenCreatedTimeRequest.getEndTime()!= null, ChatSession::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
-        lqw.orderByDesc(ChatSession::getUpdatedTime);
+        lqw.orderByDesc(ChatSession::getLastMessageTime);
         List<ChatSession> list = chatSessionService.list(lqw);
 
         Map<Long, ChatSessionUser> sessionUserMap = chatSessionUserList.stream().collect(Collectors.toMap(ChatSessionUser::getSessionId, item -> item));
