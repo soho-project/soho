@@ -1,6 +1,5 @@
 package work.soho.chat.biz.listen;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +10,7 @@ import work.soho.chat.api.payload.Text;
 import work.soho.chat.biz.service.ChatAiService;
 import work.soho.chat.biz.service.ChatService;
 import work.soho.chat.biz.service.ChatSessionService;
+import work.soho.chat.biz.utils.MessageUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.longlink.api.event.MessageEvent;
@@ -27,38 +27,14 @@ public class LongLinkListen {
 
     private final ChatAiService chatAiService;
 
-//    private final ChatSessionService chatSessionService;
-
     private final ChatService chatService;
 
     @EventListener
     public void onMessage(MessageEvent messageEvent) {
         try {
             log.info("监听器收到消息: {}", messageEvent);
-            Text text = new Text();
-            Text.Content content = new Text.Content();
-            content.setText("Date Time: " + (new Date()).toString());
-            text.setContent(content);
-            Text.User user = new Text.User();
-            text.setUser(user);
-
-            System.out.println(messageEvent.getPayload());
-            log.info("payload: {}", messageEvent.getPayload());
-            Map<Object, Object> map = JacksonUtils.toBean(messageEvent.getPayload(), Map.class);
-            ChatMessage upMessage = null;
-            switch ((String) ((Map)map.get("message")).get("type")) {
-                case "text":
-                    upMessage = JacksonUtils.toBean(messageEvent.getPayload(), new TypeReference<ChatMessage<Text>>() {});
-                    break;
-                case "image":
-                    upMessage = JacksonUtils.toBean(messageEvent.getPayload(), new TypeReference<ChatMessage<Image>>() {});
-                    break;
-            }
-//            ChatMessage upMessage = JacksonUtils.toBean(messageEvent.getPayload(), new TypeReference<ChatMessage<Text>>() {});
-            upMessage.setFromUid(messageEvent.getUid());
-//            Text upMessage = JacksonUtils.toBean(messageEvent.getPayload(), Text.class);
-            log.info("up message: {}", upMessage);
-
+            ChatMessage upMessage = MessageUtils.fromMessageEvent(messageEvent);
+            log.info("解析后的消息：", upMessage);
             //TODO 分发会话消息
             chatService.chat(upMessage);
 

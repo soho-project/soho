@@ -29,6 +29,7 @@ import work.soho.common.data.upload.utils.UploadUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -277,8 +278,8 @@ public class ClientChatSessionController {
      * @param file
      * @return
      */
-    @PostMapping("/upload")
-    public R<String> upload(@RequestParam(value = "upload")MultipartFile file) {
+    @PostMapping("/image")
+    public R<String> image(@RequestParam(value = "upload")MultipartFile file) {
         try {
             MimeType mimeType = MimeTypeUtils.parseMimeType(file.getContentType());
             if(!mimeType.getType().equals("image")) {
@@ -287,6 +288,31 @@ public class ClientChatSessionController {
             //TODO 配置正确的文件路径
             String url = UploadUtils.upload("user/avatar", file);
             return R.success(url);
+        } catch (Exception ioException) {
+            log.error(ioException.toString());
+            ioException.printStackTrace();
+            return R.error("文件上传失败");
+        }
+    }
+
+
+    /**
+     * 上传聊天文件/图片
+     *
+     * @param file
+     * @return
+     */
+    @PostMapping("/upload")
+    public R<HashMap<String, Object>> upload(@RequestParam(value = "upload")MultipartFile file) {
+        try {
+            HashMap<String, Object> result = new HashMap<>();
+            //不做文件扩展名验证
+            //TODO 配置正确的文件路径
+            String url = UploadUtils.upload("user/upload", file);
+            result.put("url", url);
+            result.put("size", file.getSize());
+            result.put("name", file.getName());
+            return R.success(result);
         } catch (Exception ioException) {
             log.error(ioException.toString());
             ioException.printStackTrace();
