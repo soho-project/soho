@@ -87,6 +87,7 @@ public class ClientChatSessionController {
         list.forEach(session -> {
             UserSessionVO userSessionVO = BeanUtils.copy(session, UserSessionVO.class);
             userSessionVO.setLastLookMessageTime(sessionUserMap.get(session.getId()).getLastLookMessageTime());
+            userSessionVO.setAliasTitle(sessionUserMap.get(session.getId()).getTitle());
             list1.add(userSessionVO);
         });
         PageSerializable<UserSessionVO> pageSerializable = new PageSerializable<>();

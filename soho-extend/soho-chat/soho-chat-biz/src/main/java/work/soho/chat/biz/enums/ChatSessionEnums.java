@@ -19,7 +19,7 @@ public class ChatSessionEnums {
         private String name;
 
         Type(int i, String name) {
-            this.id = id;
+            this.id = i;
             this.name = name;
         }
     }

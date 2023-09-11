@@ -23,8 +23,14 @@ public class ChatSession implements Serializable {
     /**
     * 会话类型;1:私聊,2:群聊,3:群组;frontType:select
     */
-    @TableField(value = "type")
+    @TableField(value = "`type`")
     private Integer type;
+
+    /**
+     * 跟踪ID
+     */
+    @TableField(value = "track_id")
+    private Long trackId;
 
     /**
     * 状态;1:活跃,2:禁用,3:删除;frontType:select
