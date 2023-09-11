@@ -4,13 +4,18 @@ import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.util.MimeType;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import work.soho.chat.biz.domain.*;
 import work.soho.chat.biz.enums.ChatGroupApplyEnums;
 import work.soho.chat.biz.enums.ChatGroupUserEnums;
+import work.soho.chat.biz.enums.ChatSessionEnums;
 import work.soho.chat.biz.enums.ChatUserNoticeEnums;
 import work.soho.chat.biz.req.CreateGroupReq;
 import work.soho.chat.biz.service.*;
@@ -19,6 +24,7 @@ import work.soho.chat.biz.vo.GroupVO;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.StringUtils;
+import work.soho.common.data.upload.utils.UploadUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -29,6 +35,7 @@ import java.util.stream.Collectors;
 /**
  * 群组客户端控制器
  */
+@Log4j2
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/chat/chat/chat-group")
@@ -42,6 +49,8 @@ public class ClientChatGroupController {
     private final ChatGroupApplyService chatGroupApplyService;
 
     private final ChatUserNoticeService chatUserNoticeService;
+
+    private final ChatSessionService chatSessionService;
 
     @GetMapping("/list")
     public R<PageSerializable<GroupVO>> list(ChatGroup chatGroup,String keyword, BetweenCreatedTimeRequest betweenCreatedTimeRequest,@AuthenticationPrincipal SohoUserDetails sohoUserDetails)
@@ -297,5 +306,44 @@ public class ClientChatGroupController {
         //审核加群申请
         oldGroupApply.setStatus(chatGroupApply.getStatus());
         return R.success(chatGroupApplyService.updateById(oldGroupApply));
+    }
+
+    /**
+     * 上传聊天文件/图片
+     *
+     * @param file
+     * @return
+     */
+    @PostMapping("/avatar/{id}")
+    public R<String> avatar(@RequestParam(value = "upload") MultipartFile file,@PathVariable Long id) {
+        try {
+            //获取群组信息
+            ChatGroup chatGroup = chatGroupService.getById(id);
+            Assert.notNull(chatGroup, "没有找到对应的群组");
+            //TODO 检查用户权限
+            MimeType mimeType = MimeTypeUtils.parseMimeType(file.getContentType());
+            if(!mimeType.getType().equals("image")) {
+                return R.error("请传递正确的图片格式");
+            }
+            String url = UploadUtils.upload("group/avatar", file);
+
+            chatGroup.setAvatar(url);
+            chatGroupService.updateById(chatGroup);
+            //同步到会话
+            LambdaQueryWrapper<ChatSession> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+            lambdaQueryWrapper.eq(ChatSession::getType, ChatSessionEnums.Type.GROUP_CHAT.getId())
+                    .eq(ChatSession::getTrackId, chatGroup.getId());
+            ChatSession chatSession = chatSessionService.getOne(lambdaQueryWrapper);
+            if(chatSession != null) {
+                chatSession.setAvatar(url);
+                chatSessionService.updateById(chatSession);
+            }
+
+            return R.success(url);
+        } catch (Exception ioException) {
+            log.error(ioException.toString());
+            ioException.printStackTrace();
+            return R.error("文件上传失败");
+        }
     }
 }

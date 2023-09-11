@@ -34,6 +34,11 @@ public class UserSessionVO {
     private String title;
 
     /**
+     * 别名标题
+     */
+    private String aliasTitle;
+
+    /**
      * 会话头像
      */
     private String avatar;
