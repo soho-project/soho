@@ -3,9 +3,10 @@ package work.soho.chat.biz.controller.client;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.MimeType;
+import org.springframework.util.MimeTypeUtils;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.chat.api.Constants;
 import work.soho.chat.biz.domain.ChatSessionUser;
@@ -15,6 +16,7 @@ import work.soho.chat.biz.vo.DisplayUserVO;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
+import work.soho.common.data.upload.utils.UploadUtils;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -26,8 +28,6 @@ import java.util.Map;
 public class ClientChatUserController {
 
     private final ChatUserService chatUserService;
-
-//    private final ChatSessionUser cha;
 
     /**
      * 获取访客TOKEN
@@ -65,6 +65,20 @@ public class ClientChatUserController {
     }
 
     /**
+     * 更新聊天用户信息
+     *
+     * @param sohoUserDetails
+     * @param chatUser
+     * @return
+     */
+    @PutMapping()
+    public R<Boolean> updateUser(@AuthenticationPrincipal SohoUserDetails sohoUserDetails,@RequestBody ChatUser chatUser) {
+        chatUser.setId(sohoUserDetails.getId());
+        chatUserService.updateById(chatUser);
+        return R.success(true);
+    }
+
+    /**
      * 获取其他用户详情
      *
      * @param id
@@ -98,7 +112,29 @@ public class ClientChatUserController {
      */
     @GetMapping("/getGroupList")
     public R<HashMap> groupList(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
-
         return null;
+    }
+
+    /**
+     * 上传头像
+     *
+     * @param file
+     * @return
+     */
+    @PostMapping("/avatar")
+    public R<String> upload(@RequestParam(value = "upload") MultipartFile file, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        try {
+            MimeType mimeType = MimeTypeUtils.parseMimeType(file.getContentType());
+            if(!mimeType.getType().equals("image")) {
+                return R.error("请传递正确的图片格式");
+            }
+            //不做文件扩展名验证
+            //TODO 配置正确的文件路径
+            String url = UploadUtils.upload("user/avatar/"+sohoUserDetails.getId(), file);
+            return R.success(url);
+        } catch (Exception ioException) {
+            ioException.printStackTrace();
+            return R.error("文件上传失败");
+        }
     }
 }
