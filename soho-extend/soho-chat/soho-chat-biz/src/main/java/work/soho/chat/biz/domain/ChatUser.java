@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import java.io.Serializable;
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @TableName(value ="chat_user")
 @Data
@@ -97,5 +98,11 @@ public class ChatUser implements Serializable {
      */
     @TableField(value = "login_ip")
     private String loginIp;
+
+    /**
+     * 用户生日
+     */
+    @TableField(value = "birthday")
+    private Date birthday;
 
 }
