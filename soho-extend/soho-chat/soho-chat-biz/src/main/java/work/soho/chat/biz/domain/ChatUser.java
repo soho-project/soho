@@ -26,6 +26,24 @@ public class ChatUser implements Serializable {
     private String username;
 
     /**
+     * 用户认证密码
+     */
+    @TableField(value = "password")
+    private String password;
+
+    /**
+     * 用户邮箱
+     */
+    @TableField(value = "email")
+    private String email;
+
+    /**
+     * 用户手机号
+     */
+    @TableField(value="phone")
+    private String phone;
+
+    /**
     * 用户昵称
     */
     @TableField(value = "nickname")
@@ -104,5 +122,4 @@ public class ChatUser implements Serializable {
      */
     @TableField(value = "birthday")
     private Date birthday;
-
 }

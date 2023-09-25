@@ -79,6 +79,8 @@ public class SohoAuthenticationProvider extends AbstractUserDetailsAuthenticatio
             //尝试不同角色获取用户
             while(iterator.hasNext()) {
                 Map.Entry<String, SohoUserDetailsService> entry = iterator.next();
+                System.out.println("----------------------------------");
+                System.out.println(entry.getValue().getUserRoleName());
                 if(entry.getValue().getUserRoleName().equals(grantedAuthority.getAuthority())) {
                     return entry.getValue();
                 }

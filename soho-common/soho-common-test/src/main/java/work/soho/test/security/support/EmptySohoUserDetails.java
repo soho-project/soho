@@ -13,6 +13,6 @@ public class EmptySohoUserDetails implements SohoUserDetailsService {
 
     @Override
     public String getUserRoleName() {
-        return null;
+        return "empty";
     }
 }
