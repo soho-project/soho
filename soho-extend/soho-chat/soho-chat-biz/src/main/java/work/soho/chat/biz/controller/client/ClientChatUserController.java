@@ -3,6 +3,7 @@ package work.soho.chat.biz.controller.client;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ import work.soho.chat.biz.vo.DisplayUserVO;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
 
 import java.time.LocalDateTime;
@@ -74,6 +76,11 @@ public class ClientChatUserController {
     @PutMapping()
     public R<Boolean> updateUser(@AuthenticationPrincipal SohoUserDetails sohoUserDetails,@RequestBody ChatUser chatUser) {
         chatUser.setId(sohoUserDetails.getId());
+        //检查配置密码
+        if(StringUtils.isNotEmpty(chatUser.getPassword())) {
+            chatUser.setPassword(new BCryptPasswordEncoder().encode(chatUser.getPassword()));
+        }
+        //TODO 处理邮箱，手机号更改
         chatUserService.updateById(chatUser);
         return R.success(true);
     }
