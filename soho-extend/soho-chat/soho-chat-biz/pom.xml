@@ -55,10 +55,6 @@
             <artifactId>service</artifactId>
             <version>0.14.0</version>
         </dependency>
-        <dependency>
-            <groupId>work.soho</groupId>
-            <artifactId>soho-common-security</artifactId>
-        </dependency>
 
         <!--    test-->
         <dependency>

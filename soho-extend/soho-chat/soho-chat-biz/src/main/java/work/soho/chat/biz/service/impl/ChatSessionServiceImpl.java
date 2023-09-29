@@ -7,10 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import work.soho.chat.api.payload.ChatMessage;
-import work.soho.chat.biz.domain.ChatCustomerService;
-import work.soho.chat.biz.domain.ChatSession;
-import work.soho.chat.biz.domain.ChatSessionUser;
-import work.soho.chat.biz.domain.ChatUser;
+import work.soho.chat.biz.domain.*;
 import work.soho.chat.biz.enums.ChatSessionEnums;
 import work.soho.chat.biz.mapper.ChatCustomerServiceMapper;
 import work.soho.chat.biz.mapper.ChatSessionMapper;
@@ -123,6 +120,46 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
             return createSession(uid, new ArrayList<>(Arrays.asList(toUid)), ChatSessionEnums.Type.PRIVATE_CHAT);
         }
 
+        return chatSession;
+    }
+
+    /**
+     * 查询创建群会话
+     *
+     * @param chatGroup
+     * @param userList
+     * @return
+     */
+    @Override
+    public ChatSession groupSession(ChatGroup chatGroup, List<ChatGroupUser> userList) {
+        LambdaQueryWrapper<ChatSession> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSession::getType, ChatSessionEnums.Type.GROUP_CHAT.getId())
+                .eq(ChatSession::getTrackId, chatGroup.getId());
+        ChatSession chatSession = getOne(lambdaQueryWrapper);
+        if(chatSession == null) {
+            //TODO 根据传递信息创建群组会话
+            chatSession = new ChatSession();
+            chatSession.setAvatar(chatGroup.getAvatar());
+            chatSession.setStatus(ChatSessionEnums.Status.ACTIVE.getId());
+            chatSession.setType(ChatSessionEnums.Type.GROUP_CHAT.getId());
+            chatSession.setTitle(chatGroup.getTitle());
+            chatSession.setUpdatedTime(LocalDateTime.now());
+            chatSession.setCreatedTime(LocalDateTime.now());
+            chatSession.setTrackId(chatGroup.getId());
+            save(chatSession);
+            //添加群组用户
+            for(ChatGroupUser chatGroupUser: userList) {
+                ChatUser chatUser = chatUserMapper.selectById(chatGroupUser.getChatUid());
+                ChatSessionUser chatSessionUser = new ChatSessionUser();
+                chatSessionUser.setSessionId(chatSession.getId());
+                chatSessionUser.setUserId(chatGroupUser.getChatUid());
+                chatSessionUser.setAvatar(chatUser.getAvatar());
+                chatSessionUser.setUpdatedTime(LocalDateTime.now());
+                chatSessionUser.setCreatedTime(LocalDateTime.now());
+                chatSessionUser.setTitle(chatGroupUser.getNickname());
+                chatSessionUserMapper.insert(chatSessionUser);
+            }
+        }
         return chatSession;
     }
 

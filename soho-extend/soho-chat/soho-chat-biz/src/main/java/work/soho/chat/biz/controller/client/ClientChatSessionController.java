@@ -13,14 +13,8 @@ import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
-import work.soho.chat.biz.domain.ChatSession;
-import work.soho.chat.biz.domain.ChatSessionMessage;
-import work.soho.chat.biz.domain.ChatSessionMessageUser;
-import work.soho.chat.biz.domain.ChatSessionUser;
-import work.soho.chat.biz.service.ChatSessionMessageService;
-import work.soho.chat.biz.service.ChatSessionMessageUserService;
-import work.soho.chat.biz.service.ChatSessionService;
-import work.soho.chat.biz.service.ChatSessionUserService;
+import work.soho.chat.biz.domain.*;
+import work.soho.chat.biz.service.*;
 import work.soho.chat.biz.vo.UserSessionVO;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
@@ -45,6 +39,9 @@ public class ClientChatSessionController {
     private final ChatSessionService chatSessionService;
 
     private final ChatSessionUserService chatSessionUserService;
+
+    private final ChatGroupService chatGroupService;
+    private final ChatGroupUserService chatGroupUserService;
 
     private final ChatSessionMessageService chatSessionMessageService;
 
@@ -111,7 +108,25 @@ public class ClientChatSessionController {
      */
     @GetMapping(value = "/friendSessionInfo")
     public R<ChatSession> getOrCreate(Long friendUid, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        //TODO 检查好友关系
         return R.success(chatSessionService.findFriendSession(sohoUserDetails.getId(), friendUid.longValue()));
+    }
+
+    @GetMapping("/groupSessionInfo")
+    public R<ChatSession> getOrCreateGroupSession(Long groupId, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        //检查当前用户是否在群中
+        ChatGroup chatGroup = chatGroupService.getById(groupId);
+        Assert.notNull(chatGroup);
+        LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatGroupUser::getGroupId, groupId)
+                .eq(ChatGroupUser::getChatUid, sohoUserDetails.getId());
+        ChatGroupUser chatGroupUser = chatGroupUserService.getOne(lambdaQueryWrapper);
+        Assert.notNull(chatGroupUser);
+        //获取群聊列表
+        LambdaQueryWrapper<ChatGroupUser> chatGroupUserLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        chatGroupUserLambdaQueryWrapper.eq(ChatGroupUser::getGroupId, chatGroup.getId());
+        List<ChatGroupUser> list = chatGroupUserService.list(chatGroupUserLambdaQueryWrapper);
+        return R.success(chatSessionService.groupSession(chatGroup, list));
     }
 
     /**
