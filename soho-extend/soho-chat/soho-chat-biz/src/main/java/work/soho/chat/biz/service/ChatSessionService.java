@@ -1,6 +1,8 @@
 package work.soho.chat.biz.service;
 
 import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.biz.domain.ChatGroup;
+import work.soho.chat.biz.domain.ChatGroupUser;
 import work.soho.chat.biz.domain.ChatSession;
 import com.baomidou.mybatisplus.extension.service.IService;
 import work.soho.chat.biz.domain.ChatSessionUser;
@@ -26,6 +28,15 @@ public interface ChatSessionService extends IService<ChatSession> {
      * @return
      */
     ChatSession findFriendSession(Long uid, Long toUid);
+
+    /**
+     * 获取群会话
+     *
+     * @param chatGroup
+     * @param userList
+     * @return
+     */
+    ChatSession groupSession(ChatGroup chatGroup, List<ChatGroupUser> userList);
 
     /**
      * 创建会话
