@@ -59,6 +59,7 @@ public class ChatServiceImpl implements ChatService {
         ChatSession chatSession = chatSessionService.getById(inputChatMessage.getToSessionId());
         Assert.notNull(chatSession, "没有找到对应的会话");
         chatSession.setUpdatedTime(LocalDateTime.now());
+        chatSession.setLastMessageTime(LocalDateTime.now());
         chatSessionService.updateById(chatSession);
     }
 

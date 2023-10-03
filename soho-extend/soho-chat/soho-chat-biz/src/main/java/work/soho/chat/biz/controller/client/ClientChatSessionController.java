@@ -19,6 +19,7 @@ import work.soho.chat.biz.vo.UserSessionVO;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
 
 import java.time.LocalDateTime;
@@ -62,6 +63,7 @@ public class ClientChatSessionController {
         if(chatSessionUserList == null || chatSessionUserList.size() == 0) {
             return R.success();
         }
+        //Map<Long, ChatSessionUser> sessionUsers = chatSessionUserList.stream().collect(Collectors.toMap(ChatSessionUser::getSessionId, item->item));
         List<Long> sessionIdList = chatSessionUserList.stream().map(ChatSessionUser::getSessionId).collect(Collectors.toList());
 
         PageUtils.startPage();
@@ -85,6 +87,14 @@ public class ClientChatSessionController {
             UserSessionVO userSessionVO = BeanUtils.copy(session, UserSessionVO.class);
             userSessionVO.setLastLookMessageTime(sessionUserMap.get(session.getId()).getLastLookMessageTime());
             userSessionVO.setAliasTitle(sessionUserMap.get(session.getId()).getTitle());
+            //设置头像
+            ChatSessionUser chatSessionUser = sessionUserMap.get(session.getId());
+            if(StringUtils.isNotEmpty(chatSessionUser.getAvatar())) {
+                userSessionVO.setAvatar(chatSessionUser.getAvatar());
+            }
+            if(StringUtils.isNotEmpty(chatSessionUser.getTitle())) {
+                userSessionVO.setTitle(chatSessionUser.getTitle());
+            }
             list1.add(userSessionVO);
         });
         PageSerializable<UserSessionVO> pageSerializable = new PageSerializable<>();
