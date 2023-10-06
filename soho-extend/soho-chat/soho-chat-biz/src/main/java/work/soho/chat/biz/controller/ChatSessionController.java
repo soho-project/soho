@@ -1,6 +1,12 @@
 package work.soho.chat.biz.controller;
 
 import java.time.LocalDateTime;
+
+import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.payload.System;
+import work.soho.chat.biz.req.SendMessageReq;
+import work.soho.chat.biz.service.ChatService;
+import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.util.*;
@@ -36,6 +42,8 @@ import work.soho.api.admin.vo.TreeNodeVo;
 public class ChatSessionController {
 
     private final ChatSessionService chatSessionService;
+
+    private final ChatService chatService;
 
     /**
      * 查询聊天会话列表
@@ -116,5 +124,30 @@ public class ChatSessionController {
     @Node(value = "chatSession::remove", name = "聊天会话删除")
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(chatSessionService.removeByIds(Arrays.asList(ids)));
+    }
+
+    @PostMapping("/sendMessage")
+    public R<Boolean> sendMessage(@RequestBody SendMessageReq sendMessageReq) {
+        if(sendMessageReq.getMsgType() == 1) {
+            sendMessageReq.getSessionIds().forEach(sessionId -> {
+                //TODO 发送消息
+                ChatMessage<System> chatMessage = new ChatMessage<>();
+                chatMessage.setToSessionId(String.valueOf(sessionId));
+                chatMessage.setFromUid(String.valueOf(0));
+                System system = new System();
+                system.setId(IDGeneratorUtils.snowflake().toString());
+                system.setType("system");
+                System.Content content = new System.Content();
+                content.setText(sendMessageReq.getContent());
+                system.setContent(content);
+                chatMessage.setMessage(system);
+                chatService.chat(chatMessage);
+            });
+        } else {
+            sendMessageReq.getSessionIds().forEach(sessionId -> {
+                //TODO 发送消息
+            });
+        }
+        return R.success(true);
     }
 }

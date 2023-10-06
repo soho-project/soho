@@ -147,10 +147,19 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
             chatSession.setCreatedTime(LocalDateTime.now());
             chatSession.setTrackId(chatGroup.getId());
             save(chatSession);
-            //添加群组用户
-            for(ChatGroupUser chatGroupUser: userList) {
+
+        }
+
+        //添加群组用户
+        for(ChatGroupUser chatGroupUser: userList) {
+            //检查用户是否已经加入群聊
+            LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper1 = new LambdaQueryWrapper<>();
+            lambdaQueryWrapper1.eq(ChatSessionUser::getSessionId, chatSession.getId());
+            lambdaQueryWrapper1.eq(ChatSessionUser::getUserId, chatGroupUser.getUpdatedTime());
+            ChatSessionUser chatSessionUser = chatSessionUserMapper.selectOne(lambdaQueryWrapper1);
+            if(chatSessionUser == null) {
                 ChatUser chatUser = chatUserMapper.selectById(chatGroupUser.getChatUid());
-                ChatSessionUser chatSessionUser = new ChatSessionUser();
+                chatSessionUser = new ChatSessionUser();
                 chatSessionUser.setSessionId(chatSession.getId());
                 chatSessionUser.setUserId(chatGroupUser.getChatUid());
                 chatSessionUser.setAvatar(chatUser.getAvatar());
@@ -160,6 +169,7 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
                 chatSessionUserMapper.insert(chatSessionUser);
             }
         }
+
         return chatSession;
     }
 
@@ -224,6 +234,14 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
         return chatSession;
     }
 
+    @Override
+    public ChatSession findSession(ChatSessionEnums.Type type, Long trackId) {
+        LambdaQueryWrapper<ChatSession> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSession::getType, type.getId());
+        lambdaQueryWrapper.eq(ChatSession::getTrackId, trackId);
+        return getOne(lambdaQueryWrapper);
+    }
+
     /**
      * 查找会话客服ID
      *
@@ -258,6 +276,14 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
         LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, sessionId);
         return chatSessionUserMapper.selectList(lambdaQueryWrapper);
+    }
+
+    @Override
+    public ChatSessionUser getSessionUser(Long sessionId, Long uid) {
+        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, sessionId);
+        lambdaQueryWrapper.eq(ChatSessionUser::getUserId, uid);
+        return chatSessionUserMapper.selectOne(lambdaQueryWrapper);
     }
 
     /**
