@@ -48,6 +48,8 @@ public interface ChatSessionService extends IService<ChatSession> {
      */
     ChatSession createSession(Long uid, List<Long> uids, ChatSessionEnums.Type type);
 
+    ChatSession findSession(ChatSessionEnums.Type type, Long trackId);
+
     /**
      * 查找会话中的客服用户
      *
@@ -63,6 +65,8 @@ public interface ChatSessionService extends IService<ChatSession> {
      * @return
      */
     List<ChatSessionUser> getSessionUser(String sessionId);
+
+    ChatSessionUser getSessionUser(Long sessionId, Long uid);
 
     /**
      * 聊天消息分发
