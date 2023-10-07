@@ -155,7 +155,7 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
             //检查用户是否已经加入群聊
             LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper1 = new LambdaQueryWrapper<>();
             lambdaQueryWrapper1.eq(ChatSessionUser::getSessionId, chatSession.getId());
-            lambdaQueryWrapper1.eq(ChatSessionUser::getUserId, chatGroupUser.getUpdatedTime());
+            lambdaQueryWrapper1.eq(ChatSessionUser::getUserId, chatGroupUser.getChatUid());
             ChatSessionUser chatSessionUser = chatSessionUserMapper.selectOne(lambdaQueryWrapper1);
             if(chatSessionUser == null) {
                 ChatUser chatUser = chatUserMapper.selectById(chatGroupUser.getChatUid());
