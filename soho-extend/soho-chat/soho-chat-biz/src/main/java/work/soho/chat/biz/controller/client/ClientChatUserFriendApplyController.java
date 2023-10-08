@@ -6,18 +6,18 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
-import work.soho.chat.biz.domain.ChatUserFriend;
-import work.soho.chat.biz.domain.ChatUserFriendApply;
-import work.soho.chat.biz.domain.ChatUserNotice;
+import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.payload.SystemMessage;
+import work.soho.chat.biz.domain.*;
+import work.soho.chat.biz.enums.ChatSessionEnums;
 import work.soho.chat.biz.enums.ChatUserFriendApplyEnums;
 import work.soho.chat.biz.enums.ChatUserFriendEnums;
 import work.soho.chat.biz.enums.ChatUserNoticeEnums;
-import work.soho.chat.biz.service.ChatUserFriendApplyService;
-import work.soho.chat.biz.service.ChatUserFriendService;
-import work.soho.chat.biz.service.ChatUserNoticeService;
+import work.soho.chat.biz.service.*;
 import work.soho.common.core.result.R;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/chat/chat/chatUserFriendApply")
@@ -25,9 +25,17 @@ import java.time.LocalDateTime;
 public class ClientChatUserFriendApplyController {
     private final ChatUserFriendApplyService chatUserFriendApplyService;
 
+    private final ChatUserService chatUserService;
+
     private final ChatUserNoticeService chatUserNoticeService;
 
     private final ChatUserFriendService chatUserFriendService;
+
+    private final ChatSessionService chatSessionService;
+
+    private final ChatSessionUserService chatSessionUserService;
+
+    private final ChatService chatService;
 
 
     /**
@@ -70,17 +78,34 @@ public class ClientChatUserFriendApplyController {
         chatUserNotice.setCreatedTime(LocalDateTime.now());
         chatUserNoticeService.save(chatUserNotice);
         //添加好友关系
+        ChatUser chatUser = chatUserService.getById(chatUserFriendApply.getFriendUid());
         ChatUserFriend chatUserFriend = new ChatUserFriend();
         chatUserFriend.setFriendUid(chatUserFriendApply.getFriendUid());
         chatUserFriend.setChatUid(chatUserFriendApply.getChatUid());
-        chatUserFriend.setNotesName("");
+        chatUserFriend.setNotesName(chatUser.getUsername());
         chatUserFriendService.save(chatUserFriend);
+
         ChatUserFriend chatUserFriend1 = new ChatUserFriend();
+        ChatUser chatUser1 = chatUserService.getById(chatUserFriendApply.getChatUid());
         chatUserFriend1.setFriendUid(chatUserFriendApply.getChatUid());
         chatUserFriend1.setChatUid(chatUserFriendApply.getFriendUid());
-        chatUserFriend1.setNotesName("");
+        chatUserFriend1.setNotesName(chatUser1.getUsername());
         chatUserFriendService.save(chatUserFriend1);
 
+        //创建会话，发送系统信息
+        ArrayList<Long> uids = new ArrayList<>();
+        uids.add(chatUserFriend1.getChatUid());
+        ChatSession chatSession = chatSessionService.createSession(chatUserFriend.getChatUid(), uids, ChatSessionEnums.Type.PRIVATE_CHAT);
+        //更新会话别名
+        ChatSessionUser chatSessionUser = chatSessionUserService.getSessionUser(chatSession.getId(), chatUserFriend.getChatUid());
+        chatSessionUser.setTitle(chatUserFriend1.getNotesName());
+        chatSessionUserService.updateById(chatSessionUser);
+        ChatSessionUser chatSessionUser1 = chatSessionUserService.getSessionUser(chatSession.getId(), chatUserFriend1.getChatUid());
+        chatSessionUser1.setTitle(chatUserFriend.getNotesName());
+        chatSessionUserService.updateById(chatSessionUser1);
+
+        //发送系统通知
+        chatService.chat(new ChatMessage.Builder<SystemMessage>(chatSession.getId(), new SystemMessage.Builder().text("添加好友成功").build()).build());
         return R.success(true);
     }
 }

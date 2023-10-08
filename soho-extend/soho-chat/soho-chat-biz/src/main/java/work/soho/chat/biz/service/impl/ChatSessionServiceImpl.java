@@ -162,10 +162,10 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
                 chatSessionUser = new ChatSessionUser();
                 chatSessionUser.setSessionId(chatSession.getId());
                 chatSessionUser.setUserId(chatGroupUser.getChatUid());
-                chatSessionUser.setAvatar(chatUser.getAvatar());
+//                chatSessionUser.setAvatar(chatUser.getAvatar());
                 chatSessionUser.setUpdatedTime(LocalDateTime.now());
                 chatSessionUser.setCreatedTime(LocalDateTime.now());
-                chatSessionUser.setTitle(chatGroupUser.getNickname());
+//                chatSessionUser.setTitle(chatGroupUser.getNickname());
                 chatSessionUserMapper.insert(chatSessionUser);
             }
         }

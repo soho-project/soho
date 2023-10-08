@@ -3,7 +3,7 @@ package work.soho.chat.biz.controller;
 import java.time.LocalDateTime;
 
 import work.soho.chat.api.payload.ChatMessage;
-import work.soho.chat.api.payload.System;
+import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.req.SendMessageReq;
 import work.soho.chat.biz.service.ChatService;
 import work.soho.common.core.util.IDGeneratorUtils;
@@ -19,18 +19,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
 import work.soho.common.core.result.R;
 import work.soho.api.admin.annotation.Node;
 import work.soho.chat.biz.domain.ChatSession;
 import work.soho.chat.biz.service.ChatSessionService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.api.admin.vo.OptionVo;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.api.admin.vo.TreeNodeVo;
+
 /**
  * 聊天会话Controller
  *
@@ -131,13 +126,13 @@ public class ChatSessionController {
         if(sendMessageReq.getMsgType() == 1) {
             sendMessageReq.getSessionIds().forEach(sessionId -> {
                 //TODO 发送消息
-                ChatMessage<System> chatMessage = new ChatMessage<>();
+                ChatMessage<SystemMessage> chatMessage = new ChatMessage<>();
                 chatMessage.setToSessionId(String.valueOf(sessionId));
                 chatMessage.setFromUid(String.valueOf(0));
-                System system = new System();
+                SystemMessage system = new SystemMessage();
                 system.setId(IDGeneratorUtils.snowflake().toString());
                 system.setType("system");
-                System.Content content = new System.Content();
+                SystemMessage.Content content = new SystemMessage.Content();
                 content.setText(sendMessageReq.getContent());
                 system.setContent(content);
                 chatMessage.setMessage(system);

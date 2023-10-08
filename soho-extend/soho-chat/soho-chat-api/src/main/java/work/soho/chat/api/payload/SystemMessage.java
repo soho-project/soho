@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-public class System {
+public class SystemMessage {
     private String type = "system";
-    private System.Content content;
+    private SystemMessage.Content content;
 
     @JsonProperty("_id")
     private String id;
@@ -30,12 +30,12 @@ public class System {
             return this;
         }
 
-        public System build() {
-            System system = new System();
+        public SystemMessage build() {
+            SystemMessage system = new SystemMessage();
             if(id != null) {
                 system.setId(id);
             }
-            System.Content content1 = new Content();
+            SystemMessage.Content content1 = new Content();
             content1.setText(text);
             system.setContent(content1);
             return system;
