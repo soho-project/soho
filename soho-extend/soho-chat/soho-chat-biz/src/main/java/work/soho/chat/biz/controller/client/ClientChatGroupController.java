@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
 import work.soho.chat.biz.enums.ChatGroupApplyEnums;
 import work.soho.chat.biz.enums.ChatGroupUserEnums;
@@ -52,6 +54,8 @@ public class ClientChatGroupController {
 
     private final ChatSessionService chatSessionService;
 
+    private final ChatService chatService;
+
     @GetMapping("/list")
     public R<PageSerializable<GroupVO>> list(ChatGroup chatGroup,String keyword, BetweenCreatedTimeRequest betweenCreatedTimeRequest,@AuthenticationPrincipal SohoUserDetails sohoUserDetails)
     {
@@ -75,6 +79,7 @@ public class ClientChatGroupController {
 
         //计算已经加入的群
         List<Long> resultGroupIds = list.stream().map(ChatGroup::getId).collect(Collectors.toList());
+        resultGroupIds.add(0l);
         LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper1 = new LambdaQueryWrapper<>();
         lambdaQueryWrapper1.in(ChatGroupUser::getGroupId, resultGroupIds)
                 .eq(ChatGroupUser::getChatUid, sohoUserDetails.getId());
@@ -131,30 +136,27 @@ public class ClientChatGroupController {
      * @return
      */
     @PostMapping("")
-    public R<Boolean> create(@RequestBody CreateGroupReq createGroupReq, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+    public R<ChatSession> create(@RequestBody CreateGroupReq createGroupReq, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         ChatGroup chatGroup = new ChatGroup();
         chatGroup.setTitle(createGroupReq.getTitle());
         chatGroup.setMasterChatUid(sohoUserDetails.getId());
         chatGroup.setUpdatedTime(LocalDateTime.now());
         chatGroup.setCreatedTime(LocalDateTime.now());
-        chatGroupService.save(chatGroup);
-
-        //TODO 创建群组用户数据
         List<Long> chatUserIds = createGroupReq.getChatUserIds();
-        chatUserIds.add(chatGroup.getMasterChatUid());
-        List<ChatUser> users = chatUserService.getBaseMapper().selectBatchIds(chatUserIds);
-        users.forEach(user->{
-            ChatGroupUser chatGroupUser = new ChatGroupUser();
-            chatGroupUser.setGroupId(chatGroup.getId());
-            chatGroupUser.setChatUid(sohoUserDetails.getId());
-            chatGroupUser.setIsAdmin(ChatGroupUserEnums.IsAdmin.NO.getId());
-            chatGroupUser.setNickname(StringUtils.isEmpty(user.getNickname()) ? user.getUsername() : user.getNickname());
-            chatGroupUser.setUpdatedTime(LocalDateTime.now());
-            chatGroupUser.setCreatedTime(LocalDateTime.now());
-            chatGroupUserService.save(chatGroupUser);
-        });
+        chatGroupService.createGroup(chatGroup, chatUserIds);
 
-        return R.success(true);
+        //同步群组数据到会话
+        LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatGroupUser::getGroupId, chatGroup.getId());
+        List<ChatGroupUser> chatGroupUsers = chatGroupUserService.list(lambdaQueryWrapper);
+
+        //创建会话信息
+        ChatSession chatSession = chatSessionService.groupSession(chatGroup, chatGroupUsers);
+
+        //发送系统通知
+        chatService.chat(new ChatMessage.Builder<SystemMessage>(chatSession.getId(), new SystemMessage.Builder().text("创建群聊： " + chatSession.getTitle()).build()).build());
+
+        return R.success(chatSession);
     }
 
     /**

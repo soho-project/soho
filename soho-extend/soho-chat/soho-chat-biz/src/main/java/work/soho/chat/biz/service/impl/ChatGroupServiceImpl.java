@@ -16,6 +16,9 @@ import work.soho.chat.biz.service.ChatGroupUserService;
 import work.soho.chat.biz.vo.BaseUserVO;
 import work.soho.chat.biz.vo.ChatGroupVO;
 import work.soho.common.core.util.BeanUtils;
+import work.soho.common.core.util.StringUtils;
+import work.soho.common.data.avatar.utils.NinePatchAvatarGeneratorUtils;
+import work.soho.common.data.upload.utils.UploadUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,24 +35,40 @@ public class ChatGroupServiceImpl extends ServiceImpl<ChatGroupMapper, ChatGroup
 
     private final ChatUserMapper chatUserMapper;
 
+    /**
+     * 创建群组
+     *
+     * @param chatGroup
+     * @param chatUserIds
+     * @return
+     */
     @Override
     public ChatGroup createGroup(ChatGroup chatGroup, List<Long> chatUserIds) {
-        //TODO 配置群组头像
         chatGroup.setUpdatedTime(LocalDateTime.now());
         chatGroup.setCreatedTime(LocalDateTime.now());
         save(chatGroup);
+        //添加创建者并且去重复
+        chatUserIds.add(chatGroup.getMasterChatUid());
+        chatUserIds = chatUserIds.stream().distinct().collect(Collectors.toList());
+        List<ChatUser> users = chatUserMapper.selectBatchIds(chatUserIds);
+        String[] avatars = (String[]) users.stream().limit(9).map(ChatUser::getAvatar).toArray(String[]::new);
+        String title = users.stream().limit(3).map(ChatUser::getUsername).collect(Collectors.joining(","));
+        Integer gridCount = avatars.length <= 4 ? 2 : 3;
+        String groupAvatar = UploadUtils.upload("group/"+chatGroup.getId()+"/avatar.png", NinePatchAvatarGeneratorUtils.create(150, gridCount, avatars));
+        chatGroup.setAvatar(groupAvatar);
+        chatGroup.setTitle(title);
+        saveOrUpdate(chatGroup);
 
-        chatUserIds.forEach(uid->{
+        users.forEach(user->{
             ChatGroupUser chatGroupUser = new ChatGroupUser();
-            chatGroupUser.setChatUid(uid);
             chatGroupUser.setGroupId(chatGroup.getId());
-            chatGroupUser.setIsAdmin(ChatGroupUserEnums.IsAdmin.NO.getId());
+            chatGroupUser.setChatUid(user.getId());
+            chatGroupUser.setIsAdmin(chatGroup.getMasterChatUid().equals(user.getId()) ? ChatGroupUserEnums.IsAdmin.YES.getId() :  ChatGroupUserEnums.IsAdmin.NO.getId());
+            chatGroupUser.setNickname(StringUtils.isEmpty(user.getNickname()) ? user.getUsername() : user.getNickname());
             chatGroupUser.setUpdatedTime(LocalDateTime.now());
             chatGroupUser.setCreatedTime(LocalDateTime.now());
             chatGroupUserMapper.insert(chatGroupUser);
         });
-
-        //TODO 创建群组会话
 
         return chatGroup;
     }

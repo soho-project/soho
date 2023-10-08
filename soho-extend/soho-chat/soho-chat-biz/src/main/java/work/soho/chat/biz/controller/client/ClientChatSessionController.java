@@ -66,7 +66,7 @@ public class ClientChatSessionController {
         //Map<Long, ChatSessionUser> sessionUsers = chatSessionUserList.stream().collect(Collectors.toMap(ChatSessionUser::getSessionId, item->item));
         List<Long> sessionIdList = chatSessionUserList.stream().map(ChatSessionUser::getSessionId).collect(Collectors.toList());
 
-        PageUtils.startPage();
+//        PageUtils.startPage();
         LambdaQueryWrapper<ChatSession> lqw = new LambdaQueryWrapper<ChatSession>();
         lqw.in(ChatSession::getId, sessionIdList);
         lqw.eq(chatSession.getId() != null, ChatSession::getId ,chatSession.getId());
