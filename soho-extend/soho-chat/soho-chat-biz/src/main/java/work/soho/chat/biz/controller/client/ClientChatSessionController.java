@@ -14,6 +14,7 @@ import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import work.soho.chat.biz.domain.*;
+import work.soho.chat.biz.enums.ChatSessionUserEnums;
 import work.soho.chat.biz.service.*;
 import work.soho.chat.biz.vo.UserSessionVO;
 import work.soho.common.core.result.R;
@@ -59,6 +60,7 @@ public class ClientChatSessionController {
         //查找用户对应的会话
         LambdaQueryWrapper<ChatSessionUser> chatSessionUserLambdaQueryWrapper = new LambdaQueryWrapper<>();
         chatSessionUserLambdaQueryWrapper.eq(ChatSessionUser::getUserId, sohoUserDetails.getId());
+        chatSessionUserLambdaQueryWrapper.eq(ChatSessionUser::getStatus, ChatSessionUserEnums.Status.ACTIVE.getId());
         List<ChatSessionUser> chatSessionUserList = chatSessionUserService.list(chatSessionUserLambdaQueryWrapper);
         if(chatSessionUserList == null || chatSessionUserList.size() == 0) {
             return R.success();

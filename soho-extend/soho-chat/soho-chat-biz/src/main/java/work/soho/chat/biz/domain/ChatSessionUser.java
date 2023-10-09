@@ -86,4 +86,10 @@ public class ChatSessionUser implements Serializable {
      */
     @TableField(value = "is_shield")
     private Integer isShield;
+
+    /**
+     * 会话用户状态
+     */
+    @TableField(value = "status")
+    private Integer status;
 }

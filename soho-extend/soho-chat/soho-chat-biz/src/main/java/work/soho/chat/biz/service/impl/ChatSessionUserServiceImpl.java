@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import work.soho.chat.biz.domain.ChatSessionUser;
+import work.soho.chat.biz.enums.ChatSessionUserEnums;
 import work.soho.chat.biz.mapper.ChatSessionUserMapper;
 import work.soho.chat.biz.service.ChatSessionUserService;
 
@@ -19,6 +20,7 @@ public class ChatSessionUserServiceImpl extends ServiceImpl<ChatSessionUserMappe
     public List<ChatSessionUser> getSessionUserList(Long sessionId) {
         LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, sessionId);
+        lambdaQueryWrapper.eq(ChatSessionUser::getStatus, ChatSessionUserEnums.Status.ACTIVE.getId());
         return list(lambdaQueryWrapper);
     }
 
