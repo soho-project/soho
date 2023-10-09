@@ -98,10 +98,10 @@ public class ClientChatUserFriendApplyController {
         ChatSession chatSession = chatSessionService.createSession(chatUserFriend.getChatUid(), uids, ChatSessionEnums.Type.PRIVATE_CHAT);
         //更新会话别名
         ChatSessionUser chatSessionUser = chatSessionUserService.getSessionUser(chatSession.getId(), chatUserFriend.getChatUid());
-        chatSessionUser.setTitle(chatUserFriend1.getNotesName());
+        chatSessionUser.setTitle(chatUserFriend.getNotesName());
         chatSessionUserService.updateById(chatSessionUser);
         ChatSessionUser chatSessionUser1 = chatSessionUserService.getSessionUser(chatSession.getId(), chatUserFriend1.getChatUid());
-        chatSessionUser1.setTitle(chatUserFriend.getNotesName());
+        chatSessionUser1.setTitle(chatUserFriend1.getNotesName());
         chatSessionUserService.updateById(chatSessionUser1);
 
         //发送系统通知
