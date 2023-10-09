@@ -24,6 +24,12 @@ public class UserSessionVO {
     private Integer type;
 
     /**
+     * 跟踪ID
+     */
+    private Long trackId;
+
+
+    /**
      * 状态;1:活跃,2:禁用,3:删除;frontType:select
      */
     private Integer status;

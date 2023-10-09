@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.bouncycastle.cms.PasswordRecipientId;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
@@ -15,10 +16,7 @@ import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import work.soho.chat.api.payload.ChatMessage;
 import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
-import work.soho.chat.biz.enums.ChatGroupApplyEnums;
-import work.soho.chat.biz.enums.ChatGroupUserEnums;
-import work.soho.chat.biz.enums.ChatSessionEnums;
-import work.soho.chat.biz.enums.ChatUserNoticeEnums;
+import work.soho.chat.biz.enums.*;
 import work.soho.chat.biz.req.CreateGroupReq;
 import work.soho.chat.biz.service.*;
 import work.soho.chat.biz.vo.ChatGroupVO;
@@ -53,6 +51,8 @@ public class ClientChatGroupController {
     private final ChatUserNoticeService chatUserNoticeService;
 
     private final ChatSessionService chatSessionService;
+
+    private final ChatSessionUserService chatSessionUserService;
 
     private final ChatService chatService;
 
@@ -221,6 +221,13 @@ public class ClientChatGroupController {
     @DeleteMapping("/exit/{id}")
     public R<Boolean> exitGroup(@PathVariable Long id,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         chatGroupService.exitGroup(id, sohoUserDetails.getId());
+        //获取会话
+        ChatSession session = chatSessionService.findSession(ChatSessionEnums.Type.GROUP_CHAT, id);
+        ChatSessionUser chatSessionUser = chatSessionUserService.getSessionUser(session.getId(), sohoUserDetails.getId());
+        chatSessionUser.setStatus(ChatSessionUserEnums.Status.DELETED.getId());
+        chatSessionUser.setUpdatedTime(LocalDateTime.now());
+        chatSessionUserService.updateById(chatSessionUser);
+        //TODO 发送消息给管理员，告知用户退出
         return R.success(true);
     }
 
