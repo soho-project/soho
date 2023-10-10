@@ -5,7 +5,7 @@ import lombok.Data;
 import work.soho.common.core.util.IDGeneratorUtils;
 
 @Data
-public class Text {
+public class Text extends BaseType {
     private String type = "text";
     private Content content;
     private User user;
@@ -19,12 +19,6 @@ public class Text {
     public static class Content {
         private String text;
     }
-
-    @Data
-    public static class User {
-        private String avatar = "https://gw.alicdn.com/tfs/TB1U7FBiAT2gK0jSZPcXXcKkpXa-108-108.jpg";
-    }
-
 
     public static class Builder {
         private String avatar;

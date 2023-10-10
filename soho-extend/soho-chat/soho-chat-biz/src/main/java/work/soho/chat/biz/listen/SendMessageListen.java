@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
-import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.ChatMessage;
 import work.soho.chat.biz.domain.ChatSessionUser;
 import work.soho.chat.biz.service.ChatSessionUserService;
 import work.soho.common.core.util.JacksonUtils;

@@ -2,7 +2,7 @@ package work.soho.chat.biz.utils;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.experimental.UtilityClass;
-import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.ChatMessage;
 import work.soho.chat.api.payload.File;
 import work.soho.chat.api.payload.Image;
 import work.soho.chat.api.payload.Text;

@@ -2,7 +2,7 @@ package work.soho.chat.biz.controller;
 
 import java.time.LocalDateTime;
 
-import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.ChatMessage;
 import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.req.SendMessageReq;
 import work.soho.chat.biz.service.ChatService;

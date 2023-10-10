@@ -4,10 +4,9 @@ import cn.hutool.core.lang.Assert;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
-import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.ChatMessage;
 import work.soho.chat.biz.domain.ChatSession;
 import work.soho.chat.biz.domain.ChatSessionMessage;
-import work.soho.chat.biz.domain.ChatSessionMessageUser;
 import work.soho.chat.biz.domain.ChatSessionUser;
 import work.soho.chat.biz.service.*;
 import work.soho.common.core.util.JacksonUtils;
@@ -41,6 +40,7 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void chat(ChatMessage inputChatMessage) {
         List<ChatSessionUser> sessionUsers = chatSessionService.getSessionUser(inputChatMessage.getToSessionId());
+
         //存储会话消息
         saveMessage(inputChatMessage);
 
