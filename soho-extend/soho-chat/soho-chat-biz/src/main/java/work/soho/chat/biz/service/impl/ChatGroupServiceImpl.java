@@ -126,4 +126,19 @@ public class ChatGroupServiceImpl extends ServiceImpl<ChatGroupMapper, ChatGroup
                 .eq(ChatGroupUser::getChatUid, uid);
         return chatGroupUserMapper.selectOne(lambdaQueryWrapper);
     }
+
+    @Override
+    public Boolean isAdmin(Long id, Long uid) {
+        ChatGroup chatGroup = getById(id);
+        if(chatGroup == null) {
+            return Boolean.FALSE;
+        }
+        LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatGroupUser::getGroupId, id);
+        lambdaQueryWrapper.eq(ChatGroupUser::getIsAdmin, ChatGroupUserEnums.IsAdmin.YES.getId());
+        List<ChatGroupUser> list = chatGroupUserMapper.selectList(lambdaQueryWrapper);
+        List<Long> uids = list.stream().map(ChatGroupUser::getChatUid).collect(Collectors.toList());
+        uids.add(chatGroup.getMasterChatUid());
+        return uids.contains(uid);
+    }
 }

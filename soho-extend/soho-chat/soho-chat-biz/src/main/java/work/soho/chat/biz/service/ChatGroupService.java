@@ -24,4 +24,13 @@ public interface ChatGroupService extends IService<ChatGroup> {
      * @return
      */
     ChatGroupUser getChatGroupUser(Long id,Long uid);
+
+    /**
+     * 判断是否管理员用户ID
+     *
+     * @param id
+     * @param uid
+     * @return
+     */
+    Boolean isAdmin(Long id, Long uid);
 }
