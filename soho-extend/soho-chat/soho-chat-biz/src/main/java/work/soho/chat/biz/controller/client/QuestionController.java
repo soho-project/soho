@@ -8,22 +8,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
-import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.ChatMessage;
 import work.soho.chat.api.payload.Text;
 import work.soho.chat.api.service.QuestionService;
 import work.soho.chat.biz.domain.ChatSession;
-import work.soho.chat.biz.domain.ChatSessionMessage;
-import work.soho.chat.biz.domain.ChatSessionMessageUser;
-import work.soho.chat.biz.domain.ChatSessionUser;
 import work.soho.chat.biz.enums.ChatSessionEnums;
-import work.soho.chat.biz.enums.ChatSessionMessageUserEnums;
 import work.soho.chat.biz.service.*;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.IDGeneratorUtils;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Log4j2
 @RestController

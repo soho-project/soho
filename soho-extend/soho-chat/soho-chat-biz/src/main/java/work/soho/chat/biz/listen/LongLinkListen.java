@@ -4,20 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
-import work.soho.chat.api.payload.ChatMessage;
-import work.soho.chat.api.payload.Image;
-import work.soho.chat.api.payload.Text;
+import work.soho.chat.api.ChatMessage;
 import work.soho.chat.biz.service.ChatAiService;
 import work.soho.chat.biz.service.ChatService;
-import work.soho.chat.biz.service.ChatSessionService;
 import work.soho.chat.biz.utils.MessageUtils;
-import work.soho.common.core.util.IDGeneratorUtils;
-import work.soho.common.core.util.JacksonUtils;
 import work.soho.longlink.api.event.MessageEvent;
 import work.soho.longlink.api.sender.Sender;
-
-import java.util.Date;
-import java.util.Map;
 
 @Log4j2
 @Configuration

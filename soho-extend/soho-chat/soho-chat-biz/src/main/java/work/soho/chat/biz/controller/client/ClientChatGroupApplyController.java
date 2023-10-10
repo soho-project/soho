@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
-import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.ChatMessage;
 import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
 import work.soho.chat.biz.enums.ChatGroupApplyEnums;

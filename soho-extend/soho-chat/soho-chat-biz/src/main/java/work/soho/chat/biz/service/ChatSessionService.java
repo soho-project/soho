@@ -1,6 +1,6 @@
 package work.soho.chat.biz.service;
 
-import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.ChatMessage;
 import work.soho.chat.biz.domain.ChatGroup;
 import work.soho.chat.biz.domain.ChatGroupUser;
 import work.soho.chat.biz.domain.ChatSession;

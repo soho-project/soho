@@ -5,7 +5,7 @@ import lombok.Data;
 import work.soho.common.core.util.IDGeneratorUtils;
 
 @Data
-public class File {
+public class File extends BaseType {
     private String type = "file";
     private File.Content content;
     private File.User user;
@@ -20,11 +20,6 @@ public class File {
         private String name;
         private Integer size;
         private String url;
-    }
-
-    @Data
-    public static class User {
-        private String avatar = "https://gw.alicdn.com/tfs/TB1U7FBiAT2gK0jSZPcXXcKkpXa-108-108.jpg";
     }
 
     public static class Builder {

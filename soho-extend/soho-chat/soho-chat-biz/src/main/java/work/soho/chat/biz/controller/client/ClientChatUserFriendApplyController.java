@@ -1,17 +1,15 @@
 package work.soho.chat.biz.controller.client;
 
-import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
-import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.ChatMessage;
 import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
 import work.soho.chat.biz.enums.ChatSessionEnums;
 import work.soho.chat.biz.enums.ChatUserFriendApplyEnums;
-import work.soho.chat.biz.enums.ChatUserFriendEnums;
 import work.soho.chat.biz.enums.ChatUserNoticeEnums;
 import work.soho.chat.biz.service.*;
 import work.soho.common.core.result.R;
