@@ -72,4 +72,17 @@ public class UserSessionVO {
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastLookMessageTime;
+
+
+    /**
+     * 消息置顶
+     */
+    @TableField(value = "is_top")
+    private Integer isTop;
+
+    /**
+     * 免打扰
+     */
+    @TableField(value = "is_not_disturb")
+    private Integer isNotDisturb;
 }

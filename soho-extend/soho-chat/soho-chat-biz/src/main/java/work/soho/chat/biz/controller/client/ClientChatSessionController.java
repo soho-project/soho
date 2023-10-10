@@ -13,7 +13,10 @@ import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import work.soho.chat.api.payload.ChatMessage;
+import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
+import work.soho.chat.biz.enums.ChatSessionEnums;
 import work.soho.chat.biz.enums.ChatSessionUserEnums;
 import work.soho.chat.biz.service.*;
 import work.soho.chat.biz.vo.UserSessionVO;
@@ -46,6 +49,8 @@ public class ClientChatSessionController {
     private final ChatGroupUserService chatGroupUserService;
 
     private final ChatSessionMessageService chatSessionMessageService;
+
+    private final ChatService chatService;
 
     private final ChatSessionMessageUserService chatSessionMessageUserService;
 
@@ -97,6 +102,8 @@ public class ClientChatSessionController {
             if(StringUtils.isNotEmpty(chatSessionUser.getTitle())) {
                 userSessionVO.setTitle(chatSessionUser.getTitle());
             }
+            userSessionVO.setIsNotDisturb(chatSessionUser.getIsNotDisturb());
+            userSessionVO.setIsTop(chatSessionUser.getIsTop());
             list1.add(userSessionVO);
         });
         PageSerializable<UserSessionVO> pageSerializable = new PageSerializable<>();
@@ -253,6 +260,35 @@ public class ClientChatSessionController {
         return R.success(chatSessionUserService.updateById(chatSessionUser));
     }
 
+    @PutMapping()
+    public R<Boolean> update(@RequestBody ChatSession chatSession, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatSession originChatSession = chatSessionService.getById(chatSession.getId());
+        Assert.notNull(originChatSession, "会话不存在");
+        List<ChatSessionUser> chatSessionUserList = chatSessionUserService.getSessionUserList(chatSession.getId());
+        //断言只有群组才能进行标题头像编辑
+        Assert.equals(originChatSession.getType(), ChatSessionEnums.Type.GROUP_CHAT.getId(), "只有群组才能调用该接口");
+        Assert.isTrue(chatGroupService.isAdmin(originChatSession.getTrackId(), sohoUserDetails.getId()), "非管理员无权修改");
+
+        originChatSession.setTitle(chatSession.getTitle());
+        originChatSession.setAvatar(chatSession.getAvatar());
+        originChatSession.setUpdatedTime(LocalDateTime.now());
+        chatSessionService.updateById(originChatSession);
+
+        //同步到群组
+        ChatGroup chatGroup = chatGroupService.getById(originChatSession.getTrackId());
+        if(StringUtils.isNotEmpty(chatSession.getTitle())) chatGroup.setTitle(originChatSession.getTitle());
+        if(StringUtils.isNotEmpty(chatSession.getAvatar())) chatGroup.setAvatar(originChatSession.getAvatar());
+        chatGroupService.updateById(chatGroup);
+
+        //发送系统消息
+        chatService.chat(new ChatMessage.Builder<SystemMessage>(originChatSession.getId(),
+                new SystemMessage.Builder().text(
+                        StringUtils.isNotEmpty(chatSession.getTitle()) ? sohoUserDetails.getUsername() + " 修改了群名" : sohoUserDetails.getUsername() + " 管理员更新了群头像"
+                ).build()).build());
+
+        return R.success(Boolean.TRUE);
+    }
+
     /**
      * 获取会话用户信息
      *
@@ -346,5 +382,22 @@ public class ClientChatSessionController {
             ioException.printStackTrace();
             return R.error("文件上传失败");
         }
+    }
+
+    /**
+     * 获取会话用户信息
+     *
+     * @param sessionId
+     * @param sohoUserDetails
+     * @return
+     */
+    @GetMapping("/sessionUsers")
+    public R<List<ChatSessionUser>> sessionUserList(Long sessionId, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, sessionId);
+        lambdaQueryWrapper.eq(ChatSessionUser::getStatus, ChatSessionEnums.Status.ACTIVE.getId());
+        List<ChatSessionUser> list = chatSessionUserService.list(lambdaQueryWrapper);
+
+        return R.success(list);
     }
 }
