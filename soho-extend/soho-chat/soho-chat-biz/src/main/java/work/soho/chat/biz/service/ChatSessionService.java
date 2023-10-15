@@ -59,6 +59,12 @@ public interface ChatSessionService extends IService<ChatSession> {
     ChatSessionUser findCustomerService(Long sessionId);
 
     /**
+     * 同步会话信息
+     * @param sessionId
+     */
+    void syncInfo(Long sessionId);
+
+    /**
      * 获取指定会话的用户
      *
      * @param sessionId

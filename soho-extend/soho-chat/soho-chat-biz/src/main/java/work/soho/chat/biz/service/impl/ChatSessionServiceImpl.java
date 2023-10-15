@@ -266,6 +266,15 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
         return chatSessionUser.get();
     }
 
+    @Override
+    public void syncInfo(Long sessionId) {
+        ChatSession chatSession = getById(sessionId);
+        List<ChatSessionUser> userList = getSessionUser(String.valueOf(sessionId));
+        chatSession.setUserCount(userList.size());
+        chatSession.setUpdatedTime(LocalDateTime.now());
+        updateById(chatSession);
+    }
+
     /**
      * 查询指定会话的用户信息
      *
