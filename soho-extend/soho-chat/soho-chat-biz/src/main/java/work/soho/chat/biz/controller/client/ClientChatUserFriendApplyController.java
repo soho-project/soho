@@ -102,6 +102,9 @@ public class ClientChatUserFriendApplyController {
         chatSessionUser1.setTitle(chatUserFriend1.getNotesName());
         chatSessionUserService.updateById(chatSessionUser1);
 
+        //更新会话统计信息
+        chatSessionService.syncInfo(chatSession.getId());
+
         //发送系统通知
         chatService.chat(new ChatMessage.Builder<SystemMessage>(chatSession.getId(), new SystemMessage.Builder().text("添加好友成功").build()).build());
         return R.success(true);

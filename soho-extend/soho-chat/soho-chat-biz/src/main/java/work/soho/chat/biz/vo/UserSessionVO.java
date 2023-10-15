@@ -85,4 +85,16 @@ public class UserSessionVO {
      */
     @TableField(value = "is_not_disturb")
     private Integer isNotDisturb;
+
+    /**
+     * 会话用户数
+     */
+    @TableField(value = "user_count")
+    private Integer userCount;
+
+    /**
+     * 会话最后一条消息
+     */
+    @TableField(value = "last_message")
+    private String lastMessage;
 }

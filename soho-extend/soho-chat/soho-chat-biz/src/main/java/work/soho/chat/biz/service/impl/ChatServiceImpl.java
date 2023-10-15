@@ -43,6 +43,7 @@ public class ChatServiceImpl implements ChatService {
 
         //存储会话消息
         saveMessage(inputChatMessage);
+        //更新会话最后一条消息
 
         for(ChatSessionUser chatSessionUser: sessionUsers) {
             log.info("当前转发消息用户信息： {}", chatSessionUser);
@@ -60,6 +61,7 @@ public class ChatServiceImpl implements ChatService {
         Assert.notNull(chatSession, "没有找到对应的会话");
         chatSession.setUpdatedTime(LocalDateTime.now());
         chatSession.setLastMessageTime(LocalDateTime.now());
+        chatSession.setLastMessage(JacksonUtils.toJson(inputChatMessage));
         chatSessionService.updateById(chatSession);
     }
 

@@ -70,4 +70,16 @@ public class ChatSession implements Serializable {
     @TableField(value = "last_message_time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastMessageTime;
+
+    /**
+     * 会话用户数
+     */
+    @TableField(value = "user_count")
+    private Integer userCount;
+
+    /**
+     * 会话最后一条消息
+     */
+    @TableField(value = "last_message")
+    private String lastMessage;
 }

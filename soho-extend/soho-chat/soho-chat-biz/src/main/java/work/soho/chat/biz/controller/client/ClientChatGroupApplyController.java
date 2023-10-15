@@ -77,6 +77,9 @@ public class ClientChatGroupApplyController {
         chatSessionUser.setCreatedTime(LocalDateTime.now());
         chatSessionUserService.save(chatSessionUser);
 
+        //更新会话统计信息
+        chatSessionService.syncInfo(chatSession.getId());
+
         //发送系统通知
         chatService.chat(new ChatMessage.Builder<SystemMessage>(chatSession.getId(), new SystemMessage.Builder().text(chatUser.getUsername() +" 加入群聊").build()).build());
 
