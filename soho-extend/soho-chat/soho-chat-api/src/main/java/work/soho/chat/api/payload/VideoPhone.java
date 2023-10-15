@@ -14,6 +14,11 @@ public class VideoPhone extends BaseType {
     @Data
     public static class Content {
         private String signal;
+
+        /**
+         * 电话类型 1 视频电话； 2 语音电话
+         */
+        private Integer phoneType;
     }
 
     /**
@@ -24,6 +29,11 @@ public class VideoPhone extends BaseType {
         private String text;
         private String position;
         private String signal;
+
+        /**
+         * 电话类型
+         */
+        private Integer phoneType = 1;
 
         public Builder() {
         }
