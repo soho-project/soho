@@ -3,9 +3,7 @@ package work.soho.chat.biz.utils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.experimental.UtilityClass;
 import work.soho.chat.api.ChatMessage;
-import work.soho.chat.api.payload.File;
-import work.soho.chat.api.payload.Image;
-import work.soho.chat.api.payload.Text;
+import work.soho.chat.api.payload.*;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.longlink.api.event.MessageEvent;
 
@@ -35,6 +33,12 @@ public class MessageUtils {
                 break;
             case "file":
                 upMessage = JacksonUtils.toBean(jsonString, new TypeReference<ChatMessage<File>>() {});
+                break;
+            case "videoPhone":
+                upMessage = JacksonUtils.toBean(jsonString, new TypeReference<ChatMessage<VideoPhone>>() {});
+                break;
+            case "command":
+                upMessage = JacksonUtils.toBean(jsonString, new TypeReference<ChatMessage<Command>>() {});
                 break;
             default:
                 return null;
