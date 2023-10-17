@@ -14,6 +14,10 @@ public class File extends BaseType {
 
     @JsonProperty("_id")
     private String id;
+    /**
+     * 创建时间(毫秒)
+     */
+    private Long createdAt = System.currentTimeMillis();
 
     @Data
     public static class Content {
