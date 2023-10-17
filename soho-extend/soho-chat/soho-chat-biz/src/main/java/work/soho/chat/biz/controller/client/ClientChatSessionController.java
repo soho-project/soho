@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
@@ -17,6 +18,7 @@ import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
 import work.soho.chat.biz.enums.ChatSessionEnums;
 import work.soho.chat.biz.enums.ChatSessionUserEnums;
+import work.soho.chat.biz.req.BatchUpdateNotificationReq;
 import work.soho.chat.biz.service.*;
 import work.soho.chat.biz.vo.UserSessionVO;
 import work.soho.common.core.result.R;
@@ -101,6 +103,7 @@ public class ClientChatSessionController {
                 userSessionVO.setTitle(chatSessionUser.getTitle());
             }
             userSessionVO.setIsNotDisturb(chatSessionUser.getIsNotDisturb());
+            userSessionVO.setIsShield(chatSessionUser.getIsShield());
             userSessionVO.setIsTop(chatSessionUser.getIsTop());
             list1.add(userSessionVO);
         });
@@ -397,5 +400,41 @@ public class ClientChatSessionController {
         List<ChatSessionUser> list = chatSessionUserService.list(lambdaQueryWrapper);
 
         return R.success(list);
+    }
+
+    /**
+     * 批量更新消息通知设置
+     *
+     * @param batchUpdateNotificationReq
+     * @param sohoUserDetails
+     * @return
+     */
+    @PutMapping("/bachUpdateNotification")
+    public R<Boolean> batchUpdateNotification(@RequestBody BatchUpdateNotificationReq batchUpdateNotificationReq, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        Assert.notNull(batchUpdateNotificationReq.getType(), "消息提示类型不能为空");
+        Assert.notNull(batchUpdateNotificationReq.getSessionIds(), "请传递会话ID");
+        Assert.isTrue(batchUpdateNotificationReq.getSessionIds().size()>0, "请传递会话ID");
+
+        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.in(ChatSessionUser::getSessionId, batchUpdateNotificationReq.getSessionIds())
+                .eq(ChatSessionUser::getUserId, sohoUserDetails.getId());
+        //批量更新
+        ChatSessionUser chatSessionUser = new ChatSessionUser();
+        switch (batchUpdateNotificationReq.getType()) {
+            case 1:
+                chatSessionUser.setIsNotDisturb(0);
+                chatSessionUser.setIsShield(0);
+                break;
+            case 2:
+                chatSessionUser.setIsNotDisturb(1);
+                chatSessionUser.setIsShield(0);
+                break;
+            case 3:
+                chatSessionUser.setIsNotDisturb(1);
+                chatSessionUser.setIsShield(1);
+                break;
+        }
+        chatSessionUserService.getBaseMapper().update(chatSessionUser, lambdaQueryWrapper);
+        return R.success(true);
     }
 }

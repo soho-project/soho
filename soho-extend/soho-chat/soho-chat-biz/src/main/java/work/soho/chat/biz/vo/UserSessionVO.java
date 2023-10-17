@@ -87,6 +87,12 @@ public class UserSessionVO {
     private Integer isNotDisturb;
 
     /**
+     * 屏蔽会话
+     */
+    @TableField(value = "is_shield")
+    private Integer isShield;
+
+    /**
      * 会话用户数
      */
     @TableField(value = "user_count")
