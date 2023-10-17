@@ -13,6 +13,10 @@ public class Command extends BaseType {
     private Command.Content content;
     private User user;
     private String position;
+    /**
+     * 创建时间(毫秒)
+     */
+    private Long createdAt = System.currentTimeMillis();
 
     @Data
     public static class Content {

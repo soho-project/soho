@@ -3,6 +3,8 @@ package work.soho.chat.api.payload;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 public class VideoPhone extends BaseType {
     @JsonProperty("_id")
@@ -11,6 +13,10 @@ public class VideoPhone extends BaseType {
     private Content content;
     private User user;
     private String position;
+    /**
+     * 创建时间(毫秒)
+     */
+    private Long createdAt = System.currentTimeMillis();
     @Data
     public static class Content {
         private String signal;
