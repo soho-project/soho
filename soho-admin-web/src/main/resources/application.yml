@@ -3,6 +3,10 @@
     active: @profiles.active@
   application:
     name: @artifactId@
+  servlet:
+    multipart:
+      max-file-size: 30MB
+      max-request-size: 30MB
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher

@@ -63,6 +63,11 @@ public class ChatGroupVO {
     private String notesName;
 
     /**
+     * 当前用户是否管理员
+     */
+    private Integer isAdmin;
+
+    /**
      * 群用户昵称
      */
     private String nickname;

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.mapper.UploadFileMapper">
+    <resultMap id="BaseResultMap" type="work.soho.domain.UploadFile">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="url" column="url" jdbcType="VARCHAR"/>
+        <id property="size" column="size" jdbcType="INTEGER"/>
+        <id property="refCount" column="ref_count" jdbcType="INTEGER"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="fileType" column="file_type" jdbcType="VARCHAR"/>
+        <id property="extension" column="extension" jdbcType="VARCHAR"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,url,size,ref_count,updated_time,created_time,file_type,extension
+    </sql>
+</mapper>
