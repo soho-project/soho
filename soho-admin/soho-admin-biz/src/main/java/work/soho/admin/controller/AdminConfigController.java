@@ -2,8 +2,12 @@ package work.soho.admin.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
@@ -105,5 +109,27 @@ public class AdminConfigController extends BaseController {
     @DeleteMapping("/{ids}" )
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(adminConfigService.removeByIds(Arrays.asList(ids)));
+    }
+
+    /**
+     * 后台通用配置
+     *
+     * 配置信息缓存到客户端
+     *
+     * @return
+     */
+    @GetMapping("/common")
+    public R<Map<String,Object>> common() {
+        Map<String,Object> result = new HashMap<>();
+        String keys = adminConfigService.getByKey("admin-common-config");
+        if(keys == null || keys == "") {
+            return R.success(result);
+        }
+
+        List<String> configKeys = Arrays.stream(keys.split(";")).collect(Collectors.toList());
+        configKeys.stream().forEach(item->{
+            result.put(item, adminConfigService.getByKey(item));
+        });
+        return R.success(result);
     }
 }
