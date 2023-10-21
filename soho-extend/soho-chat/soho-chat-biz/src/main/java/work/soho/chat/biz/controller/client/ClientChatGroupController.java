@@ -20,6 +20,7 @@ import work.soho.chat.biz.req.CreateGroupReq;
 import work.soho.chat.biz.service.*;
 import work.soho.chat.biz.vo.ChatGroupVO;
 import work.soho.chat.biz.vo.GroupVO;
+import work.soho.chat.biz.vo.MyGroupVO;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.StringUtils;
@@ -55,6 +56,15 @@ public class ClientChatGroupController {
 
     private final ChatService chatService;
 
+    /**
+     * 群组列表/群组搜索用接口
+     *
+     * @param chatGroup
+     * @param keyword
+     * @param betweenCreatedTimeRequest
+     * @param sohoUserDetails
+     * @return
+     */
     @GetMapping("/list")
     public R<PageSerializable<GroupVO>> list(ChatGroup chatGroup,String keyword, BetweenCreatedTimeRequest betweenCreatedTimeRequest,@AuthenticationPrincipal SohoUserDetails sohoUserDetails)
     {
@@ -102,30 +112,33 @@ public class ClientChatGroupController {
      * @return
      */
     @GetMapping("/my-list")
-    public R<PageSerializable<ChatGroup>> myList(ChatGroup chatGroup, BetweenCreatedTimeRequest betweenCreatedTimeRequest,@AuthenticationPrincipal SohoUserDetails sohoUserDetails)
+    public R<PageSerializable<MyGroupVO>> myList(ChatGroup chatGroup, BetweenCreatedTimeRequest betweenCreatedTimeRequest,@AuthenticationPrincipal SohoUserDetails sohoUserDetails)
     {
-        //查询我的群组的IDS
         LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ChatGroupUser::getChatUid, sohoUserDetails.getId());
-        List<Long> groupIds = chatGroupUserService.list(lambdaQueryWrapper).stream().map(ChatGroupUser::getGroupId).collect(Collectors.toList());
-        if(groupIds.isEmpty()) {
-            return R.success(new PageSerializable<>(new ArrayList<>()));
-        }
+        List<ChatGroupUser> groupUsers = chatGroupUserService.list(lambdaQueryWrapper);
+        List<Long> groupIds = groupUsers.stream().map(ChatGroupUser::getGroupId).collect(Collectors.toList());
+        groupIds.add(0l);
 
         LambdaQueryWrapper<ChatGroup> lqw = new LambdaQueryWrapper<ChatGroup>();
-        lqw.in(ChatGroup::getId ,groupIds);
-        lqw.like(StringUtils.isNotBlank(chatGroup.getTitle()),ChatGroup::getTitle ,chatGroup.getTitle());
-        lqw.eq(chatGroup.getType() != null, ChatGroup::getType ,chatGroup.getType());
-        lqw.eq(chatGroup.getMasterChatUid() != null, ChatGroup::getMasterChatUid ,chatGroup.getMasterChatUid());
-        lqw.like(StringUtils.isNotBlank(chatGroup.getAvatar()),ChatGroup::getAvatar ,chatGroup.getAvatar());
-        lqw.like(StringUtils.isNotBlank(chatGroup.getIntroduction()),ChatGroup::getIntroduction ,chatGroup.getIntroduction());
-        lqw.like(StringUtils.isNotBlank(chatGroup.getProclamation()),ChatGroup::getProclamation ,chatGroup.getProclamation());
-        lqw.eq(chatGroup.getUpdatedTime() != null, ChatGroup::getUpdatedTime ,chatGroup.getUpdatedTime());
-        lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, ChatGroup::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
-        lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, ChatGroup::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
+        lqw.in(ChatGroup::getId, groupIds);
         List<ChatGroup> list = chatGroupService.list(lqw);
 
-        return R.success(new PageSerializable<>(list));
+        //计算已经加入的群
+        List<MyGroupVO> result = new ArrayList<>();
+        list.forEach(item->{
+            MyGroupVO chatGroupVO = BeanUtils.copy(item, MyGroupVO.class);
+            Optional<ChatGroupUser> optional = groupUsers.stream().filter(u->{return u.getGroupId().equals(item.getId());}).findFirst();
+            if(optional.isPresent()) {
+                chatGroupVO.setNotesName(optional.get().getNotesName());
+                chatGroupVO.setIsAdmin(optional.get().getIsAdmin());
+                if(chatGroupVO.getIsAdmin() == 0 && item.getMasterChatUid().equals(sohoUserDetails.getId())) {
+                    chatGroupVO.setIsAdmin(1);
+                }
+            }
+            result.add(chatGroupVO);
+        });
+        return R.success(new PageSerializable<>(result));
     }
 
     /**
@@ -188,6 +201,18 @@ public class ClientChatGroupController {
         lambdaQueryWrapper.eq(ChatGroupUser::getChatUid, sohoUserDetails.getId())
                 .eq(ChatGroupUser::getGroupId, chatGroupUser.getGroupId());
         ChatGroupUser oldChatGroupUser = chatGroupUserService.getOne(lambdaQueryWrapper);
+
+        //同步备注名
+        if(chatGroupUser.getNotesName() != null) {
+            ChatSession chatSession = chatSessionService.findSession(ChatSessionEnums.Type.GROUP_CHAT, oldChatGroupUser.getGroupId());
+            if(chatSession != null) {
+                ChatSessionUser chatSessionUser = chatSessionUserService.getSessionUser(chatSession.getId(), sohoUserDetails.getId());
+                chatSessionUser.setTitle(chatGroupUser.getNotesName());
+                chatSessionUser.setUpdatedTime(LocalDateTime.now());
+                chatSessionUserService.updateById(chatSessionUser);
+            }
+        }
+
         chatGroupUser.setId(oldChatGroupUser.getId());
         chatGroupUser.setUpdatedTime(LocalDateTime.now());
         chatGroupUser.setCreatedTime(LocalDateTime.now());

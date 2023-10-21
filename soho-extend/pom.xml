@@ -28,5 +28,6 @@
         <module>soho-long-link</module>
         <module>soho-chat</module>
         <module>soho-groovy</module>
+        <module>soho-upload</module>
     </modules>
 </project>

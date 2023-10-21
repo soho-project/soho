@@ -114,6 +114,10 @@ public class ChatGroupServiceImpl extends ServiceImpl<ChatGroupMapper, ChatGroup
         if(foundUser.isPresent()) {
             chatGroupVO.setNotesName(foundUser.get().getNotesName());
             chatGroupVO.setNickname(foundUser.get().getNickname());
+            chatGroupVO.setIsAdmin(foundUser.get().getIsAdmin());
+            if(chatGroupVO.getIsAdmin() == 0 && uid.equals(chatGroup.getMasterChatUid())) {
+                chatGroupVO.setIsAdmin(ChatGroupUserEnums.IsAdmin.YES.getId());
+            }
         }
 
         return chatGroupVO;

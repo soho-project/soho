@@ -86,6 +86,23 @@ public class ClientChatFriendController {
         Assert.notNull(chatUserFriendOld, "数据不存在");
         Assert.isNull(chatUserFriend.getFriendUid(), "非法访问");
         Assert.equals(sohoUserDetails.getId(), chatUserFriendOld.getChatUid(), "非法访问");
+
+
+        //更新备注信息
+        if(chatUserFriend.getNotesName() != null) {
+            //同步信息到会话
+            ChatSession chatSession = chatSessionService.findFriendSession(sohoUserDetails.getId(), chatUserFriendOld.getFriendUid());
+            if(chatSession != null) {
+                ChatSessionUser chatSessionUser = chatSessionUserService.getSessionUser(chatSession.getId(), sohoUserDetails.getId());
+                if(chatSessionUser != null) {
+                    //检查更新
+                    chatSessionUser.setTitle(chatUserFriend.getNotesName());
+                    chatSessionUser.setUpdatedTime(LocalDateTime.now());
+                    chatSessionUserService.updateById(chatSessionUser);
+                }
+            }
+        }
+
         //TODO 备注合法性检查
         chatUserFriendService.updateById(chatUserFriend);
         return R.success();

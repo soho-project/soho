@@ -1,6 +1,7 @@
 package work.soho.chat.biz.controller.client;
 
 import cn.hutool.core.lang.Assert;
+import com.aliyun.oss.model.UploadFileResult;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,8 @@ import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
+import work.soho.upload.api.Upload;
+import work.soho.upload.api.vo.UploadInfoVo;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -53,6 +56,8 @@ public class ClientChatSessionController {
     private final ChatService chatService;
 
     private final ChatSessionMessageUserService chatSessionMessageUserService;
+
+    private final Upload upload;
 
     /**
      * 查询聊天会话列表
@@ -370,12 +375,15 @@ public class ClientChatSessionController {
     @PostMapping("/upload")
     public R<HashMap<String, Object>> upload(@RequestParam(value = "upload")MultipartFile file) {
         try {
+            UploadInfoVo uploadInfoVo = upload.save(file);
+
             HashMap<String, Object> result = new HashMap<>();
-            //不做文件扩展名验证
-            //TODO 配置正确的文件路径
-            String url = UploadUtils.upload("user/upload", file);
-            result.put("url", url);
-            result.put("size", file.getSize());
+//            //不做文件扩展名验证
+//            //TODO 配置正确的文件路径
+//            String url = UploadUtils.upload("user/upload", file);
+
+            result.put("url", uploadInfoVo.getUrl());
+            result.put("size", uploadInfoVo.getSize());
             result.put("name", file.getOriginalFilename());
             return R.success(result);
         } catch (Exception ioException) {
