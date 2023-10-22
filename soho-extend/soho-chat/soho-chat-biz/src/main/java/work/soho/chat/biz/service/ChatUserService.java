@@ -20,5 +20,5 @@ public interface ChatUserService extends IService<ChatUser> {
 
     ChatUser getByUsername(String username);
 
-    Map<String, String> login(String id, String password);
+    Map<String, String> login(String id, String password, String clientId);
 }

@@ -146,8 +146,8 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
             chatSession.setUpdatedTime(LocalDateTime.now());
             chatSession.setCreatedTime(LocalDateTime.now());
             chatSession.setTrackId(chatGroup.getId());
+            chatSession.setUserCount(userList.size());
             save(chatSession);
-
         }
 
         //添加群组用户
