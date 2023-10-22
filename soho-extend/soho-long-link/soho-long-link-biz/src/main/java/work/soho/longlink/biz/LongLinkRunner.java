@@ -1,6 +1,7 @@
 package work.soho.longlink.biz;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -11,11 +12,16 @@ import work.soho.longlink.biz.websocket.WebSocketServer;
 public class LongLinkRunner implements ApplicationRunner {
     private final WebSocketServer webSocketServer;
 
+    @Value("${longlink.enable:true}")
+    private Boolean enable;
+
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        System.out.println("######################################================================================================================================");
-        (new Thread(webSocketServer)).start();
-        System.out.println("runing long link");
-        System.out.println("================================================================================================");
+        if(enable) {
+            System.out.println("######################################================================================================================================");
+            (new Thread(webSocketServer)).start();
+            System.out.println("runing long link");
+            System.out.println("================================================================================================");
+        }
     }
 }
