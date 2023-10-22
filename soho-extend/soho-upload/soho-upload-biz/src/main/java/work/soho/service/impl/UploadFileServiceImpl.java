@@ -46,7 +46,8 @@ public class UploadFileServiceImpl extends ServiceImpl<UploadFileMapper, UploadF
             UploadFile uploadFile = getOne(lambdaQueryWrapper);
 
             if(uploadFile == null) {
-                String url = UploadUtils.upload("group/avatar", file);
+                String basePath = "upload/" + hash.substring(0,2) + "/" + hash.substring(2, 4) + "/" + hash.substring(4, 6);
+                String url = UploadUtils.upload(basePath, file);
 
                 //保存到数据库
                 uploadFile = new UploadFile();

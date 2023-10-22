@@ -55,6 +55,7 @@ public class UploadFileController {
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, UploadFile::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
         lqw.like(StringUtils.isNotBlank(uploadFile.getFileType()),UploadFile::getFileType ,uploadFile.getFileType());
         lqw.like(StringUtils.isNotBlank(uploadFile.getExtension()),UploadFile::getExtension ,uploadFile.getExtension());
+        lqw.orderByDesc(UploadFile::getId);
         List<UploadFile> list = uploadFileService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }

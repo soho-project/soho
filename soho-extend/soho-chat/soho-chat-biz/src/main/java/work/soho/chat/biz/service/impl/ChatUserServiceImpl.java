@@ -83,7 +83,7 @@ public class ChatUserServiceImpl extends ServiceImpl<ChatUserMapper, ChatUser>
      * @return
      */
     @Override
-    public Map<String, String> login(String id, String password) {
+    public Map<String, String> login(String id, String password, String clientId) {
         LambdaQueryWrapper<ChatUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ChatUser::getUsername, id);
         lambdaQueryWrapper.or().eq(ChatUser::getPhone, id);
@@ -92,7 +92,12 @@ public class ChatUserServiceImpl extends ServiceImpl<ChatUserMapper, ChatUser>
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(chatUser.getUsername(), password, AuthorityUtils.createAuthorityList("chat") ));
         SohoUserDetails loginUser = (SohoUserDetails) authentication.getPrincipal();
-        Map<String, String> token = tokenService.createTokenInfo(loginUser);
+
+        //token参数
+        HashMap<String,Object> params = new HashMap<>();
+        params.put("clientId", clientId);
+
+        Map<String, String> token = tokenService.createTokenInfo(loginUser, params);
         return token;
     }
 }

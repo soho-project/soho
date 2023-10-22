@@ -66,6 +66,11 @@ public class TokenServiceImpl implements SohoTokenService {
         return getLoginUser(request);
     }
 
+    @Override
+    public String createToken(SohoUserDetails loginUser) {
+        return createToken(loginUser, new HashMap<>());
+    }
+
     /**
      * 从令牌中获取数据声明
      *
@@ -86,11 +91,14 @@ public class TokenServiceImpl implements SohoTokenService {
      * @param loginUser
      * @return
      */
-    public String createToken(SohoUserDetails loginUser)
+    public String createToken(SohoUserDetails loginUser,HashMap<String, Object> params)
     {
         Map<String, Object> claims = new HashMap<>();
         claims.put("uid", loginUser.getId());
         claims.put("uname", loginUser.getUsername());
+        if(params != null) {
+            claims.putAll(params);
+        }
         String token = Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(new Date())
@@ -107,8 +115,19 @@ public class TokenServiceImpl implements SohoTokenService {
      * @return
      */
     public Map<String, String> createTokenInfo(SohoUserDetails loginUser) {
+        return createTokenInfo(loginUser, new HashMap<>());
+    }
+
+    /**
+     * 创建token信息
+     *
+     * @param loginUser
+     * @param params
+     * @return
+     */
+    public Map<String, String> createTokenInfo(SohoUserDetails loginUser,HashMap<String,Object> params) {
         HashMap<String, String> map = new HashMap<String, String>();
-        map.put("token", createToken(loginUser));
+        map.put("token", createToken(loginUser, params));
         map.put("iat", String.valueOf(new Date().getTime()));
         map.put("exp", String.valueOf(new Date().getTime() + getTokenLeaseTerm()));
         return map;

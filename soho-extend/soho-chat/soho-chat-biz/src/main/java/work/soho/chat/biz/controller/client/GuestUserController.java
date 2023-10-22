@@ -27,7 +27,7 @@ public class GuestUserController {
     @PostMapping("/login")
     public R<Map<String,String>> login(@RequestBody LoginReq loginReq) {
         //获取登录用户
-        Map<String, String> tokenMap = chatUserService.login(loginReq.getId(), loginReq.getPassword());
+        Map<String, String> tokenMap = chatUserService.login(loginReq.getId(), loginReq.getPassword(), loginReq.getClientId());
         return R.success(tokenMap);
     }
 
