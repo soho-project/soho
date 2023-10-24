@@ -1,0 +1,5 @@
+from = test@lisa.org.cn
+host = smtp.qiye.aliyun.com
+port = 25
+user = test@lisa.org.cn
+pass = Admin123
