@@ -17,12 +17,17 @@ import work.soho.service.UploadFileService;
 import work.soho.upload.api.Upload;
 import work.soho.upload.api.vo.UploadInfoVo;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.MessageDigest;
 
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Log4j2
 @RequiredArgsConstructor
@@ -36,24 +41,101 @@ public class UploadFileServiceImpl extends ServiceImpl<UploadFileMapper, UploadF
             MimeType mimeType = MimeTypeUtils.parseMimeType(file.getContentType());
             String extension = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf(".") + 1);
             //检查文件的指纹
-            String hash = getHash((FileInputStream) file.getInputStream());
+            String hash = getHash(file.getInputStream());
 
+            return upload(file.getInputStream(), mimeType.getType(), extension,hash, file.getSize());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Override
+    public UploadInfoVo save(String uri) throws NoSuchAlgorithmException, IOException {
+        try {
+            //检查字符串是否为base64图片
+            if(uri.startsWith("data:image/")) {
+                // 解码数据URI
+                String base64Data = uri.split(",")[1];
+                byte[] decodedData = Base64.getDecoder().decode(base64Data);
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(decodedData);
+                String hash = getHash(new ByteArrayInputStream(decodedData));
+                String mimeType = getFileMimeType(uri);
+                String extension = getFileExtension(uri);
+                return upload(inputStream, mimeType, extension, hash, Long.valueOf(decodedData.length));
+            } else if(isValidURL(uri)) {
+                //URL地址上传，URL地址如果非本站地址则下载后重新上传
+                LambdaQueryWrapper<UploadFile> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+                lambdaQueryWrapper.eq(UploadFile::getUrl, uri);
+                lambdaQueryWrapper.last("limit 1");
+                UploadFile uploadFile = getOne(lambdaQueryWrapper);
+                if(uploadFile != null) {
+                    //本站已经上传的图片，更新引用数直接返回即可
+                    uploadFile.setRefCount(uploadFile.getRefCount()+1);
+                    uploadFile.setCreatedTime(LocalDateTime.now());
+                    updateById(uploadFile);
+                    return BeanUtils.copy(uploadFile, UploadInfoVo.class);
+                }
+                //下载URL 上传文件
+                URL url = new URL(uri);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    String contentType = connection.getContentType();
+                    String fileExtension = contentType.substring(contentType.indexOf("/")+1);
+                    int fileSize = connection.getContentLength();
+
+                    InputStream inputStream = connection.getInputStream();
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    byte[] buffer = new byte[1024];
+                    int bytesRead;
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        baos.write(buffer, 0, bytesRead);
+                    }
+                    byte[] byteArray = baos.toByteArray();
+
+                    String hash = getHash(new ByteArrayInputStream(byteArray));
+
+                    return upload(new ByteArrayInputStream(byteArray), contentType, fileExtension, hash, Long.valueOf(fileSize));
+                } else {
+                    throw new IOException("HTTP Request Failed with Response Code: " + responseCode);
+                }
+            }
+
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 上传文件流
+     *
+     * @param inputStream
+     * @param extension
+     * @return
+     */
+    public UploadInfoVo upload(InputStream inputStream,String mimeType, String extension, String hash, Long size) {
+        try {
             //检查文件以前是否上传过
             LambdaQueryWrapper<UploadFile> lambdaQueryWrapper = new LambdaQueryWrapper<>();
             lambdaQueryWrapper.eq(UploadFile::getHash, hash);
-            lambdaQueryWrapper.eq(UploadFile::getSize, file.getSize());
+            lambdaQueryWrapper.eq(UploadFile::getSize, size);
             lambdaQueryWrapper.eq(UploadFile::getExtension, extension.toLowerCase());
             UploadFile uploadFile = getOne(lambdaQueryWrapper);
 
             if(uploadFile == null) {
                 String basePath = "upload/" + hash.substring(0,2) + "/" + hash.substring(2, 4) + "/" + hash.substring(4, 6);
-                String url = UploadUtils.upload(basePath, file);
+                basePath += hash + "." + extension;
+                String url = UploadUtils.upload(basePath, inputStream);
 
                 //保存到数据库
                 uploadFile = new UploadFile();
                 uploadFile.setFileType(mimeType.toString());
                 uploadFile.setExtension(extension);
-                uploadFile.setSize(file.getSize());
+                uploadFile.setSize(size);
                 uploadFile.setHash(hash);
                 uploadFile.setCreatedTime(LocalDateTime.now());
                 uploadFile.setUpdatedTime(LocalDateTime.now());
@@ -101,7 +183,7 @@ public class UploadFileServiceImpl extends ServiceImpl<UploadFileMapper, UploadF
      * @throws NoSuchAlgorithmException
      * @throws IOException
      */
-    private String getHash(FileInputStream fileInputStream) throws NoSuchAlgorithmException, IOException {
+    private String getHash(InputStream fileInputStream) throws NoSuchAlgorithmException, IOException {
         MessageDigest md = MessageDigest.getInstance("MD5");
         byte[] buffer = new byte[8192];
         int length;
@@ -115,5 +197,53 @@ public class UploadFileServiceImpl extends ServiceImpl<UploadFileMapper, UploadF
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
+    }
+
+    /**
+     * 检查是否为URL地址
+     *
+     * @param urlString
+     * @return
+     */
+    public boolean isValidURL(String urlString) {
+        try {
+            // 尝试创建一个URL对象
+            new URL(urlString);
+            return true;
+        } catch (MalformedURLException e) {
+            return false;
+        }
+    }
+
+    /**
+     * 获取扩展名
+     *
+     * @param dataURI
+     * @return
+     */
+    public String getFileExtension(String dataURI) {
+        // 使用正则表达式匹配文件扩展名
+        Pattern pattern = Pattern.compile("data:image/([a-zA-Z]+);base64,");
+        Matcher matcher = pattern.matcher(dataURI);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    /**
+     * 获取文件 mime type
+     *
+     * @param dataURI
+     * @return
+     */
+    public String getFileMimeType(String dataURI) {
+        // 使用正则表达式匹配文件扩展名
+        Pattern pattern = Pattern.compile("data:([a-zA-Z/]+);base64,");
+        Matcher matcher = pattern.matcher(dataURI);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
     }
 }

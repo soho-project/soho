@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import work.soho.api.admin.service.AdminConfigApiService;
 import work.soho.chat.api.ChatMessage;
 import work.soho.chat.api.payload.Command;
 import work.soho.chat.api.payload.SystemMessage;
@@ -31,7 +32,9 @@ import work.soho.common.data.upload.utils.UploadUtils;
 import work.soho.upload.api.Upload;
 import work.soho.upload.api.vo.UploadInfoVo;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +49,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @RequestMapping("/chat/chat/chat-session")
 public class ClientChatSessionController {
+    private final AdminConfigApiService adminConfigApiService;
     private final ChatSessionService chatSessionService;
 
     private final ChatSessionUserService chatSessionUserService;
@@ -464,8 +468,13 @@ public class ClientChatSessionController {
         lambdaQueryWrapper.eq(ChatSessionMessage::getClientMessageId, id);
         lambdaQueryWrapper.last("limit 1");
         ChatSessionMessage chatMessage = chatSessionMessageService.getOne(lambdaQueryWrapper);
+        //检查消息是否超时
+        Integer revokeTimeout = adminConfigApiService.getByKey("chat-session-message-revoke-timeout", Integer.class, 120);
+        LocalDateTime future = chatMessage.getCreatedTime().plusSeconds(revokeTimeout);
 
-        ChatUser chatUser = chatUserService.getById(sohoUserDetails.getId());
+        if(future.compareTo(LocalDateTime.now())<0) {
+            return R.error("超时；无法撤回消息");
+        }
 
         //检查消息是否存在
         Assert.notNull(chatMessage, "消息不存在");
