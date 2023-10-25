@@ -11,6 +11,8 @@ import work.soho.api.admin.service.AdminConfigApiService;
 import work.soho.chat.biz.domain.ChatUserEmote;
 import work.soho.chat.biz.service.ChatUserEmoteService;
 import work.soho.common.core.result.R;
+import work.soho.upload.api.Upload;
+import work.soho.upload.api.vo.UploadInfoVo;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,6 +25,8 @@ public class ClientChatUserEmoteController {
     private final ChatUserEmoteService chatUserEmoteService;
 
     private final AdminConfigApiService adminConfigApiService;
+
+    private final Upload upload;
 
     /**
      * 用户表情列表
@@ -50,8 +54,13 @@ public class ClientChatUserEmoteController {
     public R<Boolean> create(@RequestBody ChatUserEmote chatUserEmote, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         chatUserEmote.setUid(sohoUserDetails.getId());
         chatUserEmote.setCreatedTime(LocalDateTime.now());
-        //TODO 创建复制表情
-        return R.success(chatUserEmoteService.save(chatUserEmote));
+        UploadInfoVo uploadInfoVo = upload.save(chatUserEmote.getUrl());
+        if(uploadInfoVo == null) {
+            return R.error("保存表情失败");
+        } else {
+            chatUserEmote.setUrl(uploadInfoVo.getUrl());
+            return R.success(chatUserEmoteService.save(chatUserEmote));
+        }
     }
 
     /**

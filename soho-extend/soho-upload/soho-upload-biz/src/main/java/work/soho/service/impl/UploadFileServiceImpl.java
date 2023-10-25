@@ -50,7 +50,7 @@ public class UploadFileServiceImpl extends ServiceImpl<UploadFileMapper, UploadF
     }
 
     @Override
-    public UploadInfoVo save(String uri) throws NoSuchAlgorithmException, IOException {
+    public UploadInfoVo save(String uri) {
         try {
             //检查字符串是否为base64图片
             if(uri.startsWith("data:image/")) {

@@ -10,7 +10,7 @@ import java.security.NoSuchAlgorithmException;
 public interface Upload {
     UploadInfoVo save(MultipartFile file);
 
-    UploadInfoVo save(String uri) throws NoSuchAlgorithmException, IOException;
+    UploadInfoVo save(String uri);
 
     UploadInfoVo checkUploadCache(UploadInfoVo uploadInfoVo);
 }
