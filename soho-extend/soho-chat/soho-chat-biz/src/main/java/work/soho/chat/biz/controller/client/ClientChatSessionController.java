@@ -480,4 +480,29 @@ public class ClientChatSessionController {
         chatSessionMessageService.updateById(chatMessage);
         return R.success(true);
     }
+
+    /**
+     * 删除指定用户消息
+     *
+     * @param id
+     * @param sohoUserDetails
+     * @return
+     */
+    @DeleteMapping("/deleteUserMessage/{id}")
+    public R<Boolean> deleteUserMessage(@PathVariable("id") String id, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        LambdaQueryWrapper<ChatSessionMessage> sessionMessageLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        sessionMessageLambdaQueryWrapper.eq(ChatSessionMessage::getClientMessageId, id)
+                .last("limit 1");
+        ChatSessionMessage chatSessionMessage = chatSessionMessageService.getOne(sessionMessageLambdaQueryWrapper);
+        Assert.notNull(chatSessionMessage, "消息不存在");
+
+        LambdaQueryWrapper<ChatSessionMessageUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionMessageUser::getMessageId, chatSessionMessage.getId())
+                .eq(ChatSessionMessageUser::getUid, sohoUserDetails.getId())
+                .last("limit 1");
+        ChatSessionMessageUser chatSessionMessageUser = chatSessionMessageUserService.getOne(lambdaQueryWrapper);
+        Assert.notNull(chatSessionMessageUser, "消息不存在");
+        chatSessionMessageUserService.removeById(chatSessionMessageUser);
+        return R.success(true);
+    }
 }
