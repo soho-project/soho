@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.HashMap;
 
 @Data
-public class Command extends BaseType {
+public class Command extends BaseType implements PayloadBaseInterface {
     @JsonProperty("_id")
     private String id;
     private String type = "command";
@@ -25,12 +25,18 @@ public class Command extends BaseType {
     }
 
     public static class Builder {
-        private String avatar;
+        private String userName;
+        private String userAvatar;
         private String name;
         private HashMap<String, Object> params;
 
         public Builder userAvatar(String avatar) {
-            this.avatar = avatar;
+            this.userAvatar = avatar;
+            return this;
+        }
+
+        public Builder userName(String name) {
+            this.userName = name;
             return this;
         }
 
@@ -51,9 +57,10 @@ public class Command extends BaseType {
          */
         public Command build() {
             Command command = new Command();
-            if(avatar != null) {
+            if(userAvatar != null) {
                 User user1 = new User();
-                user1.setAvatar(avatar);
+                user1.setAvatar(userAvatar);
+                user1.setName(userName);
                 command.setUser(user1);
             }
             Content content1 = new Content();

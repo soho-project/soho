@@ -1,6 +1,7 @@
 package work.soho.chat.biz.controller.client;
 
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.lang.hash.Hash;
 import com.aliyun.oss.model.UploadFileResult;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import work.soho.chat.api.ChatMessage;
+import work.soho.chat.api.payload.Command;
 import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
 import work.soho.chat.biz.enums.ChatSessionEnums;
@@ -56,6 +58,8 @@ public class ClientChatSessionController {
     private final ChatService chatService;
 
     private final ChatSessionMessageUserService chatSessionMessageUserService;
+
+    private final ChatUserService chatUserService;
 
     private final Upload upload;
 
@@ -223,6 +227,7 @@ public class ClientChatSessionController {
             //读取用户历史消息
             LambdaQueryWrapper<ChatSessionMessage> sessionMessageLambdaQueryWrapper = new LambdaQueryWrapper<>();
             sessionMessageLambdaQueryWrapper.eq(ChatSessionMessage::getSessionId, sessionId);
+            sessionMessageLambdaQueryWrapper.eq(ChatSessionMessage::getIsDeleted, 0);
             if(lastMessageId!=null) {
                 sessionMessageLambdaQueryWrapper.lt(ChatSessionMessage::getId, lastMessageId);
             }
@@ -443,6 +448,36 @@ public class ClientChatSessionController {
                 break;
         }
         chatSessionUserService.getBaseMapper().update(chatSessionUser, lambdaQueryWrapper);
+        return R.success(true);
+    }
+
+    /**
+     * 撤回指定消息
+     *
+     * @param id
+     * @param sohoUserDetails
+     * @return
+     */
+    @GetMapping("/revoke")
+    public R<Boolean> revoke(String id, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        LambdaQueryWrapper<ChatSessionMessage> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionMessage::getClientMessageId, id);
+        lambdaQueryWrapper.last("limit 1");
+        ChatSessionMessage chatMessage = chatSessionMessageService.getOne(lambdaQueryWrapper);
+
+        ChatUser chatUser = chatUserService.getById(sohoUserDetails.getId());
+
+        //检查消息是否存在
+        Assert.notNull(chatMessage, "消息不存在");
+
+        if(!chatMessage.getFromUid().equals(sohoUserDetails.getId())) {
+            throw new RuntimeException("不能撤销他人消息");
+        }
+
+        //删除消息关联
+        chatMessage.setIsDeleted(1);
+        chatMessage.setUpdatedTime(LocalDateTime.now());
+        chatSessionMessageService.updateById(chatMessage);
         return R.success(true);
     }
 }

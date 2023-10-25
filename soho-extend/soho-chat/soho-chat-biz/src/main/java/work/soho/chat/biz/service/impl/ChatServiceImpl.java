@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import work.soho.chat.api.ChatMessage;
+import work.soho.chat.api.payload.PayloadBaseInterface;
 import work.soho.chat.biz.domain.ChatSession;
 import work.soho.chat.biz.domain.ChatSessionMessage;
 import work.soho.chat.biz.domain.ChatSessionUser;
@@ -73,7 +74,8 @@ public class ChatServiceImpl implements ChatService {
     private void saveMessage(ChatMessage inputChatMessage) {
         Long fromUid = Long.parseLong(inputChatMessage.getFromUid());
         Long sessionId = Long.parseLong(inputChatMessage.getToSessionId());
-        ChatSessionMessage chatSessionMessage = chatSessionMessageService.dispatchingMessage(fromUid, sessionId, JacksonUtils.toJson(inputChatMessage.getMessage()));
+        String clientMessageId = ((PayloadBaseInterface)inputChatMessage.getMessage()).getId();
+        ChatSessionMessage chatSessionMessage = chatSessionMessageService.dispatchingMessage(fromUid, sessionId, clientMessageId, JacksonUtils.toJson(inputChatMessage.getMessage()));
         chatSessionUserService.getSessionUserList(sessionId).forEach(item -> {
             chatSessionMessageUserService.isRead(chatSessionMessage.getId(), item.getUserId());
         });

@@ -31,7 +31,7 @@ public class ChatSessionMessageServiceImpl extends ServiceImpl<ChatSessionMessag
     private final ChatSessionMessageUserMapper chatSessionMessageUserMapper;
 
     @Override
-    public ChatSessionMessage dispatchingMessage(Long fromUid,Long sessionId,String content) {
+    public ChatSessionMessage dispatchingMessage(Long fromUid,Long sessionId,String clientMessageId, String content) {
         //插入消息
         ChatSessionMessage chatSessionMessage = new ChatSessionMessage();
         chatSessionMessage.setContent(content);
@@ -39,6 +39,7 @@ public class ChatSessionMessageServiceImpl extends ServiceImpl<ChatSessionMessag
         chatSessionMessage.setFromUid(fromUid);
         chatSessionMessage.setUpdatedTime(LocalDateTime.now());
         chatSessionMessage.setCreatedTime(LocalDateTime.now());
+        chatSessionMessage.setClientMessageId(clientMessageId);
         save(chatSessionMessage);
 
         //获取会话用户

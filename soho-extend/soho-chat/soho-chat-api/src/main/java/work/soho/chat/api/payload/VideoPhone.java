@@ -6,7 +6,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class VideoPhone extends BaseType {
+public class VideoPhone extends BaseType implements PayloadBaseInterface{
     @JsonProperty("_id")
     private String id;
     private String type = "videoPhone";
