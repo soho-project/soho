@@ -5,7 +5,7 @@ import lombok.Data;
 import work.soho.common.core.util.IDGeneratorUtils;
 
 @Data
-public class Image extends BaseType {
+public class Image extends BaseType implements PayloadBaseInterface {
     private String type = "image";
     private Image.Content content;
     private Image.User user;

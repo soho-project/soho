@@ -5,7 +5,7 @@ import lombok.Data;
 import work.soho.common.core.util.IDGeneratorUtils;
 
 @Data
-public class Text extends BaseType {
+public class Text extends BaseType implements PayloadBaseInterface {
     private String type = "text";
     private Content content;
     private User user;
@@ -19,9 +19,20 @@ public class Text extends BaseType {
      */
     private Long createdAt = System.currentTimeMillis();
 
+    /**
+     * 引用回复
+     */
+    public static class Reply {
+        @JsonProperty("_id")
+        private String id;
+        private User user;
+        private String body;
+    }
+
     @Data
     public static class Content {
         private String text;
+        private Reply reply;
     }
 
     public static class Builder {

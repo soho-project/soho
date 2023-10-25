@@ -50,4 +50,15 @@ public class ChatSessionMessage implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
 
+    /**
+     * 客户端消息ID
+     */
+    @TableField(value = "client_message_id")
+    private String clientMessageId;
+
+    /**
+     * 是否已经删除
+     */
+    @TableField(value = "is_deleted")
+    private Integer isDeleted;
 }

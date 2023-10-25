@@ -11,7 +11,7 @@ public interface ChatSessionMessageService extends IService<ChatSessionMessage> 
      * @param sessionId
      * @param content
      */
-    ChatSessionMessage dispatchingMessage(Long fromUid,Long sessionId,String content);
+    ChatSessionMessage dispatchingMessage(Long fromUid,Long sessionId,String clientMessageId, String content);
 
     /**
      * 删除指定用户会话的消息

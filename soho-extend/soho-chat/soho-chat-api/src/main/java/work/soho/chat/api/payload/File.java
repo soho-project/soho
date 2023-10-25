@@ -5,7 +5,7 @@ import lombok.Data;
 import work.soho.common.core.util.IDGeneratorUtils;
 
 @Data
-public class File extends BaseType {
+public class File extends BaseType implements PayloadBaseInterface {
     private String type = "file";
     private File.Content content;
     private File.User user;
