@@ -6,6 +6,7 @@ import work.soho.admin.domain.AdminConfig;
 import work.soho.admin.service.AdminConfigService;
 import work.soho.admin.mapper.AdminConfigMapper;
 import org.springframework.stereotype.Service;
+import work.soho.api.admin.service.AdminConfigApiService;
 import work.soho.common.core.util.JacksonUtils;
 
 /**
@@ -15,7 +16,7 @@ import work.soho.common.core.util.JacksonUtils;
 */
 @Service("sohoConfig")
 public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, AdminConfig>
-    implements AdminConfigService{
+    implements AdminConfigService, AdminConfigApiService {
     /**
      * 根据类型进行数据反序列化
      *
