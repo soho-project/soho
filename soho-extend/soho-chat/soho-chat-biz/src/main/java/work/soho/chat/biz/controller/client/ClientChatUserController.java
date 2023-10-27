@@ -27,6 +27,7 @@ import work.soho.chat.biz.req.UpdatePhoneReq;
 import work.soho.chat.biz.service.ChatUserService;
 import work.soho.chat.biz.vo.DisplayUserVO;
 import work.soho.common.core.result.R;
+import work.soho.common.core.support.SpringContextHolder;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.StringUtils;
@@ -104,6 +105,10 @@ public class ClientChatUserController {
         }
         //TODO 处理邮箱，手机号更改
         chatUserService.updateById(chatUser);
+
+        //TODO 更新会话相关信息
+        SpringContextHolder.getApplicationContext().publishEvent(chatUser);
+
         return R.success(true);
     }
 

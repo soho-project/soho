@@ -31,4 +31,11 @@ public class ChatSessionUserServiceImpl extends ServiceImpl<ChatSessionUserMappe
         lambdaQueryWrapper.eq(ChatSessionUser::getUserId, chatUserId);
         return getOne(lambdaQueryWrapper);
     }
+
+    @Override
+    public List<ChatSessionUser> getSessionUserListByUid(Long uid) {
+        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionUser::getUserId, uid);
+        return list(lambdaQueryWrapper);
+    }
 }
