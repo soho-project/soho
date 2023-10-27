@@ -37,4 +37,10 @@ public class ChatUserEmote implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
 
+    /**
+     * 表情备注
+     */
+    @TableField(value = "notes")
+    private String notes;
+
 }
