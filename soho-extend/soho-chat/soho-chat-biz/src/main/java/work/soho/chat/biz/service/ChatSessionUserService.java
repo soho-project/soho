@@ -9,4 +9,6 @@ public interface ChatSessionUserService extends IService<ChatSessionUser> {
     List<ChatSessionUser> getSessionUserList(Long sessionId);
 
     ChatSessionUser getSessionUser(Long sessionId, Long chatUserId);
+
+    List<ChatSessionUser> getSessionUserListByUid(Long uid);
 }
