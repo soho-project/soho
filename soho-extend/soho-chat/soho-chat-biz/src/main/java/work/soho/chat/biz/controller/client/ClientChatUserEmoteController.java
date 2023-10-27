@@ -64,6 +64,24 @@ public class ClientChatUserEmoteController {
     }
 
     /**
+     * 更新表情信息
+     *
+     * 更新表情备注信息
+     *
+     * @param chatUserEmote
+     * @param sohoUserDetails
+     * @return
+     */
+    @PutMapping
+    public R<Boolean> update(@RequestBody ChatUserEmote chatUserEmote, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatUserEmote chatUserEmote1 = chatUserEmoteService.getById(chatUserEmote.getId());
+        Assert.notNull(chatUserEmote1, "表情不存在");
+        Assert.isTrue(chatUserEmote1.getUid().equals(sohoUserDetails.getId()), "表情不存在或已删除");
+        chatUserEmote1.setNotes(chatUserEmote.getNotes());
+        return R.success(chatUserEmoteService.updateById(chatUserEmote1));
+    }
+
+    /**
      * 产出用户表情
      *
      * @param id

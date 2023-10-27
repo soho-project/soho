@@ -124,6 +124,7 @@ public class UploadFileServiceImpl extends ServiceImpl<UploadFileMapper, UploadF
             lambdaQueryWrapper.eq(UploadFile::getHash, hash);
             lambdaQueryWrapper.eq(UploadFile::getSize, size);
             lambdaQueryWrapper.eq(UploadFile::getExtension, extension.toLowerCase());
+            lambdaQueryWrapper.last("limit 1");
             UploadFile uploadFile = getOne(lambdaQueryWrapper);
 
             if(uploadFile == null) {
@@ -163,6 +164,7 @@ public class UploadFileServiceImpl extends ServiceImpl<UploadFileMapper, UploadF
         lambdaQueryWrapper.eq(UploadFile::getHash, uploadInfoVo.getHash());
         lambdaQueryWrapper.eq(UploadFile::getSize, uploadInfoVo.getSize());
         lambdaQueryWrapper.eq(UploadFile::getExtension, uploadInfoVo.getExtension().toLowerCase());
+        lambdaQueryWrapper.last("limit 1");
         UploadFile uploadFile = getOne(lambdaQueryWrapper);
 
         if(uploadFile !=null ) {
