@@ -47,6 +47,29 @@ public class ClientChatFriendQuestionsController {
     }
 
     /**
+     * 获取好友认证方式以及问题
+     *
+     * @param id
+     * @return
+     */
+    @GetMapping("/friend/{id}")
+    public R<UserQuestionsVo> friend(@PathVariable Long id) {
+        Assert.notNull(id, "请传递好友用户ID");
+        UserQuestionsVo userQuestionsVo = new UserQuestionsVo();
+        ChatUser chatUser = chatUserService.getById(id);
+        Assert.notNull(chatUser, "用户不存在");
+
+        userQuestionsVo.setAuthType(chatUser.getAuthFriendType());
+        LambdaQueryWrapper<ChatUserFriendQuestions> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatUserFriendQuestions::getUid, id);
+        lambdaQueryWrapper.orderByAsc(ChatUserFriendQuestions::getId);
+        chatUserFriendQuestionsService.list(lambdaQueryWrapper).forEach(item->{
+            userQuestionsVo.getQuestionsList().add(BeanUtils.copy(item, UserQuestionsVo.Questions.class));
+        });
+        return R.success(userQuestionsVo);
+    }
+
+    /**
      * 更新用户添加好友方式
      *
      * @param updateFriendAuthReq

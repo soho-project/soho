@@ -125,6 +125,8 @@ public class ClientChatUserFriendApplyController {
         chatUserNotice.setCreatedTime(LocalDateTime.now());
         chatUserNoticeService.save(chatUserNotice);
 
+        //TODO 检查是否已经是好友关系
+
         //添加好友关系
         ChatUser chatUser = chatUserService.getById(chatUserFriendApply.getFriendUid());
         ChatUserFriend chatUserFriend = new ChatUserFriend();
