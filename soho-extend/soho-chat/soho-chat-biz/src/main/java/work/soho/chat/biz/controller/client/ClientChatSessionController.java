@@ -81,7 +81,10 @@ public class ClientChatSessionController {
         chatSessionUserLambdaQueryWrapper.eq(ChatSessionUser::getStatus, ChatSessionUserEnums.Status.ACTIVE.getId());
         List<ChatSessionUser> chatSessionUserList = chatSessionUserService.list(chatSessionUserLambdaQueryWrapper);
         if(chatSessionUserList == null || chatSessionUserList.size() == 0) {
-            return R.success();
+            PageSerializable<UserSessionVO> page = new PageSerializable<>();
+            page.setTotal(0);
+            page.setList(new ArrayList<>());
+            return R.success(page);
         }
         List<Long> sessionIdList = chatSessionUserList.stream().map(ChatSessionUser::getSessionId).collect(Collectors.toList());
         LambdaQueryWrapper<ChatSession> lqw = new LambdaQueryWrapper<ChatSession>();

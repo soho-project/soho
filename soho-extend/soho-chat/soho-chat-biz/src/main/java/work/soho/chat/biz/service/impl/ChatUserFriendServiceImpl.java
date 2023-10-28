@@ -92,4 +92,15 @@ public class ChatUserFriendServiceImpl extends ServiceImpl<ChatUserFriendMapper,
 
         return Boolean.TRUE;
     }
+
+    @Override
+    public void createFriend(ChatUserFriend chatUserFriend) {
+        LambdaQueryWrapper<ChatUserFriend> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatUserFriend::getChatUid, chatUserFriend.getChatUid())
+                .eq(ChatUserFriend::getFriendUid, chatUserFriend.getFriendUid());
+        ChatUserFriend oldChatUserFriend = getOne(lambdaQueryWrapper);
+        if(oldChatUserFriend == null) {
+            save(chatUserFriend);
+        }
+    }
 }

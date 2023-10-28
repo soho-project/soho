@@ -126,22 +126,30 @@ public class ClientChatFriendController {
         if(!sessionUser.isPresent()) {
             throw new RuntimeException("数据异常");
         }
+
+        //删除好友关系
         Optional<ChatSessionUser> friend = chatSessionUserList.stream().filter(item->!item.getUserId().equals(sohoUserDetails.getId())).findFirst();
-        Assert.isTrue(friend.isPresent(), "数据异常");
-        ChatSessionUser chatSessionUser = friend.get();
+        if(friend.isPresent()) {
+            ChatSessionUser friendChatSessionUser = friend.get();
+            //删除好友关系；单边删除
+            LambdaQueryWrapper<ChatUserFriend> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+            lambdaQueryWrapper.eq(ChatUserFriend::getChatUid, sohoUserDetails.getId())
+                    .eq(ChatUserFriend::getFriendUid, friendChatSessionUser.getUserId());
+            ChatUserFriend chatUserFriend = chatUserFriendService.getOne(lambdaQueryWrapper);
+            Assert.notNull(chatUserFriend, "非好友关系");
+            chatUserFriendService.removeById(chatUserFriend.getId());
+        }
 
-        //删除好友关系；单边删除
-        LambdaQueryWrapper<ChatUserFriend> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(ChatUserFriend::getChatUid, sohoUserDetails.getId())
-                .eq(ChatUserFriend::getFriendUid, chatSessionUser.getUserId());
-        ChatUserFriend chatUserFriend = chatUserFriendService.getOne(lambdaQueryWrapper);
-        Assert.notNull(chatUserFriend, "非好友关系");
-        chatUserFriendService.removeById(chatUserFriend.getId());
+        //删除我的会话消息
+        Optional<ChatSessionUser> myUser = chatSessionUserList.stream().filter(item->item.getUserId().equals(sohoUserDetails.getId())).findFirst();
+        if(myUser.isPresent()) {
+            ChatSessionUser myChatSessionUser = myUser.get();
+            //删除对应的会话用户
+            myChatSessionUser.setStatus(ChatSessionUserEnums.Status.DELETED.getId());
+            myChatSessionUser.setUpdatedTime(LocalDateTime.now());
+            chatSessionUserService.updateById(myChatSessionUser);
+        }
 
-        //删除对应的会话用户
-        chatSessionUser.setStatus(ChatSessionUserEnums.Status.DELETED.getId());
-        chatSessionUser.setUpdatedTime(LocalDateTime.now());
-        chatSessionUserService.updateById(chatSessionUser);
         return R.success(true);
     }
 

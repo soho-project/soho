@@ -10,4 +10,13 @@ public interface ChatUserFriendService extends IService<ChatUserFriend> {
     List<UserFriendVO> getListByUid(Long uid);
 
     Boolean applyFriend(Long uid, Long friendId);
+
+    /**
+     * 创建一个好友信息
+     *
+     * 检查是否存在，如果存在则进行更新
+     *
+     * @param chatUserFriend
+     */
+    void createFriend(ChatUserFriend chatUserFriend);
 }
