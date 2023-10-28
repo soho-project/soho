@@ -83,10 +83,7 @@ public class ClientChatSessionController {
         if(chatSessionUserList == null || chatSessionUserList.size() == 0) {
             return R.success();
         }
-        //Map<Long, ChatSessionUser> sessionUsers = chatSessionUserList.stream().collect(Collectors.toMap(ChatSessionUser::getSessionId, item->item));
         List<Long> sessionIdList = chatSessionUserList.stream().map(ChatSessionUser::getSessionId).collect(Collectors.toList());
-
-//        PageUtils.startPage();
         LambdaQueryWrapper<ChatSession> lqw = new LambdaQueryWrapper<ChatSession>();
         lqw.in(ChatSession::getId, sessionIdList);
         lqw.eq(chatSession.getId() != null, ChatSession::getId ,chatSession.getId());
@@ -112,6 +109,11 @@ public class ClientChatSessionController {
             if(StringUtils.isNotEmpty(chatSessionUser.getAvatar())) {
                 userSessionVO.setAvatar(chatSessionUser.getAvatar());
             }
+            //原始标题
+            if(StringUtils.isNotEmpty(chatSessionUser.getOriginTitle())) {
+                userSessionVO.setTitle(chatSessionUser.getOriginTitle());
+            }
+            //用户备注名
             if(StringUtils.isNotEmpty(chatSessionUser.getTitle())) {
                 userSessionVO.setTitle(chatSessionUser.getTitle());
             }

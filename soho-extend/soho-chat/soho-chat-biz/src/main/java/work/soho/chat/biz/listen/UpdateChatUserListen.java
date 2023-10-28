@@ -47,7 +47,7 @@ public class UpdateChatUserListen {
 
         String title = chatUser.getNickname() != null && !chatUser.equals("") ? chatUser.getNickname() : chatUser.getUsername();
         updateChatSessionUserList.forEach(item->{
-            item.setTitle(title);
+            item.setOriginTitle(title);
         });
 
         chatSessionUserService.saveOrUpdateBatch(updateChatSessionUserList);
