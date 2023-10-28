@@ -57,6 +57,12 @@ public class ChatSessionUser implements Serializable {
     private String title;
 
     /**
+     * 原始标题
+     */
+    @TableField(value = "origin_title")
+    private String originTitle;
+
+    /**
      * 会话显示昵称
      */
     @TableField(value = "session_nickname")
