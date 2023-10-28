@@ -1,5 +1,6 @@
 package work.soho.chat.biz.controller.client;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.Assert;
@@ -35,6 +36,8 @@ public class ClientChatUserFriendApplyController {
 
     private final ChatService chatService;
 
+    private final ChatUserFriendQuestionsService chatUserFriendQuestionsService;
+
 
     /**
      * 发起好友申请
@@ -45,9 +48,44 @@ public class ClientChatUserFriendApplyController {
      */
     @PostMapping()
     public R<Boolean> created(@RequestBody ChatUserFriendApply chatUserFriendApply, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatUser friendChatUser = chatUserService.getById(chatUserFriendApply.getFriendUid());
+        //预处理
         chatUserFriendApply.setId(null);
         chatUserFriendApply.setChatUid(sohoUserDetails.getId());
-        chatUserFriendApplyService.createApply(chatUserFriendApply);
+        switch (friendChatUser.getAuthFriendType()) {
+            case 1:
+                //直接添加
+                chatUserFriendApplyService.createApply(chatUserFriendApply);
+                addFriend(chatUserFriendApply.getId(), chatUserFriendApply.getFriendUid());
+                break;
+            case 2: //用户确认后添加好友
+                chatUserFriendApplyService.createApply(chatUserFriendApply);
+                break;
+            case 3:
+                //回答问题正确后直接添加好友
+                LambdaQueryWrapper<ChatUserFriendQuestions> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+                lambdaQueryWrapper
+                        .eq(ChatUserFriendQuestions::getUid, chatUserFriendApply.getFriendUid())
+                        .eq(ChatUserFriendQuestions::getQuestions, chatUserFriendApply.getAsk())
+                        .eq(ChatUserFriendQuestions::getAnswer, chatUserFriendApply.getAnswer())
+                        .last("limit 1");
+                ChatUserFriendQuestions chatUserFriendQuestions = chatUserFriendQuestionsService.getOne(lambdaQueryWrapper);
+                if(chatUserFriendQuestions != null) {
+                    chatUserFriendApply.setId(null);
+                    chatUserFriendApplyService.createApply(chatUserFriendApply);
+                    addFriend(chatUserFriendApply.getId(), chatUserFriendApply.getFriendUid());
+                } else {
+                    //防止暴力破解
+                    return R.error("问题回答错误");
+                }
+                break;
+            case 4:
+                //回答问题后用户确认添加好厚
+                chatUserFriendApplyService.createApply(chatUserFriendApply);
+                break;
+            default:
+                return R.error("用户禁止添加好友");
+        }
         return R.success(true);
     }
 
@@ -60,9 +98,20 @@ public class ClientChatUserFriendApplyController {
      */
     @GetMapping
     public R<Boolean> agree(Long id, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        return R.success(addFriend(id, sohoUserDetails.getId()));
+    }
+
+    /**
+     * 添加好友
+     *
+     * @param id
+     * @param uid
+     * @return
+     */
+    public Boolean addFriend(Long id, Long uid) {
         ChatUserFriendApply chatUserFriendApply = chatUserFriendApplyService.getById(id);
         Assert.isTrue(chatUserFriendApply.getStatus() != ChatUserFriendApplyEnums.Status.AGREED.getId(), "非法访问");
-        Assert.isTrue(sohoUserDetails.getId().equals(chatUserFriendApply.getFriendUid()), "无权操作");
+        Assert.isTrue(uid.equals(chatUserFriendApply.getFriendUid()), "无权操作");
         //修改状态
         chatUserFriendApply.setStatus(ChatUserFriendApplyEnums.Status.AGREED.getId());
         chatUserFriendApply.setUpdatedTime(LocalDateTime.now());
@@ -75,20 +124,21 @@ public class ClientChatUserFriendApplyController {
         chatUserNotice.setCreatedTime(LocalDateTime.now());
         chatUserNotice.setCreatedTime(LocalDateTime.now());
         chatUserNoticeService.save(chatUserNotice);
+
         //添加好友关系
         ChatUser chatUser = chatUserService.getById(chatUserFriendApply.getFriendUid());
         ChatUserFriend chatUserFriend = new ChatUserFriend();
         chatUserFriend.setFriendUid(chatUserFriendApply.getFriendUid());
         chatUserFriend.setChatUid(chatUserFriendApply.getChatUid());
         chatUserFriend.setNotesName(chatUser.getUsername());
-        chatUserFriendService.save(chatUserFriend);
+        chatUserFriendService.createFriend(chatUserFriend);
 
         ChatUserFriend chatUserFriend1 = new ChatUserFriend();
         ChatUser chatUser1 = chatUserService.getById(chatUserFriendApply.getChatUid());
         chatUserFriend1.setFriendUid(chatUserFriendApply.getChatUid());
         chatUserFriend1.setChatUid(chatUserFriendApply.getFriendUid());
         chatUserFriend1.setNotesName(chatUser1.getUsername());
-        chatUserFriendService.save(chatUserFriend1);
+        chatUserFriendService.createFriend(chatUserFriend1);
 
         //创建会话，发送系统信息
         ArrayList<Long> uids = new ArrayList<>();
@@ -107,6 +157,6 @@ public class ClientChatUserFriendApplyController {
 
         //发送系统通知
         chatService.chat(new ChatMessage.Builder<SystemMessage>(chatSession.getId(), new SystemMessage.Builder().text("添加好友成功").build()).build());
-        return R.success(true);
+        return true;
     }
 }

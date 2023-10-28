@@ -122,4 +122,10 @@ public class ChatUser implements Serializable {
      */
     @TableField(value = "birthday")
     private Date birthday;
+
+    /**
+     * 添加好友认证方式
+     */
+    @TableField(value = "auth_friend_type")
+    private Integer authFriendType;
 }
