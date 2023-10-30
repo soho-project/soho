@@ -120,6 +120,7 @@ public class ClientChatSessionController {
             if(StringUtils.isNotEmpty(chatSessionUser.getTitle())) {
                 userSessionVO.setTitle(chatSessionUser.getTitle());
             }
+            userSessionVO.setUnreadCount(chatSessionUser.getUnreadCount());
             userSessionVO.setIsNotDisturb(chatSessionUser.getIsNotDisturb());
             userSessionVO.setIsShield(chatSessionUser.getIsShield());
             userSessionVO.setIsTop(chatSessionUser.getIsTop());
@@ -210,6 +211,7 @@ public class ClientChatSessionController {
         ChatSessionUser chatSessionUser = chatSessionUserService.getOne(lambdaQueryWrapper);
         chatSessionUser.setLastLookMessageTime(LocalDateTime.now());
         chatSessionUser.setUpdatedTime(LocalDateTime.now());
+        chatSessionUser.setUnreadCount(0); //重置未读消息数量
         chatSessionUserService.updateById(chatSessionUser);
         return R.success(true);
     }
