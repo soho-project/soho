@@ -9,9 +9,9 @@ import java.io.Serializable;
 import lombok.Data;
 import java.time.LocalDateTime;
 
-@TableName(value ="chat_group")
+@TableName(value ="chat_group_questions")
 @Data
-public class ChatGroup implements Serializable {
+public class ChatGroupQuestions implements Serializable {
     /**
     * ID
     */
@@ -19,46 +19,22 @@ public class ChatGroup implements Serializable {
     private Long id;
 
     /**
-    * 标题
+    * 用户ID
     */
-    @TableField(value = "title")
-    private String title;
+    @TableField(value = "group_id")
+    private Long groupId;
 
     /**
-    * 群组类型;2:群聊,3:群组
+    * 提问问题
     */
-    @TableField(value = "type")
-    private Integer type;
+    @TableField(value = "questions")
+    private String questions;
 
     /**
-    * 主管理员
+    * 问题答案
     */
-    @TableField(value = "master_chat_uid")
-    private Long masterChatUid;
-
-    /**
-    * 群聊头像
-    */
-    @TableField(value = "avatar")
-    private String avatar;
-
-    /**
-    * 简介
-    */
-    @TableField(value = "introduction")
-    private String introduction;
-
-    /**
-    * 群公告
-    */
-    @TableField(value = "proclamation")
-    private String proclamation;
-
-    /**
-     * 加群认证类型
-     */
-    @TableField(value = "auth_join_type")
-    private Integer authJoinType;
+    @TableField(value = "answer")
+    private String answer;
 
     /**
     * 更新时间

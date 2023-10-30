@@ -305,7 +305,7 @@ public class ClientChatSessionController {
         //发送系统消息
         chatService.chat(new ChatMessage.Builder<SystemMessage>(originChatSession.getId(),
                 new SystemMessage.Builder().text(
-                        StringUtils.isNotEmpty(chatSession.getTitle()) ? sohoUserDetails.getUsername() + " 修改了群名" : sohoUserDetails.getUsername() + " 管理员更新了群头像"
+                        StringUtils.isNotEmpty(chatSession.getTitle()) ? sohoUserDetails.getUsername() + " 修改了群名 " + chatSession.getTitle() : sohoUserDetails.getUsername() + " 管理员更新了群头像"
                 ).build()).build());
 
         return R.success(Boolean.TRUE);

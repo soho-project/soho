@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import work.soho.chat.biz.domain.ChatGroup;
 import work.soho.chat.biz.domain.ChatGroupUser;
+import work.soho.chat.biz.domain.ChatSessionUser;
 import work.soho.chat.biz.domain.ChatUser;
 import work.soho.chat.biz.enums.ChatGroupUserEnums;
 import work.soho.chat.biz.mapper.ChatGroupMapper;

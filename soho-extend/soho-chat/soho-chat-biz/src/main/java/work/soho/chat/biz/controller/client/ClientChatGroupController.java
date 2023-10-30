@@ -17,8 +17,10 @@ import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
 import work.soho.chat.biz.enums.*;
 import work.soho.chat.biz.req.CreateGroupReq;
+import work.soho.chat.biz.req.UpdateGroupAuthReq;
 import work.soho.chat.biz.service.*;
 import work.soho.chat.biz.vo.ChatGroupVO;
+import work.soho.chat.biz.vo.GroupQuestionsVo;
 import work.soho.chat.biz.vo.GroupVO;
 import work.soho.chat.biz.vo.MyGroupVO;
 import work.soho.common.core.result.R;
@@ -55,6 +57,8 @@ public class ClientChatGroupController {
     private final ChatSessionUserService chatSessionUserService;
 
     private final ChatService chatService;
+
+    private final ChatGroupQuestionsService chatGroupQuestionsService;
 
     /**
      * 群组列表/群组搜索用接口
@@ -251,6 +255,8 @@ public class ClientChatGroupController {
         chatSessionUser.setStatus(ChatSessionUserEnums.Status.DELETED.getId());
         chatSessionUser.setUpdatedTime(LocalDateTime.now());
         chatSessionUserService.updateById(chatSessionUser);
+        //更新会话统计信息
+        chatSessionService.syncInfo(chatSessionUser.getSessionId());
         //TODO 发送消息给管理员，告知用户退出
         return R.success(true);
     }
@@ -270,76 +276,87 @@ public class ClientChatGroupController {
         return R.success(true);
     }
 
-    /**
-     * 申请入群
-     *
-     * @param sohoUserDetails
-     * @return
-     */
-    @PostMapping("/apply")
-    public R<ChatGroupApply> apply(@RequestBody ChatGroupApply chatGroupApply, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
-        ChatGroup chatGroup = chatGroupService.getById(chatGroupApply.getGroupId());
-        Assert.notNull(chatGroup);
-        //TODO 检查当前用户不在群里面
-        chatGroupApply.setUpdatedTime(LocalDateTime.now());
-        chatGroupApply.setCreatedTime(LocalDateTime.now());
-        chatGroupApply.setChatUid(sohoUserDetails.getId());
-        chatGroupApply.setStatus(ChatGroupApplyEnums.Status.PENDING_PROCESSING.getId());
-        chatGroupApplyService.save(chatGroupApply);
-
-        //获取所有的群管理
-        LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(ChatGroupUser::getGroupId, chatGroup.getId())
-                .eq(ChatGroupUser::getIsAdmin, ChatGroupUserEnums.IsAdmin.YES.getId());
-        List<ChatGroupUser> groupUsers = chatGroupUserService.list(lambdaQueryWrapper);
-
-        //创建发送通知
-        ChatUserNotice chatUserNotice = new ChatUserNotice();
-        chatUserNotice.setChatUid(sohoUserDetails.getId());
-        chatUserNotice.setStatus(ChatUserNoticeEnums.Status.PENDING_PROCESSING.getId());
-        chatUserNotice.setType(ChatUserNoticeEnums.Type.GROUP.getType());
-        chatUserNotice.setTrackingId(chatGroupApply.getId());
-        chatUserNotice.setUpdatedTime(LocalDateTime.now());
-        chatUserNotice.setCreatedTime(LocalDateTime.now());
-        chatUserNoticeService.save(chatUserNotice);
-
-        //给管理员发送通知
-        groupUsers.forEach(item->{
-            //创建发送通知
-            ChatUserNotice notice = new ChatUserNotice();
-            notice.setChatUid(item.getChatUid());
-            notice.setStatus(ChatUserNoticeEnums.Status.PENDING_PROCESSING.getId());
-            notice.setType(ChatUserNoticeEnums.Type.GROUP.getType());
-            notice.setTrackingId(chatGroupApply.getId());
-            notice.setUpdatedTime(LocalDateTime.now());
-            notice.setCreatedTime(LocalDateTime.now());
-            chatUserNoticeService.save(notice);
-        });
-
-        return R.success(chatGroupApply);
-    }
-
-    /**
-     * 处理申请
-     *
-     * @param chatGroupApply
-     * @param sohoUserDetails
-     * @return
-     */
-    @PutMapping("/doApply")
-    public R<Boolean> doApply(@RequestBody ChatGroupApply chatGroupApply,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
-        ChatGroupApply oldGroupApply = chatGroupApplyService.getById(chatGroupApply.getId());
-        //TODO 检查当前用户是否为管理员
-        LambdaQueryWrapper<ChatGroupUser> lqw = new LambdaQueryWrapper<>();
-        lqw.eq(ChatGroupUser::getChatUid, sohoUserDetails.getId());
-        lqw.eq(ChatGroupUser::getGroupId, oldGroupApply.getGroupId());
-        lqw.eq(ChatGroupUser::getIsAdmin, ChatGroupUserEnums.IsAdmin.YES.getId());
-        ChatGroupUser chatGroupUser = chatGroupUserService.getOne(lqw);
-        Assert.notNull(chatGroupUser);
-        //审核加群申请
-        oldGroupApply.setStatus(chatGroupApply.getStatus());
-        return R.success(chatGroupApplyService.updateById(oldGroupApply));
-    }
+//    /**
+//     * 申请入群
+//     *
+//     * @param sohoUserDetails
+//     * @return
+//     */
+//    @PostMapping("/apply")
+//    public R<ChatGroupApply> apply(@RequestBody ChatGroupApply chatGroupApply, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+//        ChatGroup chatGroup = chatGroupService.getById(chatGroupApply.getGroupId());
+//        Assert.notNull(chatGroup);
+//        //TODO 检查当前用户不在群里面
+//        chatGroupApply.setUpdatedTime(LocalDateTime.now());
+//        chatGroupApply.setCreatedTime(LocalDateTime.now());
+//        chatGroupApply.setChatUid(sohoUserDetails.getId());
+//        chatGroupApply.setStatus(ChatGroupApplyEnums.Status.PENDING_PROCESSING.getId());
+//        chatGroupApplyService.save(chatGroupApply);
+//        switch (chatGroup.getAuthJoinType()) {
+//            case 1: //可以直接入群
+//                break;
+//            case 2: //需要管理员同意
+//            case 4: //需要回复问题并且管理员同意
+//                sendJoinGroupInfo(chatGroup, chatGroupApply, sohoUserDetails);
+//                break;
+//            case 3: //需要正确回复问题
+//                LambdaQueryWrapper<ChatGroupQuestions> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+//                lambdaQueryWrapper.eq(ChatGroupQuestions::getGroupId, chatGroup.getId());
+//                lambdaQueryWrapper.last("limit 1");
+//                ChatGroupQuestions chatGroupQuestions = chatGroupQuestionsService.getOne(lambdaQueryWrapper);
+//                if(chatGroupQuestions != null
+//                        && chatGroupQuestions.getQuestions().equals(chatGroupApply.getAsk())
+//                        && chatGroupQuestions.getAnswer().equals(chatGroupApply.getAnswer())
+//                ) {
+//                    //TODO 认证通过直接添加到群里
+//                    System.out.println("已经正确回复问题， 待直接添加用户到群");
+//                    return R.success(chatGroupApply);
+//                }
+//                break;
+//            default:
+//                return R.error("本群禁止加入");
+//        }
+//        //将用户加入群
+//
+//        return R.success(chatGroupApply);
+//    }
+//
+//    /**
+//     * 将某个用户加入到群里
+//     *
+//     * @param chatGroup
+//     */
+//    private void sendJoinGroupInfo(ChatGroup chatGroup,ChatGroupApply chatGroupApply,SohoUserDetails sohoUserDetails) {
+//        //获取所有的群管理
+//        LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+//        lambdaQueryWrapper.eq(ChatGroupUser::getGroupId, chatGroup.getId())
+//                .eq(ChatGroupUser::getIsAdmin, ChatGroupUserEnums.IsAdmin.YES.getId());
+//        List<ChatGroupUser> groupUsers = chatGroupUserService.list(lambdaQueryWrapper);
+//
+//        //创建发送通知
+//        ChatUserNotice chatUserNotice = new ChatUserNotice();
+//        chatUserNotice.setChatUid(sohoUserDetails.getId());
+//        chatUserNotice.setStatus(ChatUserNoticeEnums.Status.PENDING_PROCESSING.getId());
+//        chatUserNotice.setType(ChatUserNoticeEnums.Type.GROUP.getType());
+//        chatUserNotice.setTrackingId(chatGroupApply.getId());
+//        chatUserNotice.setUpdatedTime(LocalDateTime.now());
+//        chatUserNotice.setCreatedTime(LocalDateTime.now());
+//        chatUserNoticeService.save(chatUserNotice);
+//
+//        //给管理员发送通知
+//        groupUsers.forEach(item->{
+//            //创建发送通知
+//            ChatUserNotice notice = new ChatUserNotice();
+//            notice.setChatUid(item.getChatUid());
+//            notice.setStatus(ChatUserNoticeEnums.Status.PENDING_PROCESSING.getId());
+//            notice.setType(ChatUserNoticeEnums.Type.GROUP.getType());
+//            notice.setTrackingId(chatGroupApply.getId());
+//            notice.setUpdatedTime(LocalDateTime.now());
+//            notice.setCreatedTime(LocalDateTime.now());
+//            chatUserNoticeService.save(notice);
+//        });
+//    }
+//
 
     /**
      * 上传聊天文件/图片
@@ -381,4 +398,61 @@ public class ClientChatGroupController {
     }
 
 
+    /**
+     * 对应群的认证信息
+     *
+     * @param id
+     * @return
+     */
+    @GetMapping("/questions")
+    public R<GroupQuestionsVo> questions(Long id,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatGroup chatGroup = chatGroupService.getById(id);
+
+        //检查请求用户是否为群管理
+        boolean inGroup = chatGroupService.isAdmin(id, sohoUserDetails.getId());
+
+        GroupQuestionsVo groupQuestionsVo = new GroupQuestionsVo();
+        groupQuestionsVo.setAuthType(chatGroup.getAuthJoinType());
+        LambdaQueryWrapper<ChatGroupQuestions> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatGroupQuestions::getGroupId, chatGroup.getId());
+        chatGroupQuestionsService.list(lambdaQueryWrapper).forEach(item->{
+            GroupQuestionsVo.Questions questions = BeanUtils.copy(item, GroupQuestionsVo.Questions.class);
+            if(!inGroup) {
+                questions.setAnswer(null);
+            }
+            groupQuestionsVo.getQuestionsList().add(questions);
+        });
+
+        return R.success(groupQuestionsVo);
+    }
+
+    /**
+     * 修改群认证方式
+     *
+     * @return
+     */
+    @PutMapping("/questions")
+    public R<Boolean> updateQuestions(@RequestBody UpdateGroupAuthReq updateGroupAuthReq,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatGroup chatGroup = chatGroupService.getById(updateGroupAuthReq.getGroupId());
+        Assert.notNull(chatGroup, "群组不存在");
+        chatGroup.setAuthJoinType(updateGroupAuthReq.getAuthType());
+        chatGroupService.updateById(chatGroup);
+        //检查当前用户是否为管理员
+        Assert.isTrue(chatGroupService.isAdmin(chatGroup.getId(), sohoUserDetails.getId()), "无权修改");
+        //清理老数据
+        LambdaQueryWrapper<ChatGroupQuestions> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatGroupQuestions::getGroupId, chatGroup.getId());
+        chatGroupQuestionsService.remove(lambdaQueryWrapper);
+
+        //添加提问
+        updateGroupAuthReq.getQuestionsList().forEach(item->{
+            ChatGroupQuestions chatGroupQuestions = BeanUtils.copy(item, ChatGroupQuestions.class);
+            chatGroupQuestions.setGroupId(chatGroup.getId());
+            chatGroupQuestions.setUpdatedTime(LocalDateTime.now());
+            chatGroupQuestions.setCreatedTime(LocalDateTime.now());
+            chatGroupQuestionsService.save(chatGroupQuestions);
+        });
+
+        return R.success(true);
+    }
 }
