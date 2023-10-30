@@ -46,7 +46,7 @@ class NinePatchAvatarGeneratorUtilsTest {
                 "https://randomuser.me/api/portraits/med/men/32.jpg",
                 "https://gw.alicdn.com/tfs/TB1U7FBiAT2gK0jSZPcXXcKkpXa-108-108.jpg"
         };
-        String url = UploadUtils.upload("/tmp/test.png", NinePatchAvatarGeneratorUtils.create(150, 3, imageUrls));
+        String url = UploadUtils.upload("tmp/test.png", NinePatchAvatarGeneratorUtils.create(150, 3, imageUrls));
         System.out.println(url);
     }
 

@@ -60,17 +60,22 @@ public class NinePatchAvatarGeneratorUtils {
         BufferedImage resultImage = new BufferedImage(imageSize, imageSize, BufferedImage.TYPE_INT_ARGB);
 
         int cellSize = imageSize / gridCount;
+        int lostCount = gridCount * gridCount - imageUrls.length;
 
         int index = 0;
         for (int row = 0; row < gridCount; row++) {
             for (int col = 0; col < gridCount; col++) {
-                String imageUrl = imageUrls[index % imageUrls.length];
-                BufferedImage cell = loadImageFromUrl(imageUrl, cellSize, cellSize);
-                Graphics2D graphics = resultImage.createGraphics();
-                graphics.drawImage(cell, col * cellSize, row * cellSize, null);
-                graphics.dispose();
-
-                index++;
+                if(index<imageUrls.length) {
+                    String imageUrl = imageUrls[index];
+                    boolean merge = (imageUrls.length - lostCount)<=index;
+                    BufferedImage cell = loadImageFromUrl(imageUrl, cellSize, merge ? 2*cellSize : cellSize);
+                    Graphics2D graphics = resultImage.createGraphics();
+                    graphics.drawImage(cell, col * cellSize, row * cellSize, null);
+                    graphics.dispose();
+                    index++;
+                } else {
+                    break;
+                }
             }
         }
 
@@ -81,11 +86,12 @@ public class NinePatchAvatarGeneratorUtils {
      * 从URL加载图片
      *
      * @param imageUrl
-     * @param width
-     * @param height
+     * @param targetWidth
+     * @param targetHeight
      * @return
      */
     public static BufferedImage loadImageFromUrl(String imageUrl, int targetWidth, int targetHeight) {
+//        System.out.println("图片规格" + targetWidth +" x "+targetHeight);
         try {
             URL url = new URL(imageUrl);
             BufferedImage loadedImage = ImageIO.read(url);
@@ -95,18 +101,29 @@ public class NinePatchAvatarGeneratorUtils {
 
             double widthRatio = (double) targetWidth / originalWidth;
             double heightRatio = (double) targetHeight / originalHeight;
-            double scaleFactor = Math.min(widthRatio, heightRatio);
+            double scaleFactor = Math.max(widthRatio, heightRatio);
 
             int newWidth = (int) (originalWidth * scaleFactor);
             int newHeight = (int) (originalHeight * scaleFactor);
 
-            BufferedImage resizedImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
-            resizedImage.getGraphics().drawImage(loadedImage.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH), 0, 0, null);
+            //确定x,y坐标
+            int x = (newWidth-targetWidth)/2;
+            int y = (newHeight-targetHeight)/2;
 
-            return resizedImage;
+//            System.out.println("原始宽高 " + originalWidth + " " + originalHeight);
+//            System.out.println("缩放后宽高 " + newWidth + " " + newHeight);
+//            System.out.println("裁剪定位 " + x + " " + y);
+
+            //缩放图片
+            Image image = loadedImage.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            //裁剪成需要的图片大小
+            BufferedImage resizedImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
+            resizedImage.getGraphics().drawImage(image, 0, 0, null);
+            return resizedImage.getSubimage(x,y, targetWidth, targetHeight);
         } catch (IOException e) {
             e.printStackTrace();
         }
         return null;
     }
+
 }
