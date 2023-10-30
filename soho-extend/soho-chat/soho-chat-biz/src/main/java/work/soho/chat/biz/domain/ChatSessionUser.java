@@ -98,4 +98,10 @@ public class ChatSessionUser implements Serializable {
      */
     @TableField(value = "status")
     private Integer status;
+
+    /**
+     * 未读消息总数
+     */
+    @TableField(value = "unread_count")
+    private Integer unreadCount;
 }

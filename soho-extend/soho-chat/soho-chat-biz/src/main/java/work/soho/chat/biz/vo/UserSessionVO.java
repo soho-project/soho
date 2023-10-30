@@ -103,4 +103,9 @@ public class UserSessionVO {
      */
     @TableField(value = "last_message")
     private String lastMessage;
+
+    /**
+     * 未读消息数量
+     */
+    private Integer unreadCount;
 }

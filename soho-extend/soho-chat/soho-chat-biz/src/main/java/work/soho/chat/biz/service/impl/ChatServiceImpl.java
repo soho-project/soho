@@ -14,6 +14,7 @@ import work.soho.common.core.util.JacksonUtils;
 import work.soho.longlink.api.sender.Sender;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -76,8 +77,22 @@ public class ChatServiceImpl implements ChatService {
         Long sessionId = Long.parseLong(inputChatMessage.getToSessionId());
         String clientMessageId = ((PayloadBaseInterface)inputChatMessage.getMessage()).getId();
         ChatSessionMessage chatSessionMessage = chatSessionMessageService.dispatchingMessage(fromUid, sessionId, clientMessageId, JacksonUtils.toJson(inputChatMessage.getMessage()));
+
+        List<ChatSessionUser> updateSessionUserList = new ArrayList<>();
         chatSessionUserService.getSessionUserList(sessionId).forEach(item -> {
             chatSessionMessageUserService.isRead(chatSessionMessage.getId(), item.getUserId());
+            //非发送用户统计未读消息
+            if(inputChatMessage.getFromUid().equals(String.valueOf(item.getUserId()))) {
+                item.setUnreadCount(0);
+            } else {
+                item.setUnreadCount(item.getUnreadCount()+1);
+            }
+            item.setUpdatedTime(LocalDateTime.now());
+            updateSessionUserList.add(item);
         });
+
+        if(updateSessionUserList.size()>0) {
+            chatSessionUserService.saveOrUpdateBatch(updateSessionUserList);
+        }
     }
 }

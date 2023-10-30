@@ -48,8 +48,11 @@ public class UpdateChatUserListen {
         String title = chatUser.getNickname() != null && !chatUser.equals("") ? chatUser.getNickname() : chatUser.getUsername();
         updateChatSessionUserList.forEach(item->{
             item.setOriginTitle(title);
+            item.setAvatar(chatUser.getAvatar());
         });
 
         chatSessionUserService.saveOrUpdateBatch(updateChatSessionUserList);
+
+        //TODO 发送消息给客户端进行会话更新
     }
 }
