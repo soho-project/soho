@@ -71,4 +71,9 @@ public class ChatGroupVO {
      * 群用户昵称
      */
     private String nickname;
+
+    /**
+     * 入群认证类型
+     */
+    private Integer authJoinType;
 }

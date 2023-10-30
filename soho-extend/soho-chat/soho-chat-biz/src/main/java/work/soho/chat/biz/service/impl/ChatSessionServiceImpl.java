@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import work.soho.chat.api.ChatMessage;
 import work.soho.chat.biz.domain.*;
 import work.soho.chat.biz.enums.ChatSessionEnums;
+import work.soho.chat.biz.enums.ChatSessionUserEnums;
 import work.soho.chat.biz.mapper.ChatCustomerServiceMapper;
 import work.soho.chat.biz.mapper.ChatSessionMapper;
 import work.soho.chat.biz.mapper.ChatSessionUserMapper;
@@ -284,6 +285,7 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
     public List<ChatSessionUser> getSessionUser(String sessionId) {
         LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, sessionId);
+        lambdaQueryWrapper.eq(ChatSessionUser::getStatus, ChatSessionUserEnums.Status.ACTIVE.getId());
         return chatSessionUserMapper.selectList(lambdaQueryWrapper);
     }
 

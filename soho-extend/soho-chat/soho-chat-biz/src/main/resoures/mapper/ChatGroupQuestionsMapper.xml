@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.chat.biz.mapper.ChatGroupQuestionsMapper">
+    <resultMap id="BaseResultMap" type="work.soho.chat.biz.domain.ChatGroupQuestions">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="groupId" column="group_id" jdbcType="INTEGER"/>
+        <id property="questions" column="questions" jdbcType="VARCHAR"/>
+        <id property="answer" column="answer" jdbcType="VARCHAR"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,group_id,questions,answer,updated_time,created_time
+    </sql>
+</mapper>
