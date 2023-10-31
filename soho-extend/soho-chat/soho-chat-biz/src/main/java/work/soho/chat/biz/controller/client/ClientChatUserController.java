@@ -86,7 +86,9 @@ public class ClientChatUserController {
      */
     @GetMapping()
     public R<ChatUser> userInfo(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
-        return R.success(chatUserService.getById(sohoUserDetails.getId()));
+        ChatUser chatUser = chatUserService.getById(sohoUserDetails.getId());
+        chatUser.setPassword(null);
+        return R.success(chatUser);
     }
 
     /**
