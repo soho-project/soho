@@ -23,6 +23,7 @@ import work.soho.common.data.upload.utils.UploadUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -76,6 +77,12 @@ public class ChatGroupServiceImpl extends ServiceImpl<ChatGroupMapper, ChatGroup
 
     @Override
     public void exitGroup(Long groupId, Long uid) {
+        //获取群用户
+        ChatGroup chatGroup = getById(groupId);
+        if(chatGroup.getMasterChatUid().equals(uid)) {
+            throw new RuntimeException("群主，不允许退出");
+        }
+
         LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ChatGroupUser::getChatUid, uid)
                 .eq(ChatGroupUser::getGroupId, groupId);
