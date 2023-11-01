@@ -248,6 +248,11 @@ public class ClientChatGroupController {
      */
     @DeleteMapping("/exit/{id}")
     public R<Boolean> exitGroup(@PathVariable Long id,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatGroup chatGroup = chatGroupService.getById(id);
+        if(chatGroup.equals(sohoUserDetails.getId())) {
+            return R.error("群主不能退出群聊");
+        }
+
         chatGroupService.exitGroup(id, sohoUserDetails.getId());
         //获取会话
         ChatSession session = chatSessionService.findSession(ChatSessionEnums.Type.GROUP_CHAT, id);
