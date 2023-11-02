@@ -9,6 +9,7 @@ import work.soho.chat.api.payload.PayloadBaseInterface;
 import work.soho.chat.biz.domain.ChatSession;
 import work.soho.chat.biz.domain.ChatSessionMessage;
 import work.soho.chat.biz.domain.ChatSessionUser;
+import work.soho.chat.biz.enums.ChatSessionUserEnums;
 import work.soho.chat.biz.service.*;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.longlink.api.sender.Sender;
@@ -49,6 +50,9 @@ public class ChatServiceImpl implements ChatService {
 
         for(ChatSessionUser chatSessionUser: sessionUsers) {
             log.info("当前转发消息用户信息： {}", chatSessionUser);
+            if(chatSessionUser.getIsShield() == ChatSessionUserEnums.IsShield.YES.getId()) {
+                return;
+            }
             //检查是否为发送用户
             if(chatSessionUser.getUserId().equals(Long.valueOf(inputChatMessage.getFromUid()))) {
                 //这是发送人
@@ -80,6 +84,11 @@ public class ChatServiceImpl implements ChatService {
 
         List<ChatSessionUser> updateSessionUserList = new ArrayList<>();
         chatSessionUserService.getSessionUserList(sessionId).forEach(item -> {
+            //检查设置了屏蔽会话消息的直接返回不做消息发送处理
+            if(item.getIsShield() == ChatSessionUserEnums.IsShield.YES.getId()) {
+                return;
+            }
+
             chatSessionMessageUserService.isRead(chatSessionMessage.getId(), item.getUserId());
             //非发送用户统计未读消息
             if(inputChatMessage.getFromUid().equals(String.valueOf(item.getUserId()))) {
