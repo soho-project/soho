@@ -24,6 +24,7 @@ import work.soho.chat.biz.enums.ChatSessionEnums;
 import work.soho.chat.biz.enums.ChatSessionUserEnums;
 import work.soho.chat.biz.req.BatchUpdateNotificationReq;
 import work.soho.chat.biz.service.*;
+import work.soho.chat.biz.vo.SessionUserVO;
 import work.soho.chat.biz.vo.UserSessionVO;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
@@ -62,6 +63,8 @@ public class ClientChatSessionController {
     private final ChatService chatService;
 
     private final ChatSessionMessageUserService chatSessionMessageUserService;
+
+    private final ChatUserFriendService chatUserFriendService;
 
     private final ChatUserService chatUserService;
 
@@ -417,13 +420,36 @@ public class ClientChatSessionController {
      * @return
      */
     @GetMapping("/sessionUsers")
-    public R<List<ChatSessionUser>> sessionUserList(Long sessionId, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+    public R<List<SessionUserVO>> sessionUserList(Long sessionId, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, sessionId);
         lambdaQueryWrapper.eq(ChatSessionUser::getStatus, ChatSessionEnums.Status.ACTIVE.getId());
         List<ChatSessionUser> list = chatSessionUserService.list(lambdaQueryWrapper);
+        //获取用户信息
+        List<Long> uids = list.stream().map(ChatSessionUser::getUserId).collect(Collectors.toList());
+        List<ChatUser> users = chatUserService.getBaseMapper().selectBatchIds(uids);
+        Map<Long,ChatUser> userMap = users.stream().collect(Collectors.toMap(ChatUser::getId, item->item));
+        //获取好友信息
+        LambdaQueryWrapper<ChatUserFriend> chatUserFriendLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        chatUserFriendLambdaQueryWrapper.eq(ChatUserFriend::getChatUid, sohoUserDetails.getId())
+                .in(ChatUserFriend::getFriendUid, uids);
+        Map<Long,ChatUserFriend> friendMap = chatUserFriendService.list(chatUserFriendLambdaQueryWrapper).stream().collect(Collectors.toMap(ChatUserFriend::getFriendUid,item->item));
 
-        return R.success(list);
+        //转换数据
+        List<SessionUserVO> results = list.stream().map(item->{
+            SessionUserVO sessionUserVO = BeanUtils.copy(item, SessionUserVO.class);
+            ChatUser chatUser = userMap.get(item.getUserId());
+            sessionUserVO.setAvatar(chatUser.getAvatar());
+            sessionUserVO.setUsername(chatUser.getUsername());
+            sessionUserVO.setNickname(chatUser.getNickname());
+            ChatUserFriend chatUserFriend = friendMap.get(item.getUserId());
+            if(chatUserFriend != null) {
+                sessionUserVO.setNotesName(chatUserFriend.getNotesName());
+            }
+            return sessionUserVO;
+        }).collect(Collectors.toList());
+
+        return R.success(results);
     }
 
     /**
