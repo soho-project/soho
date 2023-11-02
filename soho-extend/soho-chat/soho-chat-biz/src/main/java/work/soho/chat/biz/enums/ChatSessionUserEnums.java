@@ -17,4 +17,14 @@ public class ChatSessionUserEnums {
         private final int id;
         private final String name;
     }
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum IsShield {
+        NO(0,"否"),
+        YES(1, "是");
+
+        private final int id;
+        private final String name;
+    }
 }
