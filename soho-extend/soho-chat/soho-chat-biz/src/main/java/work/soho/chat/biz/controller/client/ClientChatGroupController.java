@@ -17,6 +17,7 @@ import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
 import work.soho.chat.biz.enums.*;
 import work.soho.chat.biz.req.CreateGroupReq;
+import work.soho.chat.biz.req.InviteJoinGroupReq;
 import work.soho.chat.biz.req.UpdateGroupAuthReq;
 import work.soho.chat.biz.service.*;
 import work.soho.chat.biz.vo.ChatGroupVO;
@@ -176,6 +177,46 @@ public class ClientChatGroupController {
     }
 
     /**
+     * 邀请用户入群
+     *
+     * @param inviteJoinGroupReq
+     * @param sohoUserDetails
+     * @return
+     */
+    @PostMapping("/inviteJoinGroup")
+    public R<ChatSession> inviteJoinGroup(@RequestBody InviteJoinGroupReq inviteJoinGroupReq,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        Assert.notNull(inviteJoinGroupReq.getSessionId(), "请正确传递参数");
+        Assert.isTrue(inviteJoinGroupReq.getChatUserIds()!=null && inviteJoinGroupReq.getChatUserIds().size()>0, "请传递邀请用户ID");
+        ChatSession chatSession = chatSessionService.getById(inviteJoinGroupReq.getSessionId());
+        Assert.isTrue(chatSession.getType() == ChatSessionEnums.Type.GROUP_CHAT.getId(), "非群聊不能邀请加群");
+        Long groupId = chatSession.getTrackId();
+        ChatGroup chatGroup = chatGroupService.getById(groupId);
+
+        //加入群组
+        chatGroupService.joinGroup(chatGroup.getId(), inviteJoinGroupReq.getChatUserIds());
+
+        //同步用户到会话
+        //同步群组数据到会话
+        LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatGroupUser::getGroupId, chatGroup.getId());
+        lambdaQueryWrapper.in(ChatGroupUser::getChatUid, inviteJoinGroupReq.getChatUserIds());
+        List<ChatGroupUser> chatGroupUsers = chatGroupUserService.list(lambdaQueryWrapper);
+        //创建/同步群信息到会话
+        chatSession = chatSessionService.groupSession(chatGroup, chatGroupUsers);
+        //统计会话用户信息
+        chatSessionService.syncInfo(chatSession.getId());
+        //发送邀请用户进入通知
+        ChatSession finalChatSession = chatSession;
+        chatGroupUsers.forEach(item->{
+            String msgText = item.getNickname() + " 加入群";
+            chatService.chat(new ChatMessage.Builder<SystemMessage>(finalChatSession.getId(), new SystemMessage.Builder().text(msgText).build()).build());
+        });
+
+        return R.success(chatSession);
+    }
+
+
+    /**
      * 更新群信息
      *
      * @param chatGroup
@@ -280,88 +321,6 @@ public class ClientChatGroupController {
         chatGroupService.joinGroup(id, uids);
         return R.success(true);
     }
-
-//    /**
-//     * 申请入群
-//     *
-//     * @param sohoUserDetails
-//     * @return
-//     */
-//    @PostMapping("/apply")
-//    public R<ChatGroupApply> apply(@RequestBody ChatGroupApply chatGroupApply, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
-//        ChatGroup chatGroup = chatGroupService.getById(chatGroupApply.getGroupId());
-//        Assert.notNull(chatGroup);
-//        //TODO 检查当前用户不在群里面
-//        chatGroupApply.setUpdatedTime(LocalDateTime.now());
-//        chatGroupApply.setCreatedTime(LocalDateTime.now());
-//        chatGroupApply.setChatUid(sohoUserDetails.getId());
-//        chatGroupApply.setStatus(ChatGroupApplyEnums.Status.PENDING_PROCESSING.getId());
-//        chatGroupApplyService.save(chatGroupApply);
-//        switch (chatGroup.getAuthJoinType()) {
-//            case 1: //可以直接入群
-//                break;
-//            case 2: //需要管理员同意
-//            case 4: //需要回复问题并且管理员同意
-//                sendJoinGroupInfo(chatGroup, chatGroupApply, sohoUserDetails);
-//                break;
-//            case 3: //需要正确回复问题
-//                LambdaQueryWrapper<ChatGroupQuestions> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-//                lambdaQueryWrapper.eq(ChatGroupQuestions::getGroupId, chatGroup.getId());
-//                lambdaQueryWrapper.last("limit 1");
-//                ChatGroupQuestions chatGroupQuestions = chatGroupQuestionsService.getOne(lambdaQueryWrapper);
-//                if(chatGroupQuestions != null
-//                        && chatGroupQuestions.getQuestions().equals(chatGroupApply.getAsk())
-//                        && chatGroupQuestions.getAnswer().equals(chatGroupApply.getAnswer())
-//                ) {
-//                    //TODO 认证通过直接添加到群里
-//                    System.out.println("已经正确回复问题， 待直接添加用户到群");
-//                    return R.success(chatGroupApply);
-//                }
-//                break;
-//            default:
-//                return R.error("本群禁止加入");
-//        }
-//        //将用户加入群
-//
-//        return R.success(chatGroupApply);
-//    }
-//
-//    /**
-//     * 将某个用户加入到群里
-//     *
-//     * @param chatGroup
-//     */
-//    private void sendJoinGroupInfo(ChatGroup chatGroup,ChatGroupApply chatGroupApply,SohoUserDetails sohoUserDetails) {
-//        //获取所有的群管理
-//        LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-//        lambdaQueryWrapper.eq(ChatGroupUser::getGroupId, chatGroup.getId())
-//                .eq(ChatGroupUser::getIsAdmin, ChatGroupUserEnums.IsAdmin.YES.getId());
-//        List<ChatGroupUser> groupUsers = chatGroupUserService.list(lambdaQueryWrapper);
-//
-//        //创建发送通知
-//        ChatUserNotice chatUserNotice = new ChatUserNotice();
-//        chatUserNotice.setChatUid(sohoUserDetails.getId());
-//        chatUserNotice.setStatus(ChatUserNoticeEnums.Status.PENDING_PROCESSING.getId());
-//        chatUserNotice.setType(ChatUserNoticeEnums.Type.GROUP.getType());
-//        chatUserNotice.setTrackingId(chatGroupApply.getId());
-//        chatUserNotice.setUpdatedTime(LocalDateTime.now());
-//        chatUserNotice.setCreatedTime(LocalDateTime.now());
-//        chatUserNoticeService.save(chatUserNotice);
-//
-//        //给管理员发送通知
-//        groupUsers.forEach(item->{
-//            //创建发送通知
-//            ChatUserNotice notice = new ChatUserNotice();
-//            notice.setChatUid(item.getChatUid());
-//            notice.setStatus(ChatUserNoticeEnums.Status.PENDING_PROCESSING.getId());
-//            notice.setType(ChatUserNoticeEnums.Type.GROUP.getType());
-//            notice.setTrackingId(chatGroupApply.getId());
-//            notice.setUpdatedTime(LocalDateTime.now());
-//            notice.setCreatedTime(LocalDateTime.now());
-//            chatUserNoticeService.save(notice);
-//        });
-//    }
-//
 
     /**
      * 上传聊天文件/图片

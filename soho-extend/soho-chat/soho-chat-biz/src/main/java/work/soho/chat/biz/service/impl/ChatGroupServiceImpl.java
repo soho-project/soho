@@ -22,10 +22,7 @@ import work.soho.common.data.avatar.utils.NinePatchAvatarGeneratorUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.InvalidPropertiesFormatException;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -91,6 +88,8 @@ public class ChatGroupServiceImpl extends ServiceImpl<ChatGroupMapper, ChatGroup
 
     @Override
     public void joinGroup(Long groupId, List<Long> uids) {
+        //获取用户信息
+        Map<Long,ChatUser> mapUsers = chatUserMapper.selectBatchIds(uids).stream().collect(Collectors.toMap(ChatUser::getId, item->item));
         uids.forEach(uid->{
             ChatGroupUser chatGroupUser = new ChatGroupUser();
             chatGroupUser.setChatUid(uid);
@@ -98,6 +97,12 @@ public class ChatGroupServiceImpl extends ServiceImpl<ChatGroupMapper, ChatGroup
             chatGroupUser.setIsAdmin(ChatGroupUserEnums.IsAdmin.NO.getId());
             chatGroupUser.setUpdatedTime(LocalDateTime.now());
             chatGroupUser.setCreatedTime(LocalDateTime.now());
+            ChatUser user = mapUsers.get(uid);
+            if(StringUtils.isNotBlank(user.getNickname())) {
+                chatGroupUser.setNickname(user.getNickname());
+            } else {
+                chatGroupUser.setNickname(user.getUsername());
+            }
             chatGroupUserMapper.insert(chatGroupUser);
         });
     }
