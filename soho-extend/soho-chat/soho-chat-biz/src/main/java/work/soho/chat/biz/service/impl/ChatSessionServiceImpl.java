@@ -16,6 +16,7 @@ import work.soho.chat.biz.mapper.ChatSessionUserMapper;
 import work.soho.chat.biz.mapper.ChatUserMapper;
 import work.soho.chat.biz.service.ChatSessionService;
 import work.soho.common.core.util.JacksonUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.avatar.utils.NinePatchAvatarGeneratorUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
 import work.soho.longlink.api.sender.Sender;
@@ -168,6 +169,10 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
                 chatSessionUser.setCreatedTime(LocalDateTime.now());
 //                chatSessionUser.setTitle(chatGroupUser.getNickname());
                 chatSessionUserMapper.insert(chatSessionUser);
+            } else {
+                chatSessionUser.setSessionNickname(StringUtils.isNotBlank(chatGroupUser.getNotesName()) ? chatGroupUser.getNotesName() : chatGroupUser.getNickname());
+                chatSessionUser.setUpdatedTime(LocalDateTime.now());
+                chatSessionUserMapper.updateById(chatSessionUser);
             }
         }
 

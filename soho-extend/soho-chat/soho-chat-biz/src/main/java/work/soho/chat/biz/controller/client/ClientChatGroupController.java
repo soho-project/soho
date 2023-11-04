@@ -3,6 +3,7 @@ package work.soho.chat.biz.controller.client;
 import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,9 +17,7 @@ import work.soho.chat.api.ChatMessage;
 import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
 import work.soho.chat.biz.enums.*;
-import work.soho.chat.biz.req.CreateGroupReq;
-import work.soho.chat.biz.req.InviteJoinGroupReq;
-import work.soho.chat.biz.req.UpdateGroupAuthReq;
+import work.soho.chat.biz.req.*;
 import work.soho.chat.biz.service.*;
 import work.soho.chat.biz.vo.ChatGroupVO;
 import work.soho.chat.biz.vo.GroupQuestionsVo;
@@ -281,6 +280,40 @@ public class ClientChatGroupController {
     }
 
     /**
+     * 获取自己在指定群的信息
+     *
+     * @param id
+     * @param sohoUserDetails
+     * @return
+     */
+    @GetMapping("/myGroupUser/{id}")
+    public R<ChatGroupUser> myGroupUser(@PathVariable Long id,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatGroup chatGroup = chatGroupService.getById(id);
+        Assert.notNull(chatGroup, "群不存在");
+        LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatGroupUser::getGroupId, chatGroup.getId())
+                .eq(ChatGroupUser::getChatUid, sohoUserDetails.getId());
+        ChatGroupUser chatGroupUser = chatGroupUserService.getOne(lambdaQueryWrapper);
+        return R.success(chatGroupUser);
+    }
+
+    /**
+     * 群组用户信息
+     *
+     * @param sohoUserDetails
+     * @return
+     */
+    @GetMapping("/groupUserList/{id}")
+    public R<List<ChatGroupUser>> groupUserList(@PathVariable Long id,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatGroup chatGroup = chatGroupService.getById(id);
+        Assert.notNull(chatGroup, "群不存在");
+        LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatGroupUser::getGroupId, id);
+        List<ChatGroupUser> list = chatGroupUserService.list(lambdaQueryWrapper);
+        return R.success(list);
+    }
+
+    /**
      * 退出群组
      *
      * @param id
@@ -417,6 +450,144 @@ public class ClientChatGroupController {
             chatGroupQuestionsService.save(chatGroupQuestions);
         });
 
+        return R.success(true);
+    }
+
+    /**
+     * 更新群用户昵称
+     *
+     * 接口修改权限为 1 本人  2 群管理员
+     *
+     * @param updateGroupNotesNameReq
+     * @param sohoUserDetails
+     * @return
+     */
+    @PutMapping("/updateGroupNotesName")
+    public R<Boolean> updateNotesName(@RequestBody UpdateGroupNotesNameReq updateGroupNotesNameReq, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        try {
+            ChatGroup chatGroup = chatGroupService.getById(updateGroupNotesNameReq.getGroupId());
+            Assert.notNull(chatGroup, "没有找到群");
+            ChatGroupUser chatGroupUser = chatGroupService.getChatGroupUser(chatGroup.getId(), updateGroupNotesNameReq.getUid());
+            Assert.notNull(chatGroupUser, "用户不存在");
+            if(!chatGroupUser.getChatUid().equals(sohoUserDetails.getId())) {
+                //检查当前用户是否为该群的管理员
+                ChatGroupUser adminChatGroupUser = chatGroupService.getChatGroupUser(chatGroup.getId(), sohoUserDetails.getId());
+                Assert.notNull(adminChatGroupUser, "您不是管理员");
+                if(adminChatGroupUser.getIsAdmin() == ChatGroupUserEnums.IsAdmin.NO.getId()) {
+                    throw new RuntimeException("无权操作");
+                }
+            }
+            //更新群用户信息
+            chatGroupUser.setNotesName(updateGroupNotesNameReq.getNotesName());
+            chatGroupUser.setUpdatedTime(LocalDateTime.now());
+            chatGroupUserService.updateById(chatGroupUser);
+            //同步到会话中心
+            List<ChatGroupUser> updateGroupUsers = new ArrayList<>();
+            updateGroupUsers.add(chatGroupUser);
+            chatSessionService.groupSession(chatGroup, updateGroupUsers);
+
+            return R.success(true);
+        } catch (Exception e) {
+            return R.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 更新设置群管理员
+     *
+     * @param updateGroupAdminReq
+     * @param sohoUserDetails
+     * @return
+     */
+    @PutMapping("/updateGroupAdmin")
+    public R<Boolean> updateGroupAdmin(@RequestBody UpdateGroupAdminReq updateGroupAdminReq,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatGroup chatGroup = chatGroupService.getById(updateGroupAdminReq.getGroupId());
+        Assert.notNull(chatGroup, "没有找到群");
+        ChatGroupUser chatGroupUser = chatGroupService.getChatGroupUser(chatGroup.getId(), updateGroupAdminReq.getUid());
+        Assert.notNull(chatGroupUser, "用户不存在");
+        //检查当前用户是否为该群的管理员
+        ChatGroupUser adminChatGroupUser = chatGroupService.getChatGroupUser(chatGroup.getId(), sohoUserDetails.getId());
+        Assert.notNull(adminChatGroupUser, "您不是管理员");
+        if(adminChatGroupUser.getIsAdmin() == ChatGroupUserEnums.IsAdmin.NO.getId()) {
+            throw new RuntimeException("无权操作");
+        }
+        //检查是否为超级管理员
+        Assert.isTrue(chatGroup.getMasterChatUid().equals(sohoUserDetails.getId()), "无权操作");
+
+        if(updateGroupAdminReq.getIsAdmin() == 1) {
+            chatGroupUser.setIsAdmin(ChatGroupUserEnums.IsAdmin.YES.getId());
+        } else {
+            chatGroupUser.setIsAdmin(ChatGroupUserEnums.IsAdmin.NO.getId());
+        }
+        chatGroupUser.setUpdatedTime(LocalDateTime.now());
+        chatGroupUserService.updateById(chatGroupUser);
+        return R.success(true);
+    }
+
+    /**
+     * 创建群组禁言
+     *
+     * @param createGroupBannedReq
+     * @param sohoUserDetails
+     * @return
+     */
+    @PostMapping("/createGroupBanned")
+    public R<Boolean> createGroupBanned(@RequestBody CreateGroupBannedReq createGroupBannedReq,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatGroup chatGroup = chatGroupService.getById(createGroupBannedReq.getGroupId());
+        Assert.notNull(chatGroup, "群组不存在");
+        ChatGroupUser requestGroupUser = chatGroupService.getChatGroupUser(chatGroup.getId(), sohoUserDetails.getId());
+
+        ChatGroupUser chatGroupUser = chatGroupService.getChatGroupUser(chatGroup.getId(), createGroupBannedReq.getUid());
+        Assert.notNull(chatGroupUser, "用户不存在");
+
+        LocalDateTime now = LocalDateTime.now();
+        now.plusSeconds(createGroupBannedReq.getSecond());
+        chatGroupUser.setBannedEndTime(now);
+        chatGroupUser.setUpdatedTime(LocalDateTime.now());
+        chatGroupUserService.updateById(chatGroupUser);
+
+        //同步到会话
+        ChatSession chatSession = chatSessionService.findSession(ChatSessionEnums.Type.GROUP_CHAT, chatGroup.getId());
+        ChatSessionUser chatSessionUser = chatSessionService.getSessionUser(chatSession.getId(), chatGroupUser.getChatUid());
+        chatSessionUser.setCanSend(ChatSessionUserEnums.CanSend.NO.getId());
+        chatSessionUser.setUpdatedTime(LocalDateTime.now());
+        chatSessionUserService.updateById(chatSessionUser);
+        //TODO 调用延时队列恢复会话发送消息能力
+
+        //发送邀请用户进入通知
+        ChatSession finalChatSession = chatSession;
+        String msgText = chatGroupUser.getNickname() + " 被禁言 " + (createGroupBannedReq.getSecond()/60) + " 分钟";
+        chatService.chat(new ChatMessage.Builder<SystemMessage>(finalChatSession.getId(), new SystemMessage.Builder().text(msgText).build()).build());
+        return R.success(true);
+    }
+
+    /**
+     * 删除指定群用户
+     *
+     * 踢人功能
+     *
+     * @param groupId
+     * @param uid
+     * @param sohoUserDetails
+     * @return
+     */
+    @DeleteMapping("/deleteChatUser/{groupId}/{uid}")
+    public R<Boolean> deleteChatUser(@PathVariable Long groupId,@PathVariable Long uid,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatGroup chatGroup = chatGroupService.getById(groupId);
+        Assert.notNull(chatGroup, "群不存在");
+        //检查请求用户是否为管理员
+        Assert.isTrue(chatGroupService.isAdmin(groupId, sohoUserDetails.getId()), "您不是管理员");
+
+        chatGroupService.exitGroup(chatGroup.getId(), uid);
+        //获取会话
+        ChatSession session = chatSessionService.findSession(ChatSessionEnums.Type.GROUP_CHAT, groupId);
+        ChatSessionUser chatSessionUser = chatSessionUserService.getSessionUser(session.getId(), sohoUserDetails.getId());
+        chatSessionUser.setStatus(ChatSessionUserEnums.Status.DELETED.getId());
+        chatSessionUser.setUpdatedTime(LocalDateTime.now());
+        chatSessionUserService.updateById(chatSessionUser);
+        //更新会话统计信息
+        chatSessionService.syncInfo(chatSessionUser.getSessionId());
+        //TODO 发送消息给管理员，告知用户退出
         return R.success(true);
     }
 }

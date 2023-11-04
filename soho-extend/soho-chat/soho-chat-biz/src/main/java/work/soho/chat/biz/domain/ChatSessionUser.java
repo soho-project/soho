@@ -104,4 +104,10 @@ public class ChatSessionUser implements Serializable {
      */
     @TableField(value = "unread_count")
     private Integer unreadCount;
+
+    /**
+     * 能否发送消息
+     */
+    @TableField(value = "can_send")
+    private Integer canSend;
 }

@@ -17,6 +17,7 @@ import work.soho.longlink.api.sender.Sender;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Log4j2
@@ -43,6 +44,14 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void chat(ChatMessage inputChatMessage) {
         List<ChatSessionUser> sessionUsers = chatSessionService.getSessionUser(inputChatMessage.getToSessionId());
+
+        //检查用户是否为禁言用户
+        Long fromUid = Long.valueOf(inputChatMessage.getFromUid());
+        Optional<ChatSessionUser> sendSessionUser = sessionUsers.stream().filter(item->item.getUserId().equals(fromUid)).findFirst();
+        if(sendSessionUser.isPresent() && sendSessionUser.get().getCanSend() == ChatSessionUserEnums.CanSend.NO.getId()) {
+            //用户被禁言，无法发送消息
+            return;
+        }
 
         //存储会话消息
         saveMessage(inputChatMessage);
