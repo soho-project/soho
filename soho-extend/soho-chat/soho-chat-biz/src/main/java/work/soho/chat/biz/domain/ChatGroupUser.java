@@ -62,4 +62,10 @@ public class ChatGroupUser implements Serializable {
     @TableField(value = "nickname")
     private String nickname;
 
+    /**
+     * 禁言最后时间
+     */
+    @TableField(value = "banned_end_time")
+    private LocalDateTime bannedEndTime;
+
 }

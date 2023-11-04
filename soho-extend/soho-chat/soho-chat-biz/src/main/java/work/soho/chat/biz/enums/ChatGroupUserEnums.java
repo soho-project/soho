@@ -4,7 +4,9 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 public class ChatGroupUserEnums {
-
+    /**
+     * 是否是管理员
+     */
     @RequiredArgsConstructor
     @Getter
     public enum IsAdmin {

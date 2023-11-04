@@ -27,4 +27,16 @@ public class ChatSessionUserEnums {
         private final int id;
         private final String name;
     }
+
+    /**
+     * 是否能发送消息
+     */
+    @Getter
+    @RequiredArgsConstructor
+    public enum CanSend {
+        NO(0,"否"),
+        YES(1,"是");
+        private final int id;
+        private final String name;
+    }
 }

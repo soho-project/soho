@@ -2,6 +2,8 @@ package work.soho.common.quartz.util;
 
 import cn.hutool.extra.spring.SpringUtil;
 import lombok.experimental.UtilityClass;
+import work.soho.common.core.util.StringUtils;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
@@ -119,7 +121,9 @@ public class InvokeUtil {
             } else if(item.endsWith("D")) {
                 params.add(new Object[]{Double.valueOf(item.substring(0, item.length()-1)), Double.class});
             } else {
-                params.add(new Object[]{Integer.valueOf(item), Integer.class});
+                if(StringUtils.isNotBlank(item)) {
+                    params.add(new Object[]{Integer.valueOf(item), Integer.class});
+                }
             }
         }
         return params;
