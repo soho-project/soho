@@ -588,4 +588,56 @@ public class ClientChatGroupController {
         //TODO 发送消息给管理员，告知用户退出
         return R.success(true);
     }
+
+    /**
+     * 解散群
+     *
+     * @param id
+     * @param sohoUserDetails
+     * @return
+     */
+    @DeleteMapping("/dissolveGroup/{id}")
+    public R<Boolean> dissolveGroup(@PathVariable Long id,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatGroup chatGroup = chatGroupService.getById(id);
+        Assert.notNull(chatGroup, "群不存在");
+        LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatGroupUser::getGroupId, id);
+        chatGroupUserService.remove(lambdaQueryWrapper);
+
+        //移出会话
+        ChatSession chatSession = chatSessionService.findSession(ChatSessionEnums.Type.GROUP_CHAT, id);
+        Assert.notNull(chatSession, "会话不存在");
+        LambdaQueryWrapper<ChatSessionUser> chatSessionUserLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        chatSessionUserLambdaQueryWrapper.eq(ChatSessionUser::getSessionId, chatSession.getId());
+        chatSessionUserService.remove(chatSessionUserLambdaQueryWrapper);
+        chatSessionService.removeById(chatSession);
+        return R.success(true);
+    }
+
+    /**
+     * 转让群
+     *
+     * @param id
+     * @param uid
+     * @param sohoUserDetails
+     * @return
+     */
+    @PutMapping("/transferGroup/{id}/{uid}")
+    public R<Boolean> transferGroup(@PathVariable Long id,@PathVariable Long uid, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ChatGroup chatGroup = chatGroupService.getById(id);
+        Assert.notNull(chatGroup, "群聊不存在");
+        Assert.isTrue(chatGroup.getMasterChatUid().equals(sohoUserDetails.getId()), "您不是群所有者，无权操作");
+        //检查接收用户是否为群用户
+        LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatGroupUser::getGroupId, id)
+                        .eq(ChatGroupUser::getChatUid, uid);
+        ChatGroupUser nextMasterChatUser = chatGroupUserService.getOne(lambdaQueryWrapper);
+        Assert.notNull(nextMasterChatUser, "接收人不在群中");
+        chatGroup.setMasterChatUid(uid);
+        chatGroupService.updateById(chatGroup);
+        nextMasterChatUser.setIsAdmin(ChatGroupUserEnums.IsAdmin.YES.getId());
+        nextMasterChatUser.setUpdatedTime(LocalDateTime.now());
+        chatGroupUserService.updateById(nextMasterChatUser);
+        return R.success(true);
+    }
 }
