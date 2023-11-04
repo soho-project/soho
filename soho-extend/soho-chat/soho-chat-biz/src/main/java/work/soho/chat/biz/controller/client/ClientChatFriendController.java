@@ -24,10 +24,12 @@ import work.soho.chat.biz.vo.UserVO;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
+import work.soho.longlink.api.sender.QueryLongLink;
 
 import java.time.LocalDateTime;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -42,6 +44,8 @@ public class ClientChatFriendController {
     private final ChatSessionUserService chatSessionUserService;
 
     private final ChatSessionService chatSessionService;
+
+    private final QueryLongLink queryLongLink;
 
     /**
      * 查询好友列表
@@ -179,5 +183,21 @@ public class ClientChatFriendController {
         ChatUser chatUser = chatUserService.getById(chatSessionUser.getUserId());
         BaseUserVO baseUserVO = BeanUtils.copy(chatUser, BaseUserVO.class);
         return R.success(baseUserVO);
+    }
+
+    /**
+     * 获取好友用户在线状态
+     *
+     * @param sohoUserDetails
+     * @return
+     */
+    @GetMapping("/getFriendUsersStatus")
+    public R<Map<String,Integer>> getFriendUsersStatus(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        LambdaQueryWrapper<ChatUserFriend> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatUserFriend::getChatUid, sohoUserDetails.getId());
+        List<ChatUserFriend> friends = chatUserFriendService.list(lambdaQueryWrapper);
+        List<String> uids = friends.stream().map(item->String.valueOf(item.getFriendUid())).collect(Collectors.toList());
+        uids.add(String.valueOf(sohoUserDetails.getId()));
+        return R.success(queryLongLink.getOnlineStatus(uids));
     }
 }
