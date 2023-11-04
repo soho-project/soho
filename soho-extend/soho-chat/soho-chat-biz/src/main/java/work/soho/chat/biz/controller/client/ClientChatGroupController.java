@@ -540,9 +540,7 @@ public class ClientChatGroupController {
         ChatGroupUser chatGroupUser = chatGroupService.getChatGroupUser(chatGroup.getId(), createGroupBannedReq.getUid());
         Assert.notNull(chatGroupUser, "用户不存在");
 
-        LocalDateTime now = LocalDateTime.now();
-        now.plusSeconds(createGroupBannedReq.getSecond());
-        chatGroupUser.setBannedEndTime(now);
+        chatGroupUser.setBannedEndTime(LocalDateTime.now().plusSeconds(createGroupBannedReq.getSecond()));
         chatGroupUser.setUpdatedTime(LocalDateTime.now());
         chatGroupUserService.updateById(chatGroupUser);
 
