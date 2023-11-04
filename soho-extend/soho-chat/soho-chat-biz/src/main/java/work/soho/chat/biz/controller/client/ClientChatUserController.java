@@ -34,10 +34,12 @@ import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.sms.Message;
 import work.soho.common.data.sms.utils.SmsUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
+import work.soho.longlink.api.sender.QueryLongLink;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/chat/chat/chatUser")
@@ -45,6 +47,8 @@ import java.util.*;
 public class ClientChatUserController {
 
     private final ChatUserService chatUserService;
+
+    private final QueryLongLink queryLongLink;
 
 //    private final JavaMailSender javaMailSender;
 
@@ -315,5 +319,19 @@ public class ClientChatUserController {
         } catch (Exception e) {
             return R.error(e.getMessage());
         }
+    }
+
+    /**
+     * 获取用户当前状态
+     *
+     * @param sohoUserDetails
+     * @return
+     */
+    @GetMapping("/onlineStatus")
+    public R<Integer> onlineStatus(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ArrayList<String> uids = new ArrayList<>();
+        uids.add(String.valueOf(sohoUserDetails.getId()));
+        Map<String, Integer> status = queryLongLink.getOnlineStatus(uids);
+        return R.success(status.get(String.valueOf(sohoUserDetails.getId())));
     }
 }
