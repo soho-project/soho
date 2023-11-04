@@ -1,5 +1,6 @@
 package work.soho.chat.biz.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.stereotype.Service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -47,8 +48,10 @@ public class ChatGroupUserServiceImpl extends ServiceImpl<ChatGroupUserMapper, C
      * @param chatGroupUser
      */
     public void restoreUserBanned(ChatGroupUser chatGroupUser) {
-        chatGroupUser.setBannedEndTime(chatGroupUser.getBannedEndTime().plusYears(999));
+        chatGroupUser.setBannedEndTime(null);
         updateById(chatGroupUser);
+
+        getBaseMapper().update(chatGroupUser, Wrappers.<ChatGroupUser>lambdaUpdate().set(ChatGroupUser::getBannedEndTime, null).eq(ChatGroupUser::getId, chatGroupUser.getId()));
 
         //更新会话用户状态
         ChatSession chatSession = chatSessionService.findSession(ChatSessionEnums.Type.GROUP_CHAT, chatGroupUser.getGroupId());
