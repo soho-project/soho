@@ -25,6 +25,11 @@ public class SessionUserVO {
     private String sessionNickname;
 
     /**
+     * 能否发送消息
+     */
+    private Integer canSend;
+
+    /**
      * 用户头像
      */
     private String avatar;
