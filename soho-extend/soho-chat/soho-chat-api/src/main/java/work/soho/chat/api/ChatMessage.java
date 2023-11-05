@@ -21,37 +21,72 @@ public class ChatMessage<T> {
      */
     private T message;
 
-    public static class Builder<T> {
+    public static ChatMessageBuilder builder() {
+        return new ChatMessageBuilder();
+    }
+
+    public static class ChatMessageBuilder<T> {
         private String fromUid;
         private String toSessionId;
         private T message;
 
-        public Builder(Long toSessionId, T message) {
+        public ChatMessageBuilder() {
+        }
+
+        public ChatMessageBuilder(T message, Long fromUid) {
+            this(message, String.valueOf(fromUid));
+        }
+        public ChatMessageBuilder(T message, String fromUid) {
+            this.fromUid = fromUid;
+            this.message = message;
+        }
+
+        public ChatMessageBuilder(T message) {
+            this(message, (Long) null);
+        }
+
+        public ChatMessageBuilder(Long toSessionId, T message) {
             this(String.valueOf(toSessionId), message, "0");
         }
 
-        public Builder(String toSessionId, T message) {
+        public ChatMessageBuilder(String toSessionId, T message) {
             this(toSessionId, message, "0");
         }
 
-
-        public Builder(String toSessionId, T message, String fromUid) {
+        public ChatMessageBuilder(String toSessionId, T message, String fromUid) {
             this.fromUid = fromUid;
             this.toSessionId = toSessionId;
             this.message = message;
         }
 
-        public Builder fromUid(String fromUid) {
+        /**
+         * @param toSessionId
+         * @param message
+         * @param fromUid
+         */
+        public ChatMessageBuilder(Long toSessionId, T message, String fromUid) {
+            this(String.valueOf(toSessionId), message, String.valueOf(fromUid));
+        }
+
+        public ChatMessageBuilder fromUid(String fromUid) {
             this.fromUid = fromUid;
             return this;
         }
 
-        public Builder toSessionId(String toSessionId) {
+        public ChatMessageBuilder fromUid(Long fromUid) {
+            return fromUid(String.valueOf(fromUid));
+        }
+
+        public ChatMessageBuilder toSessionId(String toSessionId) {
             this.toSessionId = toSessionId;
             return this;
         }
 
-        public Builder message(T message) {
+        public ChatMessageBuilder toSessionId(Long toSessionId) {
+            return toSessionId(String.valueOf(toSessionId));
+        }
+
+        public ChatMessageBuilder message(T message) {
             this.message = message;
             return this;
         }

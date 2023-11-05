@@ -18,6 +18,7 @@ import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import work.soho.api.admin.service.AdminConfigApiService;
 import work.soho.chat.api.ChatMessage;
 import work.soho.chat.api.payload.Command;
+import work.soho.chat.api.payload.RealTimeCmd;
 import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
 import work.soho.chat.biz.enums.ChatSessionEnums;
@@ -306,10 +307,14 @@ public class ClientChatSessionController {
         chatGroupService.updateById(chatGroup);
 
         //发送系统消息
-        chatService.chat(new ChatMessage.Builder<SystemMessage>(originChatSession.getId(),
+        chatService.chat(new ChatMessage.ChatMessageBuilder<SystemMessage>(originChatSession.getId(),
                 new SystemMessage.Builder().text(
                         StringUtils.isNotEmpty(chatSession.getTitle()) ? sohoUserDetails.getUsername() + " 修改了群名 " + chatSession.getTitle() : sohoUserDetails.getUsername() + " 管理员更新了群头像"
                 ).build()).build());
+
+        //通知客户端刷新会话
+        chatService.send2Session(chatSession, ChatMessage.builder().toSessionId(chatSession.getId()).fromUid(0l)
+                .message(RealTimeCmd.builder().name("refreshSessionList").params(null).build()).build());
 
         return R.success(Boolean.TRUE);
     }

@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import work.soho.chat.api.ChatMessage;
+import work.soho.chat.api.payload.RealTimeCmd;
 import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
 import work.soho.chat.biz.enums.*;
@@ -170,7 +171,7 @@ public class ClientChatGroupController {
         ChatSession chatSession = chatSessionService.groupSession(chatGroup, chatGroupUsers);
 
         //发送系统通知
-        chatService.chat(new ChatMessage.Builder<SystemMessage>(chatSession.getId(), new SystemMessage.Builder().text("创建群聊： " + chatSession.getTitle()).build()).build());
+        chatService.chat(new ChatMessage.ChatMessageBuilder<SystemMessage>(chatSession.getId(), new SystemMessage.Builder().text("创建群聊： " + chatSession.getTitle()).build()).build());
 
         return R.success(chatSession);
     }
@@ -208,7 +209,7 @@ public class ClientChatGroupController {
         ChatSession finalChatSession = chatSession;
         chatGroupUsers.forEach(item->{
             String msgText = item.getNickname() + " 加入群";
-            chatService.chat(new ChatMessage.Builder<SystemMessage>(finalChatSession.getId(), new SystemMessage.Builder().text(msgText).build()).build());
+            chatService.chat(new ChatMessage.ChatMessageBuilder<SystemMessage>(finalChatSession.getId(), new SystemMessage.Builder().text(msgText).build()).build());
         });
 
         return R.success(chatSession);
@@ -484,7 +485,12 @@ public class ClientChatGroupController {
             //同步到会话中心
             List<ChatGroupUser> updateGroupUsers = new ArrayList<>();
             updateGroupUsers.add(chatGroupUser);
-            chatSessionService.groupSession(chatGroup, updateGroupUsers);
+            ChatSession chatSession = chatSessionService.groupSession(chatGroup, updateGroupUsers);
+
+            //通知客户端群用户信息变更
+            //通知客户端群用户信息变更
+            chatService.send2Session(chatSession, ChatMessage.builder().toSessionId(chatSession.getId()).fromUid(0l)
+                    .message(RealTimeCmd.builder().name("groupUserChange").params(null).build()).build());
 
             return R.success(true);
         } catch (Exception e) {
@@ -555,7 +561,7 @@ public class ClientChatGroupController {
         //发送邀请用户进入通知
         ChatSession finalChatSession = chatSession;
         String msgText = chatGroupUser.getNickname() + " 被禁言 " + (createGroupBannedReq.getSecond()/60) + " 分钟";
-        chatService.chat(new ChatMessage.Builder<SystemMessage>(finalChatSession.getId(), new SystemMessage.Builder().text(msgText).build()).build());
+        chatService.chat(new ChatMessage.ChatMessageBuilder<SystemMessage>(finalChatSession.getId(), new SystemMessage.Builder().text(msgText).build()).build());
         return R.success(true);
     }
 
@@ -611,6 +617,11 @@ public class ClientChatGroupController {
         chatSessionUserLambdaQueryWrapper.eq(ChatSessionUser::getSessionId, chatSession.getId());
         chatSessionUserService.remove(chatSessionUserLambdaQueryWrapper);
         chatSessionService.removeById(chatSession);
+
+        //通知客户端解散群
+        chatService.send2Session(chatSession, ChatMessage.builder().toSessionId(chatSession.getId()).fromUid(0l)
+                .message(RealTimeCmd.builder().name("dissolveGroup").params(null).build()).build());
+
         return R.success(true);
     }
 
