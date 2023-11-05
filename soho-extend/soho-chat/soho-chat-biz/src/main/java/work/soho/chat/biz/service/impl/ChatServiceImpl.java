@@ -1,6 +1,7 @@
 package work.soho.chat.biz.service.impl;
 
 import cn.hutool.core.lang.Assert;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -112,5 +113,30 @@ public class ChatServiceImpl implements ChatService {
         if(updateSessionUserList.size()>0) {
             chatSessionUserService.saveOrUpdateBatch(updateSessionUserList);
         }
+    }
+
+    /**
+     * 发送消息到指定用户
+     *
+     * @param users
+     * @param inputChatMessage
+     */
+    public void send2Users(List<ChatSessionUser> users, ChatMessage inputChatMessage) {
+        users.forEach(chatSessionUser->{
+            sender.sendToUid(String.valueOf(chatSessionUser.getUserId()), JacksonUtils.toJson(inputChatMessage));
+        });
+    }
+
+    public void send2Session(ChatSession session, ChatMessage inputChatMessage) {
+        //获取会话用户信息
+        LambdaQueryWrapper<ChatSessionUser> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, session.getId());
+        List<ChatSessionUser> users = chatSessionUserService.list(lambdaQueryWrapper);
+        send2Users(users, inputChatMessage);
+    }
+
+    public void send2Session(Long sessionId, ChatMessage inputChatMessage) {
+        ChatSession chatSession = chatSessionService.getById(sessionId);
+        send2Session(chatSession, inputChatMessage);
     }
 }
