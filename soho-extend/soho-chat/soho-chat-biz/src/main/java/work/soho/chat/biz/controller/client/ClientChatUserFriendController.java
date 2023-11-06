@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
-import work.soho.api.admin.annotation.Node;
 import work.soho.chat.biz.domain.ChatSession;
 import work.soho.chat.biz.domain.ChatSessionUser;
 import work.soho.chat.biz.domain.ChatUser;
@@ -23,11 +22,9 @@ import work.soho.chat.biz.vo.UserFriendVO;
 import work.soho.chat.biz.vo.UserVO;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
-import work.soho.common.core.util.PageUtils;
 import work.soho.longlink.api.sender.QueryLongLink;
 
 import java.time.LocalDateTime;
-import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,7 +33,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/chat/chat/chatUserFriend")
 @RequiredArgsConstructor
-public class ClientChatFriendController {
+public class ClientChatUserFriendController {
     private final ChatUserFriendService chatUserFriendService;
 
     private final ChatUserService chatUserService;
