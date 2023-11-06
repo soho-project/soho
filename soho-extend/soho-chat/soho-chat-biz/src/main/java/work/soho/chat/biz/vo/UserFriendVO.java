@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 public class UserFriendVO implements Serializable {
@@ -80,6 +81,22 @@ public class UserFriendVO implements Serializable {
     private Integer sex;
 
     /**
+     * 年龄
+     */
+    private Integer age;
+
+    /**
+     * 地址
+     */
+    private String address;
+
+    /**
+     * 生日
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private Date birthday;
+
+    /**
      * 用户头像
      */
     @TableField(value = "avatar")
@@ -90,5 +107,7 @@ public class UserFriendVO implements Serializable {
      */
     @TableField(value = "introduction")
     private String introduction;
+
+
 
 }
