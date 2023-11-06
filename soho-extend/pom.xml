@@ -29,5 +29,6 @@
         <module>soho-chat</module>
         <module>soho-groovy</module>
         <module>soho-upload</module>
+        <module>soho-open</module>
     </modules>
 </project>
