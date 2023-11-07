@@ -1,17 +1,10 @@
 package work.soho.chat.biz.controller.client;
 
 import cn.hutool.core.lang.Assert;
-import cn.hutool.extra.mail.MailAccount;
-import cn.hutool.extra.mail.MailUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import io.swagger.models.auth.In;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.MimeType;
@@ -19,8 +12,9 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.api.admin.service.EmailApiService;
+import work.soho.api.admin.service.SmsApiService;
 import work.soho.chat.api.Constants;
-import work.soho.chat.biz.domain.ChatSessionUser;
 import work.soho.chat.biz.domain.ChatUser;
 import work.soho.chat.biz.req.UpdateEmailReq;
 import work.soho.chat.biz.req.UpdatePasswordReq;
@@ -32,15 +26,11 @@ import work.soho.common.core.support.SpringContextHolder;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.StringUtils;
-import work.soho.common.data.sms.Message;
-import work.soho.common.data.sms.utils.SmsUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
 import work.soho.longlink.api.sender.QueryLongLink;
-
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @Log4j2
@@ -52,13 +42,12 @@ public class ClientChatUserController {
 
     private final QueryLongLink queryLongLink;
 
-    private final JavaMailSender javaMailSender;
+    private final EmailApiService emailApiService;
+
+    private final SmsApiService smsApiService;
 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
-
-    @Value("${spring.mail.username}")
-    private String mailFrom;
 
     /**
      * 获取访客TOKEN
@@ -197,14 +186,7 @@ public class ClientChatUserController {
             Integer code = random.nextInt(8999) + 1000;
             redisTemplate.opsForValue().set("phone:" + chatUser.getPhone(), code);
             map.put("code", String.valueOf(code));
-            Message message = new Message();
-            message.setSignName("igogo推")
-                    .setPhoneNumbers(chatUser.getPhone())
-                    .setTemplateCode("SMS_240363553")
-                    .setOutId(String.valueOf(IDGeneratorUtils.snowflake().longValue()))
-                    .setParams(map);
-            //默认通道发送短信
-            SmsUtils.sendSms(message);
+            smsApiService.sendSms(chatUser.getPhone(), "code", map);
             return R.success(true);
         } catch (Exception e) {
             return R.error(e.getMessage());
@@ -250,14 +232,10 @@ public class ClientChatUserController {
             Random random = new Random();
             Integer code = random.nextInt(8999) + 1000;
             redisTemplate.opsForValue().set("email:" + chatUser.getEmail(), code);
-            //TODO 检查邮箱是否重复
-            SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
-            simpleMailMessage.setFrom(mailFrom);
-            simpleMailMessage.setTo(chatUser.getEmail());
-            simpleMailMessage.setSubject("邮箱认证");
-            simpleMailMessage.setText("本次验证码为： "+ String.valueOf(code) +"; 请勿告诉他人");
-            simpleMailMessage.setSentDate(new Date());
-            javaMailSender.send(simpleMailMessage);
+//            //TODO 检查邮箱是否重复
+            Map<String, Object> model = new HashMap<>();
+            model.put("code", code);
+            emailApiService.sendEmail(chatUser.getEmail(), "code", model);
 
             return R.success(true);
         } catch (Exception e) {
