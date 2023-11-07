@@ -246,7 +246,7 @@ public class ClientChatSessionController {
             if(lastMessageId!=null) {
                 sessionMessageLambdaQueryWrapper.lt(ChatSessionMessage::getId, lastMessageId);
             }
-            sessionMessageLambdaQueryWrapper.orderByDesc(ChatSessionMessage::getId);
+            sessionMessageLambdaQueryWrapper.orderByDesc(ChatSessionMessage::getCreatedTime);
             sessionMessageLambdaQueryWrapper.last("limit 100");
             List<ChatSessionMessage> list = chatSessionMessageService.list(sessionMessageLambdaQueryWrapper);
             //对结果进行顺序排序
