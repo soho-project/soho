@@ -5,5 +5,5 @@ import lombok.Data;
 @Data
 public class UpdatePhoneReq {
     private String phone;
-    private String code;
+    private Integer code;
 }

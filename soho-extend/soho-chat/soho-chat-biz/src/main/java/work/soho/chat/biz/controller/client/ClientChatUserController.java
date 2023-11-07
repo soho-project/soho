@@ -6,6 +6,7 @@ import cn.hutool.extra.mail.MailUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.models.auth.In;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -42,6 +43,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
+@Log4j2
 @RequestMapping("/chat/chat/chatUser")
 @RequiredArgsConstructor
 public class ClientChatUserController {
@@ -50,7 +52,7 @@ public class ClientChatUserController {
 
     private final QueryLongLink queryLongLink;
 
-//    private final JavaMailSender javaMailSender;
+    private final JavaMailSender javaMailSender;
 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
@@ -193,12 +195,12 @@ public class ClientChatUserController {
             HashMap<String, String> map  = new HashMap<>();
             Random random = new Random();
             Integer code = random.nextInt(8999) + 1000;
-            redisTemplate.opsForValue().set("phone:" + chatUser.getEmail(), code);
+            redisTemplate.opsForValue().set("phone:" + chatUser.getPhone(), code);
             map.put("code", String.valueOf(code));
             Message message = new Message();
-            message.setSignName("青春无极限")
+            message.setSignName("igogo推")
                     .setPhoneNumbers(chatUser.getPhone())
-                    .setTemplateCode("1392711")
+                    .setTemplateCode("SMS_240363553")
                     .setOutId(String.valueOf(IDGeneratorUtils.snowflake().longValue()))
                     .setParams(map);
             //默认通道发送短信
@@ -227,12 +229,15 @@ public class ClientChatUserController {
             }
             //验证code
             Integer storeCode = (Integer) redisTemplate.opsForValue().get("phone:" + updatePhoneReq.getPhone());
+            log.info("验证码{},{}",storeCode, updatePhoneReq.getCode());
             if(storeCode.equals(updatePhoneReq.getCode())) {
                 chatUser.setPhone(updatePhoneReq.getPhone());
                 chatUser.setUpdatedTime(LocalDateTime.now());
                 chatUserService.updateById(chatUser);
+                return R.success(true);
+            } else {
+                return R.error("验证码错误");
             }
-            return R.success(true);
         } catch (Exception e) {
             return R.error(e.getMessage());
         }
@@ -246,22 +251,13 @@ public class ClientChatUserController {
             Integer code = random.nextInt(8999) + 1000;
             redisTemplate.opsForValue().set("email:" + chatUser.getEmail(), code);
             //TODO 检查邮箱是否重复
-//        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
-//        simpleMailMessage.setFrom(mailFrom);
-//        simpleMailMessage.setTo(chatUser.getEmail());
-//        simpleMailMessage.setSubject("邮箱认证");
-//        simpleMailMessage.setText("本次验证码为： "+ String.valueOf(code) +"; 请勿告诉他人");
-//        simpleMailMessage.setSentDate(new Date());
-////        javaMailSender.send(simpleMailMessage);
-//
-//        MailAccount account = new MailAccount();
-//        account.setHost("smtp.qiye.aliyun.com");
-//        account.setPort(25);
-//        account.setAuth(true);
-//        account.setUser("test@lisa.org.cn");
-//        account.setPass("Admin123");
-//        account.setFrom("test@lisa.org.cn");
-//        MailUtil.sendText("i@liufang.org.cn",  "标题", "邮件内容");
+            SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
+            simpleMailMessage.setFrom(mailFrom);
+            simpleMailMessage.setTo(chatUser.getEmail());
+            simpleMailMessage.setSubject("邮箱认证");
+            simpleMailMessage.setText("本次验证码为： "+ String.valueOf(code) +"; 请勿告诉他人");
+            simpleMailMessage.setSentDate(new Date());
+            javaMailSender.send(simpleMailMessage);
 
             return R.success(true);
         } catch (Exception e) {
@@ -282,14 +278,19 @@ public class ClientChatUserController {
             Assert.notNull(updateEmailReq.getEmail(), "邮箱不能为空");
             Assert.notNull(updateEmailReq.getCode(), "认证码不能为空");
             ChatUser chatUser = chatUserService.getById(sohoUserDetails.getId());
-            Integer code  = (Integer) redisTemplate.opsForValue().get("email:" + updateEmailReq.getCode());
+            Integer code  = (Integer) redisTemplate.opsForValue().get("email:" + updateEmailReq.getEmail());
+            Assert.notNull(code, "请重新发送验证码");
+            log.info("验证码,{},{}", code, updateEmailReq.getCode());
             if(code.equals(updateEmailReq.getCode())) {
                 chatUser.setEmail(updateEmailReq.getEmail());
                 chatUser.setUpdatedTime(LocalDateTime.now());
                 chatUserService.updateById(chatUser);
+                return R.success(true);
+            } else {
+                return R.error("验证码错误");
             }
-            return R.success(true);
         } catch (Exception e) {
+            e.printStackTrace();
             return R.error(e.getMessage());
         }
     }
