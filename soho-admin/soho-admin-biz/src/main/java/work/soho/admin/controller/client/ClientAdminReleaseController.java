@@ -28,7 +28,7 @@ public class ClientAdminReleaseController {
      */
     @GetMapping("/getByPlatform")
     public R<AdminRelease> getByPlatform(String name) {
-        Optional<Integer> platformType = adminDictApiService.getOptionsByCode("release_platform").stream().filter(item->item.getLabel().equals(name)).map(item->item.getValue()).findFirst();
+        Optional<Integer> platformType = adminDictApiService.getOptionsByCode("adminRelease-platformType").stream().filter(item->item.getLabel().equals(name)).map(item->item.getValue()).findFirst();
         if(!platformType.isPresent()) {
             return R.error("不存在");
         }
