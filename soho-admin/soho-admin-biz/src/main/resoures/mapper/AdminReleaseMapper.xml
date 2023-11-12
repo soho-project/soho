@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.admin.mapper.AdminReleaseMapper">
+    <resultMap id="BaseResultMap" type="work.soho.admin.domain.AdminRelease">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="version" column="version" jdbcType="VARCHAR"/>
+        <id property="notes" column="notes" jdbcType="VARCHAR"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="url" column="url" jdbcType="VARCHAR"/>
+        <id property="platformType" column="platform_type" jdbcType="TINYINT"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,version,notes,created_time,updated_time,url,platform_type
+    </sql>
+</mapper>
