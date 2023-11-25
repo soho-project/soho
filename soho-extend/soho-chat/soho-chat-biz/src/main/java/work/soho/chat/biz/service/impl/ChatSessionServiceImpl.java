@@ -232,7 +232,8 @@ public class ChatSessionServiceImpl extends ServiceImpl<ChatSessionMapper, ChatS
             if(type.getId() == ChatSessionEnums.Type.PRIVATE_CHAT.getId()) {
                 Long otherUid = uids.stream().filter(id -> id != toUid).findFirst().orElse(toUid);
                 chatSessionUser.setAvatar(mapUsers.get(otherUid).getAvatar());
-                chatSessionUser.setSessionNickname(mapUsers.get(otherUid).getNickname());
+                //昵称还是用自己的
+                chatSessionUser.setSessionNickname(mapUsers.get(chatSessionUser.getUserId()).getNickname());
             }
             chatSessionUserMapper.insert(chatSessionUser);
         }

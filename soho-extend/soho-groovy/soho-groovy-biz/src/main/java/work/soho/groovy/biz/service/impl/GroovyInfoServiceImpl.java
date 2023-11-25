@@ -9,11 +9,13 @@ import work.soho.groovy.biz.domain.GroovyInfo;
 import work.soho.groovy.biz.mapper.GroovyInfoMapper;
 import work.soho.groovy.biz.service.GroovyExecutorService;
 import work.soho.groovy.biz.service.GroovyInfoService;
+import work.soho.groovy.exception.NotFoundException;
+import work.soho.groovy.service.GroovyInfoApiService;
 
 @RequiredArgsConstructor
 @Service
 public class GroovyInfoServiceImpl extends ServiceImpl<GroovyInfoMapper, GroovyInfo>
-    implements GroovyInfoService{
+    implements GroovyInfoService, GroovyInfoApiService {
 
     private final GroovyExecutorService groovyExecutor;;
 
@@ -40,7 +42,9 @@ public class GroovyInfoServiceImpl extends ServiceImpl<GroovyInfoMapper, GroovyI
      */
     public Object loadObjectByName(String name) {
         GroovyInfo groovyInfo = getByName(name);
-        Assert.notNull(groovyInfo, "找不到任务名为：" + name + "的代码");
+        if(groovyInfo == null) {
+            throw new NotFoundException();
+        }
         return this.groovyExecutor.loadObjectFromCode(groovyInfo.getCode());
     }
 
