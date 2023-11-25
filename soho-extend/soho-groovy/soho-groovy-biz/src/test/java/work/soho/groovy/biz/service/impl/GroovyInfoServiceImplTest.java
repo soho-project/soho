@@ -6,6 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import work.soho.groovy.biz.service.GroovyInfoService;
+import work.soho.groovy.service.GroovyInfoApiService;
 import work.soho.test.TestApp;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,10 +16,10 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(classes = TestApp.class)
 class GroovyInfoServiceImplTest {
     @Autowired
-    private GroovyInfoService groovyInfoService;
+    private GroovyInfoApiService groovyInfoApiService;
 
     @Test
     void executor() {
-        this.groovyInfoService.executor("testRun");
+        this.groovyInfoApiService.executor("testRun");
     }
 }

@@ -21,18 +21,19 @@ class ChatAiServiceImplTest {
     @Test
     void chat() {
         System.out.println("test");
-        chatAi.chat("你好");
-        chatAi.chat("你可以模拟电商智能客服吗？");
+        //chatAi.chat("你好");
+        String rBody = chatAi.chat("你可以模拟电商智能客服吗？");
+        System.out.println(rBody);
     }
 
-    @Test
-    void createImage() {
-        chatAi.createImage("为Java开源项目SOHO创建一个logo;上面的文字只能是英文或者中文");
-    }
-
-    @Test
-    void audio2Text() {
-        String text = chatAi.audio2Text("/home/fang/Music/Monster-YOASOBI.128.mp3");
-        System.out.println(text);
-    }
+//    @Test
+//    void createImage() {
+//        chatAi.createImage("为Java开源项目SOHO创建一个logo;上面的文字只能是英文或者中文");
+//    }
+//
+//    @Test
+//    void audio2Text() {
+//        String text = chatAi.audio2Text("/home/fang/Music/Monster-YOASOBI.128.mp3");
+//        System.out.println(text);
+//    }
 }

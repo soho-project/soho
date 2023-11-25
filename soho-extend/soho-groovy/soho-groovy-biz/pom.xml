@@ -61,6 +61,12 @@
             <version>1.0-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
-<!--        /test-->
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-groovy-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <!--        /test-->
     </dependencies>
 </project>

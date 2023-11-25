@@ -9,19 +9,19 @@ public interface ChatAiService {
      */
     String chat(String userInput);
 
-    /**
-     * 根据文本创建图片
-     *
-     * @param userInput
-     * @return
-     */
-    String createImage(String userInput);
-
-    /**
-     * 语音文件转文本
-     *
-     * @param url
-     * @return
-     */
-    String audio2Text(String url);
+//    /**
+//     * 根据文本创建图片
+//     *
+//     * @param userInput
+//     * @return
+//     */
+//    String createImage(String userInput);
+//
+//    /**
+//     * 语音文件转文本
+//     *
+//     * @param url
+//     * @return
+//     */
+//    String audio2Text(String url);
 }
