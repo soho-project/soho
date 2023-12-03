@@ -9,3 +9,14 @@
 - [验证码](captcha.md)
 - [鉴权](security.md)
 - [短信](sms.md)
+- [延时队列](delayed-queue.md)
+- [excel](excel.md)
+- [项目鉴权](security.md)
+
+模块相关文档
+
+- [文件服务](uploadFile.md)
+- [邮件服务](email-service.md)
+- [短信服务](sms-service.md)
+- [系统配置服务](sys-config.md)
+- [单元测试服务](test.md)

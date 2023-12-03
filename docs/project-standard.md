@@ -59,7 +59,7 @@ idea插件自行下载
  * ${NAME}
  * </p>
  *
- * @author livk
+ * @author fang
  * @date ${DATE}
  */
 ```
@@ -82,8 +82,28 @@ http://localhost:8080/api-docs/swagger-ui/
 
 Action
 
-    @Nde(value = "unique-key", visible = 1, describe = "describe")
+    @Node(value = "unique-key", visible = 1, describe = "describe")
 
 @Log 对方法调用进行日志记载
 
     @Log("log key word")
+
+URL路由命名规范
+=============
+
+
+    /[角色名]/[业务模块名]/[Controller Name]/[业务名；可选]
+
+
+- 角色名
+
+  用来鉴权的角色；例如 admin, chat, user
+
+- 业务模块名
+
+  例如： chat, code, content
+
+- 控制器名
+
+  一般控制器名称同业务紧密相关
+****
