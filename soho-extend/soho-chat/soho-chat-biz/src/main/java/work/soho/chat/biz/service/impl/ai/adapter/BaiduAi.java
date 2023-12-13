@@ -1,9 +1,11 @@
 package work.soho.chat.biz.service.impl.ai.adapter;
 
 import okhttp3.*;
+import work.soho.chat.api.request.AiRequest;
 import work.soho.chat.api.service.ai.AiApiService;
 
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.Map;
 
 public class BaiduAi implements AiApiService {
@@ -43,5 +45,10 @@ public class BaiduAi implements AiApiService {
             e.printStackTrace();
         }
         return answer;
+    }
+
+    @Override
+    public String chatQuery(LinkedList<AiRequest.Message> list) {
+        return null;
     }
 }

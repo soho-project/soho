@@ -12,9 +12,12 @@ import com.alibaba.dashscope.exception.InputRequiredException;
 import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.alibaba.dashscope.tokenizers.Tokenization;
 import com.alibaba.dashscope.tokenizers.TokenizationResult;
+import work.soho.chat.api.request.AiRequest;
 import work.soho.chat.api.service.ai.AiApiService;
 
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 /**
  * api key: sk-6b01bbd0351c45d8a662ba25145fdb9e
@@ -53,6 +56,41 @@ public class AliyunAi implements AiApiService {
             e.printStackTrace();
         }
 
+        return null;
+    }
+
+    @Override
+    public String chatQuery(LinkedList<AiRequest.Message> list) {
+        try {
+            LinkedList<Message> requestList = new LinkedList<>();
+            Iterator<AiRequest.Message> iterator = list.iterator();
+            while(iterator.hasNext()) {
+                AiRequest.Message message = iterator.next();
+                if(AiRequest.Role.USER.getName().equals(message.getRole())) {
+                    requestList.add(Message.builder().role(Role.USER.getValue()).content(message.getContent()).build());
+                } else if(AiRequest.Role.SYSTEM.getName().equals(message.getRole())) {
+                    requestList.add(Message.builder().role(Role.SYSTEM.getValue()).content(message.getContent()).build());
+                } else if(AiRequest.Role.ASSISTANT.getName().equals(message.getRole())) {
+                    requestList.add(Message.builder().role(Role.ASSISTANT.getValue()).content(message.getContent()).build());
+                }
+            }
+
+            Constants.apiKey=aliyunAiOptions.getApiKey();
+            Generation gen = new Generation();
+
+            QwenParam param =
+                    QwenParam.builder().model("qwen-14b-chat")
+                            .messages(requestList)
+                            .resultFormat(QwenParam.ResultFormat.MESSAGE)
+                            .topP(0.8)
+                            .enableSearch(true)
+                            .build();
+            GenerationResult result = gen.call(param);
+            System.out.println(result);
+            return result.getOutput().getChoices().get(0).getMessage().getContent();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
