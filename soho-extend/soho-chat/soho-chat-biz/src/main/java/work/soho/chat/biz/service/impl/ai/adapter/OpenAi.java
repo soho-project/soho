@@ -15,6 +15,7 @@ import lombok.extern.log4j.Log4j2;
 import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.annotation.Value;
 import retrofit2.Retrofit;
+import work.soho.chat.api.request.AiRequest;
 import work.soho.chat.api.service.ai.AiApiService;
 
 import java.io.File;
@@ -23,6 +24,7 @@ import java.net.Proxy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -34,6 +36,11 @@ import static com.theokanning.openai.service.OpenAiService.*;
 public class OpenAi implements AiApiService {
     @Override
     public String query(String question) {
+        return null;
+    }
+
+    @Override
+    public String chatQuery(LinkedList<AiRequest.Message> list) {
         return null;
     }
 
