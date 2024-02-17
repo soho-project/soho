@@ -30,5 +30,6 @@
         <module>soho-groovy</module>
         <module>soho-upload</module>
         <module>soho-open</module>
+        <module>soho-mobile-verification</module>
     </modules>
 </project>
