@@ -1,15 +1,18 @@
 package work.soho.admin;
 
+import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import work.soho.test.TestApp;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -18,7 +21,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
-@SpringBootTest(classes = AdminApplication.class)
+@SpringBootTest(classes = TestApp.class)
+@ActiveProfiles("local")
+@Log4j2
 class MvcTest {
 
 	private MockMvc mockMvc;
@@ -41,7 +46,7 @@ class MvcTest {
 	void testLogin() throws Exception {
 		System.out.println("=============================================================================");
 		MvcResult mvcResult = mockMvc.perform(
-				get("/login").param("username", "15873164073")
+				get("/login").param("username", "admin")
 						.param("password", "123456")
 		).andExpect(status().isOk())
 			.andReturn();

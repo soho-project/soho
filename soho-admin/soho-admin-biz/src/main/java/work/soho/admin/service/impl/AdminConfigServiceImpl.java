@@ -2,12 +2,21 @@ package work.soho.admin.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.RequiredArgsConstructor;
 import work.soho.admin.domain.AdminConfig;
+import work.soho.admin.domain.AdminConfigGroup;
+import work.soho.admin.mapper.AdminConfigGroupMapper;
 import work.soho.admin.service.AdminConfigService;
 import work.soho.admin.mapper.AdminConfigMapper;
 import org.springframework.stereotype.Service;
+import work.soho.api.admin.request.AdminConfigInitRequest;
 import work.soho.api.admin.service.AdminConfigApiService;
+import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.JacksonUtils;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 /**
 * @author i
@@ -15,8 +24,12 @@ import work.soho.common.core.util.JacksonUtils;
 * @createDate 2022-04-05 23:01:25
 */
 @Service("sohoConfig")
+@RequiredArgsConstructor
 public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, AdminConfig>
     implements AdminConfigService, AdminConfigApiService {
+
+    private final AdminConfigGroupMapper adminConfigGroupMapper;
+
     /**
      * 根据类型进行数据反序列化
      *
@@ -65,6 +78,42 @@ public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, Admin
             //ignore
         }
         return defaultValue;
+    }
+
+    /**
+     * 初始化配置信息
+     *
+     * @param adminConfigInitRequest
+     * @return
+     */
+    public Boolean initItems(AdminConfigInitRequest adminConfigInitRequest) {
+        AdminConfigInitRequest.Group group = adminConfigInitRequest.getGroup();
+        if(group != null) {
+            LambdaQueryWrapper<AdminConfigGroup> adminConfigGroupLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            adminConfigGroupLambdaQueryWrapper.eq(AdminConfigGroup::getKey, group.getKey());
+            AdminConfigGroup dbGroup = adminConfigGroupMapper.selectOne(adminConfigGroupLambdaQueryWrapper);
+            if(dbGroup == null) {
+                AdminConfigGroup configGroup = BeanUtils.copy(group, AdminConfigGroup.class);
+                configGroup.setCreatedTime(LocalDateTime.now());
+                adminConfigGroupMapper.insert(configGroup);
+            }
+        }
+
+        ArrayList<AdminConfigInitRequest.Item> items = adminConfigInitRequest.getItems();
+        ArrayList<AdminConfig> saveDataList = (ArrayList<AdminConfig>) items.stream().filter(item -> {
+            LambdaQueryWrapper<AdminConfig> adminConfigLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            adminConfigLambdaQueryWrapper.eq(AdminConfig::getKey, item.getKey());
+            AdminConfig adminConfig = getOne(adminConfigLambdaQueryWrapper);
+            return adminConfig == null;
+        }).map(item -> {
+            AdminConfig adminConfig = BeanUtils.copy(item, AdminConfig.class);
+            adminConfig.setCreatedTime(LocalDateTime.now());
+            adminConfig.setUpdatedTime(LocalDateTime.now());
+            adminConfig.setGroupKey(group.getKey());
+            return adminConfig;
+        }).collect(Collectors.toList());
+
+        return saveBatch(saveDataList);
     }
 }
 
