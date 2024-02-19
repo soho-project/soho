@@ -39,13 +39,10 @@ class AdminConfigServiceImplTest {
 
     @Test
     void initItems() {
-        AdminConfigInitRequest.Group group = new AdminConfigInitRequest.Group();
-        group.setName("test");
-        group.setKey("test");
-
+        AdminConfigInitRequest.Group group = AdminConfigInitRequest.Group.builder().name("test").key("test").build();
         ArrayList<AdminConfigInitRequest.Item> list = new ArrayList<>();
 
-        AdminConfigInitRequest.Item item = new AdminConfigInitRequest.Item();
+        AdminConfigInitRequest.Item item = AdminConfigInitRequest.Item.builder().build();
         list.add(item);
         item.setKey("test");
         item.setType(AdminConfigInitRequest.ItemType.TEXT.getType());
@@ -53,9 +50,9 @@ class AdminConfigServiceImplTest {
         item.setGroupKey(group.getKey());
         item.setValue("test");
 
-        AdminConfigInitRequest adminConfigInitRequest = new AdminConfigInitRequest();
-        adminConfigInitRequest.setGroup(group);
-        adminConfigInitRequest.setItems(list);
-        adminConfigService.initItems(adminConfigInitRequest);
+        ArrayList<AdminConfigInitRequest.Group> groups = new ArrayList<>();
+        groups.add(group);
+
+        adminConfigService.initItems(AdminConfigInitRequest.builder().items(list).groupList(groups).build());
     }
 }
