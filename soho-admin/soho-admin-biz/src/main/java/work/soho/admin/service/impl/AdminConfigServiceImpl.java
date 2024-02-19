@@ -87,16 +87,17 @@ public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, Admin
      * @return
      */
     public Boolean initItems(AdminConfigInitRequest adminConfigInitRequest) {
-        AdminConfigInitRequest.Group group = adminConfigInitRequest.getGroup();
-        if(group != null) {
-            LambdaQueryWrapper<AdminConfigGroup> adminConfigGroupLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            adminConfigGroupLambdaQueryWrapper.eq(AdminConfigGroup::getKey, group.getKey());
-            AdminConfigGroup dbGroup = adminConfigGroupMapper.selectOne(adminConfigGroupLambdaQueryWrapper);
-            if(dbGroup == null) {
-                AdminConfigGroup configGroup = BeanUtils.copy(group, AdminConfigGroup.class);
-                configGroup.setCreatedTime(LocalDateTime.now());
-                adminConfigGroupMapper.insert(configGroup);
-            }
+        if(adminConfigInitRequest.getGroupList() != null) {
+            adminConfigInitRequest.getGroupList().stream().forEach(group -> {
+                LambdaQueryWrapper<AdminConfigGroup> adminConfigGroupLambdaQueryWrapper = new LambdaQueryWrapper<>();
+                adminConfigGroupLambdaQueryWrapper.eq(AdminConfigGroup::getKey, group.getKey());
+                AdminConfigGroup dbGroup = adminConfigGroupMapper.selectOne(adminConfigGroupLambdaQueryWrapper);
+                if(dbGroup == null) {
+                    AdminConfigGroup configGroup = BeanUtils.copy(group, AdminConfigGroup.class);
+                    configGroup.setCreatedTime(LocalDateTime.now());
+                    adminConfigGroupMapper.insert(configGroup);
+                }
+            });
         }
 
         ArrayList<AdminConfigInitRequest.Item> items = adminConfigInitRequest.getItems();
@@ -109,7 +110,6 @@ public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, Admin
             AdminConfig adminConfig = BeanUtils.copy(item, AdminConfig.class);
             adminConfig.setCreatedTime(LocalDateTime.now());
             adminConfig.setUpdatedTime(LocalDateTime.now());
-            adminConfig.setGroupKey(group.getKey());
             return adminConfig;
         }).collect(Collectors.toList());
 
