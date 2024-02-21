@@ -3,6 +3,7 @@ package work.soho.mobile.verification.controller.mobile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import work.soho.common.core.result.R;
+import work.soho.mobile.verification.annotations.RequireValidToken;
 import work.soho.mobile.verification.api.service.VerificationServiceApi;
 import work.soho.mobile.verification.config.SohoMobileVerificationConfig;
 import work.soho.mobile.verification.request.SaveMsgRequest;
@@ -28,11 +29,9 @@ public class IndexController {
      * @return
      */
     @PostMapping("pushMsg")
+    @RequireValidToken(token = "mobile-verification-android-access-ey")
     public R<Boolean> pushMsg(@RequestBody SaveMsgRequest saveMsgRequest) {
         try {
-            System.out.printf("is runging....", saveMsgRequest.getMsg());
-            System.out.printf("data: {}", saveMsgRequest);
-            System.out.println(saveMsgRequest);
             verificationService.pushMsg(saveMsgRequest.getPhoneNumber(), saveMsgRequest.getMsg());
             return R.success(true);
         } catch (Exception e) {
