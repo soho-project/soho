@@ -29,7 +29,7 @@ public class IndexController {
      * @return
      */
     @PostMapping("pushMsg")
-    @RequireValidToken(token = "mobile-verification-android-access-ey")
+    @RequireValidToken(token = "mobile-verification-android-access-token")
     public R<Boolean> pushMsg(@RequestBody SaveMsgRequest saveMsgRequest) {
         try {
             verificationService.pushMsg(saveMsgRequest.getPhoneNumber(), saveMsgRequest.getMsg());
