@@ -17,7 +17,11 @@ public class SohoMobileVerificationConfig implements InitializingBean {
 
     private final AdminConfigApiService adminConfigApiService;
 
+    private final static String DEFAULT_GROUP = "public";
+
     private final static String PHONE_SMS_NUMBERS = "receiving-verification-codes-numbers";
+
+    private final static String ANDROID_ACCESS_KEY = "mobile-verification-android-access-token";
 
     /**
      * 获取接收短信的手机号码
@@ -36,12 +40,13 @@ public class SohoMobileVerificationConfig implements InitializingBean {
     public void afterPropertiesSet() throws Exception {
         AdminConfigInitRequest.Item item = AdminConfigInitRequest.Item.builder()
                 .key(PHONE_SMS_NUMBERS)
-                .groupKey("public")
+                .groupKey(DEFAULT_GROUP)
                 .explain("接收手机短信的手机号码")
                 .type(AdminConfigInitRequest.ItemType.TEXT.getType())
                 .build();
         ArrayList<AdminConfigInitRequest.Item> items = new ArrayList<>();
         items.add(item);
+        items.add(AdminConfigInitRequest.Item.builder().key(ANDROID_ACCESS_KEY).groupKey(DEFAULT_GROUP).value("123456").type(AdminConfigInitRequest.ItemType.TEXT.getType()).explain("Android端访问密钥").build());
         adminConfigApiService.initItems(AdminConfigInitRequest.builder().items(items).build());
     }
 }
