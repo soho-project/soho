@@ -29,9 +29,7 @@ public class GroovyInfoServiceImpl extends ServiceImpl<GroovyInfoMapper, GroovyI
     public Object executor(String name) {
         GroovyInfo groovyInfo = getByName(name);
         Assert.notNull(groovyInfo, "找不到任务名为：" + name + "的代码");
-        Object o = this.groovyExecutor.execute(groovyInfo.getCode());
-        System.out.println(o);
-        return null;
+        return this.groovyExecutor.execute(groovyInfo.getCode());
     }
 
     /**
