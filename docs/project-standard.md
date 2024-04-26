@@ -76,6 +76,7 @@ http://localhost:6677/doc.html
 
 配置测试获取验证码：
 
+    # 参考文档 https://gitee.com/xiaoym/knife4j/wikis/AfterScript
     var code=ke.response.data.code;
     if(code==2000){
       //判断,如果服务端响应code是8200才执行操作
