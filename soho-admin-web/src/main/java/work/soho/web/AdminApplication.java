@@ -3,6 +3,8 @@ package work.soho.web;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 @SpringBootApplication(scanBasePackages = {
 		"work.soho"
@@ -11,6 +13,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 		, "work.soho.*.mapper"
 		, "work.soho.**.mapper"
 })
+//@EnableSwagger2()
 public class AdminApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(AdminApplication.class);
