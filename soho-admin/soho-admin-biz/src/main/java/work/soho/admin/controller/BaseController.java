@@ -1,9 +1,9 @@
 package work.soho.admin.controller;
 
 import com.github.pagehelper.PageHelper;
-import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import work.soho.common.core.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -12,8 +12,8 @@ public class BaseController {
      * 启动默认参数分页
      */
     public void startPage() {
-        Integer pageNum = 1;
-        Integer pageSize = 20;
+        int pageNum = 1;
+        int pageSize = 20;
         ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if(servletRequestAttributes == null) {
             return;

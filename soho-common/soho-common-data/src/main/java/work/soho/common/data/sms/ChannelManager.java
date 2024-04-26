@@ -6,6 +6,7 @@ import work.soho.common.core.support.SpringContextHolder;
 import work.soho.common.data.sms.channel.aliyun.AliyunSender;
 import work.soho.common.data.sms.channel.tencent.TencentSender;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 
 public class ChannelManager {
@@ -29,7 +30,7 @@ public class ChannelManager {
      * @throws InstantiationException
      * @throws IllegalAccessException
      */
-    public Sender getChannelByName(String name) throws InstantiationException, IllegalAccessException {
+    public Sender getChannelByName(String name) throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         String configName = CONFIG_PREFIX + name;
         Environment environment = SpringContextHolder.getBean(Environment.class);
         String type = environment.getProperty(configName + ".type");
@@ -37,7 +38,7 @@ public class ChannelManager {
         if(channelTypes.get(type) == null) {
             throw new IllegalInstantException("请传递正确的短信发送通道信息； 配置项错误：" + configName + ".type");
         }
-        Sender send = channelTypes.get(type).newInstance();
+        Sender send = channelTypes.get(type).getDeclaredConstructor().newInstance();
         send.loadProperties(configName + ".config");
         return send;
     }

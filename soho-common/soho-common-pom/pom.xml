@@ -11,6 +11,7 @@
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <soho-common.version>1.0-SNAPSHOT</soho-common.version>
         <disruptor.version>3.4.4</disruptor.version>
         <mybatis-spring.version>2.2.1</mybatis-spring.version>

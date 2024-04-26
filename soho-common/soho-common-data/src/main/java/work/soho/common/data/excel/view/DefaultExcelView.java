@@ -2,6 +2,7 @@ package work.soho.common.data.excel.view;
 
 import org.apache.poi.hssf.usermodel.HSSFDataFormat;
 import org.apache.poi.ss.usermodel.*;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.web.servlet.view.document.AbstractXlsView;
 import work.soho.common.data.excel.annotation.ExcelColumn;
 import work.soho.common.data.excel.model.ExcelModel;
@@ -24,11 +25,9 @@ public class DefaultExcelView extends AbstractXlsView {
     }
 
     @Override
-    protected void buildExcelDocument(Map<String, Object> model, Workbook workbook, HttpServletRequest request, HttpServletResponse response) throws Exception {
+    protected void buildExcelDocument(@NotNull Map<String, Object> model, Workbook workbook, @NotNull HttpServletRequest request, HttpServletResponse response) throws Exception {
         ExcelModel excelModel = new ExcelModel();
-        model.forEach((key, value)->{
-            excelModel.put(key, value);
-        });
+        excelModel.putAll(model);
 
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/ms-excel");
