@@ -66,7 +66,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                 // 过滤请求
                 .authorizeRequests()
                 // 对于登录login 验证码captchaImage 和其他放行的目录 允许匿名访问"/citylife/front/**"
-                .antMatchers("/login", "/login/**", "/captcha", "/client/api/**", "/guest/**").permitAll()
+                .antMatchers("/login", "/login/**", "/captcha", "/client/api/**", "/guest/**",
+                        "/api-docs/**" , "/v3/api-docs/**" //swagger-ui
+                        , "/swagger-resources/**" , "/webjars/**"
+                ).permitAll()
                 .antMatchers(
                         HttpMethod.GET,
                         "/*.html",

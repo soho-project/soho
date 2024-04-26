@@ -64,9 +64,29 @@ idea插件自行下载
  */
 ```
 
-Api
+Api文档
 
-http://localhost:8080/api-docs/swagger-ui/
+http://localhost:6677/swagger-ui/index.html
+http://localhost:6677/doc.html
+
+开启Swagger:
+
+    # 关闭 Swagger
+    springfox.documentation.enabled=false
+
+配置测试获取验证码：
+
+    var code=ke.response.data.code;
+    if(code==2000){
+      //判断,如果服务端响应code是8200才执行操作
+      //获取token
+      var token=ke.response.data.payload.token;
+      //1、如何参数是Header，则设置当前逻辑分组下的全局Header
+      ke.global.setHeader("Authorization",token);
+      //2、如果全局参数是query类型,则设置当前逻辑分组下的全局Parameter,开发者自行选择
+      //ke.global.setParameter("token",token);
+    }
+
 
 ```text
 |--soho
