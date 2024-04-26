@@ -7,7 +7,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import work.soho.api.admin.annotation.Node;
 import work.soho.admin.domain.AdminRoleResource;
@@ -19,6 +18,7 @@ import work.soho.admin.domain.AdminRole;
 import work.soho.api.admin.vo.AdminRoleVo;
 import work.soho.api.admin.vo.OptionsRoleVo;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;

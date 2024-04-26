@@ -90,10 +90,10 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
      * @return
      */
     public HashMap<String, AdminResource> getResourceByUid(Long uid) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        LambdaQueryWrapper<AdminRoleUser> ruLqw = new LambdaQueryWrapper();
+        LambdaQueryWrapper<AdminRoleUser> ruLqw = new LambdaQueryWrapper<>();
         ruLqw.eq(AdminRoleUser::getUserId, uid);
         List<AdminRoleUser> roleUsers = adminRoleUserService.list(ruLqw);
-        if(roleUsers.size() == 0) {
+        if(roleUsers.isEmpty()) {
             return null;
         }
         List<Long> roleIds = roleUsers.stream().map(item->item.getRoleId()).collect(Collectors.toList());
@@ -101,7 +101,7 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
         LambdaQueryWrapper<AdminRoleResource> arLqw = new LambdaQueryWrapper<>();
         arLqw.in(AdminRoleResource::getRoleId, roleIds);
         List<AdminRoleResource> adminRoleResourcesList = adminRoleResourceService.list(arLqw);
-        if(adminRoleResourcesList.size() == 0) {
+        if(adminRoleResourcesList.isEmpty()) {
             return null;
         }
         List<Long> resourceIds = adminRoleResourcesList.stream().map(item->item.getResourceId()).collect(Collectors.toList());

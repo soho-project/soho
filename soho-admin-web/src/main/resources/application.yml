@@ -30,6 +30,12 @@
         max-idle: 8
         max-wait: -1ms
         min-idle: 0
+  mail:
+    host: smtp.ym.163.com
+    port: 993
+    protocol: smtp
+    username: aaaa@soho.work
+    password: xxxxxxx
 redisson:
   nodeAddress: redis://192.168.0.7:6379
 server:
@@ -111,3 +117,5 @@ soho:
     store:
       enable: true
       drive: black-hole
+sms:
+  defaultChannel:
