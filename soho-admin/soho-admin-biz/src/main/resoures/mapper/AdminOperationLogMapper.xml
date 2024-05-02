@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.admin.mapper.AdminOperationLogMapper">
+    <resultMap id="BaseResultMap" type="work.soho.admin.domain.AdminOperationLog">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="adminUserId" column="admin_user_id" jdbcType="VARCHAR"/>
+        <id property="method" column="method" jdbcType="VARCHAR"/>
+        <id property="path" column="path" jdbcType="VARCHAR"/>
+        <id property="params" column="params" jdbcType="VARCHAR"/>
+        <id property="content" column="content" jdbcType="VARCHAR"/>
+        <id property="response" column="response" jdbcType="VARCHAR"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,admin_user_id,method,path,params,content,response,updated_time,created_time
+    </sql>
+</mapper>
