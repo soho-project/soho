@@ -38,6 +38,15 @@ class TemporalTableColServiceImplTest {
     }
 
     @Test
+    void insertRecodeTimeout() throws InterruptedException {
+        for (int i = 0; i < 100; i++) {
+            Thread.sleep(1000);
+            temporalTableColService.insertData(1L, System.currentTimeMillis(), "" + System.currentTimeMillis());
+        }
+
+    }
+
+    @Test
     void getDataList() throws IoTDBConnectionException, StatementExecutionException {
         List<TemporalTableCol> colList = temporalTableColService.listByIds(new ArrayList<>(List.of(1)));
         SessionDataSet dataSet = temporalTableColService.getDataList(colList, null,1000L, 0L, "Time desc");
