@@ -5,7 +5,6 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.experimental.UtilityClass;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import work.soho.admin.common.security.service.SohoSecurityUserDetailsService;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 
 import java.util.Date;
@@ -35,7 +34,11 @@ public class SecurityUtils {
      * @return
      */
     public Long getLoginUserId() {
-        return getLoginUser().getId();
+        try {
+            return getLoginUser().getId();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
