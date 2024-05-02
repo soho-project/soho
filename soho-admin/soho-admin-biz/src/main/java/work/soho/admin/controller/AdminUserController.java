@@ -30,6 +30,7 @@ import work.soho.admin.service.impl.UserDetailsServiceImpl;
 import work.soho.api.admin.vo.AdminUserOptionVo;
 import work.soho.api.admin.vo.AdminUserVo;
 import work.soho.api.admin.vo.CurrentAdminUserVo;
+import work.soho.api.admin.vo.OptionVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
@@ -84,11 +85,25 @@ public class AdminUserController extends BaseController {
     }
 
     @ApiOperation("用户选项接口")
-    @Node("adminUser:list")
+    @Node("adminUser:userOptions")
     @GetMapping("userOptions")
     public R<List<AdminUserOptionVo>> userOption() {
         List<AdminUser> adminUserList = adminUserService.list();
         List<AdminUserOptionVo> list = (List<AdminUserOptionVo>) work.soho.common.core.util.BeanUtils.copyList(adminUserList, AdminUserOptionVo.class);
+        return R.success(list);
+    }
+
+    @ApiOperation("用户选项接口")
+    @Node("adminUser:options")
+    @GetMapping("options")
+    public R<List<OptionVo<Long, String>>> options() {
+        List<AdminUser> adminUserList = adminUserService.list();
+        List<OptionVo<Long,String>> list = new ArrayList<>();
+        adminUserList.forEach(item->{
+            OptionVo<Long, String> optionVo = new OptionVo<>();
+            optionVo.setValue(item.getId());
+            optionVo.setLabel(item.getUsername());
+        });
         return R.success(list);
     }
 
