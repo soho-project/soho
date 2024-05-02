@@ -9,6 +9,8 @@ for item in `ls ./*.sql`; do
    |grep -v 'INSERT INTO `pay_order`' \
    |grep -v 'INSERT INTO `chat_session_message`' \
    |grep -v 'INSERT INTO `chat_session_message_user`' \
+   |grep -v 'INSERT INTO `admin_user_login_log`' \
+   |grep -v 'INSERT INTO `admin_operation_log`' \
    > tmp.sql
   rm -f $item
   mv tmp.sql $item
