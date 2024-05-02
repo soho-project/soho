@@ -1,31 +1,23 @@
 package work.soho.example.biz.controller;
 
-import java.time.LocalDateTime;
-
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.PageSerializable;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 import work.soho.admin.common.security.utils.SecurityUtils;
+import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import work.soho.approvalprocess.service.ApprovalProcessOrderService;
 import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
-import work.soho.common.core.util.IDGeneratorUtils;
-import work.soho.common.core.util.PageUtils;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.List;
-import java.util.Arrays;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
 import work.soho.common.core.result.R;
-import work.soho.api.admin.annotation.Node;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.example.biz.domain.Example;
 import work.soho.example.biz.service.ExampleService;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 自动化样例表Controller
@@ -60,8 +52,8 @@ public class ExampleController {
         if (example.getCategoryId() != null){
             lqw.eq(Example::getCategoryId ,example.getCategoryId());
         }
-        if (StringUtils.isNotBlank(example.getOptionId())){
-            lqw.like(Example::getOptionId ,example.getOptionId());
+        if (example.getOptionId() != null){
+            lqw.eq(Example::getOptionId ,example.getOptionId());
         }
         if (StringUtils.isNotBlank(example.getContent())){
             lqw.like(Example::getContent ,example.getContent());

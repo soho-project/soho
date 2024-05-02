@@ -1,30 +1,21 @@
 package work.soho.example.biz.controller;
 
-import java.time.LocalDateTime;
-import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 import work.soho.api.admin.annotation.Node;
+import work.soho.api.admin.vo.OptionVo;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
 import work.soho.example.biz.domain.ExampleOption;
 import work.soho.example.biz.service.ExampleOptionService;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import work.soho.api.admin.vo.OptionVo;
-import work.soho.api.admin.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.api.admin.vo.TreeNodeVo;
+import java.util.List;
 /**
  * 选项Controller
  *
@@ -106,14 +97,18 @@ public class ExampleOptionController {
      */
     @GetMapping("options")
     @Node(value = "exampleOption::options", name = "选项;;option:id~valueOptions")
-    public R<HashMap<Integer, String>> options() {
+    public R<List<OptionVo<Integer, String>>> options() {
         List<ExampleOption> list = exampleOptionService.list();
         List<OptionVo<Integer, String>> options = new ArrayList<>();
 
         HashMap<Integer, String> map = new HashMap<>();
         for(ExampleOption item: list) {
-            map.put(item.getId(), item.getValue());
+            OptionVo<Integer, String> optionVo = new OptionVo<>();
+            optionVo.setValue(item.getId());
+            optionVo.setLabel(item.getValue());
+            options.add(optionVo);
+//            map.put(item.getId(), item.getValue());
         }
-        return R.success(map);
+        return R.success(options);
     }
 }
