@@ -1,31 +1,27 @@
 package work.soho.temporal.db.biz.controller;
 
-import java.time.LocalDateTime;
-import work.soho.common.core.util.PageUtils;
+import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
+import lombok.RequiredArgsConstructor;
+import org.apache.iotdb.isession.SessionDataSet;
+import org.apache.iotdb.rpc.IoTDBConnectionException;
+import org.apache.iotdb.rpc.StatementExecutionException;
+import org.apache.iotdb.tsfile.read.common.Field;
+import org.apache.iotdb.tsfile.read.common.RowRecord;
+import org.springframework.web.bind.annotation.*;
 import work.soho.api.admin.annotation.Node;
+import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.temporal.db.biz.domain.TemporalTableCol;
 import work.soho.temporal.db.biz.service.TemporalTableColService;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import work.soho.api.admin.vo.OptionVo;
-import work.soho.api.admin.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.api.admin.vo.TreeNodeVo;
-import work.soho.api.admin.service.AdminDictApiService;
+import java.util.List;
 /**
  * 时序表字段Controller
  *
@@ -94,5 +90,34 @@ public class TemporalTableColController {
     @Node(value = "temporalTableCol::remove", name = "时序表字段删除")
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(temporalTableColService.removeByIds(Arrays.asList(ids)));
+    }
+
+    /**
+     * 获取时序数据
+     *
+     * @param id
+     * @return
+     * @throws IoTDBConnectionException
+     * @throws StatementExecutionException
+     */
+    @GetMapping("/getData/{id}")
+    public R<List<HashMap<String, Object>>> getData(@PathVariable Long id) throws IoTDBConnectionException, StatementExecutionException {
+        TemporalTableCol temporalTableCol = temporalTableColService.getById(id);
+        Assert.notNull(temporalTableCol);
+        List<TemporalTableCol> colList = new ArrayList<>();
+        colList.add(temporalTableCol);
+
+        SessionDataSet dataSet = temporalTableColService.getDataList(colList, null, 1000L, 0L, "Time desc");
+        List<HashMap<String, Object>> list = new ArrayList<>();
+        while (dataSet.hasNext()) {
+            RowRecord rowRecord = dataSet.next();
+            HashMap<String, Object> item = new HashMap<>();
+            item.put("time", rowRecord.getTimestamp());
+            Field field = rowRecord.getFields().get(0);
+            item.put("val", field.getStringValue());
+            list.add(item);
+        }
+
+        return R.success(list);
     }
 }
