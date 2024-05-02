@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
-import lombok.Data;
 
 /**
  * 自动化样例表
@@ -45,7 +45,7 @@ public class Example implements Serializable {
     /**
      * 支付方式ID;;frontType:select,foreign:pay_info.id~title
      */
-    private String optionId;
+    private Integer optionId;
 
     /**
      * 富媒体;;frontType:editor
