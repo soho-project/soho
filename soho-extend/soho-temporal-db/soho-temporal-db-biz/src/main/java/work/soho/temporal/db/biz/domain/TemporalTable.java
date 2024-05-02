@@ -45,7 +45,7 @@ public class TemporalTable implements Serializable {
     private LocalDateTime createdTime;
 
     /**
-    * 分类ID;;foreign:temporal_category.id~title
+    * 分类ID;;frontType:treeSelect,foreign:temporal_category.id~title,frontName:时序分类
     */
     @TableField(value = "category_id")
     private Integer categoryId;

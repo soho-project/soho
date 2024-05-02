@@ -1,14 +1,11 @@
 package work.soho.temporal.db.biz.service.impl;
 
-import org.apache.iotdb.common.rpc.thrift.TSStatus;
+import org.apache.iotdb.isession.SessionDataSet;
 import org.apache.iotdb.rpc.IoTDBConnectionException;
 import org.apache.iotdb.rpc.StatementExecutionException;
-import org.apache.iotdb.service.rpc.thrift.TSInsertRecordReq;
 import org.apache.iotdb.session.Session;
-import org.apache.iotdb.tsfile.file.metadata.enums.CompressionType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
-import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
-import org.apache.iotdb.tsfile.write.record.Tablet;
+import org.apache.iotdb.tsfile.read.common.RowRecord;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -16,12 +13,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import work.soho.test.TestApp;
 
-import javax.xml.crypto.Data;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
@@ -64,6 +57,14 @@ public class LoTDBServiceImplTest {
             values.add(1L + 1);
             values.add(1L + 2);
             session.insertRecord(aTs, System.currentTimeMillis(), measurements, types, values);
+        }
+
+        //查询数据
+        SessionDataSet data = session.executeQueryStatement("select * from root.ln.t1");
+        System.out.println(data);
+        while(data.hasNext()) {
+            RowRecord row  = data.next();
+            System.out.println(row);
         }
     }
 }

@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="work.soho.temporal.db.biz.mapper.TemporalTableColMapper">
-    <resultMap id="BaseResultMap" type="work.soho.temporal.db.biz.domain.TemporalTableCol">
+<mapper namespace="work.soho.mapper.TemporalTableColMapper">
+    <resultMap id="BaseResultMap" type="work.soho.domain.TemporalTableCol">
         <id property="id" column="id" jdbcType="INTEGER"/>
         <id property="name" column="name" jdbcType="VARCHAR"/>
         <id property="title" column="title" jdbcType="VARCHAR"/>

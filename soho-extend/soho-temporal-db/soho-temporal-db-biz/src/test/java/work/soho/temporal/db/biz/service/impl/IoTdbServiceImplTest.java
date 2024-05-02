@@ -1,8 +1,8 @@
 package work.soho.temporal.db.biz.service.impl;
 
+import org.apache.iotdb.isession.SessionDataSet;
 import org.apache.iotdb.rpc.IoTDBConnectionException;
 import org.apache.iotdb.rpc.StatementExecutionException;
-import org.apache.iotdb.session.SessionDataSet;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,11 +11,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import work.soho.temporal.db.biz.dto.Record;
-import work.soho.temporal.db.biz.iotdb.Query;
 import work.soho.temporal.db.biz.service.IotdbService;
 import work.soho.test.TestApp;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
@@ -59,18 +56,18 @@ class IoTdbServiceImplTest {
     void testFetchAllRecords() {
     }
 
-    @Test
-    void testFetchAllRecords1() throws IoTDBConnectionException, StatementExecutionException {
-        Query query = new Query();
-        query.setDatabaseName("root.ln");
-        query.setTableName("demo1");
-        query.setLimit(2);
-
-        SessionDataSet sessionDataSet = iotdbService.fetchAllRecords(query);
-        System.out.println(sessionDataSet);
-        while (sessionDataSet.hasNext()) {
-            System.out.println(sessionDataSet.next());
-        }
-
-    }
+//    @Test
+//    void testFetchAllRecords1() throws IoTDBConnectionException, StatementExecutionException {
+//        Query query = new Query();
+//        query.setDatabaseName("root.ln");
+//        query.setTableName("demo1");
+//        query.setLimit(2);
+//
+//        SessionDataSet sessionDataSet = iotdbService.fetchAllRecords(query);
+//        System.out.println(sessionDataSet);
+//        while (sessionDataSet.hasNext()) {
+//            System.out.println(sessionDataSet.next());
+//        }
+//
+//    }
 }

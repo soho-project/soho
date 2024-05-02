@@ -1,35 +1,26 @@
 package work.soho.temporal.db.biz.controller;
 
-import java.time.LocalDateTime;
-import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 import work.soho.api.admin.annotation.Node;
+import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import work.soho.api.admin.vo.OptionVo;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.temporal.db.biz.domain.TemporalTable;
 import work.soho.temporal.db.biz.service.TemporalTableService;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import work.soho.api.admin.vo.OptionVo;
-import work.soho.api.admin.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.api.admin.vo.TreeNodeVo;
-import work.soho.api.admin.service.AdminDictApiService;
+import java.util.List;
 /**
  * 时序表Controller
  *
- * @author Administrator
+ * @author fang
  */
 @RequiredArgsConstructor
 @RestController
@@ -42,7 +33,7 @@ public class TemporalTableController {
      * 查询时序表列表
      */
     @GetMapping("/list")
-    @Node(value = "temporalTable::list", name = "时序表列表")
+    @Node(value = "temporalTable::list", name = "时序表;;option:id~title列表")
     public R<PageSerializable<TemporalTable>> list(TemporalTable temporalTable, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
     {
         PageUtils.startPage();
@@ -62,7 +53,7 @@ public class TemporalTableController {
      * 获取时序表详细信息
      */
     @GetMapping(value = "/{id}" )
-    @Node(value = "temporalTable::getInfo", name = "时序表详细信息")
+    @Node(value = "temporalTable::getInfo", name = "时序表;;option:id~title详细信息")
     public R<TemporalTable> getInfo(@PathVariable("id" ) Long id) {
         return R.success(temporalTableService.getById(id));
     }
@@ -71,7 +62,7 @@ public class TemporalTableController {
      * 新增时序表
      */
     @PostMapping
-    @Node(value = "temporalTable::add", name = "时序表新增")
+    @Node(value = "temporalTable::add", name = "时序表;;option:id~title新增")
     public R<Boolean> add(@RequestBody TemporalTable temporalTable) {
         return R.success(temporalTableService.save(temporalTable));
     }
@@ -80,7 +71,7 @@ public class TemporalTableController {
      * 修改时序表
      */
     @PutMapping
-    @Node(value = "temporalTable::edit", name = "时序表修改")
+    @Node(value = "temporalTable::edit", name = "时序表;;option:id~title修改")
     public R<Boolean> edit(@RequestBody TemporalTable temporalTable) {
         return R.success(temporalTableService.updateById(temporalTable));
     }
@@ -89,8 +80,26 @@ public class TemporalTableController {
      * 删除时序表
      */
     @DeleteMapping("/{ids}" )
-    @Node(value = "temporalTable::remove", name = "时序表删除")
+    @Node(value = "temporalTable::remove", name = "时序表;;option:id~title删除")
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(temporalTableService.removeByIds(Arrays.asList(ids)));
+    }
+
+    /**
+     * 获取该时序表 options:id-title
+     *
+     * @return
+     */
+    @GetMapping("options")
+    @Node(value = "temporalTable::options", name = "时序表;;option:id~titleOptions")
+    public R<HashMap<Integer, String>> options() {
+        List<TemporalTable> list = temporalTableService.list();
+        List<OptionVo<Integer, String>> options = new ArrayList<>();
+
+        HashMap<Integer, String> map = new HashMap<>();
+        for(TemporalTable item: list) {
+            map.put(item.getId(), item.getTitle());
+        }
+        return R.success(map);
     }
 }

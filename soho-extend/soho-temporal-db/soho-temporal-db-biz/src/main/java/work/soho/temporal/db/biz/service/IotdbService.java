@@ -1,8 +1,8 @@
 package work.soho.temporal.db.biz.service;
 
+import org.apache.iotdb.isession.SessionDataSet;
 import org.apache.iotdb.rpc.IoTDBConnectionException;
 import org.apache.iotdb.rpc.StatementExecutionException;
-import org.apache.iotdb.session.SessionDataSet;
 import work.soho.temporal.db.biz.dto.Record;
 import work.soho.temporal.db.biz.iotdb.Query;
 
