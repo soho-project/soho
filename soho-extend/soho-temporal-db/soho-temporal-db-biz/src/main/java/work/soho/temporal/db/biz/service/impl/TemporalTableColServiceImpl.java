@@ -4,14 +4,17 @@ import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.apache.iotdb.isession.SessionDataSet;
-import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
+import org.apache.iotdb.tsfile.read.common.Field;
+import org.apache.iotdb.tsfile.read.common.RowRecord;
 import org.springframework.stereotype.Service;
 import work.soho.common.core.util.StringUtils;
+import work.soho.temporal.db.api.dto.*;
+import work.soho.temporal.db.api.service.TemporalDbApi;
 import work.soho.temporal.db.biz.config.TemporalDbConfig;
 import work.soho.temporal.db.biz.domain.TemporalCategory;
 import work.soho.temporal.db.biz.domain.TemporalTable;
 import work.soho.temporal.db.biz.domain.TemporalTableCol;
-import work.soho.temporal.db.biz.dto.Record;
+import work.soho.temporal.db.biz.iotdb.Query;
 import work.soho.temporal.db.biz.mapper.TemporalCategoryMapper;
 import work.soho.temporal.db.biz.mapper.TemporalTableColMapper;
 import work.soho.temporal.db.biz.mapper.TemporalTableMapper;
@@ -25,7 +28,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Service
 public class TemporalTableColServiceImpl extends ServiceImpl<TemporalTableColMapper, TemporalTableCol>
-    implements TemporalTableColService{
+    implements TemporalTableColService, TemporalDbApi {
     private final TemporalTableMapper temporalTableMapper;
     private final TemporalCategoryMapper temporalCategoryMapper;
     private final IotdbService iotdbService;
@@ -160,26 +163,26 @@ public class TemporalTableColServiceImpl extends ServiceImpl<TemporalTableColMap
      * @param type
      * @return
      */
-    private TSDataType getTsDataType(Integer type) {
+    private Record.DataType getTsDataType(Integer type) {
         switch (type) {
             case 0:
-                return TSDataType.BOOLEAN;
+                return Record.DataType.BOOLEAN;
             case 1:
-                return TSDataType.INT32;
+                return Record.DataType.INT32;
             case 2:
-                return TSDataType.INT64;
+                return Record.DataType.INT64;
             case 3:
-                return TSDataType.FLOAT;
+                return Record.DataType.FLOAT;
             case 4:
-                return TSDataType.DOUBLE;
+                return Record.DataType.DOUBLE;
             case 5:
-                return TSDataType.TEXT;
+                return Record.DataType.TEXT;
             case 6:
-                return TSDataType.VECTOR;
+                return Record.DataType.VECTOR;
             case 7:
-                return TSDataType.UNKNOWN;
+                return Record.DataType.UNKNOWN;
         }
-        return TSDataType.UNKNOWN;
+        return Record.DataType.UNKNOWN;
     }
 
     /**
@@ -200,9 +203,161 @@ public class TemporalTableColServiceImpl extends ServiceImpl<TemporalTableColMap
      */
     private String getTableName(TemporalTableCol col) {
         TemporalTable table = temporalTableMapper.selectById(col.getTableId());
-        Assert.notNull(table);
-        TemporalCategory category = temporalCategoryMapper.selectById(table.getCategoryId());
+        return getTableName(table) + "." + table.getName();
+    }
+
+    /**
+     * 获取表名
+     *
+     * @param temporalTable
+     * @return
+     */
+    private String getTableName(TemporalTable temporalTable) {
+        Assert.notNull(temporalTable);
+        TemporalCategory category = temporalCategoryMapper.selectById(temporalTable.getCategoryId());
         Assert.notNull(category);
-        return temporalDbConfig.getDefaultDbName() + "." + category.getName() + "." + table.getName();
+        //TODO 递归分类名
+        return category.getName() + "." + temporalTable.getName();
+    }
+
+    @Override
+    public void addRecord(Integer tableId, Long time, Record record) {
+        TemporalTable table = temporalTableMapper.selectById(tableId);
+        try {
+            System.out.println("............");
+            System.out.println(time);
+            System.out.println(record);
+            iotdbService.insertRecord(temporalDbConfig.getDefaultDbName(), getTableName(table), time, record);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void addRecords(Integer tableId, Long time, List<Record> list) {
+        for(Record record: list) {
+            addRecord(tableId, time, record);
+        }
+    }
+
+    /**
+     * 获取指定时间线数据
+     *
+     * @param colId
+     * @param startTime
+     * @param endTime
+     * @param offset
+     * @param limit
+     * @param columnTimeOrder
+     * @return
+     */
+    @Override
+    public List<Row> fetchColumn(Integer colId, Long startTime, Long endTime, Integer offset, Integer limit, ColumnTimeOrder columnTimeOrder) {
+        List<Integer> list = new ArrayList<>();
+        list.add(colId);
+        return fetchColumn(list, startTime, endTime, offset, limit, columnTimeOrder);
+    }
+
+    @Override
+    public List<Row> fetchColumn(List<Integer> colIds, Long startTime, Long endTime, Integer offset, Integer limit, ColumnTimeOrder columnTimeOrder) {
+        List<TemporalTableCol> cols = getBaseMapper().selectBatchIds(colIds);
+        //检查是否为同一个表
+        Integer tableId = null;
+        for(TemporalTableCol col: cols) {
+            if(tableId == null) {
+                tableId = col.getTableId();
+            } else if(!tableId.equals(col.getTableId())) {
+                throw new RuntimeException("字段不在同一个表， 情检查配置");
+            }
+        }
+        //检查字段是否都存在
+        if(colIds.size() != cols.size()) {
+            throw new RuntimeException("请确定字段参数是否正确");
+        }
+
+        List<Row> list = new ArrayList<>();
+        Query query = new Query();
+        List<String> columns = new ArrayList<>();
+        cols.forEach(item->{
+            columns.add(item.getName());
+        });
+
+        TemporalTable table = temporalTableMapper.selectById(tableId);
+        query.setColumns(columns);
+        query.setLimit(limit);
+        query.setOffset(offset);
+        query.setOrderBy("Time " + columnTimeOrder.getOrder());
+        query.setTableName(getTableName(table));
+        query.setDatabaseName(temporalDbConfig.getDefaultDbName());
+        query.setOrderBy("order by Time " + ColumnTimeOrder.DESC.getOrder());
+        //设置限制条件
+        String where = "";
+        if(startTime != null) {
+            where += "Time>=" + startTime;
+        }
+        if(endTime != null) {
+            if(where != "") {
+                where += " and ";
+            }
+            where += "Time<=" + endTime;
+        }
+        if(!StringUtils.isNotEmpty(where)) {
+            query.setWhere(where);
+        }
+
+        try {
+            SessionDataSet sessionDataSet = iotdbService.fetchAllRecords(query);
+            while (sessionDataSet.hasNext()) {
+                RowRecord rowRecord = sessionDataSet.next();
+                Field field = rowRecord.getFields().get(0);
+                Row row = new Row();
+                row.setTimestamp(rowRecord.getTimestamp());
+                rowRecord.getFields().forEach(item->{
+                    Row.Column column = new Row.Column();
+                    System.out.println(item);
+                    if(item == null || item.getDataType() == null) {
+                        row.getColumns().add(null);
+                    } else {
+                        System.out.println(item);
+                        System.out.println(item.getDataType());
+                        switch (item.getDataType()) {
+                            case INT64:
+                                column.setLongV(item.getLongV());
+                                column.setDataType(Row.DataType.INT64);
+                                break;
+                            case INT32:
+                                column.setIntV(item.getIntV());
+                                column.setDataType(Row.DataType.INT32);
+                                break;
+                            case FLOAT:
+                                column.setFloatV(item.getFloatV());
+                                column.setDataType(Row.DataType.FLOAT);
+                                break;
+                            case TEXT:
+                                Binary binary = new Binary(item.getBinaryV().getValues());
+                                column.setDataType(Row.DataType.TEXT);
+                                column.setBinaryV(binary);
+                                break;
+                            case BOOLEAN:
+                                column.setBoolV(item.getBoolV());
+                                column.setDataType(Row.DataType.BOOLEAN);
+                                break;
+                            case DOUBLE:
+                                column.setDoubleV(item.getDoubleV());
+                                column.setDataType(Row.DataType.DOUBLE);
+                                break;
+                            default:
+                                break;
+                        }
+                        row.getColumns().add(column);
+                    }
+                });
+                list.add(row);
+            }
+            return list;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

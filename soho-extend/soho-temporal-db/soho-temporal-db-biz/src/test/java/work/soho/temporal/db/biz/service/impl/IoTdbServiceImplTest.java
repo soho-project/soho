@@ -3,14 +3,13 @@ package work.soho.temporal.db.biz.service.impl;
 import org.apache.iotdb.isession.SessionDataSet;
 import org.apache.iotdb.rpc.IoTDBConnectionException;
 import org.apache.iotdb.rpc.StatementExecutionException;
-import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
-import work.soho.temporal.db.biz.dto.Record;
+import work.soho.temporal.db.api.dto.Record;
 import work.soho.temporal.db.biz.service.IotdbService;
 import work.soho.test.TestApp;
 
@@ -30,7 +29,7 @@ class IoTdbServiceImplTest {
     void insertRecord() throws IoTDBConnectionException, StatementExecutionException {
         for (int i = 0; i < 100; i++) {
             Record record = new Record();
-            record.setType(TSDataType.INT64);
+            record.setType(Record.DataType.INT64);
             record.setValue(System.currentTimeMillis());
             record.setName("col1");
             iotdbService.insertRecord("root.ln", "demo1", System.currentTimeMillis(), record);
