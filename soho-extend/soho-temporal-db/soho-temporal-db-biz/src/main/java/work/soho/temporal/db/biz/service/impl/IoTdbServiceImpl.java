@@ -1,11 +1,13 @@
 package work.soho.temporal.db.biz.service.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.iotdb.isession.SessionDataSet;
 import org.apache.iotdb.rpc.IoTDBConnectionException;
 import org.apache.iotdb.rpc.StatementExecutionException;
 import org.apache.iotdb.session.Session;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.springframework.stereotype.Service;
+import work.soho.temporal.db.biz.config.TemporalDbConfig;
 import work.soho.temporal.db.biz.dto.Record;
 import work.soho.temporal.db.biz.iotdb.Query;
 import work.soho.temporal.db.biz.service.IotdbService;
@@ -14,7 +16,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class IoTdbServiceImpl implements IotdbService {
+    private final TemporalDbConfig temporalDbConfig;
+    private Session session = null;
 
     @Override
     public void createdDb(String dbName) {
@@ -90,11 +95,14 @@ public class IoTdbServiceImpl implements IotdbService {
      * @return
      */
     private Session getSession() throws IoTDBConnectionException {
-        Session session = new Session.Builder().host("127.0.0.1")
-                .port(6667)
-                .username("root")
-                .password("root").build();
-        session.open();
+        if(this.session == null) {
+            session = new Session.Builder().host(temporalDbConfig.getDbHost())
+                    .port(temporalDbConfig.getDbPort())
+                    .username(temporalDbConfig.getDbUsername())
+                    .password(temporalDbConfig.getDbPassword()).build();
+            session.open();
+        }
+
         return session;
     }
 }
