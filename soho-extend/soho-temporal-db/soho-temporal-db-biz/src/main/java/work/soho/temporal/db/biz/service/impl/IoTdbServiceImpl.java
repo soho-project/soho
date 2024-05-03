@@ -8,7 +8,7 @@ import org.apache.iotdb.session.Session;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.springframework.stereotype.Service;
 import work.soho.temporal.db.biz.config.TemporalDbConfig;
-import work.soho.temporal.db.biz.dto.Record;
+import work.soho.temporal.db.api.dto.Record;
 import work.soho.temporal.db.biz.iotdb.Query;
 import work.soho.temporal.db.biz.service.IotdbService;
 
@@ -51,7 +51,7 @@ public class IoTdbServiceImpl implements IotdbService {
         for (Record record : records) {
             measurements.add(record.getName());
 //            types.add(TSDataType.INT64);
-            types.add(record.getType());
+            types.add(TSDataType.deserialize(record.getType().getType()));
             values.add(record.getValue());
         }
 

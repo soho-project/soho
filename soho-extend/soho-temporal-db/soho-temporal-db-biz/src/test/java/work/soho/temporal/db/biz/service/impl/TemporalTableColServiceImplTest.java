@@ -9,6 +9,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
+import work.soho.temporal.db.api.dto.ColumnTimeOrder;
+import work.soho.temporal.db.api.dto.Record;
+import work.soho.temporal.db.api.dto.Row;
+import work.soho.temporal.db.api.service.TemporalDbApi;
 import work.soho.temporal.db.biz.domain.TemporalTableCol;
 import work.soho.temporal.db.biz.service.TemporalTableColService;
 import work.soho.test.TestApp;
@@ -23,6 +27,10 @@ import java.util.List;
 class TemporalTableColServiceImplTest {
     @Autowired
     private TemporalTableColService temporalTableColService;
+
+    @Autowired
+    private TemporalDbApi temporalDbApi;
+
     @Test
     void insertByCvs() {
         String data = "1\n4234\n452345\n45345";
@@ -53,5 +61,47 @@ class TemporalTableColServiceImplTest {
         while (dataSet.hasNext()) {
             System.out.println(dataSet.next());
         }
+    }
+
+    @Test
+    void addRecord() {
+        Record record = new Record();
+        record.setName("c1");
+        record.setValue(100L);
+        record.setType(Record.DataType.INT64);
+        temporalDbApi.addRecord(1, System.currentTimeMillis(), record);
+    }
+
+    @Test
+    void addRecords() throws InterruptedException {
+        for (int i = 0; i < 5; i++) {
+            List<Record> list = new ArrayList<>();
+            Thread.sleep(1002);
+            Record record = new Record();
+            record.setName("c1");
+            record.setValue(System.currentTimeMillis());
+            record.setType(Record.DataType.INT64);
+            list.add(record);
+            Record record2 = new Record();
+            record2.setName("c2");
+            record2.setValue(System.currentTimeMillis());
+            record2.setType(Record.DataType.INT64);
+            list.add(record2);
+            temporalDbApi.addRecords(1, System.currentTimeMillis(), list);
+        }
+    }
+
+    @Test
+    void fetchRecodes() {
+        List<Row> list = temporalDbApi.fetchColumn(1, 0L, System.currentTimeMillis(), 0, 100, ColumnTimeOrder.DESC);
+        System.out.println(list);
+    }
+    @Test
+    void fetchColumnsRecodes() {
+        List<Integer> cols = new ArrayList<>();
+        cols.add(1);
+        cols.add(2);
+        List<Row> list = temporalDbApi.fetchColumn(cols, 0L, System.currentTimeMillis(), 0, 100, ColumnTimeOrder.DESC);
+        System.out.println(list);
     }
 }
