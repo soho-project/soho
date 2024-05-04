@@ -8,11 +8,14 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.common.security.service.impl.TokenServiceImpl;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.admin.config.AdminSysConfig;
 import work.soho.admin.domain.AdminUserLoginLog;
-import work.soho.admin.service.AdminConfigService;
 import work.soho.admin.service.AdminUserLoginLogService;
 import work.soho.api.admin.vo.AdminUserLoginVo;
 import work.soho.common.core.result.R;
@@ -22,7 +25,6 @@ import work.soho.common.data.captcha.utils.CaptchaUtils;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,9 +32,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 @RestController
 public class AuthController {
-    private final AdminConfigService sohoConfig;
     private final TokenServiceImpl tokenService;
-    private final AdminConfigService adminConfigService;
+    private final AdminSysConfig adminSysConfig;
     private final AdminUserLoginLogService adminUserLoginLogService;
     @Resource
     private AuthenticationManager authenticationManager;
@@ -42,7 +43,7 @@ public class AuthController {
     @GetMapping("/login/config")
     public R<HashMap<String, Object>> authConfig() {
         HashMap<String, Object> config = new HashMap<>();
-        config.put("useCaptcha", sohoConfig.getByKey(LOGIN_USE_CAPTCHA, Boolean.class, Boolean.TRUE));
+        config.put("useCaptcha", adminSysConfig.getAdminLoginCaptchaEnable());
         return R.success(config);
     }
 
@@ -51,7 +52,7 @@ public class AuthController {
     public Object login(@RequestBody AdminUserLoginVo adminUserLoginVo) {
         Authentication authentication = null;
         try{
-            Boolean useCaptcha = adminConfigService.getByKey(LOGIN_USE_CAPTCHA, Boolean.class, Boolean.TRUE);
+            Boolean useCaptcha = adminSysConfig.getAdminLoginCaptchaEnable();
             if(useCaptcha && !CaptchaUtils.checking(adminUserLoginVo.getCaptcha())) {
                //检查验证码是否正确
                return R.error("验证码错误");

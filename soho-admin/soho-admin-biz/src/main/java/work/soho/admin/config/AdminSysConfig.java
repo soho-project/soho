@@ -24,6 +24,11 @@ public class AdminSysConfig implements InitializingBean {
     private final String ADMIN_OPERATION_LOG_METHODS_KEY = "admin_operation_log_methods";
     private final String ADMIN_OPERATION_LOG_METHODS = "POST,PUT,DELETE";
 
+    //登录验证码开关
+    private final String ADMIN_LOGIN_CAPTCHA_ENABLE_KEY = "login_use_captcha";
+    //后台通知方式
+    private final String ADMIN_NOTICE_ADAPTER_KEY = "admin-notice-adapter";
+
     /**
      * 获取是否开启操作的日志
      *
@@ -44,6 +49,15 @@ public class AdminSysConfig implements InitializingBean {
         return new HashSet<>(Arrays.asList(strSets));
     }
 
+    /**
+     * 获取后台用户登录是否开启验证码
+     *
+     * @return
+     */
+    public Boolean getAdminLoginCaptchaEnable() {
+        return adminConfigApiService.getByKey(ADMIN_LOGIN_CAPTCHA_ENABLE_KEY, Boolean.class, false);
+    }
+
     @Override
     public void afterPropertiesSet() throws Exception {
         //构建组
@@ -52,6 +66,14 @@ public class AdminSysConfig implements InitializingBean {
 
         //构建单元配置
         ArrayList<AdminConfigInitRequest.Item> items = new ArrayList<>();
+        //是否开启登录验证码
+        items.add(AdminConfigInitRequest.Item.builder().groupKey(DEFAULT_GROUP_KEY)
+                        .explain("\t后台登录是否开启验证码")
+                .type(AdminConfigInitRequest.ItemType.BOOL.getType()).key(ADMIN_LOGIN_CAPTCHA_ENABLE_KEY).value("false").build());
+        //后台通知方式
+        items.add(AdminConfigInitRequest.Item.builder().groupKey(DEFAULT_GROUP_KEY)
+                        .explain("通知驱动方式；none:不通知,polling:轮训,lon")
+                .type(AdminConfigInitRequest.ItemType.BOOL.getType()).key(ADMIN_NOTICE_ADAPTER_KEY).value("none").build());
         //是否开启操作日志
         items.add(AdminConfigInitRequest.Item.builder().groupKey(DEFAULT_GROUP_KEY)
                         .explain("是否开启后台操作日志")
