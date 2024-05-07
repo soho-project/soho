@@ -52,7 +52,6 @@ public class AdminResourceController {
         List<AdminResource> list = adminResourceService.list(
                 Wrappers.<AdminResource>lambdaQuery()
                         .eq(AdminResource::getType, 1) // 1 前端节点
-                        .eq(AdminResource::getVisible, 1) // 1 可见菜单
         );
         //格式转换
         List<RouteVo> routeDTOList = list.stream().map(item -> {
