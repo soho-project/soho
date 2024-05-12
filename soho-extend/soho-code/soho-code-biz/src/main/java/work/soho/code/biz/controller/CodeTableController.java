@@ -136,6 +136,12 @@ public class CodeTableController {
         return R.success(map);
     }
 
+    /**
+     * 获取创建表Sql
+     *
+     * @param id
+     * @return
+     */
     @GetMapping("sql")
     public R<String> sql(Integer id) {
         CodeTable codeTable = codeTableService.getById(id);
@@ -146,25 +152,58 @@ public class CodeTableController {
     }
 
     /**
-     * 执行生成sql
+     * 获取同步到远程的sql
      *
      * @param id
      * @return
      */
+    @GetMapping("diffSql")
+    public R<String> diffSql(Integer id) {
+        //获取本地表结构
+        CodeTableVo codeTable = codeTableService.getTableVoById(id);
+        if(codeTable == null) {
+            return R.error("表不存在， 请检查");
+        }
+
+        //检查远程表是否存在
+        if(dbService.isExistsTable(codeTable.getName())) {
+            //获取远程表结构
+            CodeTableVo remoteCodeTable = dbService.getTableByName(codeTable.getName());
+            return R.success(codeTable.toDiffSql(remoteCodeTable));
+        } else {
+            return R.success(codeTable.toCreateSql());
+        }
+    }
+
+    /**
+     * 执行生成sql
+     *
+     * @param id 同步的表
+     * @param drop 是否删除远程库
+     * @param isDiff 执行差异sql
+     * @return
+     */
     @GetMapping("exec")
-    public R<Boolean> exec(Integer id, Boolean drop) throws SQLException {
+    public R<Boolean> exec(Integer id, Boolean drop, Boolean isDiff) throws SQLException {
         Connection connection = jdbcTemplate.getDataSource().getConnection();
         try {
             connection.setAutoCommit(false);
-            CodeTable codeTable = codeTableService.getById(id);
+            CodeTableVo codeTable = codeTableService.getTableVoById(id);
             if(codeTable == null) {
                 return R.error("表不存在， 请检查");
             }
             if(drop) {
                 dbService.dropTable(codeTable.getName());
             }
-            log.info(codeTableService.getSqlById(id));
-            dbService.createTable(codeTableService.getSqlById(id));
+            if(isDiff !=null && isDiff) {
+                //查询远程数据结构
+                CodeTableVo remoteCodeTable = dbService.getTableByName(codeTable.getName());
+                log.info(codeTable.toDiffSql(remoteCodeTable));
+                dbService.execute(codeTable.toDiffSql(remoteCodeTable));
+            } else {
+                log.info(codeTable.toCreateSql());
+                dbService.execute(codeTable.toCreateSql());
+            }
             connection.commit();
             return R.success();
         } catch (Exception e) {
