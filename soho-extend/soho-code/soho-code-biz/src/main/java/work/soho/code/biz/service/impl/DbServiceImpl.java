@@ -25,6 +25,8 @@ public class DbServiceImpl implements DbService {
         return list.stream().map(item->item.values().stream().findFirst().get()).collect(Collectors.toList());
     }
 
+
+
     @Override
     public CodeTableVo getTableByName(String name) {
         List<Map<String, Object>> list = jdbcTemplate.queryForList("show create table `"+name+"`");
@@ -112,9 +114,12 @@ public class DbServiceImpl implements DbService {
         String[] parts = str.split(" ");
         column.setName(parts[0].substring(1, parts[0].length() -1));
         column.setDataType(parts[1]);
+        column.setIsPk(0);
+        column.setIsUnique(0);
+        column.setIsZeroFill(0);
+        column.setIsAutoIncrement(0);
 
         while(i<parts.length) {
-            //检查是否为无符号
             if(parts[i].equals("unsigned")) {
                 column.setIsUnique(1);
                 i++;
@@ -207,7 +212,7 @@ public class DbServiceImpl implements DbService {
      *
      * @param sql
      */
-    public void createTable(String sql) {
+    public void execute(String sql) {
         jdbcTemplate.execute(sql);
     }
 
@@ -218,5 +223,12 @@ public class DbServiceImpl implements DbService {
      */
     public void dropTable(String tableName) {
         jdbcTemplate.execute("drop table if exists `" + tableName + "`;");
+    }
+
+    @Override
+    public Boolean isExistsTable(String tableName) {
+        String sql = "SHOW TABLES LIKE '"+tableName+"';";
+        List<Map<String, Object>> list = jdbcTemplate.queryForList(sql);
+        return list.size() > 0;
     }
 }

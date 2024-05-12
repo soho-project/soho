@@ -3,14 +3,13 @@ package work.soho.code.biz.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
-import org.apache.ibatis.annotations.Mapper;
+import org.springframework.stereotype.Service;
 import work.soho.code.api.vo.CodeTableVo;
 import work.soho.code.biz.domain.CodeTable;
 import work.soho.code.biz.domain.CodeTableColumn;
 import work.soho.code.biz.mapper.CodeTableColumnMapper;
-import work.soho.code.biz.service.CodeTableService;
 import work.soho.code.biz.mapper.CodeTableMapper;
-import org.springframework.stereotype.Service;
+import work.soho.code.biz.service.CodeTableService;
 import work.soho.common.core.util.BeanUtils;
 
 import java.util.List;
@@ -93,16 +92,16 @@ public class CodeTableServiceImpl extends ServiceImpl<CodeTableMapper, CodeTable
                 } else {
                     columnStr += " DEFAULT '" + column.getDefaultValue() + "'";
                 }
-            } else if (column.getIsNotNull() == 0) {
+            } else if (column.getIsNotNull() == null || column.getIsNotNull() == 0) {
                 columnStr += " DEFAULT NULL";
             }
-            if(column.getIsUnique() == 1) {
+            if(column.getIsUnique() != null && column.getIsUnique() == 1) {
                 columnStr += " unsigned";
             }
-            if(column.getIsNotNull() == 1) {
+            if(column.getIsNotNull() != null && column.getIsNotNull() == 1) {
                 columnStr += " NOT NULL";
             }
-            if(column.getIsAutoIncrement() == 1) {
+            if(column.getIsAutoIncrement() != null && column.getIsAutoIncrement() == 1) {
                 columnStr += " AUTO_INCREMENT";
             }
             if(column.getComment() != null) {
@@ -115,7 +114,7 @@ public class CodeTableServiceImpl extends ServiceImpl<CodeTableMapper, CodeTable
 
         //索引
         for(CodeTableVo.Column column: codeTableVo.getColumnList()) {
-            if(column.getIsPk() == 1) {
+            if(column.getIsPk() != null && column.getIsPk() == 1) {
                 sb.append("\n  PRIMARY KEY (`"+column.getName()+"`),");
             }
         }

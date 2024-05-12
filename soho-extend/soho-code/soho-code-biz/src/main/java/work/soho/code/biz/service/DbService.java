@@ -2,8 +2,6 @@ package work.soho.code.biz.service;
 
 import work.soho.code.api.vo.CodeTableVo;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public interface DbService {
@@ -11,7 +9,7 @@ public interface DbService {
 
     CodeTableVo getTableByName(String name);
 
-    void createTable(String sql);
+    void execute(String sql);
 
     /**
      * 删除指定表
@@ -19,4 +17,12 @@ public interface DbService {
      * @param tableName
      */
     void dropTable(String tableName);
+
+    /**
+     * 检查表是否存在
+     *
+     * @param tableName
+     * @return
+     */
+    Boolean isExistsTable(String tableName);
 }
