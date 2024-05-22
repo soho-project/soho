@@ -1,23 +1,34 @@
-package work.soho.example.biz.controller;
-
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.github.pagehelper.PageSerializable;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-import work.soho.admin.common.security.utils.SecurityUtils;
-import work.soho.api.admin.annotation.Node;
-import work.soho.api.admin.request.BetweenCreatedTimeRequest;
-import work.soho.approvalprocess.service.ApprovalProcessOrderService;
-import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
-import work.soho.common.core.result.R;
-import work.soho.common.core.util.PageUtils;
-import work.soho.common.core.util.StringUtils;
-import work.soho.example.biz.domain.Example;
-import work.soho.example.biz.service.ExampleService;
+package work.soho.example.biz.controller.open;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
+import work.soho.common.core.util.PageUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import java.util.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import work.soho.admin.common.security.utils.SecurityUtils;
+import work.soho.common.core.util.StringUtils;
+import com.github.pagehelper.PageSerializable;
+import work.soho.common.core.result.R;
+import work.soho.api.admin.annotation.Node;
+import work.soho.example.biz.domain.Example;
+import work.soho.example.biz.service.ExampleService;
+import java.util.ArrayList;
+import java.util.HashMap;
+import work.soho.api.admin.vo.OptionVo;
+import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import java.util.stream.Collectors;
+import work.soho.api.admin.vo.TreeNodeVo;
+import work.soho.api.admin.service.AdminDictApiService;
+import work.soho.approvalprocess.service.ApprovalProcessOrderService;
+import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
 
 /**
  * 自动化样例Controller
@@ -26,17 +37,17 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/example" )
-public class ExampleController {
+@RequestMapping("/open/example" )
+public class OpenExampleController {
 
     private final ExampleService exampleService;
-    private final ApprovalProcessOrderService approvalProcessOrderService;
 
+    private final ApprovalProcessOrderService approvalProcessOrderService;
     /**
      * 查询自动化样例列表
      */
     @GetMapping("/list")
-    @Node(value = "example::list", name = "获取 自动化样例 列表")
+    @Node(value = "open::example::list", name = "获取 自动化样例 列表")
     public R<PageSerializable<Example>> list(Example example, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
     {
         PageUtils.startPage();
@@ -61,7 +72,7 @@ public class ExampleController {
      * 获取自动化样例详细信息
      */
     @GetMapping(value = "/{id}" )
-    @Node(value = "example::getInfo", name = "获取 自动化样例 详细信息")
+    @Node(value = "open::example::getInfo", name = "获取 自动化样例 详细信息")
     public R<Example> getInfo(@PathVariable("id" ) Long id) {
         return R.success(exampleService.getById(id));
     }
@@ -70,7 +81,7 @@ public class ExampleController {
      * 新增自动化样例
      */
     @PostMapping
-    @Node(value = "example::add", name = "新增 自动化样例")
+    @Node(value = "open::example::add", name = "新增 自动化样例")
     public R<Boolean> add(@RequestBody Example example) {
         return R.success(exampleService.save(example));
     }
@@ -79,7 +90,7 @@ public class ExampleController {
      * 修改自动化样例
      */
     @PutMapping
-    @Node(value = "example::edit", name = "修改 自动化样例")
+    @Node(value = "open::example::edit", name = "修改 自动化样例")
     public R<Boolean> edit(@RequestBody Example example) {
         return R.success(exampleService.updateById(example));
     }
@@ -88,7 +99,7 @@ public class ExampleController {
      * 删除自动化样例
      */
     @DeleteMapping("/{ids}" )
-    @Node(value = "example::remove", name = "删除 自动化样例")
+    @Node(value = "open::example::remove", name = "删除 自动化样例")
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(exampleService.removeByIds(Arrays.asList(ids)));
     }
@@ -97,7 +108,7 @@ public class ExampleController {
      * 申请审批 自动化样例
      */
     @PutMapping("apply")
-    @Node(value = "example::apply", name = "申请审批 自动化样例")
+    @Node(value = "open::example::apply", name = "申请审批 自动化样例")
     public R<Boolean> apply(@RequestBody Example example) {
         try {
             example.setUpdatedTime(LocalDateTime.now());

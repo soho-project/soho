@@ -2,37 +2,29 @@ package work.soho.admin.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Arrays;
-import java.util.stream.Collectors;
-
+import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.api.admin.annotation.Node;
+import org.springframework.web.bind.annotation.*;
 import work.soho.admin.common.security.utils.SecurityUtils;
+import work.soho.admin.domain.AdminNotification;
 import work.soho.admin.domain.AdminUser;
+import work.soho.admin.service.AdminNotificationService;
 import work.soho.admin.service.AdminUserService;
+import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.request.AdminNotificationCreateRequest;
 import work.soho.api.admin.vo.AdminNotificationVo;
+import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
-import work.soho.admin.domain.AdminNotification;
-import work.soho.admin.service.AdminNotificationService;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 管理员 通知 Controller
@@ -81,7 +73,7 @@ public class AdminNotificationController extends BaseController {
             lqw.eq(AdminNotification::getIsRead ,adminNotification.getIsRead());
         }
         List<AdminNotification> list = adminNotificationService.list(lqw);
-        PageSerializable pageSerializable = new PageSerializable<>();
+        PageSerializable pageSerializable = new PageSerializable<>(list);
         if(!list.isEmpty()) {
             //获取所有的管理员ID
             List<Long> adminUserIds = list.stream().map(AdminNotification::getAdminUserId).collect(Collectors.toList());

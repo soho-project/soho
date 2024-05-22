@@ -1,23 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="work.soho.example.biz.mapper.ExampleMapper">
-
     <resultMap id="BaseResultMap" type="work.soho.example.biz.domain.Example">
-            <id property="id" column="id" jdbcType="INTEGER"/>
-            <result property="title" column="title" jdbcType="VARCHAR"/>
-            <result property="categoryId" column="category_id" jdbcType="INTEGER"/>
-            <result property="status" column="status" jdbcType="INTEGER"/>
-            <result property="payId" column="pay_id" jdbcType="VARCHAR"/>
-            <result property="content" column="content" jdbcType="VARCHAR"/>
-            <result property="updatedTime" column="updated_time" jdbcType="TIMESTAMP"/>
-            <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="title" column="title" jdbcType="VARCHAR"/>
+        <id property="categoryId" column="category_id" jdbcType="INTEGER"/>
+        <id property="optionId" column="option_id" jdbcType="VARCHAR"/>
+        <id property="content" column="content" jdbcType="VARCHAR"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="applyStatus" column="apply_status" jdbcType="TINYINT"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="userId" column="user_id" jdbcType="INTEGER"/>
+        <id property="openId" column="open_id" jdbcType="INTEGER"/>
     </resultMap>
-
     <sql id="Base_Column_List">
-        id,title,category_id,
-        pay_id,content,updated_time,
-        created_time
+        id,title,category_id,option_id,content,updated_time,created_time,apply_status,status,user_id,open_id
     </sql>
 </mapper>
