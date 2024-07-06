@@ -1,14 +1,12 @@
 package work.soho.chat.biz.controller.client;
 
 import cn.hutool.core.lang.Assert;
-import cn.hutool.core.lang.hash.Hash;
-import com.aliyun.oss.model.UploadFileResult;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +15,6 @@ import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import work.soho.api.admin.service.AdminConfigApiService;
 import work.soho.chat.api.ChatMessage;
-import work.soho.chat.api.payload.Command;
 import work.soho.chat.api.payload.RealTimeCmd;
 import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
@@ -34,9 +31,7 @@ import work.soho.common.data.upload.utils.UploadUtils;
 import work.soho.upload.api.Upload;
 import work.soho.upload.api.vo.UploadInfoVo;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -430,6 +425,11 @@ public class ClientChatSessionController {
         lambdaQueryWrapper.eq(ChatSessionUser::getSessionId, sessionId);
         lambdaQueryWrapper.eq(ChatSessionUser::getStatus, ChatSessionEnums.Status.ACTIVE.getId());
         List<ChatSessionUser> list = chatSessionUserService.list(lambdaQueryWrapper);
+        //fixed list is empty
+        if(CollectionUtils.isEmpty(list)) {
+            return R.success(new ArrayList<>());
+        }
+
         //获取用户信息
         List<Long> uids = list.stream().map(ChatSessionUser::getUserId).collect(Collectors.toList());
         List<ChatUser> users = chatUserService.getBaseMapper().selectBatchIds(uids);
