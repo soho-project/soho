@@ -26,6 +26,12 @@ public class LongLinkListen {
         try {
             log.info("监听器收到消息: {}", messageEvent);
             ChatMessage upMessage = MessageUtils.fromMessageEvent(messageEvent);
+            // 检查消息是否为有效消息
+            if(upMessage === null) {
+                //ignore  非本模块消息，或者非法消息
+                return;
+            }
+
             log.info("解析后的消息：", upMessage);
             //TODO 分发会话消息
             chatService.chat(upMessage);
