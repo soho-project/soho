@@ -40,4 +40,14 @@ public class GuestInfoController {
         }
         return list;
     }
+
+    /**
+     * 获取连接总数
+     *
+     * @return
+     */
+    @GetMapping(value = "/count")
+    public Integer getCount() {
+        return connectManager.getAllConnectId().size();
+    }
 }
