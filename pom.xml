@@ -31,7 +31,7 @@
 
             <dependency>
                 <groupId>work.soho</groupId>
-                <artifactId>soho-common-bom</artifactId>
+                <artifactId>soho-common-pom</artifactId>
                 <version>${soho-common.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
