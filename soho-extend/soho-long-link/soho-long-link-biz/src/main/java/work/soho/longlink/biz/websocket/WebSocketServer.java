@@ -35,17 +35,12 @@ import work.soho.longlink.biz.util.ServerUtil;
 @RequiredArgsConstructor
 public final class WebSocketServer implements Runnable {
 
-//    static final boolean SSL = System.getProperty("ssl") != null;
     static final boolean SSL = false;
-//    static final int PORT = Integer.parseInt(System.getProperty("port", SSL? "8443" : "8080"));
     static final int PORT = 8080;
 
     private final WebSocketServerInitializer webSocketServerInitializer;
 
     public void startWebsocket() throws Exception {
-        // Configure SSL.
-//        final SslContext sslCtx = ServerUtil.buildSslContext();
-
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -53,7 +48,6 @@ public final class WebSocketServer implements Runnable {
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.INFO))
-//                    .childHandler(new WebSocketServerInitializer(sslCtx));
                     .childHandler(webSocketServerInitializer);
 
             Channel ch = b.bind(PORT).sync().channel();
