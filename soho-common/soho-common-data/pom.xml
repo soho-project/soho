@@ -113,7 +113,6 @@
         <dependency>
             <groupId>work.soho</groupId>
             <artifactId>soho-common-security</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 <!--        /test-->
