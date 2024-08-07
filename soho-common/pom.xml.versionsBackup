@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>soho</artifactId>
+        <groupId>work.soho</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>soho-common</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>soho-common-pom</module>
+        <module>soho-common-core</module>
+        <module>soho-common-data</module>
+        <module>soho-common-security</module>
+        <module>soho-common-quartz</module>
+        <module>soho-approval-process</module>
+        <module>soho-common-test</module>
+    </modules>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+    </properties>
+
+</project>

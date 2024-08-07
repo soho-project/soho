@@ -7,3 +7,4 @@
 /soho-common/soho-common-test/src/main/resources/application-dev.yml
 *.iml
 **/*.iml
+**/pom.xml.versionsBackup
