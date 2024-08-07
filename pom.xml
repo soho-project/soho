@@ -7,7 +7,7 @@
     <groupId>work.soho</groupId>
     <artifactId>soho</artifactId>
     <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>${soho.version}</version>
 
     <modules>
         <module>soho-admin</module>
@@ -20,15 +20,13 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <lombok.version>1.18.0</lombok.version>
-
         <spring.checkstyle.version>0.0.29</spring.checkstyle.version>
+        <soho.version>1.0-SNAPSHOT</soho.version>
         <soho-common.version>1.0-SNAPSHOT</soho-common.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-
-
             <dependency>
                 <groupId>work.soho</groupId>
                 <artifactId>soho-common-pom</artifactId>
@@ -90,6 +88,7 @@
             <properties>
                 <!-- 环境标识，需要与配置文件的名称相对应 -->
                 <profiles.active>local</profiles.active>
+                <soho.version>1.0-SNAPSHOT</soho.version>
             </properties>
         </profile>
         <profile>
@@ -97,6 +96,7 @@
             <properties>
                 <!-- 环境标识，需要与配置文件的名称相对应 -->
                 <profiles.active>pro</profiles.active>
+                <soho.version>1.0</soho.version>
             </properties>
         </profile>
         <profile>
@@ -104,6 +104,7 @@
             <properties>
                 <!-- 环境标识，需要与配置文件的名称相对应 -->
                 <profiles.active>demo</profiles.active>
+                <soho.version>1.0</soho.version>
             </properties>
         </profile>
 
