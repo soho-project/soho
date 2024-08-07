@@ -82,7 +82,6 @@
         </dependency>
         <dependency>
             <groupId>work.soho</groupId>
-            <version>0.0.1-SNAPSHOT</version>
             <artifactId>soho-common-security</artifactId>
         </dependency>
         <dependency>

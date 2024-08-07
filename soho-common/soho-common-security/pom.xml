@@ -8,7 +8,6 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
     <artifactId>soho-common-security</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <description>soho-common-security</description>
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
