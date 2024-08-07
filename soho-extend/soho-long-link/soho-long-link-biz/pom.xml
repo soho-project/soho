@@ -14,15 +14,17 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.79.Final</version>
         </dependency>
 
         <dependency>
             <groupId>work.soho</groupId>
             <artifactId>soho-long-link-api</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -33,7 +35,6 @@
         <dependency>
             <groupId>work.soho</groupId>
             <artifactId>soho-common-test</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
 
     </dependencies>

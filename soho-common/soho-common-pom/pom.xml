@@ -12,6 +12,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <soho.version>1.0-SNAPSHOT</soho.version>
         <soho-common.version>1.0-SNAPSHOT</soho-common.version>
         <disruptor.version>3.4.4</disruptor.version>
         <mybatis-spring.version>2.2.1</mybatis-spring.version>
@@ -71,49 +72,59 @@
             <dependency>
                 <groupId>work.soho</groupId>
                 <artifactId>soho-common-quartz</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${soho.version}</version>
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
                 <artifactId>soho-content-biz</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${soho.version}</version>
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
                 <artifactId>soho-lot-biz</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${soho.version}</version>
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
                 <artifactId>soho-pay-biz</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${soho.version}</version>
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
                 <artifactId>soho-example-biz</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${soho.version}</version>
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
                 <artifactId>soho-user-biz</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${soho.version}</version>
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
                 <artifactId>soho-code-biz</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${soho.version}</version>
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
                 <artifactId>soho-common-test</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${soho.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
                 <artifactId>soho-groovy-api</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>${soho.version}</version>
                 <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-long-link-biz</artifactId>
+                <version>${soho.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-long-link-api</artifactId>
+                <version>${soho.version}</version>
             </dependency>
             <!--/业务模块            -->
 
@@ -250,11 +261,15 @@
                 <artifactId>azure-ai-openai</artifactId>
                 <version>${azure-ai-openai.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.codehaus.groovy</groupId>
                 <artifactId>groovy-all</artifactId>
                 <version>2.4.21</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-all</artifactId>
+                <version>4.1.79.Final</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
