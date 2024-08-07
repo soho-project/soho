@@ -12,6 +12,7 @@
 - [延时队列](delayed-queue.md)
 - [excel](excel.md)
 - [项目鉴权](security.md)
+- [版本管理](version.md)
 
 模块相关文档
 
