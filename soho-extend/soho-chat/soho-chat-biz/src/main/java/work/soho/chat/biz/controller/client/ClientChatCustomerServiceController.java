@@ -4,12 +4,13 @@ import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
 import work.soho.admin.common.security.utils.SecurityUtils;
+import work.soho.chat.biz.config.ImConfig;
 import work.soho.chat.biz.domain.ChatCustomerService;
 import work.soho.chat.biz.domain.ChatSession;
 import work.soho.chat.biz.enums.ChatSessionEnums;
@@ -20,6 +21,8 @@ import work.soho.chat.biz.vo.CustomerServiceSessionVO;
 import work.soho.common.core.result.R;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 @Log4j2
 @RestController
@@ -32,6 +35,7 @@ public class ClientChatCustomerServiceController {
 
     private final ChatSessionUserService chatSessionUserService;
 
+    private final ImConfig imConfig;
 
     @RequestMapping("/session-id")
     public R<CustomerServiceSessionVO> getSessionId(@AuthenticationPrincipal SohoUserDetails sohoUserDetails, Long toUid) {
@@ -58,5 +62,17 @@ public class ClientChatCustomerServiceController {
         customerServiceSessionVO.setSessionId(chatSession.getId());
         //检查创建会话
         return R.success(customerServiceSessionVO);
+    }
+
+    /**
+     * 客服系统配置信息获取接口
+     *
+     * @return
+     */
+    @GetMapping(value = "/config")
+    public R<Map<String, Object>> getConfig() {
+        HashMap<String, Object> map = new HashMap<>();
+        map.put(imConfig.AUTO_CHAT, imConfig.isAutoChat());
+        return R.success(map);
     }
 }

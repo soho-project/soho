@@ -1,10 +1,10 @@
 package work.soho.groovy.biz.service.impl;
 
 import cn.hutool.core.lang.Assert;
-import org.springframework.stereotype.Service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 import work.soho.groovy.biz.domain.GroovyInfo;
 import work.soho.groovy.biz.mapper.GroovyInfoMapper;
 import work.soho.groovy.biz.service.GroovyExecutorService;
@@ -12,12 +12,14 @@ import work.soho.groovy.biz.service.GroovyInfoService;
 import work.soho.groovy.exception.NotFoundException;
 import work.soho.groovy.service.GroovyInfoApiService;
 
+import java.util.Map;
+
 @RequiredArgsConstructor
 @Service
 public class GroovyInfoServiceImpl extends ServiceImpl<GroovyInfoMapper, GroovyInfo>
     implements GroovyInfoService, GroovyInfoApiService {
 
-    private final GroovyExecutorService groovyExecutor;;
+    private final GroovyExecutorService groovyExecutor;
 
     /**
      * 执行指定名称代码
@@ -27,9 +29,21 @@ public class GroovyInfoServiceImpl extends ServiceImpl<GroovyInfoMapper, GroovyI
      */
     @Override
     public Object executor(String name) {
+        return this.executor(name, null);
+    }
+
+    /**
+     * 执行指定名称代码
+     *
+     * @param name
+     * @param params
+     * @return
+     */
+    @Override
+    public Object executor(String name, Map<String, Object> params) {
         GroovyInfo groovyInfo = getByName(name);
         Assert.notNull(groovyInfo, "找不到任务名为：" + name + "的代码");
-        return this.groovyExecutor.execute(groovyInfo.getCode());
+        return this.groovyExecutor.execute(groovyInfo.getCode(), params);
     }
 
     /**
