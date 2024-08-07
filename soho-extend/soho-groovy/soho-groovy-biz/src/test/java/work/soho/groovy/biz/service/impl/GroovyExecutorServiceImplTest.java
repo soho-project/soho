@@ -8,7 +8,9 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import work.soho.groovy.biz.service.GroovyExecutorService;
 import work.soho.test.TestApp;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.HashMap;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
@@ -19,6 +21,11 @@ class GroovyExecutorServiceImplTest {
 
     @Test
     void execute() {
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("x", 1);
+        params.put("y", 2);
+        Object result = this.groovyExecutorService.execute("x + y", params);
+        assertEquals(3, result);
     }
 
     @Test
