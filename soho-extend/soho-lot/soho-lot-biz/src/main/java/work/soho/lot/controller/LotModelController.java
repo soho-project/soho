@@ -2,26 +2,15 @@ package work.soho.lot.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-
-import java.beans.Transient;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Arrays;
+import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import work.soho.api.admin.annotation.Node;
+import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
-import work.soho.api.admin.annotation.Node;
 import work.soho.lot.api.request.LotModelRequest;
 import work.soho.lot.domain.LotModel;
 import work.soho.lot.domain.LotModelItem;
@@ -30,12 +19,17 @@ import work.soho.lot.service.LotModelItemService;
 import work.soho.lot.service.LotModelService;
 import work.soho.lot.service.LotProductService;
 
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * 物联网模型Controller
  *
  * @author i
  * @date 2022-10-24 23:14:17
  */
+@Api(tags = "物联网模型API")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/lotModel" )

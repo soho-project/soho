@@ -4,11 +4,12 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
 
 /**
  * 物联网模型
@@ -20,24 +21,28 @@ public class LotModel implements Serializable {
     /**
      * ID
      */
+    @ApiModelProperty("ID")
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     /**
      * 模型名称
      */
+    @ApiModelProperty("模型名称")
     @TableField(value = "name")
     private String name;
 
     /**
      * 供应商ID
      */
+    @ApiModelProperty("供应商ID")
     @TableField(value = "supplier_id")
     private Integer supplierId;
 
     /**
      * 更新时间
      */
+    @ApiModelProperty("更新时间")
     @TableField(value = "updated_time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedTime;
@@ -45,6 +50,7 @@ public class LotModel implements Serializable {
     /**
      * 创建时间
      */
+    @ApiModelProperty("创建时间")
     @TableField(value = "created_time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
