@@ -51,6 +51,7 @@ public class AdminUserController extends BaseController {
     private final AdminRoleResourceService adminRoleResourceService;
     private static final Logger logger = LoggerFactory.getLogger(AdminUserController.class);
 
+    @ApiOperation("当前登录用户信息")
     @GetMapping("/user")
     public R<CurrentAdminUserVo> user() {
         try {

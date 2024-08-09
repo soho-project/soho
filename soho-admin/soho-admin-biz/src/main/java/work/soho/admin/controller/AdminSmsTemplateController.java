@@ -1,35 +1,26 @@
 package work.soho.admin.controller;
 
-import java.time.LocalDateTime;
-import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
-import work.soho.api.admin.annotation.Node;
+import io.swagger.annotations.Api;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 import work.soho.admin.domain.AdminSmsTemplate;
 import work.soho.admin.service.AdminSmsTemplateService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.api.admin.vo.OptionVo;
+import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.api.admin.vo.TreeNodeVo;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
+
+import java.util.Arrays;
+import java.util.List;
 /**
  * 短信模板Controller
  *
  * @author fang
  */
+@Api(tags = "短信模板")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/adminSmsTemplate" )
