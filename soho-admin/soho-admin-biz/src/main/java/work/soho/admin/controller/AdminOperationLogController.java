@@ -2,6 +2,7 @@ package work.soho.admin.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.domain.AdminOperationLog;
@@ -19,6 +20,7 @@ import java.util.List;
  *
  * @author fang
  */
+@Api(tags = "系统管理操作日志")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/adminOperationLog" )

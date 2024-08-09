@@ -3,6 +3,7 @@ package work.soho.admin.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.domain.AdminDict;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 /**
  * 字典
  */
+@Api(tags = "系统字典")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/adminDict")

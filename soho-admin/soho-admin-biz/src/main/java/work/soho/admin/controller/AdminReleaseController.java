@@ -1,35 +1,32 @@
 package work.soho.admin.controller;
 
-import java.time.LocalDateTime;
-
-import org.springframework.util.MimeType;
-import org.springframework.util.MimeTypeUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import work.soho.api.admin.service.AdminDictApiService;
-import work.soho.common.core.util.PageUtils;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
-import work.soho.api.admin.annotation.Node;
 import work.soho.admin.domain.AdminRelease;
 import work.soho.admin.service.AdminReleaseService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.api.admin.vo.OptionVo;
+import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.api.admin.vo.TreeNodeVo;
+import work.soho.api.admin.service.AdminDictApiService;
+import work.soho.api.admin.vo.OptionVo;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 发版Controller
  *
  * @author fang
  */
+@Api(tags = "发版管理")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/adminRelease" )
