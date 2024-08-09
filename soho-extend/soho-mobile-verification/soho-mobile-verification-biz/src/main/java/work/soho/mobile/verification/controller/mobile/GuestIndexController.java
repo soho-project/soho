@@ -1,6 +1,7 @@
 package work.soho.mobile.verification.controller.mobile;
 
 import cn.hutool.core.lang.Assert;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +16,7 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Random;
 
+@Api(tags = "客户端手机认证API")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/guest/api/mobile")

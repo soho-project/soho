@@ -1,5 +1,6 @@
 package work.soho.mobile.verification.controller.mobile;
 
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import work.soho.common.core.result.R;
@@ -9,6 +10,7 @@ import work.soho.mobile.verification.config.SohoMobileVerificationConfig;
 import work.soho.mobile.verification.request.SaveMsgRequest;
 import work.soho.mobile.verification.service.VerificationService;
 
+@Api(tags = "移动端验证码")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/client/api/mobile")
