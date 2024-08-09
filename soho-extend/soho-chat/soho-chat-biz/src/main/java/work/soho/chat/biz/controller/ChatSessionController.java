@@ -1,36 +1,32 @@
 package work.soho.chat.biz.controller;
 
-import java.time.LocalDateTime;
-
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import work.soho.api.admin.annotation.Node;
+import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import work.soho.chat.api.ChatMessage;
 import work.soho.chat.api.payload.SystemMessage;
+import work.soho.chat.biz.domain.ChatSession;
 import work.soho.chat.biz.req.SendMessageReq;
 import work.soho.chat.biz.service.ChatService;
+import work.soho.chat.biz.service.ChatSessionService;
+import work.soho.common.core.result.R;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.PageUtils;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
-import work.soho.api.admin.annotation.Node;
-import work.soho.chat.biz.domain.ChatSession;
-import work.soho.chat.biz.service.ChatSessionService;
-import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 聊天会话Controller
  *
  * @author fang
  */
+@Api(tags = "聊天会话")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/chatSession" )

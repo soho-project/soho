@@ -1,5 +1,6 @@
 package work.soho.chat.biz.req;
 
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.util.List;
@@ -9,6 +10,9 @@ import java.util.List;
  */
 @Data
 public class InviteJoinGroupReq {
+    @ApiModelProperty(value = "会话ID")
     private Long sessionId;
+
+    @ApiModelProperty(value = "用户ID列表")
     private List<Long> chatUserIds;
 }

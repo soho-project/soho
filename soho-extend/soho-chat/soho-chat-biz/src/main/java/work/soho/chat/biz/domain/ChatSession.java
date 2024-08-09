@@ -5,54 +5,61 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import java.io.Serializable;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
-import java.math.BigInteger;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @TableName(value ="chat_session")
 @Data
 public class ChatSession implements Serializable {
     /**
-    * null
+    * ID
     */
+    @ApiModelProperty(value = "ID")
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
     /**
     * 会话类型;1:私聊,2:群聊,3:群组;frontType:select
     */
+    @ApiModelProperty(value = "会话类型;1:私聊,2:群聊,3:群组;")
     @TableField(value = "`type`")
     private Integer type;
 
     /**
      * 跟踪ID
      */
+    @ApiModelProperty(value = "跟踪ID")
     @TableField(value = "track_id")
     private Long trackId;
 
     /**
     * 状态;1:活跃,2:禁用,3:删除;frontType:select
     */
+    @ApiModelProperty(value = "状态;1:活跃,2:禁用,3:删除;")
     @TableField(value = "status")
     private Integer status;
 
     /**
     * 会话标题
     */
+    @ApiModelProperty(value = "会话标题")
     @TableField(value = "title")
     private String title;
 
     /**
     * 会话头像
     */
+    @ApiModelProperty(value = "会话头像")
     @TableField(value = "avatar")
     private String avatar;
 
     /**
     * 更新时间
     */
+    @ApiModelProperty(value = "更新时间")
     @TableField(value = "updated_time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedTime;
@@ -60,6 +67,7 @@ public class ChatSession implements Serializable {
     /**
     * 创建时间
     */
+    @ApiModelProperty(value = "创建时间")
     @TableField(value = "created_time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
@@ -67,6 +75,7 @@ public class ChatSession implements Serializable {
     /**
      * 会话消息最后时间
      */
+    @ApiModelProperty(value = "会话消息最后时间")
     @TableField(value = "last_message_time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastMessageTime;
@@ -74,12 +83,14 @@ public class ChatSession implements Serializable {
     /**
      * 会话用户数
      */
+    @ApiModelProperty(value = "会话用户数")
     @TableField(value = "user_count")
     private Integer userCount;
 
     /**
      * 会话最后一条消息
      */
+    @ApiModelProperty(value = "会话最后一条消息")
     @TableField(value = "last_message")
     private String lastMessage;
 }
