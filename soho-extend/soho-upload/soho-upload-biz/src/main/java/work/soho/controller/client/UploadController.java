@@ -1,19 +1,17 @@
 package work.soho.controller.client;
 
 import cn.hutool.core.lang.Assert;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.util.MimeType;
-import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.common.core.result.R;
-import work.soho.common.data.upload.utils.UploadUtils;
 import work.soho.service.UploadFileService;
 import work.soho.upload.api.Upload;
 import work.soho.upload.api.vo.UploadInfoVo;
 
+@Api(tags = "客户端上传文件")
 @RestController
 @Log4j2
 @RequestMapping("/client/api/upload")

@@ -1,36 +1,33 @@
 package work.soho.groovy.biz.controller;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.time.LocalDateTime;
-
-import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
+import io.swagger.annotations.Api;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 import work.soho.api.admin.annotation.Node;
+import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.groovy.biz.domain.GroovyInfo;
 import work.soho.groovy.biz.service.GroovyExecutorService;
 import work.soho.groovy.biz.service.GroovyInfoService;
-import work.soho.api.admin.request.BetweenCreatedTimeRequest;
 import work.soho.groovy.biz.vo.TestCodeVO;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * groovy代码Controller
  *
  * @author fang
  */
+@Api(tags = "groovy代码")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/groovyInfo" )

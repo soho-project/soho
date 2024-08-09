@@ -2,6 +2,7 @@ package work.soho.pay.biz.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import work.soho.api.admin.annotation.Node;
@@ -21,6 +22,7 @@ import java.util.List;
  * @author i
  * @date 2022-11-08 13:42:16
  */
+@Api(tags = "支付单")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/payOrder" )

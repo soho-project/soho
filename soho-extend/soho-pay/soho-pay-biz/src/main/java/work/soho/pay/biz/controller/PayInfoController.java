@@ -1,32 +1,21 @@
 package work.soho.pay.biz.controller;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Arrays;
-import java.util.stream.Collectors;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
+import io.swagger.annotations.Api;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 import work.soho.api.admin.annotation.Node;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.pay.biz.domain.PayInfo;
 import work.soho.pay.biz.service.PayInfoService;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * 支付表Controller
@@ -34,6 +23,7 @@ import work.soho.pay.biz.service.PayInfoService;
  * @author i
  * @date 2022-11-11 16:36:32
  */
+@Api(tags = "客户端支付信息")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/payInfo" )

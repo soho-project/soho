@@ -3,6 +3,7 @@ package work.soho.pay.biz.controller;
 import cn.hutool.json.JSONUtil;
 import com.alipay.api.internal.util.AlipaySignature;
 import com.wechat.pay.java.service.payments.model.Transaction;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Controller;
@@ -26,6 +27,7 @@ import java.util.HashMap;
 /**
  * 支付回调接口地址
  */
+@Api(tags = "客户端支付回调接口")
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/client/api/payCallback" )
