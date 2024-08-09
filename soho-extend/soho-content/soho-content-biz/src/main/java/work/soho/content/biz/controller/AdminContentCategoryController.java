@@ -2,28 +2,21 @@ package work.soho.content.biz.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import work.soho.api.admin.annotation.Node;
+import work.soho.api.admin.vo.TreeContentCategoryVo;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
+import work.soho.content.biz.domain.AdminContentCategory;
+import work.soho.content.biz.service.AdminContentCategoryService;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.api.admin.vo.TreeContentCategoryVo;
-import work.soho.common.core.util.PageUtils;
-import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
-import work.soho.api.admin.annotation.Node;
-import work.soho.content.biz.domain.AdminContentCategory;
-import work.soho.content.biz.service.AdminContentCategoryService;
 
 /**
  * 内容分类Controller
@@ -31,6 +24,7 @@ import work.soho.content.biz.service.AdminContentCategoryService;
  * @author i
  * @date 2022-09-03 01:59:15
  */
+@Api(tags = "内容分类API")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/adminContentCategory" )

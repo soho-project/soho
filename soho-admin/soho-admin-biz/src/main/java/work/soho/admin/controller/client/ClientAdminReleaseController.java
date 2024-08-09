@@ -1,8 +1,8 @@
 package work.soho.admin.controller.client;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
-import org.ehcache.core.spi.service.ServiceFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,6 +13,7 @@ import work.soho.common.core.result.R;
 
 import java.util.Optional;
 
+@Api(tags = "客户端版本信息API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/client/api/admin/adminRelease")

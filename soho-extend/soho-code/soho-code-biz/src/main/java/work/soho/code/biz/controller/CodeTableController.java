@@ -38,7 +38,7 @@ import java.util.*;
  * @author fang
  * @date 2022-11-30 15:47:28
  */
-@Api("代码表")
+@Api(tags = "代码表")
 @Log4j2
 @RequiredArgsConstructor
 @RestController

@@ -2,6 +2,7 @@ package work.soho.example.biz.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.common.security.utils.SecurityUtils;
@@ -24,6 +25,7 @@ import java.util.List;
  *
  * @author fang
  */
+@Api(tags = "自动化样例API")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/example" )

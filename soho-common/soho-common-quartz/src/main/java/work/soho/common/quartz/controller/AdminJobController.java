@@ -1,35 +1,26 @@
 package work.soho.common.quartz.controller;
 
-import java.lang.reflect.InvocationTargetException;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Arrays;
-
-import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import work.soho.api.admin.annotation.Node;
-import work.soho.common.core.util.BeanUtils;
+import work.soho.common.core.result.R;
 import work.soho.common.core.util.RequestUtil;
 import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
 import work.soho.common.quartz.domain.AdminJob;
 import work.soho.common.quartz.service.AdminJobService;
 import work.soho.common.quartz.util.InvokeUtil;
 import work.soho.common.quartz.util.JobUtil;
+
+import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * admin_jobController
@@ -37,6 +28,7 @@ import work.soho.common.quartz.util.JobUtil;
  * @author i
  * @date 2022-07-26 03:45:29
  */
+@Api(tags = "系统定时任务")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/adminJob" )
