@@ -2,6 +2,7 @@ package work.soho.example.biz.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import work.soho.api.admin.annotation.Node;
@@ -21,6 +22,7 @@ import java.util.List;
  *
  * @author fang
  */
+@Api(tags = "选项API")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/exampleOption" )

@@ -4,12 +4,13 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Date;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
 
 /**
  * 自动化样例分类表;option:id~title,tree:id~title~parent_id
@@ -21,45 +22,54 @@ public class ExampleCategory implements Serializable {
     /**
      * ID;;optionKey
      */
+    @ApiModelProperty(value = "ID;;")
     @TableId(type = IdType.AUTO)
     private Integer id;
 
     /**
      * 标题;;optionValue
      */
+    @ApiModelProperty(value = "标题;;")
     private String title;
 
     /**
      * 父级ID;;parent:id
      */
+    @ApiModelProperty(value = "父级ID;;")
     private Integer parentId;
 
     /**
      * 更新时间
      */
+    @ApiModelProperty(value = "更新时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedTime;
 
     /**
      * 创建时间
      */
+    @ApiModelProperty(value = "创建时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
 
     /**
      * 只是日期
      */
+    @ApiModelProperty(value = "日期")
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date onlyDate;
 
     /**
      * 日期时间
      */
+    @ApiModelProperty(value = "日期时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime payDatetime;
 
     /**
      * 图片;;frontType:upload,uploadCount:3
      */
+    @ApiModelProperty(value = "图片;;")
     private String img;
 
     @TableField(exist = false)

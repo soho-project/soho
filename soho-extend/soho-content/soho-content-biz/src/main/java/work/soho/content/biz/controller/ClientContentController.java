@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Api("内容接口")
+@Api("客户端内容接口")
 @RestController
 @RequestMapping("/client/api/content")
 @RequiredArgsConstructor

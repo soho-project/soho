@@ -2,12 +2,8 @@ package work.soho.content.biz.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Arrays;
-
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +16,10 @@ import work.soho.common.data.upload.utils.UploadUtils;
 import work.soho.content.biz.domain.AdminContent;
 import work.soho.content.biz.service.AdminContentService;
 
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+
 
 /**
  * 系统内容表Controller
@@ -27,6 +27,7 @@ import work.soho.content.biz.service.AdminContentService;
  * @author i
  * @date 2022-09-03 01:59:15
  */
+@Api(tags = "系统内容表API")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/adminContent" )
