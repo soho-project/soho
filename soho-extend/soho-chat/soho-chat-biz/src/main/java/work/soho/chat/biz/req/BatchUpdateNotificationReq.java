@@ -1,5 +1,6 @@
 package work.soho.chat.biz.req;
 
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ public class BatchUpdateNotificationReq {
     /**
      * 会话ID列表
      */
+    @ApiModelProperty(value = "会话ID列表")
     private List<Long> sessionIds = new ArrayList<>();
 
     /**
@@ -18,5 +20,6 @@ public class BatchUpdateNotificationReq {
      * 2 接收不提醒
      * 3 屏蔽消息
      */
+    @ApiModelProperty(value = "消息提示类型")
     private Integer type;
 }
