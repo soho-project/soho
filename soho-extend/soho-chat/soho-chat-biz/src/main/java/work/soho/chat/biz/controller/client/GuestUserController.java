@@ -1,5 +1,6 @@
 package work.soho.chat.biz.controller.client;
 
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -12,6 +13,7 @@ import work.soho.common.core.result.R;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+@Api(tags = "客户端游客用户")
 @RequiredArgsConstructor
 @RestController
 @Log4j2

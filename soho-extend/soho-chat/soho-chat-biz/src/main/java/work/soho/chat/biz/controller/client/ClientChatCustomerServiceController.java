@@ -2,6 +2,7 @@ package work.soho.chat.biz.controller.client;
 
 import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+@Api(tags = "客服系统")
 @Log4j2
 @RestController
 @RequestMapping("/chat/chat/customer-service")

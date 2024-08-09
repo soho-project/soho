@@ -3,6 +3,7 @@ package work.soho.chat.biz.controller.client;
 import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
 /**
  * 客户端会话列表控制器
  */
+@Api(tags = "客户端会话列表")
 @Log4j2
 @RestController
 @RequiredArgsConstructor

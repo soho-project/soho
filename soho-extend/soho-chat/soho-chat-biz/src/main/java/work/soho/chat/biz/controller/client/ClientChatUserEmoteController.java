@@ -3,6 +3,7 @@ package work.soho.chat.biz.controller.client;
 
 import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,7 @@ import work.soho.upload.api.vo.UploadInfoVo;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Api(tags = "客户端用户表情")
 @RestController
 @RequestMapping("/chat/chat/chatUserEmote")
 @RequiredArgsConstructor

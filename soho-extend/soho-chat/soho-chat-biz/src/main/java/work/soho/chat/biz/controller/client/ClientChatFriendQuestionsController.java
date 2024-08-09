@@ -2,6 +2,7 @@ package work.soho.chat.biz.controller.client;
 
 import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,9 +17,10 @@ import work.soho.chat.biz.service.ChatUserService;
 import work.soho.chat.biz.vo.UserQuestionsVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
-import java.time.LocalDateTime;
-import java.util.List;
 
+import java.time.LocalDateTime;
+
+@Api(tags = "客户端好友认证")
 @RestController
 @RequestMapping("/chat/chat/chatUserFriendQuestions")
 @RequiredArgsConstructor

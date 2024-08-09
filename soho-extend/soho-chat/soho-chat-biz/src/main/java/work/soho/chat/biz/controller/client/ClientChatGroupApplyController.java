@@ -2,6 +2,7 @@ package work.soho.chat.biz.controller.client;
 
 import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Api(tags = "客户端群申请")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/chat/chat/chatGroupApply")

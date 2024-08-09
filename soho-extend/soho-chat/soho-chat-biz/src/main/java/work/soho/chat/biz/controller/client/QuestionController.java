@@ -1,5 +1,6 @@
 package work.soho.chat.biz.controller.client;
 
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,6 +18,7 @@ import work.soho.chat.biz.service.*;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.IDGeneratorUtils;
 
+@Api(tags = "客户端聊天")
 @Log4j2
 @RestController
 @RequestMapping("/chat/chat/question")

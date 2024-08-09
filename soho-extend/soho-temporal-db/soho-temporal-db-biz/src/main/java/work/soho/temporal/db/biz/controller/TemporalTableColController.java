@@ -3,6 +3,7 @@ package work.soho.temporal.db.biz.controller;
 import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.apache.iotdb.isession.SessionDataSet;
 import org.apache.iotdb.rpc.IoTDBConnectionException;
@@ -27,6 +28,7 @@ import java.util.List;
  *
  * @author Administrator
  */
+@Api(tags = "时序数据库字段")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/temporalTableCol" )

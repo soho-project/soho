@@ -2,6 +2,7 @@ package work.soho.temporal.db.biz.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import work.soho.api.admin.annotation.Node;
@@ -22,6 +23,7 @@ import java.util.List;
  *
  * @author fang
  */
+@Api(tags = "时序表")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/temporalTable" )

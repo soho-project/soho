@@ -2,6 +2,7 @@ package work.soho.chat.biz.controller.client;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Api(tags = "客户端聊天通知")
 @RestController
 @RequestMapping("/chat/chat/chatUserNotice")
 @RequiredArgsConstructor

@@ -2,6 +2,7 @@ package work.soho.chat.biz.controller.client;
 
 import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -32,6 +33,7 @@ import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.*;
 
+@Api(tags = "客户端用户接口")
 @RestController
 @Log4j2
 @RequestMapping("/chat/chat/chatUser")

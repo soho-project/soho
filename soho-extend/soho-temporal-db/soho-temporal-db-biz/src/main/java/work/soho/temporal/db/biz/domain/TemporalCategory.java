@@ -5,46 +5,54 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import java.io.Serializable;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @TableName(value ="temporal_category")
 @Data
 public class TemporalCategory implements Serializable {
     /**
-    * null
+    * ID
     */
+    @ApiModelProperty(value = "ID")
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     /**
     * 分类名
     */
+    @ApiModelProperty(value = "分类名")
     @TableField(value = "name")
     private String name;
 
     /**
     * 分类标题
     */
+    @ApiModelProperty(value = "分类标题")
     @TableField(value = "title")
     private String title;
 
     /**
     * 分类父ID;;foreign:temporal_category.id,frontType:treeSelect,undefined:undefined
     */
+    @ApiModelProperty(value = "分类父ID;;")
     @TableField(value = "parent_id")
     private Integer parentId;
 
     /**
     * 备注
     */
+    @ApiModelProperty(value = "备注")
     @TableField(value = "notes")
     private String notes;
 
     /**
     * 更新时间
     */
+    @ApiModelProperty(value = "更新时间")
     @TableField(value = "updated_time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedTime;
@@ -52,8 +60,8 @@ public class TemporalCategory implements Serializable {
     /**
     * 创建时间
     */
+    @ApiModelProperty(value = "创建时间")
     @TableField(value = "created_time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
-
 }
