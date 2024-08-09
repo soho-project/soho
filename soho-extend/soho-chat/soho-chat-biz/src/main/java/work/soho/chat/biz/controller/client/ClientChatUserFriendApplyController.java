@@ -1,6 +1,7 @@
 package work.soho.chat.biz.controller.client;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.Assert;
@@ -18,6 +19,7 @@ import work.soho.common.core.result.R;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 
+@Api(tags = "客户端好友申请")
 @RestController
 @RequestMapping("/chat/chat/chatUserFriendApply")
 @RequiredArgsConstructor

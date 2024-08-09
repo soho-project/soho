@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import java.io.Serializable;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+
+import java.io.Serializable;
 
 /**
  * 代码表
@@ -15,26 +17,30 @@ import lombok.Data;
 @Data
 public class CodeTable implements Serializable {
     /**
-     *
+     * ID
      */
-     @TableId(value = "id", type = IdType.AUTO)
+    @ApiModelProperty(value = "ID")
+    @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     /**
      * 表名
      */
+    @ApiModelProperty(value = "表名")
     @TableField(value = "name")
     private String name;
 
     /**
      * 表标题
      */
+    @ApiModelProperty(value = "表标题")
     @TableField(value = "title")
     private String title;
 
     /**
      * 表注释
      */
+    @ApiModelProperty(value = "表注释")
     @TableField(value = "comment")
     private String comment;
 

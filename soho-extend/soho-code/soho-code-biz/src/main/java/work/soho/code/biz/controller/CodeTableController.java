@@ -3,6 +3,7 @@ package work.soho.code.biz.controller;
 import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -37,6 +38,7 @@ import java.util.*;
  * @author fang
  * @date 2022-11-30 15:47:28
  */
+@Api("代码表")
 @Log4j2
 @RequiredArgsConstructor
 @RestController

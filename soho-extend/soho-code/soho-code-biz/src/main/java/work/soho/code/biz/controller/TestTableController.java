@@ -1,6 +1,7 @@
 package work.soho.code.biz.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,10 +17,9 @@ import work.soho.code.biz.utils.ZipUtils;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
+@Api(tags = "代码表测试")
 @RequestMapping("/client/api/table")
 @RestController
 @RequiredArgsConstructor

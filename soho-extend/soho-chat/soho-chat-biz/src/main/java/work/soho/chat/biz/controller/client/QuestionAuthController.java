@@ -1,15 +1,12 @@
 package work.soho.chat.biz.controller.client;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import work.soho.admin.common.security.userdetails.SohoUserDetails;
-import work.soho.admin.common.security.utils.SecurityUtils;
 import work.soho.chat.api.Constants;
 import work.soho.chat.biz.domain.ChatUser;
 import work.soho.chat.biz.service.ChatUserService;
@@ -19,6 +16,7 @@ import work.soho.common.core.util.IDGeneratorUtils;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+@Api(tags = "客户端访客接口")
 @RestController
 @RequestMapping("/guest/chat/auth")
 @RequiredArgsConstructor

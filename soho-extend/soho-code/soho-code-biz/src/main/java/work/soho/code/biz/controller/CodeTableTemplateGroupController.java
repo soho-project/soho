@@ -1,38 +1,33 @@
 package work.soho.code.biz.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import work.soho.api.admin.annotation.Node;
+import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import work.soho.api.admin.vo.OptionVo;
+import work.soho.api.admin.vo.TreeNodeVo;
+import work.soho.code.biz.domain.CodeTableTemplateGroup;
+import work.soho.code.biz.service.CodeTableTemplateGroupService;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import work.soho.common.core.util.PageUtils;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
-import work.soho.api.admin.annotation.Node;
-import work.soho.code.biz.domain.CodeTableTemplateGroup;
-import work.soho.code.biz.service.CodeTableTemplateGroupService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.api.admin.vo.OptionVo;
-import work.soho.api.admin.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.api.admin.vo.TreeNodeVo;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 /**
  * 模本分组;;option:id~nameController
  *
  * @author fang
  * @date 2022-12-12 17:29:51
  */
+@Api(tags = "代码模本分组;;")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/codeTableTemplateGroup" )

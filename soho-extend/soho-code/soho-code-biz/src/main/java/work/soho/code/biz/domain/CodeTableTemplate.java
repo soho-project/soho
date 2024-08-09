@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import lombok.Data;
 
 /**
  * 代码表模板
@@ -16,47 +18,55 @@ import lombok.Data;
 @Data
 public class CodeTableTemplate implements Serializable {
     /**
-     *
+     * ID
      */
+    @ApiModelProperty("ID")
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
+    @ApiModelProperty("名称")
     @TableField(value = "name")
     private String name;
 
     /**
      * 分组ID
      */
+    @ApiModelProperty("分组ID")
     @TableField(value = "group_id")
     private Integer groupId;
 
     /**
      * 标题
      */
+    @ApiModelProperty("标题")
     @TableField(value = "title")
     private String title;
 
     /**
      * 状态;0:禁用,1:活跃;forntType:select
      */
+    @ApiModelProperty("状态;0:禁用,1:活跃;")
     @TableField(value = "status")
     private Integer status;
 
     /**
-     *
+     * 代码
      */
+    @ApiModelProperty("代码")
     @TableField(value = "code")
     private String code;
 
     /**
      * 创建时间
      */
+    @ApiModelProperty("创建时间")
     @TableField(value = "created_time")
     private LocalDateTime createdTime;
 
     /**
      * 排序
      */
+    @ApiModelProperty("排序")
     @TableField(value = "sort")
     private Integer sort;
 

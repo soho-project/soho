@@ -3,7 +3,7 @@ package work.soho.chat.biz.controller.client;
 import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
-import lombok.Getter;
+import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,7 +17,9 @@ import work.soho.chat.api.ChatMessage;
 import work.soho.chat.api.payload.RealTimeCmd;
 import work.soho.chat.api.payload.SystemMessage;
 import work.soho.chat.biz.domain.*;
-import work.soho.chat.biz.enums.*;
+import work.soho.chat.biz.enums.ChatGroupUserEnums;
+import work.soho.chat.biz.enums.ChatSessionEnums;
+import work.soho.chat.biz.enums.ChatSessionUserEnums;
 import work.soho.chat.biz.req.*;
 import work.soho.chat.biz.service.*;
 import work.soho.chat.biz.vo.ChatGroupVO;
@@ -38,6 +40,7 @@ import java.util.stream.Collectors;
 /**
  * 群组客户端控制器
  */
+@Api(tags = "客户端群组客户端控制器")
 @Log4j2
 @RestController
 @RequiredArgsConstructor
