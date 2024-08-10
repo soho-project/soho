@@ -8,7 +8,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.web.WebAppConfiguration;
 import work.soho.common.TestCommonApplication;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
@@ -17,30 +17,62 @@ import static org.junit.jupiter.api.Assertions.*;
 @Log4j2
 class DelayedQueueUtilsTest {
 
+    private int count = 0;
+
+    private AtomicInteger okCount = new AtomicInteger();
+
     @Test
     void addExecDelayedMessage() throws InterruptedException {
-        System.out.println("test by fang");
-        DelayedQueueUtils.addEventDelayedMessage(new TestRun(), 3000);
-        Thread.sleep(5000);
+        long startTs = System.currentTimeMillis();
+        log.info("开始执行, ts: {}", startTs);
+        for (int i = 0; i < 100; i++) {
+            count++;
+            log.info("入队： {}", count);
+            DelayedQueueUtils.addEventDelayedMessage(new TestRun(i), 100);
+        }
+        long endTs = System.currentTimeMillis();
+        System.out.println("耗时： " + (endTs - startTs));
+        Thread.sleep(15000);
     }
 
+    /**
+     * 测试延时，计算qps
+     *
+     * @throws InterruptedException
+     */
     @Test
     void addExecDelayedMessage2() throws InterruptedException {
-        System.out.println("test by fang");
-        DelayedQueueUtils.addExecDelayedMessage(new Runnable() {
-            @Override
-            public void run() {
-                System.out.println("runable 接口任务。。。。。。");
-            }
-        }, 3000);
-        Thread.sleep(5000);
+        int total = 100000;
+        long startTime = System.currentTimeMillis();
+        for (int i = 0; i < total; i++) {
+            DelayedQueueUtils.addExecDelayedMessage(new Runnable() {
+                @Override
+                public void run() {
+                    int currentCount = okCount.incrementAndGet();
+                    System.out.println("okCount: " + currentCount);
+                    if (currentCount == total) {
+                        log.info("耗时： {}", (System.currentTimeMillis() - startTime));
+                        log.info("QPS {}", (total / ((System.currentTimeMillis() - startTime))) * 1000);
+                    }
+                }
+            }, 1);
+        }
+        Thread.sleep(9000);
+    }
+
+    static class TestRun implements Runnable {
+        private final long msg;
+
+        TestRun(long msg) {
+            this.msg = msg;
+        }
+
+        @Override
+        public void run() {
+            System.out.println("执行消息 " + msg);
+            log.info("消费执行消息： {}", msg);
+        }
     }
 }
 
-class TestRun implements Runnable {
 
-    @Override
-    public void run() {
-        System.out.println(".......................... 延时队列测试");
-    }
-}

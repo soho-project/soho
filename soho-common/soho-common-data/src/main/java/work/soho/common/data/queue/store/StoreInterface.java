@@ -16,7 +16,6 @@ public interface StoreInterface {
 
     /**
      * 弹出消息
-     * @param delayedMessage
      */
     DelayedMessage pop() throws IOException;
 }
