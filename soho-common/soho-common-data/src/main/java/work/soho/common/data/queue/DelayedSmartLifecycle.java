@@ -5,11 +5,8 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Base64Utils;
-import work.soho.common.core.util.BeanUtils;
 import work.soho.common.data.queue.message.DelayedMessage;
 import work.soho.common.data.queue.store.StoreInterface;
-import work.soho.common.data.queue.utils.DelayedQueueUtils;
 
 import java.io.IOException;
 
@@ -37,9 +34,7 @@ public class DelayedSmartLifecycle implements SmartLifecycle {
                     break;
                 }
                 delayedQueue.getQueue().put(message);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (InterruptedException e) {
+            } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
         } while(true);
@@ -49,13 +44,11 @@ public class DelayedSmartLifecycle implements SmartLifecycle {
     @Override
     public void stop() {
         Object[] list = delayedQueue.getQueue().toArray();
-        if(list != null && list.length>0) {
-            for (int i = 0; i < list.length; i++) {
-                try {
-                    storeInterface.push((DelayedMessage) list[i]);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+        for (Object o : list) {
+            try {
+                storeInterface.push((DelayedMessage) o);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         isRuning = false;
