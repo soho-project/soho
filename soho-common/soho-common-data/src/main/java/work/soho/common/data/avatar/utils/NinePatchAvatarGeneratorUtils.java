@@ -1,17 +1,22 @@
 package work.soho.common.data.avatar.utils;
 
+import lombok.extern.log4j.Log4j2;
+
 import javax.imageio.ImageIO;
-import javax.imageio.stream.FileImageOutputStream;
 import javax.imageio.stream.ImageOutputStream;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 
 /**
  * 头像生成工具类
  */
+@Log4j2
 public class NinePatchAvatarGeneratorUtils {
 
     /**
@@ -30,7 +35,7 @@ public class NinePatchAvatarGeneratorUtils {
             ImageIO.write(bufferedImage, formatName, imageOutputStream);
             return new ByteArrayInputStream(os.toByteArray());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e.getStackTrace());
             return null;
         }
     }
@@ -91,7 +96,6 @@ public class NinePatchAvatarGeneratorUtils {
      * @return
      */
     public static BufferedImage loadImageFromUrl(String imageUrl, int targetWidth, int targetHeight) {
-//        System.out.println("图片规格" + targetWidth +" x "+targetHeight);
         try {
             URL url = new URL(imageUrl);
             BufferedImage loadedImage = ImageIO.read(url);
@@ -110,10 +114,6 @@ public class NinePatchAvatarGeneratorUtils {
             int x = (newWidth-targetWidth)/2;
             int y = (newHeight-targetHeight)/2;
 
-//            System.out.println("原始宽高 " + originalWidth + " " + originalHeight);
-//            System.out.println("缩放后宽高 " + newWidth + " " + newHeight);
-//            System.out.println("裁剪定位 " + x + " " + y);
-
             //缩放图片
             Image image = loadedImage.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
             //裁剪成需要的图片大小
@@ -121,7 +121,7 @@ public class NinePatchAvatarGeneratorUtils {
             resizedImage.getGraphics().drawImage(image, 0, 0, null);
             return resizedImage.getSubimage(x,y, targetWidth, targetHeight);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e.getStackTrace());
         }
         return null;
     }
