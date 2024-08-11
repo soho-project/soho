@@ -1,6 +1,6 @@
 package work.soho.common.data.captcha.storage;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
  * redis 方式存储验证码
  */
 @Component
+@RequiredArgsConstructor
 public class Redis implements StorageInterface {
-    @Autowired
-    private RedisTemplate redisTemplate;
+    private final RedisTemplate redisTemplate;
 
     @Override
     public void set(String key, Object value) {
