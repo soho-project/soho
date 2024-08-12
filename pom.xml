@@ -162,12 +162,12 @@
     </build>
     <distributionManagement>
         <repository>
-            <id>rdc-releases</id>
-            <url>https://repo.rdc.aliyun.com/repository/4345-release-LJ6AGT/</url>
+            <id>2017895-release-UnWPFC</id>
+            <url>https://packages.aliyun.com/maven/repository/2017895-release-UnWPFC</url>
         </repository>
         <snapshotRepository>
-            <id>rdc-snapshots</id>
-            <url>https://repo.rdc.aliyun.com/repository/4345-snapshot-2iSR34/</url>
+            <id>2017895-snapshot-GdTJ46</id>
+            <url>https://packages.aliyun.com/maven/repository/2017895-snapshot-GdTJ46</url>
         </snapshotRepository>
     </distributionManagement>
     <repositories>
