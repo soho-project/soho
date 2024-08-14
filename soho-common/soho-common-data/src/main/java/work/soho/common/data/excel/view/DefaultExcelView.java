@@ -1,6 +1,5 @@
 package work.soho.common.data.excel.view;
 
-import org.apache.poi.hssf.usermodel.HSSFDataFormat;
 import org.apache.poi.ss.usermodel.*;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.web.servlet.view.document.AbstractXlsView;
@@ -31,9 +30,10 @@ public class DefaultExcelView extends AbstractXlsView {
 
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/ms-excel");
-        response.setHeader("Content-Disposition", "inline; filename="+new String(excelModel.getFileName().getBytes(),"iso8859-1"));
-        OutputStream outputStream = response.getOutputStream();
+        response.setHeader("Content-Disposition", "attachment; filename="+new String(excelModel.getFileName().getBytes(),"iso8859-1"));
+        response.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
 
+        OutputStream outputStream = response.getOutputStream();
         excelModel.getSheetList().forEach(sheetOriginData -> {
             HashMap<String, Object> sheetData = (HashMap<String, Object>)sheetOriginData;
             String sheetName = (String) sheetData.get(ExcelModel.SHEET_NAME);
