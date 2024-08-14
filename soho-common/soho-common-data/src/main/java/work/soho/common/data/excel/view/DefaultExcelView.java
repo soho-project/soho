@@ -43,15 +43,42 @@ public class DefaultExcelView extends AbstractXlsView {
             int rowNumber = 0;
             Sheet sheet = workbook.createSheet(sheetName);
             Row header = sheet.createRow(rowNumber++);
+            //设置标题栏行高
+            header.setHeightInPoints(24);
             //输出excel Title
+            // 创建单元格样式
+            CellStyle titleStyle = workbook.createCellStyle();
+            Font titleFont = workbook.createFont();
+
+            // 设置浅蓝色背景颜色 (使用 IndexedColors 枚举)
+            titleStyle.setFillForegroundColor(IndexedColors.PALE_BLUE.getIndex());
+            titleStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            // 设置字体大小为14号，并加粗
+            titleFont.setFontHeightInPoints((short) 18); // 14号字体
+            //TODO 设置字体，会导致跨平台有问题， Linux,window 字体不一样， 会导致显示异常, 加粗对字体有要求
+//            titleFont.setBold(true); // 设置加粗
+//            titleFont.setFontName("WenQuanYi Micro Hei"); // 设置字体为宋体
+            titleStyle.setFont(titleFont);
+            // 设置单元格内容居中
+            titleStyle.setAlignment(HorizontalAlignment.CENTER); // 水平居中
+            titleStyle.setVerticalAlignment(VerticalAlignment.CENTER); // 垂直居中
+
             AtomicInteger hi = new AtomicInteger();
             Arrays.stream(modelClass.getDeclaredFields()).forEach(field -> {
                 ExcelColumn excelColumn = field.getAnnotation(ExcelColumn.class);
                 if(excelColumn == null) {
                     return;
                 }
-                header.createCell(hi.getAndIncrement()).setCellValue(excelColumn.value());
+
+                Cell cell = header.createCell(hi.getAndIncrement());
+                cell.setCellValue(excelColumn.value());
+                cell.setCellStyle(titleStyle);
             });
+            // 调整每一列的宽度，使其适应内容
+            for (int i = 0; i < hi.get(); i++) {
+                sheet.autoSizeColumn(i);
+            }
 
             for (int i = 0; i < data.size(); i++) {
                 Row row = sheet.createRow(rowNumber++);
