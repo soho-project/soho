@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExcelColumn {
     @AliasFor("title")
-    String value();
+    String value() default "";
 
     String title() default "";
 
