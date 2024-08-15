@@ -37,9 +37,10 @@ class GroovyServiceTest {
 
     @Test
     void runById() throws InvalidPropertiesFormatException {
-//        Integer tableId =  155439140;  //测试表ID
-        Integer tableId =  155439172;  //测试表ID operation log
+        Integer tableId =  155439140;  //测试表ID
+//        Integer tableId =  155439172;  //测试表ID operation log
 //        Integer templateId = 1170362371; //测试模板ID  java 控制器
+//        Integer templateId = 1170362373; //测试模板ID  java Domain 类
         Integer templateId = 1170362383; //测试模板ID  前端 reactFilter
 
         HashMap<String, String> binds = new HashMap<>();
