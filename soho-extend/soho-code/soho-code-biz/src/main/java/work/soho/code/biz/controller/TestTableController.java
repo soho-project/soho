@@ -39,7 +39,6 @@ public class TestTableController {
     @GetMapping("/load_table")
     public R<Boolean> loadTable() {
         CodeTableVo tableVo = dbService.getTableByName("pay_info");
-        System.out.println(tableVo);
         //TODO 保存数据
         CodeTable codeTable = BeanUtils.copy(tableVo, CodeTable.class);
         //检查是否存在
@@ -75,7 +74,7 @@ public class TestTableController {
                 "\t//return \"我是测试要返回的值\"\n" +
                 "\t\"GroovyShell_1中的sayHello()方法的返回值\" + name\n" +
                 "}\n", "sayHello", "fang.liu");
-        System.out.println(txt);
+//        System.out.println(txt);
         return R.success(txt);
     }
 
