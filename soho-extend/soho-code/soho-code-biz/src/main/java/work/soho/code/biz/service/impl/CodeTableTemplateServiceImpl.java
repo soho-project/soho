@@ -1,5 +1,6 @@
 package work.soho.code.biz.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import work.soho.code.biz.domain.CodeTableTemplate;
 import work.soho.code.biz.service.CodeTableTemplateService;
@@ -15,6 +16,15 @@ import org.springframework.stereotype.Service;
 public class CodeTableTemplateServiceImpl extends ServiceImpl<CodeTableTemplateMapper, CodeTableTemplate>
     implements CodeTableTemplateService{
 
+    @Override
+    public CodeTableTemplate getByName(String name) {
+        return getOne(new LambdaQueryWrapper<CodeTableTemplate>().eq(CodeTableTemplate::getName, name));
+    }
+
+    @Override
+    public CodeTableTemplate getOneById(Integer id) {
+        return getById(id);
+    }
 }
 
 

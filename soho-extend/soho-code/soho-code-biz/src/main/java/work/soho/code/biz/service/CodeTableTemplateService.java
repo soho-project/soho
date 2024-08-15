@@ -9,5 +9,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 * @createDate 2022-12-08 00:30:04
 */
 public interface CodeTableTemplateService extends IService<CodeTableTemplate> {
-
+    CodeTableTemplate getByName(String name);
+    CodeTableTemplate getOneById(Integer id);
 }

@@ -1,6 +1,5 @@
 package work.soho.code.biz.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
@@ -13,8 +12,6 @@ import work.soho.code.biz.service.CodeTableService;
 import work.soho.code.biz.service.CodeTableTemplateService;
 import work.soho.code.biz.service.GroovyService;
 
-import javax.script.Bindings;
-import javax.script.ScriptEngineManager;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -101,7 +98,7 @@ public class GroovyServiceImpl implements GroovyService {
 
     @Override
     public <T> T runById(Integer id, Map binds, String func, Object... objects) {
-        CodeTableTemplate codeTableTemplate =  codeTableTemplateService.getById(id);
+        CodeTableTemplate codeTableTemplate =  codeTableTemplateService.getOneById(id);
         return invoke(codeTableTemplate.getCode(), binds, func, objects);    }
 
     /**
@@ -114,7 +111,7 @@ public class GroovyServiceImpl implements GroovyService {
      * @param <T>
      */
     public <T> T runByName(String name, String func, Object... objects) {
-        CodeTableTemplate codeTableTemplate =  codeTableTemplateService.getOne(new LambdaQueryWrapper<CodeTableTemplate>().eq(CodeTableTemplate::getName, name));
+        CodeTableTemplate codeTableTemplate =  codeTableTemplateService.getByName(name);
         return invoke03(codeTableTemplate.getCode(), func, objects);
     }
 

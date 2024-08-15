@@ -71,7 +71,7 @@ public class DbServiceImpl implements DbService {
         Pattern p = Pattern.compile(pattern);
         Matcher matcher = p.matcher(sql);
         while(matcher.find()) {
-            System.out.println(matcher.group(1));
+//            System.out.println(matcher.group(1));
             CodeTableVo.Column column = paseColumn(matcher.group(1));
             if(column != null) {
                 codeTableVo.getColumnList().add(column);
@@ -169,7 +169,7 @@ public class DbServiceImpl implements DbService {
                 i++;
                 continue;
             }
-            System.out.println("居然没有匹配到： " +  parts[i]);
+//            System.out.println("居然没有匹配到： " +  parts[i]);
             i++;
         }
 

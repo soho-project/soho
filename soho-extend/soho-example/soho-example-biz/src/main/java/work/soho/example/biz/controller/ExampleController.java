@@ -13,6 +13,7 @@ import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
+import work.soho.common.data.excel.annotation.ExcelExport;
 import work.soho.example.biz.domain.Example;
 import work.soho.example.biz.service.ExampleService;
 
@@ -25,7 +26,7 @@ import java.util.List;
  *
  * @author fang
  */
-@Api(tags = "自动化样例API")
+@Api(tags = "自动化样例")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/example" )
@@ -124,5 +125,29 @@ public class ExampleController {
         } catch (Exception e) {
             return R.error(e.getMessage());
         }
+    }
+
+    /**
+     * 导出 自动化样例 Excel
+     */
+    @GetMapping("/exportExcel")
+    @ExcelExport(fileName = "excel.xsl", modelClass = Example.class)
+    @Node(value = "example::exportExcel", name = "导出 自动化样例 Excel")
+    public Object exportExcel(Example example, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
+    {
+        LambdaQueryWrapper<Example> lqw = new LambdaQueryWrapper<Example>();
+        lqw.eq(example.getId() != null, Example::getId ,example.getId());
+        lqw.like(StringUtils.isNotBlank(example.getTitle()),Example::getTitle ,example.getTitle());
+        lqw.eq(example.getCategoryId() != null, Example::getCategoryId ,example.getCategoryId());
+        lqw.like(StringUtils.isNotBlank(example.getOptionId()),Example::getOptionId ,example.getOptionId());
+        lqw.like(StringUtils.isNotBlank(example.getContent()),Example::getContent ,example.getContent());
+        lqw.eq(example.getUpdatedTime() != null, Example::getUpdatedTime ,example.getUpdatedTime());
+        lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, Example::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
+        lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, Example::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
+        lqw.eq(example.getApplyStatus() != null, Example::getApplyStatus ,example.getApplyStatus());
+        lqw.eq(example.getStatus() != null, Example::getStatus ,example.getStatus());
+        lqw.eq(example.getUserId() != null, Example::getUserId ,example.getUserId());
+        lqw.eq(example.getOpenId() != null, Example::getOpenId ,example.getOpenId());
+        return exampleService.list(lqw);
     }
 }

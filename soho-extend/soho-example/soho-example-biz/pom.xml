@@ -15,13 +15,11 @@
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-annotation</artifactId>
-            <version>3.5.2</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-extension</artifactId>
-            <version>3.5.2</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -48,6 +46,10 @@
             <groupId>work.soho</groupId>
             <artifactId>soho-approval-process-biz</artifactId>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-data</artifactId>
         </dependency>
     </dependencies>
 
