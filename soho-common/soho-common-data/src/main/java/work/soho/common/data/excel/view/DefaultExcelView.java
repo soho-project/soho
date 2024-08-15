@@ -1,9 +1,9 @@
 package work.soho.common.data.excel.view;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import org.apache.poi.ss.usermodel.*;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.web.servlet.view.document.AbstractXlsView;
-import work.soho.common.data.excel.annotation.ExcelColumn;
 import work.soho.common.data.excel.model.ExcelModel;
 
 import javax.servlet.http.HttpServletRequest;
@@ -12,6 +12,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -66,13 +68,13 @@ public class DefaultExcelView extends AbstractXlsView {
 
             AtomicInteger hi = new AtomicInteger();
             Arrays.stream(modelClass.getDeclaredFields()).forEach(field -> {
-                ExcelColumn excelColumn = field.getAnnotation(ExcelColumn.class);
+                ExcelProperty excelColumn = field.getAnnotation(ExcelProperty.class);
                 if(excelColumn == null) {
                     return;
                 }
 
                 Cell cell = header.createCell(hi.getAndIncrement());
-                cell.setCellValue(excelColumn.value());
+                cell.setCellValue(excelColumn.value()[0]);
                 cell.setCellStyle(titleStyle);
             });
             // 调整每一列的宽度，使其适应内容
@@ -85,7 +87,7 @@ public class DefaultExcelView extends AbstractXlsView {
                 int celNum = 0;
                 for (int i1 = 0; i1 < modelClass.getDeclaredFields().length; i1++) {
                     Field field = modelClass.getDeclaredFields()[i1];
-                    ExcelColumn excelColumn = field.getAnnotation(ExcelColumn.class);
+                    ExcelProperty excelColumn = field.getAnnotation(ExcelProperty.class);
                     if(excelColumn == null) {
                         continue;
                     }
@@ -95,10 +97,22 @@ public class DefaultExcelView extends AbstractXlsView {
                         if(v instanceof Date) {
                             CellStyle cellStyle = workbook.createCellStyle();
                             CreationHelper createHelper = workbook.getCreationHelper();
-                            short dateFormat = createHelper.createDataFormat().getFormat(excelColumn.dateFormat());
+                            short dateFormat = createHelper.createDataFormat().getFormat("yyyy-dd-MM");
                             cellStyle.setDataFormat(dateFormat);
                             row.createCell(celNum).setCellStyle(cellStyle);
                             row.getCell(celNum).setCellValue((Date) v);
+                        } else if (v instanceof LocalDateTime) {
+                            CellStyle cellStyle = workbook.createCellStyle();
+                            CreationHelper createHelper = workbook.getCreationHelper();
+                            short dateFormat = createHelper.createDataFormat().getFormat("yyyy-dd-MM HH:mm:ss");
+                            cellStyle.setDataFormat(dateFormat);
+
+                            // 将 LocalDateTime 转换为 Date
+                            LocalDateTime localDateTime = (LocalDateTime) v;
+                            Date date = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+
+                            row.createCell(celNum).setCellStyle(cellStyle);
+                            row.getCell(celNum).setCellValue(date);
                         } else if(v instanceof Integer) {
                             row.createCell(celNum).setCellValue((Integer)v);
                         }else if(v instanceof Long) {
