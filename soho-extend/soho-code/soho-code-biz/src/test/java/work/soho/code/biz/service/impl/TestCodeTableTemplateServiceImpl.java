@@ -16,19 +16,19 @@ public class TestCodeTableTemplateServiceImpl extends CodeTableTemplateServiceIm
 
     public CodeTableTemplate getById(Integer id) {
         CodeTableTemplate result = super.getById(id);
-        System.out.println("---------------------------------------------------------test get one by id");
-        System.out.println(id);
-        System.out.println(result.getName());
-        System.out.println(result);
+//        System.out.println("---------------------------------------------------------test get one by id");
+//        System.out.println(id);
+//        System.out.println(result.getName());
+//        System.out.println(result);
         return checkCache(result);
     }
     @Override
     public CodeTableTemplate getOneById(Integer id) {
         CodeTableTemplate result = super.getById(id);
-        System.out.println("---------------------------------------------------------test get by id");
-        System.out.println(id);
-        System.out.println(result.getName());
-        System.out.println(result);
+//        System.out.println("---------------------------------------------------------test get by id");
+//        System.out.println(id);
+//        System.out.println(result.getName());
+//        System.out.println(result);
         return checkCache(result);
     }
 
