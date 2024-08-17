@@ -51,6 +51,10 @@
             <groupId>work.soho</groupId>
             <artifactId>soho-common-data</artifactId>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-test</artifactId>
+        </dependency>
     </dependencies>
 
     <properties>
