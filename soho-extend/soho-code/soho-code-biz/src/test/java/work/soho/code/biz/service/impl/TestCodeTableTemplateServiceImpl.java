@@ -9,6 +9,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
+/**
+ * 测试用测试
+ */
 @Primary
 @Service("testCodeTableTemplateService")
 public class TestCodeTableTemplateServiceImpl extends CodeTableTemplateServiceImpl {
@@ -16,19 +19,11 @@ public class TestCodeTableTemplateServiceImpl extends CodeTableTemplateServiceIm
 
     public CodeTableTemplate getById(Integer id) {
         CodeTableTemplate result = super.getById(id);
-//        System.out.println("---------------------------------------------------------test get one by id");
-//        System.out.println(id);
-//        System.out.println(result.getName());
-//        System.out.println(result);
         return checkCache(result);
     }
     @Override
     public CodeTableTemplate getOneById(Integer id) {
         CodeTableTemplate result = super.getById(id);
-//        System.out.println("---------------------------------------------------------test get by id");
-//        System.out.println(id);
-//        System.out.println(result.getName());
-//        System.out.println(result);
         return checkCache(result);
     }
 
@@ -36,6 +31,18 @@ public class TestCodeTableTemplateServiceImpl extends CodeTableTemplateServiceIm
     public CodeTableTemplate getByName(String name) {
         System.out.println("------------------------------------- test get by name");
         return super.getByName(name);
+    }
+
+    /**
+     * 将文件保存到数据库
+     *
+     * @param id
+     * @return
+     */
+    public Boolean saveLocal2Db(Integer id) {
+        CodeTableTemplate result = super.getById(id);
+        checkCache(result);
+        return updateById(result);
     }
 
     /**
