@@ -49,7 +49,7 @@ public class ExampleController {
     public R<PageSerializable<Example>> list(Example example, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
     {
         PageUtils.startPage();
-        LambdaQueryWrapper<Example> lqw = new LambdaQueryWrapper<Example>();
+        LambdaQueryWrapper<Example> lqw = new LambdaQueryWrapper<>();
         lqw.eq(example.getId() != null, Example::getId ,example.getId());
         lqw.like(StringUtils.isNotBlank(example.getTitle()),Example::getTitle ,example.getTitle());
         lqw.eq(example.getCategoryId() != null, Example::getCategoryId ,example.getCategoryId());
@@ -170,8 +170,6 @@ public class ExampleController {
             EasyExcelFactory.read(file.getInputStream(), Example.class, new ReadListener<Example>() {
                 @Override
                 public void invoke(Example example, AnalysisContext analysisContext) {
-                    example.setCreatedTime(LocalDateTime.now());
-                    example.setUpdatedTime(LocalDateTime.now());
                     exampleService.save(example);
                 }
 
@@ -185,5 +183,4 @@ public class ExampleController {
             log.error(e.toString());
             return R.error(e.getMessage());
         }
-    }
-}
+    }}

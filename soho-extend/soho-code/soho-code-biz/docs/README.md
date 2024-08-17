@@ -1,4 +1,11 @@
 
+- 编写脚本数据结构
+
+[表结构信息](./TableInfo.md) 
+
+t = tool.calcTable(tableVo)
+
+
 
 - 判断是否存在指定API
 
