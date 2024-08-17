@@ -1,10 +1,15 @@
 package work.soho.example.biz.controller;
 
+import com.alibaba.excel.EasyExcelFactory;
+import com.alibaba.excel.context.AnalysisContext;
+import com.alibaba.excel.read.listener.ReadListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.common.security.utils.SecurityUtils;
 import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
@@ -27,6 +32,7 @@ import java.util.List;
  * @author fang
  */
 @Api(tags = "自动化样例")
+@Log4j2
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/admin/example" )
@@ -149,5 +155,35 @@ public class ExampleController {
         lqw.eq(example.getUserId() != null, Example::getUserId ,example.getUserId());
         lqw.eq(example.getOpenId() != null, Example::getOpenId ,example.getOpenId());
         return exampleService.list(lqw);
+    }
+
+    /**
+     * 导入 自动化样例 Excel
+     *
+     * @param file
+     * @return
+     */
+    @PostMapping("/importExcel")
+    @Node(value = "example::importExcel", name = "导入 自动化样例 Excel")
+    public R importExcel(@RequestParam(value = "file")MultipartFile file) {
+        try {
+            EasyExcelFactory.read(file.getInputStream(), Example.class, new ReadListener<Example>() {
+                @Override
+                public void invoke(Example example, AnalysisContext analysisContext) {
+                    example.setCreatedTime(LocalDateTime.now());
+                    example.setUpdatedTime(LocalDateTime.now());
+                    exampleService.save(example);
+                }
+
+                @Override
+                public void doAfterAllAnalysed(AnalysisContext analysisContext) {
+                    //nothing todo
+                }
+            }).sheet().doRead();
+            return R.success();
+        } catch (Exception e) {
+            log.error(e.toString());
+            return R.error(e.getMessage());
+        }
     }
 }
