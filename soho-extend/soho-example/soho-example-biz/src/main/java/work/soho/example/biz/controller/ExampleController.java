@@ -53,7 +53,7 @@ public class ExampleController {
         lqw.eq(example.getId() != null, Example::getId ,example.getId());
         lqw.like(StringUtils.isNotBlank(example.getTitle()),Example::getTitle ,example.getTitle());
         lqw.eq(example.getCategoryId() != null, Example::getCategoryId ,example.getCategoryId());
-        lqw.like(StringUtils.isNotBlank(example.getOptionId()),Example::getOptionId ,example.getOptionId());
+        lqw.like(example.getOptionId() != null,Example::getOptionId ,example.getOptionId());
         lqw.like(StringUtils.isNotBlank(example.getContent()),Example::getContent ,example.getContent());
         lqw.eq(example.getUpdatedTime() != null, Example::getUpdatedTime ,example.getUpdatedTime());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, Example::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
@@ -145,7 +145,7 @@ public class ExampleController {
         lqw.eq(example.getId() != null, Example::getId ,example.getId());
         lqw.like(StringUtils.isNotBlank(example.getTitle()),Example::getTitle ,example.getTitle());
         lqw.eq(example.getCategoryId() != null, Example::getCategoryId ,example.getCategoryId());
-        lqw.like(StringUtils.isNotBlank(example.getOptionId()),Example::getOptionId ,example.getOptionId());
+        lqw.like(example.getOptionId() != null,Example::getOptionId ,example.getOptionId());
         lqw.like(StringUtils.isNotBlank(example.getContent()),Example::getContent ,example.getContent());
         lqw.eq(example.getUpdatedTime() != null, Example::getUpdatedTime ,example.getUpdatedTime());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, Example::getCreatedTime, betweenCreatedTimeRequest.getStartTime());

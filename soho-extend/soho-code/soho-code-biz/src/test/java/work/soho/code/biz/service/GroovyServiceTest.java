@@ -33,12 +33,16 @@ class GroovyServiceTest {
     // 表名  这个应该是固定的专门为测试定义的表
     private static final Integer TABLE_ID = 155439140;
 
+    //example 分类表ID
+    private static final Integer EXAMPLE_CATEGORY_TABLE_ID = 155439141;
+
     // 代码临时目录
     private static final String CODE_TMP_DIR = "/home/fang/work/java/admin/soho-extend/soho-example/soho-example-biz";
 
     private String getCode(Integer templateId) {
         try {
             Integer tableId =  TABLE_ID;  //测试表ID
+//            Integer tableId =  EXAMPLE_CATEGORY_TABLE_ID;  //测试表ID
             HashMap<String, String> binds = new HashMap<>();
             binds.put("baseNamespace", "work.soho.example."); //基本命名空间
             binds.put("basePath", CODE_TMP_DIR); //基本写入路径
@@ -74,7 +78,7 @@ class GroovyServiceTest {
         Assert.notNull(codeTableTemplate);
         String code = getCode(codeTableTemplate.getId());
 
-        if(code != null && save && false) {
+        if(code != null && save) {
             //保存到数据库
             codeTableTemplateService.saveLocal2Db(codeTableTemplate.getId());
             //保存公共类库
@@ -99,6 +103,14 @@ class GroovyServiceTest {
         System.out.println(code);
     }
 
+    // 测试后台admin domain
+    @Test
+    void testAdminDomain() {
+        // adminJavaController
+        String code = getCodeByTemplateName("javaDomain", true);
+        System.out.println(code);
+    }
+
     // 前端model 测试
     @Test
     void testReactModel() {
@@ -111,6 +123,33 @@ class GroovyServiceTest {
     void testReactFilter() {
         // h5 react filter
         String code = getCodeByTemplateName("reactFilter", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testReactList() {
+        // h5 react filter
+        String code = getCodeByTemplateName("reactList", true);
+        System.out.println(code);
+    }
+
+    /**
+     * 详情模型
+     */
+    @Test
+    void testReactDetailsModel() {
+        // h5 react filter
+        String code = getCodeByTemplateName("reactDetailsModel", true);
+        System.out.println(code);
+    }
+
+    /**
+     * 详情页面
+     */
+    @Test
+    void testReactDetails() {
+        // h5 react filter
+        String code = getCodeByTemplateName("reactDetails", true);
         System.out.println(code);
     }
 

@@ -1,15 +1,16 @@
 package work.soho.example.biz.domain;
 
-import io.swagger.annotations.ApiModelProperty;
+import com.alibaba.excel.annotation.ExcelProperty;
+import com.alibaba.excel.annotation.format.DateTimeFormat;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.alibaba.excel.annotation.ExcelProperty;
-import com.alibaba.excel.annotation.format.DateTimeFormat;
-import java.io.Serializable;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @TableName(value ="example")
@@ -45,7 +46,7 @@ public class Example implements Serializable {
     @ExcelProperty("选项")
     @ApiModelProperty(value = "选项")
     @TableField(value = "option_id")
-    private String optionId;
+    private Integer optionId;
 
     /**
     * 富媒体
