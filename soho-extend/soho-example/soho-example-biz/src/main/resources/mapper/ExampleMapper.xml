@@ -7,7 +7,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id property="id" column="id" jdbcType="INTEGER"/>
         <id property="title" column="title" jdbcType="VARCHAR"/>
         <id property="categoryId" column="category_id" jdbcType="INTEGER"/>
-        <id property="optionId" column="option_id" jdbcType="VARCHAR"/>
+        <id property="optionId" column="option_id" jdbcType="INTEGER"/>
         <id property="content" column="content" jdbcType="VARCHAR"/>
         <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
         <id property="createdTime" column="created_time" jdbcType="DATE"/>
@@ -15,8 +15,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id property="status" column="status" jdbcType="TINYINT"/>
         <id property="userId" column="user_id" jdbcType="INTEGER"/>
         <id property="openId" column="open_id" jdbcType="INTEGER"/>
+        <id property="dictInt" column="dict_int" jdbcType="INTEGER"/>
     </resultMap>
     <sql id="Base_Column_List">
-        id,title,category_id,option_id,content,updated_time,created_time,apply_status,status,user_id,open_id
+        id,title,category_id,option_id,content,updated_time,created_time,apply_status,status,user_id,open_id,dict_int
     </sql>
 </mapper>

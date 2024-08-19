@@ -13,6 +13,8 @@ import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.common.security.utils.SecurityUtils;
 import work.soho.api.admin.annotation.Node;
 import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import work.soho.api.admin.service.AdminDictApiService;
+import work.soho.api.admin.vo.OptionVo;
 import work.soho.approvalprocess.service.ApprovalProcessOrderService;
 import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
 import work.soho.common.core.result.R;
@@ -39,6 +41,7 @@ import java.util.List;
 public class ExampleController {
 
     private final ExampleService exampleService;
+    private final AdminDictApiService adminDictApiService;
     private final ApprovalProcessOrderService approvalProcessOrderService;
 
     /**
@@ -53,7 +56,7 @@ public class ExampleController {
         lqw.eq(example.getId() != null, Example::getId ,example.getId());
         lqw.like(StringUtils.isNotBlank(example.getTitle()),Example::getTitle ,example.getTitle());
         lqw.eq(example.getCategoryId() != null, Example::getCategoryId ,example.getCategoryId());
-        lqw.like(example.getOptionId() != null,Example::getOptionId ,example.getOptionId());
+        lqw.eq(example.getOptionId() != null, Example::getOptionId ,example.getOptionId());
         lqw.like(StringUtils.isNotBlank(example.getContent()),Example::getContent ,example.getContent());
         lqw.eq(example.getUpdatedTime() != null, Example::getUpdatedTime ,example.getUpdatedTime());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, Example::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
@@ -62,6 +65,7 @@ public class ExampleController {
         lqw.eq(example.getStatus() != null, Example::getStatus ,example.getStatus());
         lqw.eq(example.getUserId() != null, Example::getUserId ,example.getUserId());
         lqw.eq(example.getOpenId() != null, Example::getOpenId ,example.getOpenId());
+        lqw.eq(example.getDictInt() != null, Example::getDictInt ,example.getDictInt());
         List<Example> list = exampleService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }
@@ -145,7 +149,7 @@ public class ExampleController {
         lqw.eq(example.getId() != null, Example::getId ,example.getId());
         lqw.like(StringUtils.isNotBlank(example.getTitle()),Example::getTitle ,example.getTitle());
         lqw.eq(example.getCategoryId() != null, Example::getCategoryId ,example.getCategoryId());
-        lqw.like(example.getOptionId() != null,Example::getOptionId ,example.getOptionId());
+        lqw.eq(example.getOptionId() != null, Example::getOptionId ,example.getOptionId());
         lqw.like(StringUtils.isNotBlank(example.getContent()),Example::getContent ,example.getContent());
         lqw.eq(example.getUpdatedTime() != null, Example::getUpdatedTime ,example.getUpdatedTime());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, Example::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
@@ -154,6 +158,7 @@ public class ExampleController {
         lqw.eq(example.getStatus() != null, Example::getStatus ,example.getStatus());
         lqw.eq(example.getUserId() != null, Example::getUserId ,example.getUserId());
         lqw.eq(example.getOpenId() != null, Example::getOpenId ,example.getOpenId());
+        lqw.eq(example.getDictInt() != null, Example::getDictInt ,example.getDictInt());
         return exampleService.list(lqw);
     }
 
@@ -183,4 +188,15 @@ public class ExampleController {
             log.error(e.toString());
             return R.error(e.getMessage());
         }
-    }}
+    }
+
+    /**
+     * 获取 自动化样例 字典整型 字典选项
+     *
+     * @return
+     */
+    @GetMapping("/queryDictIntOptions")
+    public R<List<OptionVo<Integer, String>>> queryDictIntOptions(){
+        return R.success(adminDictApiService.getOptionsByCode("example-dict_int"));
+    }
+}
