@@ -1,31 +1,40 @@
 package work.soho.example.biz.controller.open;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.github.pagehelper.PageSerializable;
-import io.swagger.annotations.Api;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-import work.soho.admin.common.security.utils.SecurityUtils;
-import work.soho.api.admin.annotation.Node;
-import work.soho.api.admin.request.BetweenCreatedTimeRequest;
-import work.soho.approvalprocess.service.ApprovalProcessOrderService;
-import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
-import work.soho.common.core.result.R;
+import java.time.LocalDateTime;
 import work.soho.common.core.util.PageUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import java.util.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import work.soho.admin.common.security.utils.SecurityUtils;
 import work.soho.common.core.util.StringUtils;
+import com.github.pagehelper.PageSerializable;
+import work.soho.common.core.result.R;
+import work.soho.api.admin.annotation.Node;
 import work.soho.example.biz.domain.Example;
 import work.soho.example.biz.service.ExampleService;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.HashMap;
+import work.soho.api.admin.vo.OptionVo;
+import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import java.util.stream.Collectors;
+import work.soho.api.admin.vo.TreeNodeVo;
+import work.soho.api.admin.service.AdminDictApiService;
+import work.soho.approvalprocess.service.ApprovalProcessOrderService;
+import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
 
 /**
  * 自动化样例Controller
  *
  * @author fang
  */
-@Api(tags = "自动化样例API")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/open/example" )
@@ -46,7 +55,7 @@ public class OpenExampleController {
         lqw.eq(example.getId() != null, Example::getId ,example.getId());
         lqw.like(StringUtils.isNotBlank(example.getTitle()),Example::getTitle ,example.getTitle());
         lqw.eq(example.getCategoryId() != null, Example::getCategoryId ,example.getCategoryId());
-        lqw.like(example.getOptionId() != null,Example::getOptionId ,example.getOptionId());
+        lqw.eq(example.getOptionId() != null, Example::getOptionId ,example.getOptionId());
         lqw.like(StringUtils.isNotBlank(example.getContent()),Example::getContent ,example.getContent());
         lqw.eq(example.getUpdatedTime() != null, Example::getUpdatedTime ,example.getUpdatedTime());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, Example::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
@@ -55,6 +64,7 @@ public class OpenExampleController {
         lqw.eq(example.getStatus() != null, Example::getStatus ,example.getStatus());
         lqw.eq(example.getUserId() != null, Example::getUserId ,example.getUserId());
         lqw.eq(example.getOpenId() != null, Example::getOpenId ,example.getOpenId());
+        lqw.eq(example.getDictInt() != null, Example::getDictInt ,example.getDictInt());
         List<Example> list = exampleService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }

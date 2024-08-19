@@ -1,16 +1,15 @@
 package work.soho.example.biz.domain;
 
-import com.alibaba.excel.annotation.ExcelProperty;
-import com.alibaba.excel.annotation.format.DateTimeFormat;
+import io.swagger.annotations.ApiModelProperty;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Data;
-
+import com.alibaba.excel.annotation.ExcelProperty;
+import com.alibaba.excel.annotation.format.DateTimeFormat;
 import java.io.Serializable;
+import lombok.Data;
 import java.time.LocalDateTime;
 
 @TableName(value ="example")
@@ -107,5 +106,13 @@ public class Example implements Serializable {
     @ApiModelProperty(value = "开放用户")
     @TableField(value = "open_id")
     private Integer openId;
+
+    /**
+    * 字典整型
+    */
+    @ExcelProperty("字典整型")
+    @ApiModelProperty(value = "字典整型")
+    @TableField(value = "dict_int")
+    private Integer dictInt;
 
 }
