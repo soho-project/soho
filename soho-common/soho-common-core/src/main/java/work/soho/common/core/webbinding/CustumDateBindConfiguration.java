@@ -1,4 +1,4 @@
-package work.soho.admin.config;
+package work.soho.common.core.webbinding;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -9,5 +9,6 @@ public class CustumDateBindConfiguration {
     @Autowired
     public void configurationWebBindingInitializer(RequestMappingHandlerAdapter requestMappingHandlerAdapter) {
         requestMappingHandlerAdapter.setWebBindingInitializer(new WebBindDate());
+        requestMappingHandlerAdapter.setWebBindingInitializer(new WebBindLongArrayPropertyEditor());
     }
 }
