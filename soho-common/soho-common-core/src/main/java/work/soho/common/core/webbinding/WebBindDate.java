@@ -1,4 +1,4 @@
-package work.soho.admin.config;
+package work.soho.common.core.webbinding;
 
 import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.web.bind.WebDataBinder;
