@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
@@ -19,20 +20,27 @@ public class MyDetaObjectHander implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
         log.info("自动插入时间");
-        if(metaObject.hasSetter(CREATED_TIME)) {
-            this.setFieldValByName(CREATED_TIME, new Date(), metaObject);
-        }
-
-        if(metaObject.hasSetter(UPDATED_TIME)) {
-            this.setFieldValByName(UPDATED_TIME, new Date(), metaObject);
-        }
+        fillField(CREATED_TIME, metaObject);
+        fillField(UPDATED_TIME, metaObject);
     }
 
     @Override
     public void updateFill(MetaObject metaObject) {
-        log.info("auto set updated time  on  update");
-        if(metaObject.hasSetter(UPDATED_TIME)) {
-            this.setFieldValByName(UPDATED_TIME, new Date(), metaObject);
+        log.info("auto set updated time on update");
+        fillField(UPDATED_TIME, metaObject);
+    }
+
+    private void fillField(String fieldName, MetaObject metaObject) {
+        if (metaObject.hasSetter(fieldName)) {
+            Object fieldValue = getFieldValByName(fieldName, metaObject);
+            if (fieldValue == null) {
+                Class<?> fieldType = metaObject.getGetterType(fieldName);
+                if (LocalDateTime.class.equals(fieldType)) {
+                    this.setFieldValByName(fieldName, LocalDateTime.now(), metaObject);
+                } else if (Date.class.equals(fieldType)) {
+                    this.setFieldValByName(fieldName, new Date(), metaObject);
+                }
+            }
         }
     }
 }
