@@ -41,8 +41,8 @@ class GroovyServiceTest {
 
     private String getCode(Integer templateId) {
         try {
-            Integer tableId =  TABLE_ID;  //测试表ID
-//            Integer tableId =  EXAMPLE_CATEGORY_TABLE_ID;  //测试表ID
+//            Integer tableId =  TABLE_ID;  //测试表ID
+            Integer tableId =  EXAMPLE_CATEGORY_TABLE_ID;  //测试表ID
             HashMap<String, String> binds = new HashMap<>();
             binds.put("baseNamespace", "work.soho.example."); //基本命名空间
             binds.put("basePath", CODE_TMP_DIR); //基本写入路径
@@ -116,6 +116,13 @@ class GroovyServiceTest {
     void testReactModel() {
         // h5 react filter
         String code = getCodeByTemplateName("ReactModel", true);
+        System.out.println(code);
+    }
+    // 前端 reactIndex 测试
+    @Test
+    void testReactIndex() {
+        // h5 react filter
+        String code = getCodeByTemplateName("reactIndex", true);
         System.out.println(code);
     }
 
