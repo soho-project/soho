@@ -36,5 +36,19 @@ class Ip2regionUtilTest {
         Assert.assertTrue("广东省".equals(regionInfo.getProvince()));
         Assert.assertTrue("深圳市".equals(regionInfo.getCity()));
         Assert.assertTrue("阿里云".equals(regionInfo.getIsp()));
+
+        regionInfo =  Ip2regionUtil.getRegionInfoByIp("127.0.0.1");
+        System.out.println(regionInfo);
+        Assert.assertTrue("".equals(regionInfo.getCountry()));
+        Assert.assertTrue("".equals(regionInfo.getProvince()));
+        Assert.assertTrue("内网IP".equals(regionInfo.getCity()));
+        Assert.assertTrue("内网IP".equals(regionInfo.getIsp()));
+
+        regionInfo =  Ip2regionUtil.getRegionInfoByIp("192.168.2.1");
+        System.out.println(regionInfo);
+        Assert.assertTrue("".equals(regionInfo.getCountry()));
+        Assert.assertTrue("".equals(regionInfo.getProvince()));
+        Assert.assertTrue("内网IP".equals(regionInfo.getCity()));
+        Assert.assertTrue("内网IP".equals(regionInfo.getIsp()));
     }
 }
