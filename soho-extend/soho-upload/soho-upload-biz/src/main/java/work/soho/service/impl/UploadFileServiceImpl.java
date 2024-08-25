@@ -1,14 +1,13 @@
 package work.soho.service.impl;
 
-import lombok.extern.log4j.Log4j2;
-import org.springframework.stereotype.Service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.stereotype.Service;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.multipart.MultipartFile;
-import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
 import work.soho.domain.UploadFile;
@@ -17,12 +16,14 @@ import work.soho.service.UploadFileService;
 import work.soho.upload.api.Upload;
 import work.soho.upload.api.vo.UploadInfoVo;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.MessageDigest;
-
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -175,6 +176,15 @@ public class UploadFileServiceImpl extends ServiceImpl<UploadFileMapper, UploadF
         }
 
         return null;
+    }
+
+    @Override
+    public void deleteByUrl(String url) {
+        UploadFile uploadFile = getOne(new LambdaQueryWrapper<UploadFile>().eq(UploadFile::getUrl, url));
+        if(uploadFile != null) {
+            uploadFile.setRefCount(uploadFile.getRefCount()>0 ? uploadFile.getRefCount()-1 : 0);
+            updateById(uploadFile);
+        }
     }
 
     /**
