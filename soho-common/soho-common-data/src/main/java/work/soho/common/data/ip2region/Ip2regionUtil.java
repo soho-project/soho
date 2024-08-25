@@ -70,10 +70,10 @@ public class Ip2regionUtil {
         String cityInfo = getCityInfo(ip);
         String[] parts = cityInfo.split("\\|");
         RegionInfo regionInfo = new RegionInfo();
-        regionInfo.setCountry(parts[0]);
-        regionInfo.setProvince(parts[2]);
-        regionInfo.setCity(parts[3]);
-        regionInfo.setIsp(parts[4]);
+        regionInfo.setCountry(parts[0].equals("0") ? "" : parts[0]);
+        regionInfo.setProvince(parts[2].equals("0") ? "" : parts[2]);
+        regionInfo.setCity(parts[3].equals("0") ? "" : parts[3]);
+        regionInfo.setIsp(parts[4].equals("0") ? "" : parts[4]);
         return regionInfo;
     }
 }
