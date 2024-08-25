@@ -5,24 +5,24 @@
 
 ### 定义模型
 
-定义一个简单类，属性添加注解 ExcelColumn 标记相关信息（标题，时间格式化）
+定义一个简单类，属性添加注解 ExcelProperty 标记相关信息（标题，时间格式化）
 
     @Data
     public class Hello implements Serializable {
     
-        @ExcelColumn(value = "ID")
+        @ExcelProperty(value = "ID")
         private Integer id;
     
-        @ExcelColumn("名称")
+        @ExcelProperty("名称")
         private String name;
     
-        @ExcelColumn("值")
+        @ExcelProperty("值")
         private String value;
 
-        @ExcelColumn("更新时间")
+        @ExcelProperty("更新时间")
         private Date updatedTime;
     
-        @ExcelColumn(value = "创建时间", dateFormat = "yyyy-dd-MM")
+        @ExcelProperty(value = "创建时间", dateFormat = "yyyy-dd-MM")
         private Date createdTime;
     }
 
