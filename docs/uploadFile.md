@@ -12,6 +12,8 @@
         UploadInfoVo save(String uri);
     
         UploadInfoVo checkUploadCache(UploadInfoVo uploadInfoVo);
+
+        void deleteByUrl(String url);
     }
 
 ## UploadInfoVo save(String uri);
@@ -21,3 +23,7 @@
 ## UploadInfoVo checkUploadCache(UploadInfoVo uploadInfoVo)
 
 上传之前应该调用该接口问询文件是否存在，可以极大降低文件上传下载流量；实现文件秒传。
+
+## void deleteByUrl(String url);
+
+删除文件; 外部引用的文件删除的时候应当调用该接口，否则会存在引用计数错误。
