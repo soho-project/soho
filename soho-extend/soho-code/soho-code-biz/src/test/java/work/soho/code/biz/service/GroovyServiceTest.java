@@ -125,6 +125,12 @@ class GroovyServiceTest {
         String code = getCodeByTemplateName("reactIndex", true);
         System.out.println(code);
     }
+    @Test
+    void testReactTree() {
+        // h5 react filter
+        String code = getCodeByTemplateName("React Tree", true);
+        System.out.println(code);
+    }
 
     @Test
     void testReactFilter() {
