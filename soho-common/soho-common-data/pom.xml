@@ -101,7 +101,10 @@
             <artifactId>smbj</artifactId>
             <version>0.12.1</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.lionsoul</groupId>
+            <artifactId>ip2region</artifactId>
+        </dependency>
 
 <!--        test-->
         <dependency>
