@@ -1,8 +1,8 @@
 package work.soho.admin.common.security.filter;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.security.authentication.RememberMeAuthenticationToken;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -16,19 +16,24 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-@RequiredArgsConstructor
+@Log4j2
 @Component
+@RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
     private final TokenServiceImpl tokenService;
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        SohoUserDetails loginUser = tokenService.getLoginUser(request);
-        if (loginUser!=null && (SecurityContextHolder.getContext().getAuthentication() == null)) {
-            RememberMeAuthenticationToken  rememberMeAuthenticationToken = new RememberMeAuthenticationToken(tokenService.getToken(request)
-                    , loginUser, loginUser.getAuthorities());
+        try {
+            SohoUserDetails loginUser = tokenService.getLoginUser(request);
+            if (loginUser!=null && (SecurityContextHolder.getContext().getAuthentication() == null)) {
+                RememberMeAuthenticationToken  rememberMeAuthenticationToken = new RememberMeAuthenticationToken(tokenService.getToken(request)
+                        , loginUser, loginUser.getAuthorities());
 
-            rememberMeAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(rememberMeAuthenticationToken);
+                rememberMeAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(rememberMeAuthenticationToken);
+            }
+        } catch (Exception e) {
+            log.error("parse token error: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);
