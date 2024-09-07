@@ -1,0 +1,114 @@
+﻿spring:
+  profiles:
+    active: @profiles.active@
+  application:
+    name: @artifactId@
+#  main:
+#    allow-bean-definition-overriding: true
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+  config:
+    import:
+      - optional:nacos:application-@profiles.active@.yml
+      - optional:nacos:${spring.application.name}-@profiles.active@.yml
+  servlet:
+    multipart:
+      max-file-size: 300MB
+      max-request-size: 300MB
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  datasource:
+    url: jdbc:mysql://192.168.0.101:3306/dev?useUnicode=true&characterEncoding=utf-8
+    username: dev
+    password: dev
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+  redis:
+    host: 192.168.0.7
+    port: 6379
+    password:
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 8
+        max-wait: -1ms
+        min-idle: 0
+  mail:
+    host: smtp.ym.163.com
+    port: 993
+    protocol: smtp
+    username: aaaa@soho.work
+    password: xxxxxxx
+redisson:
+  nodeAddress: redis://192.168.0.7:6379
+server:
+  servlet:
+    encoding:
+      charset: utf-8
+  port: 6679
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+pagehelper:
+  params: count=countSql
+  support-methods-arguments: true
+  reasonable: true
+  helper-dialect: mysql
+
+# swagger 相关配置
+springfox:
+  documentation:
+    open-api:
+      enabled: false
+    swagger-ui:
+      enabled: false
+    enabled: false
+#      base-url: /api-docs
+#snowflake:
+#  enable-atomic: true
+#  enable-cached: true
+
+token:
+  secret: sxxxxxxxxdddddddddaret
+
+# chat模块相关配置
+chat:
+  ai:
+    proxy:
+      hostname: 127.0.0.1
+      port: 7890
+      username:
+      password:
+      enable: true
+    account:
+      chatAiEndpoint: https://api.openai.com
+      chatAiToken: sk-xxxxxxxxxxxxxxxxxxxx
+
+# soho 核心相关配置
+soho:
+  delayed-queue:
+    store:
+      enable: true
+      drive: black-hole
+sms:
+  defaultChannel:
+
+logging:
+  level:
+    org.springframework.web.servlet.mvc.method.annotation: DEBUG
+    org.springframework.web.servlet.handler: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: mappings
