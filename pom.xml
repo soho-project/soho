@@ -7,13 +7,14 @@
     <groupId>work.soho</groupId>
     <artifactId>soho</artifactId>
     <packaging>pom</packaging>
-    <version>${soho.version}</version>
+    <version>1.0-SNAPSHOT</version>
 
     <modules>
         <module>soho-admin</module>
         <module>soho-common</module>
         <module>soho-admin-web</module>
         <module>soho-extend</module>
+        <module>soho-common-cloud</module>
     </modules>
 
     <properties>

@@ -1,0 +1,31 @@
+server:
+  servlet:
+    encoding:
+      charset: utf-8
+  port: 8888
+spring:
+  application:
+    name: soho-admin-cloud-gateway
+  jmx:
+    enabled: false
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+    gateway:
+      default-filters:
+        - PrefixPath=/httpbin
+        - AddResponseHeader=X-Response-Default-Foo, Default-Bar
+      routes:
+        - id: admin
+          uri: lb://soho-admin-cloud-biz
+          order: 6677
+          predicates:
+            - Path=/admin/**
+  config:
+    import:
+      - optional:nacos:application-@profiles.active@.yml
+      - optional:nacos:${spring.application.name}.yml
+      - optional:nacos:${spring.application.name}-@profiles.active@.yml

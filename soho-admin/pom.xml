@@ -14,6 +14,9 @@
     <modules>
         <module>soho-admin-api</module>
         <module>soho-admin-biz</module>
+        <module>soho-admin-cloud-biz</module>
+        <module>soho-admin-cloud-bridge</module>
+        <module>soho-admin-cloud-api</module>
     </modules>
 
     <properties>

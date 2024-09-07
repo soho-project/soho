@@ -1,4 +1,4 @@
-package work.soho.test.security.support;
+package work.soho.admin.common.security.service.impl;
 
 import org.springframework.stereotype.Service;
 import work.soho.admin.common.security.service.SohoUserDetailsService;
