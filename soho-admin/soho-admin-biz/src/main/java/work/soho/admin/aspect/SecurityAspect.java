@@ -1,31 +1,29 @@
 package work.soho.admin.aspect;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import work.soho.admin.common.security.utils.SecurityUtils;
 import work.soho.api.admin.annotation.Node;
-import work.soho.admin.domain.AdminResource;
-import work.soho.admin.service.AdminUserService;
 import work.soho.common.core.result.R;
+import work.soho.api.admin.service.AdminInfoApiService;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
 
 @Log4j2
 @Aspect
 @Component
 @Configuration
+@RequiredArgsConstructor
 public class SecurityAspect {
 
-    @Autowired
-    private AdminUserService adminUserService;
+    private final AdminInfoApiService adminInfoApiService;
 
     @Around(value = "@annotation(work.soho.api.admin.annotation.Node)")
     public Object around(ProceedingJoinPoint invocation) throws Throwable {
@@ -36,8 +34,8 @@ public class SecurityAspect {
             if(uid != 1l) {
                 //进行权限检查
                 String key = node.value();
-                HashMap<String, AdminResource> map = adminUserService.getResourceByUid(uid);
-                if(map.get(key)==null) {
+                HashSet<String> resources = adminInfoApiService.getResourceKeys(uid);
+                if(resources != null || resources.contains(key)) {
                     return R.error(2401, "未授权访问");
                 }
             }
