@@ -3,6 +3,7 @@ package work.soho.admin.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.beans.BeanUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import work.soho.common.core.util.StringUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -118,6 +120,12 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
 //        adminResourceLambdaQueryWrapper.in(AdminResource::getId, resourceIds);
 //        List<AdminResource> list = adminResourceService.list(adminResourceLambdaQueryWrapper);
 //        return list.stream().collect(Collectors.toMap(AdminResource::getRoute, v->v));
+    }
+
+    @SneakyThrows
+    public HashSet<String> getResourceKeys(Long id) {
+        HashMap<String, AdminResource> res = getResourceByUid(id);
+        return (HashSet<String>) res.keySet();
     }
 
     @Override
