@@ -37,7 +37,7 @@ import java.util.List;
 @Log4j2
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/example" )
+@RequestMapping("/example/admin/example" )
 public class ExampleController {
 
     private final ExampleService exampleService;

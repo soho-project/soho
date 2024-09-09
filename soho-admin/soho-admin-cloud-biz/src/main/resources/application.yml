@@ -7,6 +7,31 @@
     nacos:
       discovery:
         server-addr: 127.0.0.1:8848
+        metadata:
+          paths:
+            - /admin/admin/**
+            - /admin/adminNotification/*
+            - /admin/adminDashboard/*
+            - /admin/adminUser/*
+            - /admin/adminResource/*
+            - /admin/adminRole/*
+            - /admin/adminJob/*
+            - /admin/adminConfigGroup/*
+            - /admin/adminConfig/*
+            - /admin/uploadFile/*
+            - /admin/codeTable/*
+            - /admin/codeTableTemplateGroup/*
+            - /admin/codeTableTemplate/*
+            - /admin/adminUserLoginLog/*
+            - /admin/adminDict/*
+            - /admin/adminEmailTemplate/*
+            - /admin/adminSmsTemplate/*
+            - /admin/adminOperationLog/*
+            - /admin/adminRelease/*
+            - /login/config
+            - /login
+          routeOrder: 1000000
+          moduleName: admin
       config:
         server-addr: ${spring.cloud.nacos.discovery.server-addr}
   config:

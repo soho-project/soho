@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 @Log4j2
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/exampleCategory" )
+@RequestMapping("/example/admin/exampleCategory" )
 public class ExampleCategoryController {
 
     private final ExampleCategoryService exampleCategoryService;

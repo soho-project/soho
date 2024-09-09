@@ -88,6 +88,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                         "/guest/**"
                         ).permitAll()
                 .antMatchers("/admin/**").hasAuthority("admin") //后台接口请使用 /admin/ 前缀开头路劲
+                .antMatchers("/*/admin/**").hasAuthority("admin") //后台接口请使用 /admin/ 前缀开头路劲
                 .antMatchers("/chat/**").hasAuthority("chat") //聊天模块鉴权
                 .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // 除上面外的所有请求全部需要鉴权认证
@@ -95,12 +96,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                 //.access("@rbacPermissionServiceImpl.hasPermission(request,authentication)")
                 .and()
                 .headers().frameOptions().disable();
-//        httpSecurity.logout().logoutUrl("/logout").logoutSuccessHandler(logoutSuccessHandler);
         // 添加JWT filter
         httpSecurity.addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
-        // 添加CORS filter
-//        httpSecurity.addFilterBefore(corsFilter, JwtAuthenticationTokenFilter.class);
-//        httpSecurity.addFilterBefore(corsFilter, LogoutFilter.class);
     }
 
 
