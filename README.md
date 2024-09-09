@@ -30,7 +30,7 @@ SOHO后台管理系统
 - [预览地址](https://www.soho.work/)   演示账号： admin:123456
 - [文档地址](https://docs.soho.work/)
 - [前端仓库地址](https://gitee.com/fang/soho-admin-front)
-- [相关技术文档](docs/main.md)
+- [相关技术文档](docs/learn/main.md)
 
 ## 项目演示图片
 
