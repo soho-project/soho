@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/adminUser")
+@RequestMapping("/admin/admin/adminUser")
 @Api(tags = "系统用户管理")
 public class AdminUserController extends BaseController {
     private final UserDetailsServiceImpl userDetailsService;

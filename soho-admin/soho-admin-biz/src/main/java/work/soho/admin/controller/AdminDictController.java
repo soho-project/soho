@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @Api(tags = "系统字典")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/adminDict")
+@RequestMapping("/admin/admin/adminDict")
 public class AdminDictController {
 
     private final AdminDictService adminDictService;

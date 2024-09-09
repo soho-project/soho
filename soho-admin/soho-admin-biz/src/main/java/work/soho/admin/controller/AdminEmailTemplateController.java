@@ -23,7 +23,7 @@ import java.util.List;
 @Api(tags = "邮件模板")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/adminEmailTemplate" )
+@RequestMapping("/admin/admin/adminEmailTemplate" )
 public class AdminEmailTemplateController {
 
     private final AdminEmailTemplateService adminEmailTemplateService;

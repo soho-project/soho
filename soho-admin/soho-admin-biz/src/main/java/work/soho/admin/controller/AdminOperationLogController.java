@@ -23,7 +23,7 @@ import java.util.List;
 @Api(tags = "系统管理操作日志")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/adminOperationLog" )
+@RequestMapping("/admin/admin/adminOperationLog" )
 public class AdminOperationLogController {
 
     private final AdminOperationLogService adminOperationLogService;

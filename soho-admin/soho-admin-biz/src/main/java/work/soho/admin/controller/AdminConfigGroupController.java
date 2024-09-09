@@ -30,7 +30,7 @@ import work.soho.admin.service.AdminConfigGroupService;
  */
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/adminConfigGroup" )
+@RequestMapping("/admin/admin/adminConfigGroup" )
 @Api(tags = "配置分组")
 public class AdminConfigGroupController extends BaseController {
 

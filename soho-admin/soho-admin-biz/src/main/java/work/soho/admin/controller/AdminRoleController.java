@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 @Api(tags = "管理员角色")
 @RestController
-@RequestMapping("/admin/adminRole")
+@RequestMapping("/admin/admin/adminRole")
 @RequiredArgsConstructor
 public class AdminRoleController extends BaseController{
 	private final AdminRoleServiceImpl adminRoleService;

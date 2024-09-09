@@ -11,7 +11,7 @@ import work.soho.common.core.result.R;
 
 @RestController
 @Api(tags = "Dashboard")
-@RequestMapping("/admin/adminDashboard")
+@RequestMapping("/admin/admin/adminDashboard")
 public class DashboardController {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;

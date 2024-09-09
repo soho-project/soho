@@ -22,7 +22,7 @@ import java.util.List;
 @Api(tags = "用户登录日志管理")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/adminUserLoginLog" )
+@RequestMapping("/admin/admin/adminUserLoginLog" )
 public class AdminUserLoginLogController {
 
     private final AdminUserLoginLogService adminUserLoginLogService;
