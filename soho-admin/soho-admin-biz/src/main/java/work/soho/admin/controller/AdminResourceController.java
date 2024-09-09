@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @Api(tags = "菜单管理")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/adminResource")
+@RequestMapping("/admin/admin/adminResource")
 public class AdminResourceController {
     private final AdminResourceService adminResourceService;
     private final AdminRoleUserService adminRoleUserService;

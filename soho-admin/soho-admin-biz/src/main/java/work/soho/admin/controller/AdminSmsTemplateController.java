@@ -23,7 +23,7 @@ import java.util.List;
 @Api(tags = "短信模板")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/adminSmsTemplate" )
+@RequestMapping("/admin/admin/adminSmsTemplate" )
 public class AdminSmsTemplateController {
 
     private final AdminSmsTemplateService adminSmsTemplateService;

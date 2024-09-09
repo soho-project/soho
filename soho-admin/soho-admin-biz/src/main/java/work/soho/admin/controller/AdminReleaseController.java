@@ -29,7 +29,7 @@ import java.util.List;
 @Api(tags = "发版管理")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/adminRelease" )
+@RequestMapping("/admin/admin/adminRelease" )
 public class AdminReleaseController {
 
     private final AdminReleaseService adminReleaseService;

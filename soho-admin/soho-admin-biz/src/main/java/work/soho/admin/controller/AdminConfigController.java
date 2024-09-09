@@ -2,29 +2,21 @@ package work.soho.admin.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.api.admin.annotation.Node;
-import work.soho.common.core.util.StringUtils;
-import work.soho.common.core.result.R;
+import org.springframework.web.bind.annotation.*;
 import work.soho.admin.domain.AdminConfig;
 import work.soho.admin.service.AdminConfigService;
+import work.soho.api.admin.annotation.Node;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.StringUtils;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * admin_configController
@@ -34,7 +26,7 @@ import work.soho.admin.service.AdminConfigService;
  */
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/adminConfig" )
+@RequestMapping("/admin/admin/adminConfig" )
 @Api(tags = "系统配置信息")
 public class AdminConfigController extends BaseController {
 

@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  */
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/adminNotification" )
+@RequestMapping("/admin/admin/adminNotification" )
 @Api(tags = "系统消息")
 public class AdminNotificationController extends BaseController {
 
