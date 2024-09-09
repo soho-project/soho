@@ -22,7 +22,7 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/uploadFile" )
+@RequestMapping("/upload/admin/uploadFile" )
 @Api(tags = "上传文件")
 public class UploadFileController {
 

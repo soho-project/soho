@@ -16,6 +16,8 @@
         <module>soho-extend</module>
         <module>soho-common-cloud</module>
         <module>soho-common-cloud/soho-common-cloud-security</module>
+        <module>soho-extend/soho-upload/soho-upload-cloud-biz</module>
+        <module>soho-extend/soho-upload/soho-upload-cloud-bridge</module>
     </modules>
 
     <properties>
