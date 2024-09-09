@@ -25,7 +25,7 @@ import java.util.List;
 @Api(tags = "选项API")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/exampleOption" )
+@RequestMapping("/example/admin/exampleOption" )
 public class ExampleOptionController {
 
     private final ExampleOptionService exampleOptionService;

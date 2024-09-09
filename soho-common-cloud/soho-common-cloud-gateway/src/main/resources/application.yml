@@ -19,13 +19,40 @@ spring:
         - PrefixPath=/httpbin
         - AddResponseHeader=X-Response-Default-Foo, Default-Bar
       routes:
-        - id: admin
-          uri: lb://soho-admin-cloud-biz
-          order: 6677
-          predicates:
-            - Path=/admin/**
+#        - id: admin
+#          uri: lb://soho-admin-cloud-biz
+#          order: 6677
+#          predicates:
+#            - Path=/admin/**
+      # 全局跨域配置
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            #allowedOrigins:
+            # - "http://localhost:3333" #允许所有的域
+            allowedOriginPatterns:
+              - '*' #跨域处理 允许所有的域
+            allowCredentials: true # 是否允许携带cookie
+            allowedMethods: # 支持的方法
+              - "GET"
+              - "POST"
+              - "DELETE"
+              - "PUT"
+              - "OPTIONS"
+            allowedHeaders:
+              - "*" # 允许在请求中携带的头信息
   config:
     import:
       - optional:nacos:application-@profiles.active@.yml
       - optional:nacos:${spring.application.name}.yml
       - optional:nacos:${spring.application.name}-@profiles.active@.yml
+logging:
+  level:
+    org:
+      springframework:
+        cloud:
+          gateway: DEBUG
+
+        web:
+          server:
+            adapter: DEBUG
