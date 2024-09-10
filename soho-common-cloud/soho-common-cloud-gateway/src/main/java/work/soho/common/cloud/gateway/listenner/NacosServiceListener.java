@@ -9,7 +9,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.cloud.context.scope.refresh.RefreshScope;
 import org.springframework.cloud.gateway.route.RouteLocator;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -22,9 +21,8 @@ import java.util.Properties;
 public class NacosServiceListener implements CommandLineRunner {
 
     private final NacosDiscoveryProperties nacosDiscoveryProperties;
-    private NamingService namingService;
 
-    private final ApplicationContext applicationContext;
+    private NamingService namingService;
 
     private final RefreshScope refreshScope;
 
@@ -59,7 +57,7 @@ public class NacosServiceListener implements CommandLineRunner {
                     // 每隔10秒刷新服务列表
                     Thread.sleep(10000);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error(e.getMessage());
                 }
             }
         }).start();
@@ -72,12 +70,12 @@ public class NacosServiceListener implements CommandLineRunner {
                 namingService.subscribe(serviceName, event -> {
                     if (event instanceof NamingEvent) {
                         NamingEvent namingEvent = (NamingEvent) event;
-                        System.out.println("服务 " + serviceName + " 的实例发生变化: " + namingEvent.getInstances());
+                        log.info("服务 " + serviceName + " 的实例发生变化: " + namingEvent.getInstances());
                     }
                 });
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
         }
     }
 }
