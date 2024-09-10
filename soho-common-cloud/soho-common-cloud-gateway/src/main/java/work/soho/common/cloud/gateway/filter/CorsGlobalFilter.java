@@ -10,6 +10,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+/**
+ * 网关处理跨域请求
+ */
 @Component
 public class CorsGlobalFilter implements GlobalFilter, Ordered {
 
