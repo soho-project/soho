@@ -3,6 +3,7 @@ package work.soho.example.biz.controller;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
@@ -47,6 +48,7 @@ public class ExampleController {
     /**
      * 查询自动化样例列表
      */
+    @DS("slave")
     @GetMapping("/list")
     @Node(value = "example::list", name = "获取 自动化样例 列表")
     public R<PageSerializable<Example>> list(Example example, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
