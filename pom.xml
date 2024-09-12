@@ -18,6 +18,7 @@
         <module>soho-common-cloud/soho-common-cloud-security</module>
         <module>soho-extend/soho-upload/soho-upload-cloud-biz</module>
         <module>soho-extend/soho-upload/soho-upload-cloud-bridge</module>
+        <module>soho-common/soho-common-database</module>
     </modules>
 
     <properties>
