@@ -14,6 +14,8 @@
     <modules>
         <module>soho-user-api</module>
         <module>soho-user-biz</module>
+        <module>soho-user-cloud-biz</module>
+        <module>soho-user-cloud-bridge</module>
     </modules>
 
     <properties>
