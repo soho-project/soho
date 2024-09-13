@@ -11,7 +11,7 @@
           paths:
             - /upload/**
           routeOrder: 1
-          moduleName: upload
+          moduleName: user
       config:
         server-addr: ${spring.cloud.nacos.discovery.server-addr}
   config:
