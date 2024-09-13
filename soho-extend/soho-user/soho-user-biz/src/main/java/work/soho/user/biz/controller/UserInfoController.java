@@ -27,7 +27,7 @@ import java.util.List;
 @Api(tags = "用户信息")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/userInfo" )
+@RequestMapping("/user/admin/userInfo" )
 public class UserInfoController {
 
     private final UserInfoService userInfoService;
