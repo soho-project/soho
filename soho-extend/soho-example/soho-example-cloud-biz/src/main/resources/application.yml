@@ -19,6 +19,7 @@
       - optional:nacos:soho-admin-cloud-base.yml
       - optional:nacos:soho-admin-cloud-base-@profiles.active@.yml
       - optional:nacos:application-@profiles.active@.yml
+      - optional:nacos:${spring.application.name}.yml
       - optional:nacos:${spring.application.name}-@profiles.active@.yml
 server:
   servlet:
