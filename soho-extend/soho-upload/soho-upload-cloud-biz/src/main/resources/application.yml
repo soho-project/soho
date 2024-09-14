@@ -24,4 +24,4 @@ server:
   servlet:
     encoding:
       charset: utf-8
-  port: 6680
+  port: 6682
