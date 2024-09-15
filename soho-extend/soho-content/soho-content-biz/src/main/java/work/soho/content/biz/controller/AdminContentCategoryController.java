@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 @Api(tags = "内容分类API")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/adminContentCategory" )
+@RequestMapping("/content/admin/adminContentCategory" )
 public class AdminContentCategoryController {
 
     private final AdminContentCategoryService adminContentCategoryService;
