@@ -228,7 +228,7 @@ CREATE TABLE `admin_job` (
 
 LOCK TABLES `admin_job` WRITE;
 /*!40000 ALTER TABLE `admin_job` DISABLE KEYS */;
-INSERT INTO `admin_job` VALUES (2,'test2',1,'work.soho.common.quartz.Hello::test(33)',0,'0/5 * * * * ?',NULL,'2023-07-22 23:37:41'),(3,'聊天禁言恢复',0,'work.soho.chat.biz.service.ChatGroupUserService::restoreBanned()',1,'1 * * * * ?','2023-11-04 10:22:45','2023-11-04 10:22:45');
+INSERT INTO `admin_job` VALUES (2,'test2',1,'work.soho.quartz.biz.Hello::test(33)',0,'0/5 * * * * ?',NULL,'2023-07-22 23:37:41'),(3,'聊天禁言恢复',0,'work.soho.chat.biz.service.ChatGroupUserService::restoreBanned()',1,'1 * * * * ?','2023-11-04 10:22:45','2023-11-04 10:22:45');
 /*!40000 ALTER TABLE `admin_job` ENABLE KEYS */;
 UNLOCK TABLES;
 
