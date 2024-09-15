@@ -1,19 +1,15 @@
 package work.soho.admin.service.impl;
 
-import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
-import work.soho.admin.AdminApplication;
-import work.soho.api.admin.service.EmailApiService;
+import work.soho.admin.api.service.EmailApiService;
 import work.soho.test.TestApp;
 
 import java.util.HashMap;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 
 @ContextConfiguration

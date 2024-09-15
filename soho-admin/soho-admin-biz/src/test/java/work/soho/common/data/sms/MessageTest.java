@@ -10,7 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.Environment;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
-import work.soho.admin.AdminApplication;
+import work.soho.admin.biz.AdminApplication;
 import work.soho.common.core.util.IDGeneratorUtils;
 
 @ContextConfiguration

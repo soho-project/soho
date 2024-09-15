@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="work.soho.admin.mapper.AdminNotificationMapper">
+<mapper namespace="work.soho.admin.biz.mapper.AdminNotificationMapper">
 
-    <resultMap id="BaseResultMap" type="work.soho.admin.domain.AdminNotification">
+    <resultMap id="BaseResultMap" type="work.soho.admin.biz.domain.AdminNotification">
             <id property="id" column="id" jdbcType="INTEGER"/>
             <result property="adminUserId" column="admin_user_id" jdbcType="INTEGER"/>
             <result property="title" column="title" jdbcType="VARCHAR"/>

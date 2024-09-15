@@ -6,8 +6,9 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import work.soho.admin.mapper.AdminUserMapper;
-import work.soho.admin.domain.AdminUser;
+import work.soho.admin.biz.AdminApplication;
+import work.soho.admin.biz.mapper.AdminUserMapper;
+import work.soho.admin.biz.domain.AdminUser;
 
 import java.sql.Timestamp;
 import java.util.List;

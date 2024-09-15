@@ -3,8 +3,8 @@ package work.soho.admin.cloud.bridge.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import work.soho.admin.cloud.bridge.feign.AdminInfoApiServiceFeign;
-import work.soho.api.admin.service.AdminInfoApiService;
-import work.soho.api.admin.vo.AdminUserVo;
+import work.soho.admin.api.service.AdminInfoApiService;
+import work.soho.admin.api.vo.AdminUserVo;
 import java.util.HashSet;
 
 @Service

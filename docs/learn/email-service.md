@@ -7,7 +7,7 @@
 Example
 --------
 
-    import work.soho.api.admin.service.EmailApiService;
+    import service.work.soho.admin.api.EmailApiService;
 
     private final EmailApiService emailApiService;
 

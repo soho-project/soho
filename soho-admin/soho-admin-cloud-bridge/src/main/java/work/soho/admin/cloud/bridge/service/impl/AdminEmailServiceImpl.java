@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import work.soho.admin.cloud.api.request.SendEmailRequest;
 import work.soho.admin.cloud.bridge.feign.AdminEmailServiceFeign;
-import work.soho.api.admin.service.EmailApiService;
+import work.soho.admin.api.service.EmailApiService;
 
 import java.util.Map;
 

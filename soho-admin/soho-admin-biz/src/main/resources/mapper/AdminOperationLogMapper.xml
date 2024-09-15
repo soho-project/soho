@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="work.soho.admin.mapper.AdminOperationLogMapper">
-    <resultMap id="BaseResultMap" type="work.soho.admin.domain.AdminOperationLog">
+<mapper namespace="work.soho.admin.biz.mapper.AdminOperationLogMapper">
+    <resultMap id="BaseResultMap" type="work.soho.admin.biz.domain.AdminOperationLog">
         <id property="id" column="id" jdbcType="INTEGER"/>
         <id property="adminUserId" column="admin_user_id" jdbcType="VARCHAR"/>
         <id property="method" column="method" jdbcType="VARCHAR"/>

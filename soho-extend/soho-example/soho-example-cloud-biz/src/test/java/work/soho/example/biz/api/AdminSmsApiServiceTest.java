@@ -5,9 +5,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
-import work.soho.api.admin.service.AdminInfoApiService;
-import work.soho.api.admin.service.SmsApiService;
-import work.soho.api.admin.vo.AdminUserVo;
+import work.soho.admin.api.service.AdminInfoApiService;
+import work.soho.admin.api.service.SmsApiService;
+import work.soho.admin.api.vo.AdminUserVo;
 
 import java.util.HashMap;
 

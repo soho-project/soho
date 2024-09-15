@@ -10,7 +10,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import work.soho.admin.AdminApplication;
+import work.soho.admin.biz.AdminApplication;
 import work.soho.common.core.util.JacksonUtils;
 
 import java.util.HashMap;

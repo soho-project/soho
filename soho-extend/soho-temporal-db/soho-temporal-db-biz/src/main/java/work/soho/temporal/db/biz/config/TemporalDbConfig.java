@@ -3,8 +3,8 @@ package work.soho.temporal.db.biz.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
-import work.soho.api.admin.request.AdminConfigInitRequest;
-import work.soho.api.admin.service.AdminConfigApiService;
+import work.soho.admin.api.request.AdminConfigInitRequest;
+import work.soho.admin.api.service.AdminConfigApiService;
 
 import java.util.ArrayList;
 

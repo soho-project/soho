@@ -4,9 +4,8 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import work.soho.api.admin.request.AdminConfigInitRequest;
+import work.soho.admin.api.request.AdminConfigInitRequest;
 
-//@FeignClient(value = "soho-admin-cloud-biz")
 @FeignClient(name = "soho-admin-cloud-biz", contextId = "soho-admin-cloud-biz-1")
 public interface AdminConfigApiServiceFeign {
     /**

@@ -6,7 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.web.context.WebApplicationContext;
-import work.soho.admin.AdminApplication;
+import work.soho.admin.biz.AdminApplication;
 import work.soho.common.data.upload.UploadManage;
 import work.soho.common.data.upload.utils.UploadUtils;
 

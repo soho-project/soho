@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="work.soho.admin.mapper.AdminRoleMapper">
+<mapper namespace="work.soho.admin.biz.mapper.AdminRoleMapper">
    <sql id="AllField">
        `id`,
        `name`,
@@ -8,7 +8,7 @@
        `remarks`,
        `created_time`
    </sql>
-   <select id="getById" resultType="work.soho.admin.domain.AdminRole">
+   <select id="getById" resultType="work.soho.admin.biz.domain.AdminRole">
        SELECT
            <include refid="AllField"></include>
        FROM admin_role: table where id=#{id}
