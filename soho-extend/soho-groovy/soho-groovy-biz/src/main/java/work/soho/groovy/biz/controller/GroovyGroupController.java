@@ -27,7 +27,7 @@ import java.util.List;
 @Api(tags = "groovy分组")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/groovyGroup" )
+@RequestMapping("/groovy/admin/groovyGroup" )
 public class GroovyGroupController {
 
     private final GroovyGroupService groovyGroupService;

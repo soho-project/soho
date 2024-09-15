@@ -1,0 +1,28 @@
+﻿spring:
+  profiles:
+    active: @profiles.active@
+  application:
+    name: @artifactId@
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_HOST:127.0.0.1}:8848
+        metadata:
+          paths:
+            - /groovy/**
+          routeOrder: 1
+          moduleName: groovy
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+  config:
+    import:
+      - optional:nacos:soho-admin-cloud-base.yml
+      - optional:nacos:soho-admin-cloud-base-@profiles.active@.yml
+      - optional:nacos:application-@profiles.active@.yml
+      - optional:nacos:${spring.application.name}.yml
+      - optional:nacos:${spring.application.name}-@profiles.active@.yml
+server:
+  servlet:
+    encoding:
+      charset: utf-8
+  port: 6685

@@ -14,6 +14,7 @@ import work.soho.groovy.biz.domain.GroovyInfo;
 import work.soho.groovy.biz.service.GroovyExecutorService;
 import work.soho.groovy.biz.service.GroovyInfoService;
 import work.soho.groovy.biz.vo.TestCodeVO;
+import work.soho.groovy.service.GroovyExecutorApiService;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -30,12 +31,14 @@ import java.util.List;
 @Api(tags = "groovy代码")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/groovyInfo" )
+@RequestMapping("/groovy/admin/groovyInfo" )
 public class GroovyInfoController {
 
     private final GroovyInfoService groovyInfoService;
 
     private final GroovyExecutorService groovyExecutorService;
+
+    private final GroovyExecutorApiService groovyExecutorApiService;
 
     /**
      * 查询groovy代码列表
@@ -112,7 +115,7 @@ public class GroovyInfoController {
         System.setOut(new PrintStream(outputStream));
         System.setErr(new PrintStream(outputStream));
         try {
-            map.put("result", groovyExecutorService.execute(code.getCode() +"\r\n"+ code.getTestCode()));
+            map.put("result", groovyExecutorApiService.execute(code.getCode() +"\r\n"+ code.getTestCode()));
 
             String capturedOutput = outputStream.toString();
             map.put("output",capturedOutput);
