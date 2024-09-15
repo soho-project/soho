@@ -10,6 +10,7 @@ import work.soho.groovy.biz.mapper.GroovyInfoMapper;
 import work.soho.groovy.biz.service.GroovyExecutorService;
 import work.soho.groovy.biz.service.GroovyInfoService;
 import work.soho.groovy.exception.NotFoundException;
+import work.soho.groovy.service.GroovyExecutorApiService;
 import work.soho.groovy.service.GroovyInfoApiService;
 
 import java.util.Map;
@@ -20,6 +21,7 @@ public class GroovyInfoServiceImpl extends ServiceImpl<GroovyInfoMapper, GroovyI
     implements GroovyInfoService, GroovyInfoApiService {
 
     private final GroovyExecutorService groovyExecutor;
+    private final GroovyExecutorApiService groovyExecutorApiService;
 
     /**
      * 执行指定名称代码
@@ -43,7 +45,7 @@ public class GroovyInfoServiceImpl extends ServiceImpl<GroovyInfoMapper, GroovyI
     public Object executor(String name, Map<String, Object> params) {
         GroovyInfo groovyInfo = getByName(name);
         Assert.notNull(groovyInfo, "找不到任务名为：" + name + "的代码");
-        return this.groovyExecutor.execute(groovyInfo.getCode(), params);
+        return this.groovyExecutorApiService.execute(groovyInfo.getCode(), params);
     }
 
     /**

@@ -11,12 +11,19 @@ import work.soho.api.admin.request.AdminConfigInitRequest;
 public interface AdminConfigApiServiceFeign {
     /**
      * 获取指定key的值
+     *
      * @param key
      * @return
      */
     @GetMapping("/cloud/admin/adminConfig/getByKey")
     String getByKey(@RequestParam("key") String key);
 
+    /**
+     * 传参执行指定脚本
+     *
+     * @param adminConfigInitRequest
+     * @return
+     */
     @PostMapping("/cloud/admin/adminConfig/initItems")
     Boolean initItems(AdminConfigInitRequest adminConfigInitRequest);
 }

@@ -5,11 +5,12 @@ import groovy.lang.GroovyObject;
 import groovy.lang.GroovyShell;
 import org.springframework.stereotype.Service;
 import work.soho.groovy.biz.service.GroovyExecutorService;
+import work.soho.groovy.service.GroovyExecutorApiService;
 
 import java.util.Map;
 
 @Service
-public class GroovyExecutorServiceImpl implements GroovyExecutorService {
+public class GroovyExecutorServiceImpl implements GroovyExecutorService, GroovyExecutorApiService {
     @Override
     public Object execute(String code) {
         return execute(code, null);
