@@ -12,5 +12,6 @@
     <artifactId>soho-common-cloud</artifactId>
     <modules>
         <module>soho-common-cloud-gateway</module>
+        <module>soho-common-cloud-security</module>
     </modules>
 </project>
