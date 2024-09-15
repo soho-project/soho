@@ -1,8 +1,8 @@
-package work.soho.admin.common.security.service.impl;
+package work.soho.common.security.service.impl;
 
 import org.springframework.stereotype.Service;
-import work.soho.admin.common.security.service.SohoUserDetailsService;
-import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.service.SohoUserDetailsService;
+import work.soho.common.security.userdetails.SohoUserDetails;
 
 @Service
 public class EmptySohoUserDetails implements SohoUserDetailsService {

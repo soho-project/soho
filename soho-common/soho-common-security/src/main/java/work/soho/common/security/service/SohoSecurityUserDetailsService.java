@@ -1,4 +1,4 @@
-package work.soho.admin.common.security.service;
+package work.soho.common.security.service;
 
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;

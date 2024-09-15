@@ -1,6 +1,5 @@
-package work.soho.admin.common.security.service.impl;
+package work.soho.common.security.service.impl;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
@@ -13,8 +12,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
-import work.soho.admin.common.security.service.SohoUserDetailsService;
-import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.service.SohoUserDetailsService;
+import work.soho.common.security.userdetails.SohoUserDetails;
 
 import java.util.Collection;
 import java.util.Iterator;

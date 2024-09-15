@@ -8,8 +8,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
-import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.userdetails.SohoUserDetails;
 
 import java.util.ArrayList;
 import java.util.List;

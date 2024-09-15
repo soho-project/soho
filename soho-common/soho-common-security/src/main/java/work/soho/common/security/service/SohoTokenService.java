@@ -1,6 +1,6 @@
-package work.soho.admin.common.security.service;
+package work.soho.common.security.service;
 
-import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.userdetails.SohoUserDetails;
 
 import java.util.Map;
 

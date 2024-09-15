@@ -7,7 +7,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
-import work.soho.admin.common.security.utils.SecurityUtils;
+import work.soho.common.security.utils.SecurityUtils;
 import work.soho.admin.biz.domain.AdminResource;
 import work.soho.admin.biz.domain.AdminRoleResource;
 import work.soho.admin.biz.domain.AdminRoleUser;

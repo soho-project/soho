@@ -9,7 +9,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
-import work.soho.admin.common.security.utils.SecurityUtils;
+import work.soho.common.security.utils.SecurityUtils;
 import work.soho.approvalprocess.domain.ApprovalProcess;
 import work.soho.approvalprocess.domain.ApprovalProcessOrder;
 import work.soho.approvalprocess.domain.ApprovalProcessOrderNode;

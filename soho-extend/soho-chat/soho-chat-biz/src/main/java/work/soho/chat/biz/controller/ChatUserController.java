@@ -6,7 +6,7 @@ import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.admin.api.annotation.Node;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.chat.biz.domain.ChatUser;

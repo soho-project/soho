@@ -12,7 +12,7 @@ import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.admin.api.service.EmailApiService;
 import work.soho.admin.api.service.SmsApiService;
 import work.soho.chat.api.Constants;

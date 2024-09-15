@@ -1,4 +1,4 @@
-package work.soho.admin.common.security.config;
+package work.soho.common.security.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -12,9 +12,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import work.soho.admin.common.security.filter.AuthenticationEntryPointImpl;
-import work.soho.admin.common.security.filter.JwtAuthFilter;
-import work.soho.admin.common.security.service.impl.SohoAuthenticationProvider;
+import work.soho.common.security.filter.AuthenticationEntryPointImpl;
+import work.soho.common.security.filter.JwtAuthFilter;
+import work.soho.common.security.service.impl.SohoAuthenticationProvider;
 
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class SecurityConfig extends WebSecurityConfigurerAdapter
