@@ -25,7 +25,7 @@ import java.util.List;
 @Api(tags = "支付单")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/payOrder" )
+@RequestMapping("/pay/admin/payOrder" )
 public class PayOrderController {
 
     private final PayOrderService payOrderService;
@@ -63,6 +63,7 @@ public class PayOrderController {
         if (payOrder.getUpdatedTime() != null){
             lqw.eq(PayOrder::getUpdatedTime ,payOrder.getUpdatedTime());
         }
+        lqw.orderByDesc(PayOrder::getId);
         List<PayOrder> list = payOrderService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }

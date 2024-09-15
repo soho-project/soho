@@ -30,7 +30,7 @@ import java.util.HashMap;
 @Api(tags = "客户端支付回调接口")
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/client/api/payCallback" )
+@RequestMapping("/pay/client/api/payCallback" )
 @Log4j2
 public class PayCallbackController {
     private final PayOrderService payOrderService;
