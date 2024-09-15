@@ -5,12 +5,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Service;
-import work.soho.admin.common.security.service.SohoUserDetailsService;
-import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.service.SohoUserDetailsService;
+import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.chat.api.Constants;
 import work.soho.chat.biz.domain.ChatUser;
 import work.soho.chat.biz.mapper.ChatUserMapper;
-import work.soho.chat.biz.service.ChatUserService;
 
 /**
  * security impl

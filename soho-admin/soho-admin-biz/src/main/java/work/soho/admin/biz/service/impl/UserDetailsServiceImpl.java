@@ -6,8 +6,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import work.soho.admin.common.security.service.SohoUserDetailsService;
-import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.service.SohoUserDetailsService;
+import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.admin.biz.domain.AdminUser;
 import work.soho.admin.biz.service.AdminUserService;
 

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import work.soho.admin.common.security.utils.SecurityUtils;
+import work.soho.common.security.utils.SecurityUtils;
 import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
 import work.soho.common.core.result.R;

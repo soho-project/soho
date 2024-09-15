@@ -1,4 +1,4 @@
-package work.soho.admin.common.security.filter;
+package work.soho.common.security.filter;
 
 import cn.hutool.json.JSONUtil;
 import org.springframework.http.HttpHeaders;

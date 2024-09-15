@@ -1,4 +1,4 @@
-package work.soho.admin.common.security.filter;
+package work.soho.common.security.filter;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -7,8 +7,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import work.soho.admin.common.security.service.impl.TokenServiceImpl;
-import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.service.impl.TokenServiceImpl;
+import work.soho.common.security.userdetails.SohoUserDetails;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;

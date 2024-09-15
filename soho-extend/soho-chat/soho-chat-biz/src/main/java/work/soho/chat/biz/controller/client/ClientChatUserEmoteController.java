@@ -7,7 +7,7 @@ import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.admin.api.service.AdminConfigApiService;
 import work.soho.chat.biz.domain.ChatUserEmote;
 import work.soho.chat.biz.service.ChatUserEmoteService;

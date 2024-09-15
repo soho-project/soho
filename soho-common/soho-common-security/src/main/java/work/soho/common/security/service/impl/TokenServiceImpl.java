@@ -1,4 +1,4 @@
-package work.soho.admin.common.security.service.impl;
+package work.soho.common.security.service.impl;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -8,8 +8,8 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import work.soho.admin.common.security.service.SohoTokenService;
-import work.soho.admin.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.service.SohoTokenService;
+import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.common.core.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;

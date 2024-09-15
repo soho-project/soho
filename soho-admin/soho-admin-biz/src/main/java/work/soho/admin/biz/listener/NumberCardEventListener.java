@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import work.soho.admin.common.security.utils.SecurityUtils;
+import work.soho.common.security.utils.SecurityUtils;
 import work.soho.admin.biz.domain.AdminNotification;
 import work.soho.admin.biz.domain.AdminUser;
 import work.soho.admin.biz.domain.AdminUserLoginLog;

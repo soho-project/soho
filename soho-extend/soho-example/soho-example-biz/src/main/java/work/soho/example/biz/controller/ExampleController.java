@@ -14,7 +14,7 @@ import work.soho.admin.api.annotation.Node;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.admin.api.vo.OptionVo;
-import work.soho.admin.common.security.utils.SecurityUtils;
+import work.soho.common.security.utils.SecurityUtils;
 import work.soho.approvalprocess.service.ApprovalProcessOrderService;
 import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
 import work.soho.common.core.result.R;
