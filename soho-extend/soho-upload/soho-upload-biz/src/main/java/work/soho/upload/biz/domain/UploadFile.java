@@ -1,4 +1,4 @@
-package work.soho.domain;
+package work.soho.upload.biz.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;

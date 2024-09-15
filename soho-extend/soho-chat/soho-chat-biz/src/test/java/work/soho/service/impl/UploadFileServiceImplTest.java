@@ -6,15 +6,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
-import work.soho.service.UploadFileService;
 import work.soho.test.TestApp;
 import work.soho.upload.api.Upload;
 import work.soho.upload.api.vo.UploadInfoVo;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")

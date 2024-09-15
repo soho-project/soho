@@ -1,4 +1,4 @@
-package work.soho.controller.client;
+package work.soho.upload.biz.controller.client;
 
 import cn.hutool.core.lang.Assert;
 import io.swagger.annotations.Api;
@@ -7,7 +7,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.common.core.result.R;
-import work.soho.service.UploadFileService;
+import work.soho.upload.biz.service.UploadFileService;
 import work.soho.upload.api.Upload;
 import work.soho.upload.api.vo.UploadInfoVo;
 
