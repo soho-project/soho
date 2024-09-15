@@ -1,4 +1,4 @@
-package work.soho.controller;
+package work.soho.upload.biz.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
@@ -10,8 +10,8 @@ import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
-import work.soho.domain.UploadFile;
-import work.soho.service.UploadFileService;
+import work.soho.upload.biz.domain.UploadFile;
+import work.soho.upload.biz.service.UploadFileService;
 
 import java.util.Arrays;
 import java.util.List;

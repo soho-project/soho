@@ -21,7 +21,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>3.8.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -31,7 +30,6 @@
         <dependency>
             <groupId>work.soho</groupId>
             <artifactId>soho-admin-api</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>work.soho</groupId>
@@ -40,7 +38,6 @@
         <dependency>
             <groupId>work.soho</groupId>
             <artifactId>soho-mobile-verification-api</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.data</groupId>
@@ -49,19 +46,15 @@
         <dependency>
             <groupId>work.soho</groupId>
             <artifactId>soho-mobile-verification-api</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>work.soho</groupId>
             <artifactId>soho-common-test</artifactId>
-            <version>1.0-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>work.soho</groupId>
             <artifactId>soho-admin-biz</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -70,7 +63,6 @@
         <dependency>
             <groupId>work.soho</groupId>
             <artifactId>soho-common-data</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>work.soho</groupId>

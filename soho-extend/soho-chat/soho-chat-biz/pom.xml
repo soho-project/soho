@@ -12,8 +12,6 @@
     <artifactId>soho-chat-biz</artifactId>
     <packaging>jar</packaging>
 
-    <name>soho-chat-biz</name>
-
     <dependencies>
 <!--        <dependency>-->
 <!--            <groupId>work.soho</groupId>-->

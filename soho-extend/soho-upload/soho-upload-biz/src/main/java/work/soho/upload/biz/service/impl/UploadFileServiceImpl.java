@@ -1,4 +1,4 @@
-package work.soho.service.impl;
+package work.soho.upload.biz.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -10,9 +10,9 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
-import work.soho.domain.UploadFile;
-import work.soho.mapper.UploadFileMapper;
-import work.soho.service.UploadFileService;
+import work.soho.upload.biz.domain.UploadFile;
+import work.soho.upload.biz.mapper.UploadFileMapper;
+import work.soho.upload.biz.service.UploadFileService;
 import work.soho.upload.api.Upload;
 import work.soho.upload.api.vo.UploadInfoVo;
 
