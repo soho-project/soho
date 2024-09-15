@@ -30,7 +30,7 @@ import java.util.List;
 @Api(tags = "系统内容表API")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/adminContent" )
+@RequestMapping("/content/admin/adminContent" )
 public class AdminContentController {
 
     private final AdminContentService adminContentService;

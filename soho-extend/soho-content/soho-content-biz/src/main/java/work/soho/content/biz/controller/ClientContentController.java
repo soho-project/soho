@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 @Api(tags = "客户端内容接口")
 @RestController
-@RequestMapping("/client/api/content")
+@RequestMapping("/content/client/api/content")
 @RequiredArgsConstructor
 public class ClientContentController {
     private final AdminContentService adminContentService;

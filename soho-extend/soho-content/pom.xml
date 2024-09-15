@@ -14,6 +14,7 @@
     <url>http://maven.apache.org</url>
     <modules>
         <module>soho-content-biz</module>
+        <module>soho-content-cloud-biz</module>
     </modules>
 
     <properties>
