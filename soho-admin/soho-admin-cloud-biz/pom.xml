@@ -80,7 +80,7 @@
                 </executions>
                 <configuration>
                     <includeSystemScope>true</includeSystemScope>
-                    <mainClass>work.soho.admin.AdminCloudBizApplication</mainClass>
+                    <mainClass>work.soho.admin.cloud.biz.AdminCloudBizApplication</mainClass>
                 </configuration>
             </plugin>
         </plugins>

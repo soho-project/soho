@@ -3,7 +3,6 @@ package work.soho.example.biz.controller;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
-import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
@@ -11,11 +10,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import work.soho.admin.api.annotation.Node;
+import work.soho.admin.api.request.BetweenCreatedTimeRequest;
+import work.soho.admin.api.service.AdminDictApiService;
+import work.soho.admin.api.vo.OptionVo;
 import work.soho.admin.common.security.utils.SecurityUtils;
-import work.soho.api.admin.annotation.Node;
-import work.soho.api.admin.request.BetweenCreatedTimeRequest;
-import work.soho.api.admin.service.AdminDictApiService;
-import work.soho.api.admin.vo.OptionVo;
 import work.soho.approvalprocess.service.ApprovalProcessOrderService;
 import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
 import work.soho.common.core.result.R;
@@ -48,7 +47,6 @@ public class ExampleController {
     /**
      * 查询自动化样例列表
      */
-    @DS("slave")
     @GetMapping("/list")
     @Node(value = "example::list", name = "获取 自动化样例 列表")
     public R<PageSerializable<Example>> list(Example example, BetweenCreatedTimeRequest betweenCreatedTimeRequest)

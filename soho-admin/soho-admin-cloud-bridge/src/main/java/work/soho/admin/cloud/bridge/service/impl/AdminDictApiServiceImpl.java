@@ -1,8 +1,8 @@
 package work.soho.admin.cloud.bridge.service.impl;
 
 import org.springframework.stereotype.Service;
-import work.soho.api.admin.service.AdminDictApiService;
-import work.soho.api.admin.vo.OptionVo;
+import work.soho.admin.api.service.AdminDictApiService;
+import work.soho.admin.api.vo.OptionVo;
 
 import java.util.List;
 import java.util.Map;

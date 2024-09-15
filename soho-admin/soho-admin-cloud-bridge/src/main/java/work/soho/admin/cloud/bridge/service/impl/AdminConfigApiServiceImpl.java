@@ -3,8 +3,8 @@ package work.soho.admin.cloud.bridge.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import work.soho.admin.cloud.bridge.feign.AdminConfigApiServiceFeign;
-import work.soho.api.admin.request.AdminConfigInitRequest;
-import work.soho.api.admin.service.AdminConfigApiService;
+import work.soho.admin.api.request.AdminConfigInitRequest;
+import work.soho.admin.api.service.AdminConfigApiService;
 
 @Service
 @RequiredArgsConstructor

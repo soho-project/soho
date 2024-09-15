@@ -12,7 +12,7 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.common.security.userdetails.SohoUserDetails;
-import work.soho.api.admin.request.BetweenCreatedTimeRequest;
+import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.chat.api.ChatMessage;
 import work.soho.chat.api.payload.RealTimeCmd;
 import work.soho.chat.api.payload.SystemMessage;

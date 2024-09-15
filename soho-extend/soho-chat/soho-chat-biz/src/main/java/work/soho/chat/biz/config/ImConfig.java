@@ -2,7 +2,7 @@ package work.soho.chat.biz.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import work.soho.api.admin.service.AdminConfigApiService;
+import work.soho.admin.api.service.AdminConfigApiService;
 
 @Component
 @RequiredArgsConstructor

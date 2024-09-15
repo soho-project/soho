@@ -5,7 +5,7 @@ import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import work.soho.api.admin.annotation.Node;
+import work.soho.admin.api.annotation.Node;
 import work.soho.chat.biz.domain.ChatUserFriend;
 import work.soho.chat.biz.service.ChatUserFriendService;
 import work.soho.common.core.result.R;

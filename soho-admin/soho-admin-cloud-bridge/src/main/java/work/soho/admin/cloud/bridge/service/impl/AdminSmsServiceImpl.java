@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import work.soho.admin.cloud.api.request.SendSmsRequest;
 import work.soho.admin.cloud.bridge.feign.AdminSmsServiceFeign;
-import work.soho.api.admin.service.SmsApiService;
+import work.soho.admin.api.service.SmsApiService;
 
 import java.util.Map;
 

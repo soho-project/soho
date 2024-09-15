@@ -1,0 +1,43 @@
+package work.soho.admin.biz.controller;
+
+import com.github.pagehelper.PageHelper;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import work.soho.common.core.util.StringUtils;
+
+import javax.servlet.http.HttpServletRequest;
+
+public class BaseController {
+    /**
+     * 启动默认参数分页
+     */
+    public void startPage() {
+        int pageNum = 1;
+        int pageSize = 20;
+        ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if(servletRequestAttributes == null) {
+            return;
+        }
+        HttpServletRequest request = servletRequestAttributes.getRequest();
+        String pageNumString = request.getParameter("page");
+        String pageSizeString = request.getParameter("pageSize");
+        if(!StringUtils.isEmpty(pageSizeString)) {
+            pageNum = Integer.parseInt(pageNumString);
+        }
+        if(!StringUtils.isEmpty(pageSizeString)) {
+            pageSize = Integer.parseInt(pageSizeString);
+        }
+
+        startPage(pageNum, pageSize);
+    }
+
+    /**
+     * 启动分页
+     *
+     * @param pageNum
+     * @param pageSize
+     */
+    public void startPage(Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+    }
+}

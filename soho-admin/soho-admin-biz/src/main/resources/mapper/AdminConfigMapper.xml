@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="work.soho.admin.mapper.AdminConfigMapper">
+<mapper namespace="work.soho.admin.biz.mapper.AdminConfigMapper">
 
-    <resultMap id="BaseResultMap" type="work.soho.admin.domain.AdminConfig">
+    <resultMap id="BaseResultMap" type="work.soho.admin.biz.domain.AdminConfig">
             <id property="id" column="id" jdbcType="INTEGER"/>
             <result property="groupKey" column="group_key" jdbcType="VARCHAR"/>
             <result property="key" column="key" jdbcType="VARCHAR"/>

@@ -5,8 +5,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
-import work.soho.admin.domain.AdminResource;
-import work.soho.admin.service.AdminResourceService;
+import work.soho.admin.biz.AdminApplication;
+import work.soho.admin.biz.domain.AdminResource;
+import work.soho.admin.biz.service.AdminResourceService;
 import work.soho.common.core.util.TreeUtils;
 import work.soho.common.core.util.HashMapUtils;
 

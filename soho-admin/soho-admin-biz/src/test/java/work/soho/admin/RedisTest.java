@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
+import work.soho.admin.biz.AdminApplication;
+
 import java.util.ArrayList;
 import static org.junit.jupiter.api.Assertions.*;
 

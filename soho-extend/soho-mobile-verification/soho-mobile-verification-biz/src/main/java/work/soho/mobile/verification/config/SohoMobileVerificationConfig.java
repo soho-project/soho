@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
-import work.soho.api.admin.request.AdminConfigInitRequest;
-import work.soho.api.admin.service.AdminConfigApiService;
+import work.soho.admin.api.request.AdminConfigInitRequest;
+import work.soho.admin.api.service.AdminConfigApiService;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.common.core.util.StringUtils;
 

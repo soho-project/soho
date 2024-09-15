@@ -1,6 +1,5 @@
 package work.soho.admin;
 
-import io.swagger.models.auth.In;
 import org.junit.jupiter.api.Test;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
@@ -18,9 +17,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.web.bind.annotation.RestController;
-import work.soho.api.admin.annotation.Node;
-import work.soho.admin.service.impl.AdminResourceServiceImpl;
-import work.soho.common.core.support.SpringContextHolder;
+import work.soho.admin.biz.AdminApplication;
+import work.soho.admin.api.annotation.Node;
+import work.soho.admin.biz.service.impl.AdminResourceServiceImpl;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
