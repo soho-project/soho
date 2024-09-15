@@ -26,7 +26,7 @@ import java.util.List;
 @Api(tags = "客户端支付信息")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/payInfo" )
+@RequestMapping("/pay/admin/payInfo" )
 public class PayInfoController {
 
     private final PayInfoService payInfoService;
@@ -82,6 +82,7 @@ public class PayInfoController {
         if (StringUtils.isNotBlank(payInfo.getAdapterName())){
             lqw.like(PayInfo::getAdapterName ,payInfo.getAdapterName());
         }
+        lqw.orderByDesc(PayInfo::getId);
         List<PayInfo> list = payInfoService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }
