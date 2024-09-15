@@ -200,7 +200,7 @@ CREATE TABLE `admin_job` (
 
 LOCK TABLES `admin_job` WRITE;
 /*!40000 ALTER TABLE `admin_job` DISABLE KEYS */;
-INSERT INTO `admin_job` VALUES (2,'test2',1,'work.soho.common.quartz.Hello::test(33)',0,'0/5 * * * * ?',NULL,'2023-07-22 23:37:41');
+INSERT INTO `admin_job` VALUES (2,'test2',1,'work.soho.quartz.biz.Hello::test(33)',0,'0/5 * * * * ?',NULL,'2023-07-22 23:37:41');
 /*!40000 ALTER TABLE `admin_job` ENABLE KEYS */;
 UNLOCK TABLES;
 

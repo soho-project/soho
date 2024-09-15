@@ -93,7 +93,7 @@
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
-                <artifactId>soho-common-quartz</artifactId>
+                <artifactId>soho-quartz</artifactId>
                 <version>${soho.version}</version>
             </dependency>
             <dependency>
