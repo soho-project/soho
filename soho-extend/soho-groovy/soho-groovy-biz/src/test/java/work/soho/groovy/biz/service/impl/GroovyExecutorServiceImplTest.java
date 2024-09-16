@@ -6,7 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import work.soho.groovy.biz.service.GroovyExecutorService;
-import work.soho.groovy.service.GroovyExecutorApiService;
+import work.soho.groovy.api.service.GroovyExecutorApiService;
 import work.soho.test.TestApp;
 
 import java.util.HashMap;

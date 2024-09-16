@@ -3,7 +3,7 @@ package work.soho.groovy.cloud.biz.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import work.soho.groovy.service.GroovyExecutorApiService;
+import work.soho.groovy.api.service.GroovyExecutorApiService;
 
 import java.util.Map;
 

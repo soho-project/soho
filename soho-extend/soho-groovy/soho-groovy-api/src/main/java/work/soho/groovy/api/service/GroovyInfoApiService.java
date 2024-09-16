@@ -1,4 +1,4 @@
-package work.soho.groovy.service;
+package work.soho.groovy.api.service;
 
 import java.util.Map;
 
