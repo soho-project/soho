@@ -3,7 +3,7 @@ package work.soho.groovy.cloud.bridge.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import work.soho.groovy.cloud.bridge.feign.GroovyInfoFeign;
-import work.soho.groovy.service.GroovyInfoApiService;
+import work.soho.groovy.api.service.GroovyInfoApiService;
 
 import java.util.Map;
 

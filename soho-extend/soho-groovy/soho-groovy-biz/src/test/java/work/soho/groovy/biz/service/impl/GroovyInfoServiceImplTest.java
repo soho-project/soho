@@ -9,7 +9,7 @@ import work.soho.groovy.biz.domain.GroovyGroup;
 import work.soho.groovy.biz.domain.GroovyInfo;
 import work.soho.groovy.biz.service.GroovyGroupService;
 import work.soho.groovy.biz.service.GroovyInfoService;
-import work.soho.groovy.service.GroovyInfoApiService;
+import work.soho.groovy.api.service.GroovyInfoApiService;
 import work.soho.test.TestApp;
 
 import java.time.LocalDateTime;

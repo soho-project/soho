@@ -9,9 +9,9 @@ import work.soho.groovy.biz.domain.GroovyInfo;
 import work.soho.groovy.biz.mapper.GroovyInfoMapper;
 import work.soho.groovy.biz.service.GroovyExecutorService;
 import work.soho.groovy.biz.service.GroovyInfoService;
-import work.soho.groovy.exception.NotFoundException;
-import work.soho.groovy.service.GroovyExecutorApiService;
-import work.soho.groovy.service.GroovyInfoApiService;
+import work.soho.groovy.api.exception.NotFoundException;
+import work.soho.groovy.api.service.GroovyExecutorApiService;
+import work.soho.groovy.api.service.GroovyInfoApiService;
 
 import java.util.Map;
 

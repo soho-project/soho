@@ -2,7 +2,7 @@ package work.soho.groovy.cloud.bridge.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import work.soho.groovy.service.GroovyExecutorApiService;
+import work.soho.groovy.api.service.GroovyExecutorApiService;
 import java.util.Map;
 
 @Service

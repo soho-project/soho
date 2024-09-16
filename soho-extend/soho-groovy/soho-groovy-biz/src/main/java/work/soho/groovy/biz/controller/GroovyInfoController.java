@@ -14,7 +14,7 @@ import work.soho.groovy.biz.domain.GroovyInfo;
 import work.soho.groovy.biz.service.GroovyExecutorService;
 import work.soho.groovy.biz.service.GroovyInfoService;
 import work.soho.groovy.biz.vo.TestCodeVO;
-import work.soho.groovy.service.GroovyExecutorApiService;
+import work.soho.groovy.api.service.GroovyExecutorApiService;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;

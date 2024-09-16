@@ -5,7 +5,7 @@ import groovy.lang.GroovyObject;
 import groovy.lang.GroovyShell;
 import org.springframework.stereotype.Service;
 import work.soho.groovy.biz.service.GroovyExecutorService;
-import work.soho.groovy.service.GroovyExecutorApiService;
+import work.soho.groovy.api.service.GroovyExecutorApiService;
 
 import java.util.Map;
 

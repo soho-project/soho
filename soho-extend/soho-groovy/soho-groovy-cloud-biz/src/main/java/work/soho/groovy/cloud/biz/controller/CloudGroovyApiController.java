@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import work.soho.groovy.service.GroovyInfoApiService;
+import work.soho.groovy.api.service.GroovyInfoApiService;
 
 import java.util.HashMap;
 
