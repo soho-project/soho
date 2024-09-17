@@ -7,7 +7,7 @@ import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import work.soho.common.security.utils.SecurityUtils;
-import work.soho.admin.api.annotation.Node;
+import work.soho.common.security.annotation.Node;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;

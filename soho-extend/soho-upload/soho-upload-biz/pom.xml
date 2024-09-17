@@ -44,5 +44,9 @@
             <groupId>work.soho</groupId>
             <artifactId>soho-common-data</artifactId>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-security</artifactId>
+        </dependency>
     </dependencies>
 </project>

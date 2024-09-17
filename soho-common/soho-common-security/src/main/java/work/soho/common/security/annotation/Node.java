@@ -1,4 +1,4 @@
-package work.soho.admin.api.annotation;
+package work.soho.common.security.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

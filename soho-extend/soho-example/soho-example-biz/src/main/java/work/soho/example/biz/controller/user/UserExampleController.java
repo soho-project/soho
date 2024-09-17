@@ -17,7 +17,7 @@ import work.soho.common.security.utils.SecurityUtils;
 import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
 import work.soho.common.core.result.R;
-import work.soho.admin.api.annotation.Node;
+import work.soho.common.security.annotation.Node;
 import work.soho.example.biz.domain.Example;
 import work.soho.example.biz.service.ExampleService;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;

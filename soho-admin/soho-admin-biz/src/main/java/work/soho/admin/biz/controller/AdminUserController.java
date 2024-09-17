@@ -26,7 +26,7 @@ import work.soho.admin.biz.service.AdminRoleService;
 import work.soho.admin.biz.service.AdminRoleUserService;
 import work.soho.admin.biz.service.AdminUserService;
 import work.soho.admin.biz.service.impl.UserDetailsServiceImpl;
-import work.soho.admin.api.annotation.Node;
+import work.soho.common.security.annotation.Node;
 import work.soho.admin.api.vo.AdminUserOptionVo;
 import work.soho.admin.api.vo.AdminUserVo;
 import work.soho.admin.api.vo.CurrentAdminUserVo;

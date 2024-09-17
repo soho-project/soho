@@ -12,7 +12,7 @@ import work.soho.admin.biz.domain.AdminNotification;
 import work.soho.admin.biz.domain.AdminUser;
 import work.soho.admin.biz.service.AdminNotificationService;
 import work.soho.admin.biz.service.AdminUserService;
-import work.soho.admin.api.annotation.Node;
+import work.soho.common.security.annotation.Node;
 import work.soho.admin.api.request.AdminNotificationCreateRequest;
 import work.soho.admin.api.vo.AdminNotificationVo;
 import work.soho.common.core.result.R;

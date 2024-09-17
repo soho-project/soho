@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import work.soho.common.security.userdetails.SohoUserDetails;
-import work.soho.admin.api.annotation.Node;
+import work.soho.common.security.annotation.Node;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.chat.biz.domain.ChatUser;
 import work.soho.chat.biz.service.ChatUserService;

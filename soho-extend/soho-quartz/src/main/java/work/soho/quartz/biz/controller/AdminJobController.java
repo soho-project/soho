@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.springframework.web.bind.annotation.*;
-import work.soho.admin.api.annotation.Node;
+import work.soho.common.security.annotation.Node;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.RequestUtil;
 import work.soho.common.core.util.StringUtils;

@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import work.soho.admin.api.annotation.Node;
+import work.soho.common.security.annotation.Node;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.admin.api.vo.OptionVo;

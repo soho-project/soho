@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.biz.domain.AdminRelease;
 import work.soho.admin.biz.service.AdminReleaseService;
-import work.soho.admin.api.annotation.Node;
+import work.soho.common.security.annotation.Node;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.admin.api.vo.OptionVo;

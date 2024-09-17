@@ -5,7 +5,7 @@ import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import work.soho.admin.api.annotation.Node;
+import work.soho.common.security.annotation.Node;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.chat.biz.domain.ChatGroup;
 import work.soho.chat.biz.service.ChatGroupService;

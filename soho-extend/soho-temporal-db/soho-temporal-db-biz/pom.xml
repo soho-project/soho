@@ -60,6 +60,10 @@
             <groupId>work.soho</groupId>
             <artifactId>soho-temporal-db-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-security</artifactId>
+        </dependency>
 
     </dependencies>
 
