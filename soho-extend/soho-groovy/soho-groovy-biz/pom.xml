@@ -62,6 +62,10 @@
             <artifactId>soho-groovy-api</artifactId>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-security</artifactId>
+        </dependency>
         <!--        /test-->
     </dependencies>
 </project>

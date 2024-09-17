@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
-import work.soho.admin.api.annotation.Node;
 import work.soho.admin.api.vo.OptionVo;
 import work.soho.code.api.request.CodeTableTemplateSaveCodeRequest;
 import work.soho.code.api.vo.CodeTableVo;
@@ -22,6 +21,7 @@ import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
+import work.soho.common.security.annotation.Node;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;

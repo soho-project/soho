@@ -14,7 +14,7 @@ import work.soho.admin.biz.domain.AdminRoleUser;
 import work.soho.admin.biz.service.AdminRoleResourceService;
 import work.soho.admin.biz.service.AdminRoleUserService;
 import work.soho.admin.biz.service.impl.AdminRoleServiceImpl;
-import work.soho.admin.api.annotation.Node;
+import work.soho.common.security.annotation.Node;
 import work.soho.admin.api.vo.AdminRoleVo;
 import work.soho.admin.api.vo.OptionsRoleVo;
 import work.soho.common.core.result.R;

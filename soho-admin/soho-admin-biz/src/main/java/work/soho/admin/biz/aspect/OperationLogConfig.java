@@ -13,7 +13,7 @@ import work.soho.common.security.utils.SecurityUtils;
 import work.soho.admin.biz.config.AdminSysConfig;
 import work.soho.admin.biz.domain.AdminOperationLog;
 import work.soho.admin.biz.service.AdminOperationLogService;
-import work.soho.admin.api.annotation.Node;
+import work.soho.common.security.annotation.Node;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.common.core.util.RequestUtil;
 

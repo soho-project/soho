@@ -12,7 +12,7 @@ import work.soho.admin.biz.mapper.AdminResourceMapper;
 import work.soho.admin.biz.domain.AdminResource;
 
 import work.soho.admin.biz.service.AdminResourceService;
-import work.soho.admin.api.annotation.Node;
+import work.soho.common.security.annotation.Node;
 
 import java.util.Date;
 import java.util.Map;

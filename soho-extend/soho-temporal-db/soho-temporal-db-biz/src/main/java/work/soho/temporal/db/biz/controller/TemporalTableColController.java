@@ -11,11 +11,11 @@ import org.apache.iotdb.rpc.StatementExecutionException;
 import org.apache.iotdb.tsfile.read.common.Field;
 import org.apache.iotdb.tsfile.read.common.RowRecord;
 import org.springframework.web.bind.annotation.*;
-import work.soho.admin.api.annotation.Node;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
+import work.soho.common.security.annotation.Node;
 import work.soho.temporal.db.biz.domain.TemporalTableCol;
 import work.soho.temporal.db.biz.service.TemporalTableColService;
 
