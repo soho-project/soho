@@ -69,7 +69,22 @@
             <dependency>
                 <groupId>work.soho</groupId>
                 <artifactId>soho-admin-biz</artifactId>
-                <version>${soho-common.version}</version>
+                <version>${soho.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-admin-cloud-api</artifactId>
+                <version>${soho.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-admin-cloud-bridge</artifactId>
+                <version>${soho.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-admin-cloud-biz</artifactId>
+                <version>${soho.version}</version>
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
@@ -103,7 +118,17 @@
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
+                <artifactId>soho-content-cloud-biz</artifactId>
+                <version>${soho.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
                 <artifactId>soho-lot-biz</artifactId>
+                <version>${soho.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-pay-api</artifactId>
                 <version>${soho.version}</version>
             </dependency>
             <dependency>
@@ -113,12 +138,47 @@
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
+                <artifactId>soho-pay-cloud-api</artifactId>
+                <version>${soho.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-pay-cloud-biz</artifactId>
+                <version>${soho.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-example-api</artifactId>
+                <version>${soho.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
                 <artifactId>soho-example-biz</artifactId>
                 <version>${soho.version}</version>
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
+                <artifactId>soho-example-cloud-biz</artifactId>
+                <version>${soho.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-user-api</artifactId>
+                <version>${soho.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
                 <artifactId>soho-user-biz</artifactId>
+                <version>${soho.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-user-cloud-bridge</artifactId>
+                <version>${soho.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-user-cloud-biz</artifactId>
                 <version>${soho.version}</version>
             </dependency>
             <dependency>
@@ -136,7 +196,11 @@
                 <groupId>work.soho</groupId>
                 <artifactId>soho-groovy-api</artifactId>
                 <version>${soho.version}</version>
-                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
+                <artifactId>soho-groovy-biz</artifactId>
+                <version>${soho.version}</version>
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
