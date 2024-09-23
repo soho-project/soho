@@ -147,6 +147,9 @@ public class AdminContentCategoryController {
             if(0l == treeContentCategoryVo.getParentId()) {
                 result.add(treeContentCategoryVo);
             } else {
+                if(!map.containsKey(treeContentCategoryVo.getParentId())) {
+                    continue;
+                }
                 map.get(treeContentCategoryVo.getParentId()).getChildren().add(treeContentCategoryVo);
             }
         }
