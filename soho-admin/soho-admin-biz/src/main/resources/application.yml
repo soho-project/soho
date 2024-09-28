@@ -21,6 +21,12 @@
         max-idle: 8
         max-wait: -1ms
         min-idle: 0
+  mail:
+    host: smtp.ym.163.com
+    port: 993
+    protocol: smtp
+    username: aaaa@soho.work
+    password: xxxxxxx
 server:
   servlet:
     encoding:

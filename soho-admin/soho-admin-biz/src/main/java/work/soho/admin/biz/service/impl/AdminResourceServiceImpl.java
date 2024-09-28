@@ -3,27 +3,28 @@ package work.soho.admin.biz.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
-import work.soho.admin.biz.mapper.AdminResourceMapper;
+import work.soho.admin.api.service.AdminResourceApiService;
 import work.soho.admin.biz.domain.AdminResource;
-
+import work.soho.admin.biz.mapper.AdminResourceMapper;
 import work.soho.admin.biz.service.AdminResourceService;
+import work.soho.common.core.util.TreeUtils;
 import work.soho.common.security.annotation.Node;
 
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-@Service
 @Log4j2
+@Service("role-user-resource-admin")
 @RequiredArgsConstructor
-public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, AdminResource> implements AdminResourceService{
+public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, AdminResource> implements AdminResourceService, AdminResourceApiService {
 
     /**
      * AdminResourceMapper
@@ -134,5 +135,31 @@ public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, A
             sb.append(matcher.end()==line.length()?"":"_");
         }
         return sb.toString().toLowerCase();
+    }
+
+    /**
+     * 获取指定角色对应的资源key集合
+     *
+     * @param roleName
+     * @return
+     */
+    @SneakyThrows
+    @Override
+    public List<String> getResourceKeyListByRole(String roleName) {
+        List<AdminResource> list = list();
+        String roleNameLowerCase = roleName.toLowerCase();
+        // 获取角色对应的资源id
+        Optional<AdminResource> roleFirst = list.stream().filter(resource -> resource.getName().toLowerCase().equals(roleNameLowerCase)).findFirst();
+        // 没有找到则返回空集合
+        if(!roleFirst.isPresent()) {
+            return List.of();
+        }
+
+        TreeUtils<Long, AdminResource> treeUtils = new TreeUtils<>();
+        Class<?> c = AdminResource.class;
+        treeUtils.loadData(list, c.getMethod("getId"), c.getMethod("getBreadcrumbParentId"));
+        List<AdminResource> myList = treeUtils.getAllTreeNodeWidthIds(List.of(roleFirst.get().getId()));
+        List<String> resourceKeyList = myList.stream().map(AdminResource::getRoute).collect(Collectors.toList());
+        return new ArrayList<>(new HashSet<>(resourceKeyList));
     }
 }
