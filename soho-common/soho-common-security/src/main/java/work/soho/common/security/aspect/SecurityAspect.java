@@ -8,13 +8,17 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import work.soho.common.core.result.R;
 import work.soho.common.security.annotation.Node;
+import work.soho.common.security.service.SohoRoleResourceService;
 import work.soho.common.security.service.SohoRoleUserResourceService;
+import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.common.security.utils.SecurityUtils;
 
 import java.lang.reflect.Method;
+import java.util.Optional;
 
 @Log4j2
 @Aspect
@@ -23,8 +27,7 @@ import java.lang.reflect.Method;
 @RequiredArgsConstructor
 @ConditionalOnBean(SohoRoleUserResourceService.class)
 public class SecurityAspect {
-
-    private final SohoRoleUserResourceService sohoRoleUserResourceService;
+    private final SohoRoleResourceService sohoRoleResourceService;
 
     @Around(value = "@annotation(work.soho.common.security.annotation.Node)")
     public Object around(ProceedingJoinPoint invocation) throws Throwable {
@@ -32,10 +35,13 @@ public class SecurityAspect {
         if(node != null) {
             //write node
             Long uid = SecurityUtils.getLoginUserId();
+
             if(uid != 1l) {
+                SohoUserDetails userDetails = SecurityUtils.getLoginUser();
+                Optional<? extends GrantedAuthority> roleName = userDetails.getAuthorities().stream().findFirst();
                 //进行权限检查
                 String key = node.value();
-                if(!sohoRoleUserResourceService.isExists(key, uid)) {
+                if(!sohoRoleResourceService.isExists(roleName.get().getAuthority(), uid, key)) {
                     return R.error(2401, "未授权访问");
                 }
             }
