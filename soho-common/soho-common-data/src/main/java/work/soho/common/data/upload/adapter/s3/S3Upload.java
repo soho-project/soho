@@ -37,7 +37,7 @@ public class S3Upload implements Upload {
         return S3Client.builder()
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(s3Properties.getAccessKey(), s3Properties.getSecretKey())))
                 .endpointOverride(URI.create(s3Properties.getEndpoint()))
-                .region(Region.US_EAST_1) // MinIO 默认区域
+                .region(Region.of(s3Properties.getRegion())) // MinIO 默认区域 US_EAST_1
                 .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
                 .build();
     }
