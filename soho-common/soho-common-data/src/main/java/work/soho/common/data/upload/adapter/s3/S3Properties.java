@@ -9,4 +9,5 @@ public class S3Properties {
     private String secretKey;
     private String bucketName;
     private String urlPrefix;
+    private String region;
 }
