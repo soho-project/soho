@@ -308,20 +308,21 @@ public class CodeTableController {
      * @return
      */
     @PostMapping("zipCodes")
-    public HttpServletResponse zipCodes(@RequestBody CodeTableTemplateSaveCodeRequest request, HttpServletResponse response) {
+    public HttpServletResponse zipCodes(@RequestBody CodeTableTemplateSaveCodeRequest request, HttpServletResponse response) throws IOException {
+        String zipFile = null;
+        InputStream inStream = null;
         try {
             HashMap<String, String> files = getFiles(request, false);
             Iterator<String> it = files.keySet().iterator();
-            String zipFile = "/tmp/code-" + System.currentTimeMillis() + ".zip";
+            zipFile = "/tmp/code-" + System.currentTimeMillis() + ".zip";
             ZipUtils zipUtils = new ZipUtils(zipFile);
             while(it.hasNext()) {
                 String filePath = it.next();
-//                FileUtil.writeBytes(files.get(filePath).getBytes(), new File(filePath));
                 zipUtils.appendFile(filePath, files.get(filePath));
             }
             zipUtils.close();
 
-            InputStream inStream = new FileInputStream(zipFile);// 文件的存放路径
+            inStream = new FileInputStream(zipFile);// 文件的存放路径
             // 设置输出的格式
             response.reset();
             response.setContentType("bin");
@@ -332,15 +333,21 @@ public class CodeTableController {
             try {
                 while ((len = inStream.read(b)) > 0)
                     response.getOutputStream().write(b, 0, len);
-                inStream.close();
             } catch (IOException e) {
                 e.printStackTrace();
+                log.error(e.getMessage());
             }
             return response;
-//            return R.success();
         } catch (Exception e) {
-//            return R.error(e.getMessage());
+            log.error(e.getMessage());
             e.printStackTrace();
+        } finally {
+            if(zipFile != null) {
+                FileUtil.del(zipFile);
+            }
+            if(inStream != null) {
+                inStream.close();
+            }
         }
         return null;
     }
