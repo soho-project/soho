@@ -51,8 +51,16 @@ public class AdminResourceController {
         Long userId = SecurityUtils.getLoginUserId();
         List<AdminResource> list = adminResourceService.list(
                 Wrappers.<AdminResource>lambdaQuery()
+                        .eq(AdminResource::getVisible, 1)
                         .eq(AdminResource::getType, 1) // 1 前端节点
         );
+
+        //get all node id
+        Set<Long> resourceIds = list.stream().map(AdminResource::getId).collect(Collectors.toSet());
+        resourceIds.add(1l);
+        // 只返回有父节点的菜单
+        list = list.stream().filter(item -> resourceIds.contains(item.getBreadcrumbParentId())).collect(Collectors.toList());
+
         //格式转换
         List<RouteVo> routeDTOList = list.stream().map(item -> {
             RouteVo route = new RouteVo();
