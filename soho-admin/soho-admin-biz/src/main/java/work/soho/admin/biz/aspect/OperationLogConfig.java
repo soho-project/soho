@@ -36,39 +36,41 @@ public class OperationLogConfig {
 
     private final AdminSysConfig adminSysConfig;
 
-
     @Around(value = "@within(org.springframework.web.bind.annotation.RestController)")
     public Object around(ProceedingJoinPoint invocation) throws Throwable {
-
         Boolean isEnable = adminSysConfig.getAdminOperationLogEnable();
+        AdminOperationLog adminOperationLog = null;
         Set<String> methods = adminSysConfig.getAdminOperationLogMethods();
-        IgnoreOperationLog ignoreOperationLog = getIgnoreOperationLog(invocation);
         //Node annotation
         Node node = getNode(invocation);
+        isEnable = isEnable && getIgnoreOperationLog(invocation) != null;
 
-        //获取请求参数
-        String jsonParams = getJsonParams(invocation);
-        AdminOperationLog adminOperationLog = new AdminOperationLog();
-        adminOperationLog.setAdminUserId(SecurityUtils.getLoginUserId());
-        adminOperationLog.setUpdatedTime(LocalDateTime.now());
-        adminOperationLog.setCreatedTime(LocalDateTime.now());
-        adminOperationLog.setMethod(RequestUtil.getRequest().getMethod());
-        adminOperationLog.setPath(RequestUtil.getRequest().getRequestURI());
-        adminOperationLog.setParams(jsonParams);
-        if(node != null && ignoreOperationLog == null) {
-            adminOperationLog.setContent(node.name());
+        // 只有开启操作日志的时候才进行装配数据
+        if(isEnable) {
+            //获取请求参数
+            String jsonParams = getJsonParams(invocation);
+            adminOperationLog = new AdminOperationLog();
+            adminOperationLog.setAdminUserId(SecurityUtils.getLoginUserId());
+            adminOperationLog.setUpdatedTime(LocalDateTime.now());
+            adminOperationLog.setCreatedTime(LocalDateTime.now());
+            adminOperationLog.setMethod(RequestUtil.getRequest().getMethod());
+            adminOperationLog.setPath(RequestUtil.getRequest().getRequestURI());
+            adminOperationLog.setParams(jsonParams);
+            if(node != null) {
+                adminOperationLog.setContent(node.name());
+            }
         }
 
         try {
             Object result = invocation.proceed();
-            if(isEnable && ignoreOperationLog == null) {
+            if(isEnable) {
                 adminOperationLog.setResponse(JSONUtil.toJsonStr(result));
             }
             return result;
         } catch (Exception e) {
             throw e;
         } finally {
-            if(isEnable && ignoreOperationLog == null && methods.contains(adminOperationLog.getMethod())) {
+            if(isEnable && methods.contains(adminOperationLog.getMethod())) {
                 adminOperationLogService.save(adminOperationLog);
             }
         }
