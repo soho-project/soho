@@ -9,6 +9,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
+import work.soho.admin.api.annotation.IgnoreOperationLog;
 import work.soho.common.security.utils.SecurityUtils;
 import work.soho.admin.biz.config.AdminSysConfig;
 import work.soho.admin.biz.domain.AdminOperationLog;
@@ -41,6 +42,7 @@ public class OperationLogConfig {
 
         Boolean isEnable = adminSysConfig.getAdminOperationLogEnable();
         Set<String> methods = adminSysConfig.getAdminOperationLogMethods();
+        IgnoreOperationLog ignoreOperationLog = getIgnoreOperationLog(invocation);
         //Node annotation
         Node node = getNode(invocation);
 
@@ -53,20 +55,20 @@ public class OperationLogConfig {
         adminOperationLog.setMethod(RequestUtil.getRequest().getMethod());
         adminOperationLog.setPath(RequestUtil.getRequest().getRequestURI());
         adminOperationLog.setParams(jsonParams);
-        if(node != null) {
+        if(node != null && ignoreOperationLog == null) {
             adminOperationLog.setContent(node.name());
         }
 
         try {
             Object result = invocation.proceed();
-            if(isEnable) {
+            if(isEnable && ignoreOperationLog == null) {
                 adminOperationLog.setResponse(JSONUtil.toJsonStr(result));
             }
             return result;
         } catch (Exception e) {
             throw e;
         } finally {
-            if(isEnable && methods.contains(adminOperationLog.getMethod())) {
+            if(isEnable && ignoreOperationLog == null && methods.contains(adminOperationLog.getMethod())) {
                 adminOperationLogService.save(adminOperationLog);
             }
         }
@@ -95,6 +97,24 @@ public class OperationLogConfig {
         try {
             Method objMethod=classTarget.getMethod(methodName, par);
             return objMethod.getAnnotation(Node.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 获取忽略日志注解
+     *
+     * @param invocation
+     * @return
+     */
+    private IgnoreOperationLog getIgnoreOperationLog(ProceedingJoinPoint invocation) {
+        String methodName=invocation.getSignature().getName();
+        Class<?> classTarget=invocation.getTarget().getClass();
+        Class<?>[] par=((MethodSignature) invocation.getSignature()).getParameterTypes();
+        try {
+            Method objMethod=classTarget.getMethod(methodName, par);
+            return objMethod.getAnnotation(IgnoreOperationLog.class);
         } catch (Exception e) {
             return null;
         }
