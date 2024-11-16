@@ -11,9 +11,9 @@
     pathmatch:
       matching-strategy: ant_path_matcher
   datasource:
-    url: jdbc:mysql://192.168.0.101:3306/dev?useUnicode=true&characterEncoding=utf-8
-    username: dev
-    password: Dev@123456789
+    url: jdbc:mysql://${MYSQL_HOST:mysql.dev.soho.work}:${MYSQL_PORT:3306}/dev?useUnicode=true&characterEncoding=utf-8
+    username: ${MYSQL_USERNAME:dev}
+    password: ${MYSQL_PASSWORD:Dev@123456789}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     properties:
@@ -21,8 +21,8 @@
         show_sql: true
         format_sql: true
   redis:
-    host: 192.168.0.7
-    port: 6379
+    host: ${REDIS_HOST:redis.dev.soho.work}
+    port: ${REDIS_PORT:6379}
     password:
     lettuce:
       pool:
@@ -37,7 +37,7 @@
     username: aaaa@soho.work
     password: xxxxxxx
 redisson:
-  nodeAddress: redis://192.168.0.7:6379
+  nodeAddress: redis://${REDIS_HOST:redis.dev.soho.work}:${MYSQL_PORT:6379}
 server:
   servlet:
     encoding:
