@@ -6,28 +6,10 @@
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_HOST:127.0.0.1}:8848
+        server-addr: ${NACOS_HOST:nacos.dev.soho.work}:${NACOS_PORT:8848}
         metadata:
           paths:
-            - /admin/admin/**
-            - /admin/adminNotification/*
-            - /admin/adminDashboard/*
-            - /admin/adminUser/*
-            - /admin/adminResource/*
-            - /admin/adminRole/*
-            - /admin/adminJob/*
-            - /admin/adminConfigGroup/*
-            - /admin/adminConfig/*
-            - /admin/uploadFile/*
-            - /admin/codeTable/*
-            - /admin/codeTableTemplateGroup/*
-            - /admin/codeTableTemplate/*
-            - /admin/adminUserLoginLog/*
-            - /admin/adminDict/*
-            - /admin/adminEmailTemplate/*
-            - /admin/adminSmsTemplate/*
-            - /admin/adminOperationLog/*
-            - /admin/adminRelease/*
+            - /admin/**
             - /login/config
             - /login
           routeOrder: 1000000
