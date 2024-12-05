@@ -6,7 +6,7 @@ cd $script_dir
 # 替换以下内容为你的实际数据库信息和路径
 DB_HOST=192.168.0.101
 DB_USER=dev
-DB_PASSWORD=dev
+DB_PASSWORD=Dev@123456789
 DB_NAME=dev
 BACKUP_DIR="$script_dir/../databases"
 
