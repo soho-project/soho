@@ -1,15 +1,47 @@
 package work.soho.common.data.queue.message;
 
+import lombok.Getter;
+
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
 public class DelayedMessage<T> implements Delayed {
-    private final long delayTime;
-    private final T message;
+    public static final String DEFAULT_GROUP_NAME = "default";
+    private long delayTime;
+    private T message;
+    @Getter
+    private Long id = null;
+    @Getter
+    private String groupName = DEFAULT_GROUP_NAME;
 
-    DelayedMessage(T message, long delayTime) {
+    public DelayedMessage(T message, long delayTime) {
+        this(message, delayTime, null, null);
+    }
+
+    public DelayedMessage(T message, long delayTime, Long id, String groupName) {
         this.message = message;
         this.delayTime = System.currentTimeMillis() + delayTime;
+        this.id = id;
+        if(groupName != null) {
+            this.groupName = groupName;
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(id == null) {
+            return false;
+        }
+
+        if(o instanceof Long) {
+            return id.equals(o);
+        }
+
+        if(!(o instanceof DelayedMessage<?>) || groupName == null) {
+            return false;
+        }
+
+        return id.equals(((DelayedMessage<?>) o).getId()) && groupName.equals(((DelayedMessage<?>) o).getGroupName());
     }
 
     @Override

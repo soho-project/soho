@@ -21,6 +21,30 @@ class DelayedQueueUtilsTest {
 
     private AtomicInteger okCount = new AtomicInteger();
 
+    /**
+     * 测试删除延迟队列
+     *
+     * @throws InterruptedException
+     */
+    @Test
+    void testExecDelayedMessage() throws InterruptedException {
+        long startTs = System.currentTimeMillis();
+        log.info("开始执行, ts: {}", startTs);
+        for (long i = 0; i < 100; i++) {
+            count++;
+            log.info("入队： {}", count);
+            DelayedQueueUtils.addExecDelayedMessage(new TestRun(i), 1000, i, null);
+        }
+        for (long i = 0; i < 100; i++) {
+            if(i % 2 == 0) {
+                DelayedQueueUtils.removeById(i);
+            }
+        }
+        long endTs = System.currentTimeMillis();
+        System.out.println("耗时： " + (endTs - startTs));
+        Thread.sleep(15000);
+    }
+
     @Test
     void addExecDelayedMessage() throws InterruptedException {
         long startTs = System.currentTimeMillis();

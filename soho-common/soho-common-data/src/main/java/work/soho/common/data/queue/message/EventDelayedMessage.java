@@ -5,6 +5,10 @@ package work.soho.common.data.queue.message;
  */
 public class EventDelayedMessage extends DelayedMessage{
     public EventDelayedMessage(Object message, long delayTime) {
-        super(message, delayTime);
+        this(message, delayTime, null, null);
+    }
+
+    public EventDelayedMessage(Object message,long delayTime,  Long id, String groupName) {
+        super(message,delayTime,id, groupName);
     }
 }

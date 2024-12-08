@@ -5,6 +5,10 @@ package work.soho.common.data.queue.message;
  */
 public abstract class ExecDelayedMessage extends DelayedMessage implements Runnable {
     ExecDelayedMessage(Object message, long delayTime) {
-        super(message, delayTime);
+        this(message, delayTime, null, null);
+    }
+
+    ExecDelayedMessage(Object message,long delayTime,  Long id, String groupName) {
+        super(message,delayTime, id, groupName);
     }
 }

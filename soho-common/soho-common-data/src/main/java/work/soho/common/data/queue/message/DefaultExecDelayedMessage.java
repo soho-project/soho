@@ -5,7 +5,11 @@ package work.soho.common.data.queue.message;
  */
 public class DefaultExecDelayedMessage extends ExecDelayedMessage{
     public DefaultExecDelayedMessage(Runnable message, long delayTime) {
-        super(message, delayTime);
+        this(message, delayTime, null, null);
+    }
+
+    public DefaultExecDelayedMessage(Runnable message,long delayTime, Long id, String groupName) {
+        super(message,delayTime,id, groupName);
     }
 
     @Override
