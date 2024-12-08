@@ -37,4 +37,41 @@ public class DelayedQueue {
     public BlockingQueue<DelayedMessage> getQueue() {
         return queue;
     }
+
+    /**
+     * 移出指定队列
+     *
+     * @param message
+     */
+    public void remove(DelayedMessage message) {
+        queue.remove(message);
+    }
+
+    /**
+     * 清理指定ID的队列
+     *
+     * @param id
+     */
+    public void removeById(Long id) {
+        DelayedMessage<Long> delayedMessage = new DelayedMessage<>(id, 0L, id, DelayedMessage.DEFAULT_GROUP_NAME);
+        queue.remove(delayedMessage);
+    }
+
+    /**
+     * 删除指定队列
+     *
+     * @param id
+     * @param groupName
+     */
+    public void remove(Long id, String groupName) {
+        DelayedMessage<Long> delayedMessage = new DelayedMessage<>(id, 0L, id, groupName);
+        queue.remove(delayedMessage);
+    }
+
+    /**
+     * 清理所有队列
+     */
+    public void removeAll() {
+        queue.clear();
+    }
 }
