@@ -22,7 +22,7 @@ public class UserDetailsServiceImpl implements SohoUserDetailsService {
     @Override
     public SohoUserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         AdminUser adminUser = adminUserService.getByLoginName(username);
-        if(adminUser != null) {
+        if(adminUser != null && adminUser.getIsDeleted() == 0) {
             SohoUserDetails userDetails = new SohoUserDetails();
             userDetails.setUsername(String.valueOf(adminUser.getPhone()));
             userDetails.setPassword(adminUser.getPassword());
