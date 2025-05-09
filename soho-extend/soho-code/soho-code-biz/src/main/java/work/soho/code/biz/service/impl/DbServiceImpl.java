@@ -154,7 +154,7 @@ public class DbServiceImpl implements DbService {
                 if(parts[i].startsWith("'")) {
                     column.setDefaultValue(parts[i].substring(1, parts[i].length()-1));
                 } else {
-                    //column.setDefaultValue(parts[i]);
+                    column.setDefaultValue(parts[i]);
                 }
                 i++;
                 continue;

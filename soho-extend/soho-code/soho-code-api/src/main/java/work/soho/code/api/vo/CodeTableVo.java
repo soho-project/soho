@@ -134,7 +134,7 @@ public class CodeTableVo {
                     && (this.isUnique != null && this.isUnique.equals(column.isUnique) || (this.isUnique == null && column.isUnique == null))
                     && (this.isAutoIncrement != null && this.isAutoIncrement.equals(column.isAutoIncrement) || (this.isAutoIncrement == null && column.isAutoIncrement == null))
                     && (this.isZeroFill != null && this.isZeroFill.equals(column.isZeroFill) || (this.isZeroFill == null && column.isZeroFill == null))
-                    && (this.defaultValue != null && this.defaultValue.equals(column.defaultValue) || (this.defaultValue == null && column.defaultValue == null))
+                    && (this.defaultValue != null && this.defaultValue.equals(column.defaultValue) || ((this.defaultValue == null || this.defaultValue.equals("NULL")) && column.defaultValue == null))
                     && (this.length != null && this.length.equals(column.length) || (this.length ==null && column.length == null))
                     && (this.scale != null && this.scale.equals(column.scale) || (this.scale == null && column.scale == null))
                     && (this.comment != null && this.comment.equals(column.comment) || (this.comment == null && column.comment == null));
@@ -212,7 +212,7 @@ public class CodeTableVo {
         codeTableVo.getColumnList().forEach(column -> {
             Optional<Column> remoteColumn = remoteCodeTableVo.getColumnList().stream().filter(item -> item.getName().equals(column.getName())).findFirst();
             if(remoteColumn.isPresent()) {
-                //检查师傅需要更新
+                //检查是否需要更新
                 if(!remoteColumn.get().equalsExcludingId(column)) {
                     updateList.add(column);
                 }
@@ -242,7 +242,15 @@ public class CodeTableVo {
             sql.append("\nDROP COLUMN `").append(column.getName()).append("`,");
         }
         //表备注修改
-        sql.append("\n COMMENT '").append(codeTableVo.getComment()).append("',");
+        if(!codeTableVo.getComment().equals(remoteCodeTableVo.getComment())) {
+            sql.append("\n COMMENT '").append(codeTableVo.getComment()).append("',");
+        } else {
+            // 如果没有任何修改返回空字符串
+            if(updateList.isEmpty() && addList.isEmpty() && deleteList.isEmpty()) {
+                return "";
+            }
+        }
+
         //去除最后一行的逗号
         sql.deleteCharAt(sql.length()-1);
         sql.append(";");
