@@ -8,7 +8,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 public class CustumDateBindConfiguration {
     @Autowired
     public void configurationWebBindingInitializer(RequestMappingHandlerAdapter requestMappingHandlerAdapter) {
-        requestMappingHandlerAdapter.setWebBindingInitializer(new WebBindDate());
+//        requestMappingHandlerAdapter.setWebBindingInitializer(new WebBindDate());
         requestMappingHandlerAdapter.setWebBindingInitializer(new WebBindLongArrayPropertyEditor());
     }
 }
