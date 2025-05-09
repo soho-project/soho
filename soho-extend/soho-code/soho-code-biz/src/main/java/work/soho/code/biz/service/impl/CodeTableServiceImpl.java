@@ -36,6 +36,10 @@ public class CodeTableServiceImpl extends ServiceImpl<CodeTableMapper, CodeTable
         List<CodeTableColumn> columnList = codeTableColumnMapper.selectList(new LambdaQueryWrapper<CodeTableColumn>().eq(CodeTableColumn::getTableId, codeTable.getId()).orderByAsc(CodeTableColumn::getId));
         columnList.forEach(item->{
             CodeTableVo.Column column = BeanUtils.copy(item, CodeTableVo.Column.class);
+            // 检查default value， 如果为 空字符串则设置为null
+            if(column.getDefaultValue() != null && column.getDefaultValue().equals("")) {
+                column.setDefaultValue(null);
+            }
             codeTableVo.getColumnList().add(column);
         });
         return codeTableVo;
