@@ -114,6 +114,13 @@ public class CodeTableColumn implements Serializable {
     @TableField(value = "scale")
     private Integer scale;
 
+    /**
+     * 排序
+     */
+    @ApiModelProperty(value = "排序")
+    @TableField(value = "sort")
+    private Integer sort;
+
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 }
