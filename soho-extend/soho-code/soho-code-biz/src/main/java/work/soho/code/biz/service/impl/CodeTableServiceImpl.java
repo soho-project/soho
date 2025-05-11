@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import work.soho.code.api.vo.CodeTableVo;
 import work.soho.code.biz.domain.CodeTable;
 import work.soho.code.biz.domain.CodeTableColumn;
@@ -12,7 +13,10 @@ import work.soho.code.biz.mapper.CodeTableMapper;
 import work.soho.code.biz.service.CodeTableService;
 import work.soho.common.core.util.BeanUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
 * @author fang
@@ -128,6 +132,55 @@ public class CodeTableServiceImpl extends ServiceImpl<CodeTableMapper, CodeTable
         //表其他属性
         sb.append("\n) ENGINE=InnoDB CHARSET=utf8 COMMENT='"+codeTableVo.getComment()+"';");
         return sb.toString();
+    }
+
+    /**
+     * 同步数据库表到业务表
+     *
+     * @param remoteCodeTableVo
+     */
+    @Override
+    public void table2CodeTable(CodeTableVo remoteCodeTableVo) {
+        // 检查表是否存在
+        CodeTable codeTable = getOne(new LambdaQueryWrapper<CodeTable>().eq(CodeTable::getName, remoteCodeTableVo.getName()));
+        Assert.notNull(codeTable, "表不存在");
+
+        codeTable.setTitle(remoteCodeTableVo.getTitle());
+        codeTable.setComment(remoteCodeTableVo.getComment());
+        updateById(codeTable);
+
+        // 获取表中字段列表信息
+        List<CodeTableColumn> columnList = codeTableColumnMapper.selectList(new LambdaQueryWrapper<CodeTableColumn>().eq(CodeTableColumn::getTableId, codeTable.getId()));
+        Map<String, CodeTableColumn> columnMap = columnList.stream().collect(Collectors.toMap(CodeTableColumn::getName, item -> item));
+
+        // 远程表字段map信息
+        Map<String, CodeTableVo.Column> remoteColumnMap = remoteCodeTableVo.getColumnList().stream().collect(Collectors.toMap(CodeTableVo.Column::getName, item -> item));
+
+        // 处理更新
+        for(CodeTableVo.Column column: remoteCodeTableVo.getColumnList()) {
+            CodeTableColumn codeTableColumn = columnMap.get(column.getName());
+            if(codeTableColumn != null) {
+                codeTableColumn.setScale(column.getScale());
+                codeTableColumn.setLength(column.getLength());
+                codeTableColumn.setComment(column.getComment());
+                codeTableColumn.setDataType(column.getDataType());
+                codeTableColumn.setIsAutoIncrement(column.getIsAutoIncrement());
+                codeTableColumn.setIsNotNull(column.getIsNotNull());
+                codeTableColumn.setIsPk(column.getIsPk());
+                codeTableColumn.setIsUnique(column.getIsUnique());
+                codeTableColumn.setDefaultValue(column.getDefaultValue());
+                codeTableColumn.setIsZeroFill(column.getIsZeroFill());
+                codeTableColumn.setTitle(column.getTitle());
+                codeTableColumnMapper.updateById(codeTableColumn);
+            }
+        }
+
+        // TODO 处理不存在的字段 进行删除操作
+        for(CodeTableColumn codeTableColumn: columnList) {
+            if(!remoteColumnMap.containsKey(codeTableColumn.getName())) {
+                codeTableColumnMapper.deleteById(codeTableColumn.getId());
+            }
+        }
     }
 }
 

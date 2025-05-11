@@ -11,8 +11,8 @@ import work.soho.code.biz.service.CodeTableService;
 import work.soho.code.biz.service.DbService;
 import work.soho.test.TestApp;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
@@ -45,5 +45,17 @@ class CodeTableServiceImplTest {
     void getSqlById() {
         String sql = codeTableService.getSqlById(155439140);
         System.out.println(sql);
+    }
+
+    @Test
+    void table2CodeTable() {
+        CodeTableVo codeTable = codeTableService.getTableVoById(155439140);
+        assertNotNull(codeTable);
+        System.out.println(codeTable);
+        CodeTableVo remoteCodeTable = dbService.getTableByName(codeTable.getName());
+        assertNotNull(remoteCodeTable);
+        System.out.println("--------------------------------------------------");
+        System.out.println(remoteCodeTable);
+        codeTableService.table2CodeTable(remoteCodeTable);
     }
 }

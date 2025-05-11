@@ -19,4 +19,11 @@ public interface CodeTableService extends IService<CodeTable> {
      * @return
      */
     String getSqlById(Integer id);
+
+    /**
+     * 数据库表转代码表
+     *
+     * @param remoteCodeTableVo
+     */
+    void table2CodeTable(CodeTableVo remoteCodeTableVo);
 }
