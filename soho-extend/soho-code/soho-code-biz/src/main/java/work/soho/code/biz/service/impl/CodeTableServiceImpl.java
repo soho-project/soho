@@ -37,7 +37,7 @@ public class CodeTableServiceImpl extends ServiceImpl<CodeTableMapper, CodeTable
         }
         CodeTableVo codeTableVo = BeanUtils.copy(codeTable, CodeTableVo.class);
         //获取表字段信息
-        List<CodeTableColumn> columnList = codeTableColumnMapper.selectList(new LambdaQueryWrapper<CodeTableColumn>().eq(CodeTableColumn::getTableId, codeTable.getId()).orderByAsc(CodeTableColumn::getId));
+        List<CodeTableColumn> columnList = codeTableColumnMapper.selectList(new LambdaQueryWrapper<CodeTableColumn>().eq(CodeTableColumn::getTableId, codeTable.getId()).orderByAsc(CodeTableColumn::getSort));
         columnList.forEach(item->{
             CodeTableVo.Column column = BeanUtils.copy(item, CodeTableVo.Column.class);
             // 检查default value， 如果为 空字符串则设置为null
@@ -157,6 +157,7 @@ public class CodeTableServiceImpl extends ServiceImpl<CodeTableMapper, CodeTable
         Map<String, CodeTableVo.Column> remoteColumnMap = remoteCodeTableVo.getColumnList().stream().collect(Collectors.toMap(CodeTableVo.Column::getName, item -> item));
 
         // 处理更新
+        int sort = 1;
         for(CodeTableVo.Column column: remoteCodeTableVo.getColumnList()) {
             CodeTableColumn codeTableColumn = columnMap.get(column.getName());
             if(codeTableColumn != null) {
@@ -171,7 +172,13 @@ public class CodeTableServiceImpl extends ServiceImpl<CodeTableMapper, CodeTable
                 codeTableColumn.setDefaultValue(column.getDefaultValue());
                 codeTableColumn.setIsZeroFill(column.getIsZeroFill());
                 codeTableColumn.setTitle(column.getTitle());
+                codeTableColumn.setSort(sort++);
                 codeTableColumnMapper.updateById(codeTableColumn);
+            } else {
+                CodeTableColumn newCodeTableColumn = BeanUtils.copy(column, CodeTableColumn.class);
+                newCodeTableColumn.setTableId(codeTable.getId());
+                newCodeTableColumn.setSort(sort++);
+                codeTableColumnMapper.insert(newCodeTableColumn);
             }
         }
 
