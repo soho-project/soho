@@ -7,6 +7,7 @@ import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.vo.OptionVo;
 import work.soho.code.api.request.CodeTableTemplateSaveCodeRequest;
@@ -175,6 +176,20 @@ public class CodeTableController {
         } else {
             return R.success(codeTable.toCreateSql());
         }
+    }
+
+    /**
+     * 同步数据库表到低代码业务表
+     *
+     * @param id
+     * @return
+     */
+    @GetMapping("syncTable2CodeTable/{id}")
+    public R<Boolean> syncTable2CodeTable(@PathVariable Integer id) {
+        CodeTableVo codeTable = dbService.getTableByName(codeTableService.getById(id).getName());
+        Assert.notNull(codeTable, "表不存在， 请检查");
+        codeTableService.table2CodeTable(codeTable);
+        return R.success();
     }
 
     /**
