@@ -56,6 +56,9 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
             adminUser.setPassword(null);
         }
         adminUser.setUpdatedTime(new Date());
+        if(adminUser.getId()==null) {
+            adminUser.setCreatedTime(new Date());
+        }
         saveOrUpdate(adminUser);
 
         //授权用户角色信息
