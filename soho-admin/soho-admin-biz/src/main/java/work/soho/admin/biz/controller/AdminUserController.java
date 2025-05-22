@@ -122,7 +122,12 @@ public class AdminUserController extends BaseController {
         if(endDate!=null) {
             lqw.le(AdminUser::getCreatedTime, endDate);
         }
-
+        lqw.eq(StringUtils.isNotEmpty(adminUserVo.getNickName()), AdminUser::getNickName, adminUserVo.getNickName());
+        lqw.eq(adminUserVo.getAge()!=null, AdminUser::getAge, adminUserVo.getAge());
+        lqw.eq(adminUserVo.getSex()!=null, AdminUser::getSex, adminUserVo.getSex());
+        lqw.eq(StringUtils.isNotEmpty(adminUserVo.getRealName()), AdminUser::getRealName, adminUserVo.getRealName());
+        lqw.eq(StringUtils.isNotEmpty(adminUserVo.getPhone()), AdminUser::getPhone, adminUserVo.getPhone());
+        lqw.eq(StringUtils.isNotEmpty(adminUserVo.getEmail()), AdminUser::getEmail, adminUserVo.getEmail());
         lqw.eq(AdminUser::getIsDeleted, 0);
 
         startPage();
