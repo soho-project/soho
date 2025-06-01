@@ -2,6 +2,7 @@ package work.soho.code.biz.controller;
 
 import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 代码表;;option:id~nameController
@@ -286,6 +288,15 @@ public class CodeTableController {
     @PostMapping("saveCode")
     public R<Boolean> saveCodes(@RequestBody CodeTableTemplateSaveCodeRequest request) {
         try {
+            // 如果有传递groupId 则查询这个分组下所有的模板ID
+            if(request.getGroupId() != null) {
+                List<CodeTableTemplate> list = codeTableTemplateService.list(
+                        new QueryWrapper<CodeTableTemplate>()
+                                .eq("group_id", request.getGroupId()));
+                ArrayList<Integer> templateIds = list.stream().map(CodeTableTemplate::getId).collect(Collectors.toCollection(ArrayList::new));
+                request.setTemplateId(templateIds);
+            }
+
             HashMap<String, String> files = getFiles(request, false);
             Iterator<String> it = files.keySet().iterator();
             while(it.hasNext()) {
@@ -309,6 +320,14 @@ public class CodeTableController {
     @PostMapping("codes")
     public R<HashMap<String, String>> createCodes(@RequestBody CodeTableTemplateSaveCodeRequest request) {
         try {
+            // 如果有传递groupId 则查询这个分组下所有的模板ID
+            if(request.getGroupId() != null) {
+                List<CodeTableTemplate> list = codeTableTemplateService.list(
+                        new QueryWrapper<CodeTableTemplate>()
+                                .eq("group_id", request.getGroupId()));
+                ArrayList<Integer> templateIds = list.stream().map(CodeTableTemplate::getId).collect(Collectors.toCollection(ArrayList::new));
+                request.setTemplateId(templateIds);
+            }
             HashMap<String, String> files = getFiles(request, false);
             return R.success(files);
         } catch (Exception e) {
@@ -327,6 +346,15 @@ public class CodeTableController {
         String zipFile = null;
         InputStream inStream = null;
         try {
+            // 如果有传递groupId 则查询这个分组下所有的模板ID
+            if(request.getGroupId() != null) {
+                List<CodeTableTemplate> list = codeTableTemplateService.list(
+                        new QueryWrapper<CodeTableTemplate>()
+                                .eq("group_id", request.getGroupId()));
+                ArrayList<Integer> templateIds = list.stream().map(CodeTableTemplate::getId).collect(Collectors.toCollection(ArrayList::new));
+                request.setTemplateId(templateIds);
+            }
+
             HashMap<String, String> files = getFiles(request, false);
             Iterator<String> it = files.keySet().iterator();
             zipFile = "/tmp/code-" + System.currentTimeMillis() + ".zip";
@@ -380,6 +408,15 @@ public class CodeTableController {
         binds.put("baseNamespace", request.getCodeNamespace()); //基本命名空间
         binds.put("basePath", request.getPath()); //基本写入路径
 
+        // 如果有传递groupId 则查询这个分组下所有的模板ID
+        if(request.getGroupId() != null) {
+            List<CodeTableTemplate> list = codeTableTemplateService.list(
+                    new QueryWrapper<CodeTableTemplate>()
+                            .eq("group_id", request.getGroupId()));
+            ArrayList<Integer> templateIds = list.stream().map(CodeTableTemplate::getId).collect(Collectors.toCollection(ArrayList::new));
+            request.setTemplateId(templateIds);
+        }
+
         for(Integer templateId: request.getTemplateId()) {
             try {
                 CodeTableVo codeTableVo = codeTableService.getTableVoById(request.getId());
@@ -431,7 +468,7 @@ public class CodeTableController {
      */
     @GetMapping("/getDbTables")
     public R<HashMap<Object, Object>> getTables() {
-        dbService.getTableByName("pay_info");
+//        dbService.getTableByName("pay_info");
         List<Object> list = dbService.getTableNames();
         HashMap<Object, Object> map = new HashMap<>();
         for(Object item: list) {

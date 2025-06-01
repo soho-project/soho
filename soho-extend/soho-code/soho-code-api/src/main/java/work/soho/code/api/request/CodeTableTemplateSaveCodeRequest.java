@@ -12,9 +12,18 @@ public class CodeTableTemplateSaveCodeRequest {
     private Integer id;
 
     /**
-     * 模板ID
+     * 模板分组ID
+     *
+     * templateId 二选一
      */
-    private ArrayList<Integer> templateId;
+    private Integer groupId;
+
+    /**
+     * 模板ID
+     *
+     * groupId 二选一
+     */
+    private ArrayList<Integer> templateId = new ArrayList<>();
 
     /**
      * 存储基本路径

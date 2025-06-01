@@ -41,8 +41,9 @@ public class ExampleOptionController {
         LambdaQueryWrapper<ExampleOption> lqw = new LambdaQueryWrapper<ExampleOption>();
         if (exampleOption.getId() != null){
             lqw.eq(ExampleOption::getId ,exampleOption.getId());
-        }        if (exampleOption.getKey() != null){
-            lqw.eq(ExampleOption::getKey ,exampleOption.getKey());
+        }
+        if (exampleOption.getKey() != null){
+            lqw.like(ExampleOption::getKey ,exampleOption.getKey());
         }        if (exampleOption.getValue() != null){
             lqw.eq(ExampleOption::getValue ,exampleOption.getValue());
         }        if (exampleOption.getUpdatedTime() != null){
