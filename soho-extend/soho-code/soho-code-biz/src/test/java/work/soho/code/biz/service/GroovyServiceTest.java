@@ -30,7 +30,7 @@ class GroovyServiceTest {
     @Autowired
     private TestCodeTableTemplateServiceImpl codeTableTemplateService;
 
-    // 表名  这个应该是固定的专门为测试定义的表
+    // 表名  这个应该是固定的专门为测试定义的表 155439140
     private static final Integer TABLE_ID = 155439140;
 
     //example 分类表ID
@@ -41,8 +41,8 @@ class GroovyServiceTest {
 
     private String getCode(Integer templateId) {
         try {
-//            Integer tableId =  TABLE_ID;  //测试表ID
-            Integer tableId =  EXAMPLE_CATEGORY_TABLE_ID;  //测试表ID
+            Integer tableId =  TABLE_ID;  //测试表ID
+//            Integer tableId =  EXAMPLE_CATEGORY_TABLE_ID;  //测试表ID
             HashMap<String, String> binds = new HashMap<>();
             binds.put("baseNamespace", "work.soho.example."); //基本命名空间
             binds.put("basePath", CODE_TMP_DIR); //基本写入路径
@@ -163,6 +163,42 @@ class GroovyServiceTest {
     void testReactDetails() {
         // h5 react filter
         String code = getCodeByTemplateName("reactDetails", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testAntd5Index() {
+        String code = getCodeByTemplateName("antd5Index", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testAntd5DetailsModal() {
+        String code = getCodeByTemplateName("antd5DetailsModal", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testAntd5Filter() {
+        String code = getCodeByTemplateName("antd5Filter", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testAntd5List() {
+        String code = getCodeByTemplateName("antd5List", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testAntd5Details() {
+        String code = getCodeByTemplateName("antd5Details", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testAntd5TreeIndex() {
+        String code = getCodeByTemplateName("antd5TreeIndex", true);
         System.out.println(code);
     }
 
