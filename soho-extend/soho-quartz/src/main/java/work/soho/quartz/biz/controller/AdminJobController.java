@@ -1,17 +1,16 @@
 package work.soho.quartz.biz.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.springframework.web.bind.annotation.*;
-import work.soho.common.security.annotation.Node;
 import work.soho.common.core.result.R;
-import work.soho.common.core.util.RequestUtil;
+import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
+import work.soho.common.security.annotation.Node;
 import work.soho.quartz.biz.domain.AdminJob;
 import work.soho.quartz.biz.service.AdminJobService;
 import work.soho.quartz.biz.util.InvokeUtil;
@@ -60,7 +59,8 @@ public class AdminJobController {
     @Node("adminJob:list")
     public R<PageSerializable<AdminJob>> list(AdminJob adminJob)
     {
-        PageHelper.startPage(RequestUtil.getRequest());
+        PageUtils.startPage();
+//        PageHelper.startPage(RequestUtil.getRequest());
 //        startPage();
         LambdaQueryWrapper<AdminJob> lqw = new LambdaQueryWrapper<AdminJob>();
 
