@@ -32,6 +32,7 @@ class GroovyServiceTest {
 
     // 表名  这个应该是固定的专门为测试定义的表 155439140
     private static final Integer TABLE_ID = 155439140;
+//    private static final Integer TABLE_ID = 155439179; // 系统资源表， tree
 
     //example 分类表ID
     private static final Integer EXAMPLE_CATEGORY_TABLE_ID = 155439141;
@@ -199,6 +200,12 @@ class GroovyServiceTest {
     @Test
     void testAntd5TreeIndex() {
         String code = getCodeByTemplateName("antd5TreeIndex", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testAntd5ExtendedComponents() {
+        String code = getCodeByTemplateName("antd5ExtendedComponents", true);
         System.out.println(code);
     }
 

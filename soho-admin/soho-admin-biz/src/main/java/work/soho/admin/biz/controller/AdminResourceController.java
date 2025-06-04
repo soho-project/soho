@@ -2,23 +2,26 @@ package work.soho.admin.biz.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
-import work.soho.common.security.utils.SecurityUtils;
+import work.soho.admin.api.vo.RouteVo;
+import work.soho.admin.api.vo.TreeResourceVo;
 import work.soho.admin.biz.domain.AdminResource;
 import work.soho.admin.biz.domain.AdminRoleResource;
 import work.soho.admin.biz.domain.AdminRoleUser;
 import work.soho.admin.biz.service.AdminResourceService;
 import work.soho.admin.biz.service.AdminRoleResourceService;
 import work.soho.admin.biz.service.AdminRoleUserService;
-import work.soho.common.security.annotation.Node;
-import work.soho.admin.api.vo.RouteVo;
-import work.soho.admin.api.vo.TreeResourceVo;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.core.util.TreeUtils;
+import work.soho.common.security.annotation.Node;
+import work.soho.common.security.utils.SecurityUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,6 +34,27 @@ public class AdminResourceController {
     private final AdminResourceService adminResourceService;
     private final AdminRoleUserService adminRoleUserService;
     private final AdminRoleResourceService adminRoleResourceService;
+
+    @ApiOperation("资源列表")
+    @GetMapping("/list")
+    @Node(value = "resource::list", name = "资源列表")
+    public R<PageSerializable<AdminResource>> list(AdminResource adminResource) {
+        LambdaQueryWrapper<AdminResource> lqw = new LambdaQueryWrapper<>();
+         if(!StringUtils.isEmpty(adminResource.getName())) {
+            lqw.like(AdminResource::getName, adminResource.getName());
+        }
+        if(!StringUtils.isEmpty(adminResource.getRoute())) {
+            lqw.like(AdminResource::getRoute, adminResource.getRoute());
+        }
+         if(!StringUtils.isEmpty(adminResource.getZhName())) {
+            lqw.like(AdminResource::getZhName, adminResource.getZhName());
+        }
+         if(!StringUtils.isEmpty(adminResource.getIconName())) {
+            lqw.like(AdminResource::getIconName, adminResource.getIconName());
+        }
+        PageUtils.startPage();
+        return R.success(new PageSerializable<>(adminResourceService.list(lqw)));
+    }
 
     @ApiOperation("同步菜单")
     @Node(value = "resource::admin-resource-sync", name = "同步项目资源")

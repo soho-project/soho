@@ -100,14 +100,14 @@ public class ExampleOptionController {
      */
     @GetMapping("options")
     @Node(value = "exampleOption::options", name = "选项;;option:id~valueOptions")
-    public R<List<OptionVo<Integer, String>>> options() {
+    public R<List<OptionVo<String, String>>> options() {
         List<ExampleOption> list = exampleOptionService.list();
-        List<OptionVo<Integer, String>> options = new ArrayList<>();
+        List<OptionVo<String, String>> options = new ArrayList<>();
 
-        HashMap<Integer, String> map = new HashMap<>();
+        HashMap<String, String> map = new HashMap<>();
         for(ExampleOption item: list) {
-            OptionVo<Integer, String> optionVo = new OptionVo<>();
-            optionVo.setValue(item.getId());
+            OptionVo<String, String> optionVo = new OptionVo<>();
+            optionVo.setValue(item.getId().toString());
             optionVo.setLabel(item.getValue());
             options.add(optionVo);
 //            map.put(item.getId(), item.getValue());

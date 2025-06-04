@@ -1,7 +1,7 @@
 package work.soho.admin.api.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
 /**
  * 选项单元
@@ -15,6 +15,9 @@ import lombok.RequiredArgsConstructor;
  */
 @Data
 public class OptionVo <X, T>{
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private X value;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private T label;
 }
