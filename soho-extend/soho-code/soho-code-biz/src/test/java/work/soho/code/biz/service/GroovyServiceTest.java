@@ -210,6 +210,12 @@ class GroovyServiceTest {
     }
 
     @Test
+    void testAntd5Apis() {
+        String code = getCodeByTemplateName("antd5Apis", true);
+        System.out.println(code);
+    }
+
+    @Test
     void testRunById() {
     }
 

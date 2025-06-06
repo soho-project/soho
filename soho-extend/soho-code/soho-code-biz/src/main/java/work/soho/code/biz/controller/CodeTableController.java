@@ -241,7 +241,7 @@ public class CodeTableController {
      * @return
      */
     @GetMapping("codeFile")
-    public R<HashMap<String, Object>> getCode(Integer id, Integer templateId, String codeNamespace) {
+    public R<HashMap<String, Object>> getCode(Integer id, Integer templateId, String codeNamespace, String moduleName) {
         try {
             HashMap<String, Object> res = new HashMap<>();
             CodeTableVo codeTableVo = codeTableService.getTableVoById(id);
@@ -256,6 +256,7 @@ public class CodeTableController {
 
             HashMap<String, String> binds = new HashMap<>();
             binds.put("baseNamespace", codeNamespace);
+            binds.put("moduleName", moduleName);
             String fileName = groovyService.runById(templateId, binds,"getFileName", codeTableVo);
             if(fileName == null) {
                 return R.error("该文件无法生成，文件路径不能为空");
@@ -406,6 +407,7 @@ public class CodeTableController {
         HashMap<String, String> files = new HashMap<>();
         HashMap<String, String> binds = new HashMap<>();
         binds.put("baseNamespace", request.getCodeNamespace()); //基本命名空间
+        binds.put("moduleName", request.getModuleName()); // 绑定模块名称
         binds.put("basePath", request.getPath()); //基本写入路径
 
         // 如果有传递groupId 则查询这个分组下所有的模板ID

@@ -6,18 +6,20 @@ import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import work.soho.common.security.utils.SecurityUtils;
+import work.soho.admin.api.request.AdminNotificationCreateRequest;
+import work.soho.admin.api.vo.AdminNotificationVo;
 import work.soho.admin.biz.domain.AdminNotification;
 import work.soho.admin.biz.domain.AdminUser;
 import work.soho.admin.biz.service.AdminNotificationService;
 import work.soho.admin.biz.service.AdminUserService;
-import work.soho.common.security.annotation.Node;
-import work.soho.admin.api.request.AdminNotificationCreateRequest;
-import work.soho.admin.api.vo.AdminNotificationVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.StringUtils;
+import work.soho.common.security.annotation.Node;
+import work.soho.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.utils.SecurityUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -99,11 +101,11 @@ public class AdminNotificationController extends BaseController {
      */
     @Node("adminNotification:myNotification")
     @GetMapping("/myNotification")
-    public R<PageSerializable<AdminNotificationVo>> myNotification(AdminNotification adminNotification)
+    public R<PageSerializable<AdminNotificationVo>> myNotification(@AuthenticationPrincipal SohoUserDetails userDetails)
     {
         startPage();
         LambdaQueryWrapper<AdminNotification> lqw = new LambdaQueryWrapper<AdminNotification>();
-        lqw.eq(AdminNotification::getAdminUserId, SecurityUtils.getLoginUserId());
+        lqw.eq(AdminNotification::getAdminUserId, userDetails.getId());
         lqw.eq(AdminNotification::getIsRead, 0);
         List<AdminNotification> list = adminNotificationService.list(lqw);
         PageSerializable pageSerializable = new PageSerializable<>();
@@ -181,10 +183,13 @@ public class AdminNotificationController extends BaseController {
     @Node("adminNotification:read")
     @ApiOperation("已读消息标记")
     @GetMapping("/read/{ids}")
-    public R<Boolean> read(@PathVariable Long[] ids) {
+    public R<Boolean> read(@PathVariable Long[] ids, @AuthenticationPrincipal SohoUserDetails userDetails) {
         for (int i = 0; i < ids.length; i++) {
             AdminNotification adminNotification = adminNotificationService.getById(ids[i]);
             if(adminNotification == null) continue;
+            if(!adminNotification.getAdminUserId().equals(userDetails.getId())) {
+                continue;
+            }
             adminNotification.setIsRead(1);
             adminNotificationService.updateById(adminNotification);
         }
