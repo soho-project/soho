@@ -34,4 +34,9 @@ public class CodeTableTemplateSaveCodeRequest {
      * 代码基本命名空间
      */
     private String codeNamespace;
+
+    /**
+     * 模块名称
+     */
+    private String moduleName;
 }
