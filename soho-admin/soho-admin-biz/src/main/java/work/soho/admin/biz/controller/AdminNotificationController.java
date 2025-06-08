@@ -145,19 +145,20 @@ public class AdminNotificationController extends BaseController {
      */
     @Node("adminNotification:add")
     @PostMapping
-    public R<Boolean> add(@RequestBody AdminNotificationCreateRequest adminNotificationCreateRequest) {
-        Long[] adminUserIds = adminNotificationCreateRequest.getAdminUserIds();
-        if(adminUserIds != null && adminUserIds.length>0) {
-            for (int i = 0; i < adminUserIds.length; i++) {
-                AdminNotification adminNotification = new AdminNotification();
-                adminNotification.setTitle(adminNotificationCreateRequest.getTitle());
-                adminNotification.setContent(adminNotificationCreateRequest.getContent());
-                adminNotification.setCreateAdminUserId(SecurityUtils.getLoginUserId());
-                adminNotification.setAdminUserId(adminUserIds[i]);
-                adminNotification.setCreatedTime(LocalDateTime.now());
-                adminNotificationService.save(adminNotification);
-            }
-
+    public R<Boolean> add(@RequestBody AdminNotificationCreateRequest adminNotificationCreateRequest,
+                          @AuthenticationPrincipal SohoUserDetails userDetails) {
+        ArrayList<Long> adminUserIds = adminNotificationCreateRequest.getAdminUserIds();
+        if(adminNotificationCreateRequest.getAdminUserId()!=null) {
+            adminUserIds.add(adminNotificationCreateRequest.getAdminUserId());
+        }
+        for(Long adminUserId : adminUserIds) {
+            AdminNotification adminNotification = new AdminNotification();
+            adminNotification.setTitle(adminNotificationCreateRequest.getTitle());
+            adminNotification.setContent(adminNotificationCreateRequest.getContent());
+            adminNotification.setCreateAdminUserId(userDetails.getId());
+            adminNotification.setAdminUserId(adminUserId);
+            adminNotification.setCreatedTime(LocalDateTime.now());
+            adminNotificationService.save(adminNotification);
         }
         return R.success(true);
     }

@@ -6,12 +6,14 @@ import com.github.pagehelper.Page;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import work.soho.admin.api.vo.OptionVo;
 import work.soho.admin.biz.domain.AdminConfigGroup;
 import work.soho.admin.biz.service.AdminConfigGroupService;
-import work.soho.common.security.annotation.Node;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.StringUtils;
+import work.soho.common.security.annotation.Node;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -89,5 +91,24 @@ public class AdminConfigGroupController extends BaseController {
     @DeleteMapping("/{ids}" )
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(adminConfigGroupService.removeByIds(Arrays.asList(ids)));
+    }
+
+    /**
+     * 获取配置分组选项
+     *
+     * @return
+     */
+    @GetMapping("options")
+    public R<List<OptionVo<String, String>>> options() {
+        List<AdminConfigGroup> adminConfigGroupList = adminConfigGroupService.list();
+        List<OptionVo<String, String>> list = new ArrayList<>();
+
+        for(AdminConfigGroup item: adminConfigGroupList) {
+            OptionVo<String, String> optionVo = new OptionVo<>();
+            optionVo.setValue(item.getKey());
+            optionVo.setLabel(item.getName());
+            list.add(optionVo);
+        }
+        return R.success(list);
     }
 }
