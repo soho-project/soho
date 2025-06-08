@@ -71,12 +71,18 @@ public class AdminResourceController {
      */
     @Node(value = "resource::routeVoList", name = "路由资源列表")
     @GetMapping("/routes")
-    public List<RouteVo> routeVoList() {
+    public List<RouteVo> routeVoList(Integer visible) {
         Long userId = SecurityUtils.getLoginUserId();
+        if(visible == null) {
+            visible = 1;
+        }
+        LambdaQueryWrapper<AdminResource> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(AdminResource::getType, 1);
+        if(visible>=0) {
+            lqw.eq(AdminResource::getVisible, visible);
+        }
         List<AdminResource> list = adminResourceService.list(
-                Wrappers.<AdminResource>lambdaQuery()
-                        .eq(AdminResource::getVisible, 1)
-                        .eq(AdminResource::getType, 1) // 1 前端节点
+                lqw
         );
 
         //get all node id
