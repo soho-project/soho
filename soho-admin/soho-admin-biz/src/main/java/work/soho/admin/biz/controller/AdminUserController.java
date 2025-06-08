@@ -105,6 +105,7 @@ public class AdminUserController extends BaseController {
             OptionVo<Long, String> optionVo = new OptionVo<>();
             optionVo.setValue(item.getId());
             optionVo.setLabel(item.getUsername());
+            list.add(optionVo);
         });
         return R.success(list);
     }

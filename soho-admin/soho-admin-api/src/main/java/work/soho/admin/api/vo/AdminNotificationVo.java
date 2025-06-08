@@ -17,6 +17,13 @@ public class AdminNotificationVo {
     private Long id;
 
     /**
+     * 接收人ID
+     */
+    @ApiModelProperty("接收人ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long adminUserId;
+
+    /**
      * 接收人
      */
     @ApiModelProperty("接收人")
@@ -51,5 +58,6 @@ public class AdminNotificationVo {
      * 是否已读 0 未读 1 已读
      */
     @ApiModelProperty("是否已读 0 未读 1 已读")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer isRead;
 }
