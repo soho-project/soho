@@ -29,7 +29,7 @@ import java.util.List;
 @Log4j2
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/adminJobLog" )
+@RequestMapping("/quartz/admin/adminJobLog" )
 public class AdminJobLogController {
 
     private final AdminJobLogService adminJobLogService;

@@ -31,7 +31,8 @@ class GroovyServiceTest {
     private TestCodeTableTemplateServiceImpl codeTableTemplateService;
 
     // 表名  这个应该是固定的专门为测试定义的表 155439140
-    private static final Integer TABLE_ID = 155439140;
+//    private static final Integer TABLE_ID = 155439140;
+    private static final Integer TABLE_ID = 155439180;  // 计划任务表
 //    private static final Integer TABLE_ID = 155439179; // 系统资源表， tree
 
     //example 分类表ID
