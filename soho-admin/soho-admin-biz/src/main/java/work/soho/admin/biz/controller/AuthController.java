@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.biz.config.AdminSysConfig;
+import work.soho.admin.biz.service.AdminConfigService;
 import work.soho.common.security.service.impl.TokenServiceImpl;
 import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.admin.biz.domain.AdminUserLoginLog;
@@ -34,6 +35,7 @@ import java.util.Map;
 public class AuthController {
     private final TokenServiceImpl tokenService;
     private final AdminSysConfig adminSysConfig;
+    private final AdminConfigService adminConfigService;
     private final AdminUserLoginLogService adminUserLoginLogService;
     @Resource
     private AuthenticationManager authenticationManager;
@@ -44,6 +46,9 @@ public class AuthController {
     public R<HashMap<String, Object>> authConfig() {
         HashMap<String, Object> config = new HashMap<>();
         config.put("useCaptcha", adminSysConfig.getAdminLoginCaptchaEnable());
+        config.put("title", adminConfigService.getByKey("admin-front-title", String.class, "SOHO管理系统"));
+        config.put("logo", adminConfigService.getByKey("admin-front-logo", String.class, "https://igogo-test.oss-cn-shenzhen.aliyuncs.com/upload/6e/d7/6d6ed76d7a1ea252d6e2616bc923299b66.png"));
+        config.put("license", adminConfigService.getByKey("admin-front-footer-license", String.class, "Copyright © 2025 Liu Fang. Soho is open-source software licensed under GPL3 License."));
         return R.success(config);
     }
 
