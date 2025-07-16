@@ -31,8 +31,8 @@ class GroovyServiceTest {
     private TestCodeTableTemplateServiceImpl codeTableTemplateService;
 
     // 表名  这个应该是固定的专门为测试定义的表 155439140
-//    private static final Integer TABLE_ID = 155439140;
-    private static final Integer TABLE_ID = 155439180;  // 计划任务表
+    private static final Integer TABLE_ID = 155439140;  // 测试用例表
+//    private static final Integer TABLE_ID = 155439180;  // 计划任务表
 //    private static final Integer TABLE_ID = 155439179; // 系统资源表， tree
 
     //example 分类表ID
@@ -213,6 +213,48 @@ class GroovyServiceTest {
     @Test
     void testAntd5Apis() {
         String code = getCodeByTemplateName("antd5Apis", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testVue3Apis() {
+        String code = getCodeByTemplateName("vue3-apis", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testVue3Editor() {
+        String code = getCodeByTemplateName("vue3-editorModal", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testVue3List() {
+        String code = getCodeByTemplateName("vue3-list", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testVue3Filter() {
+        String code = getCodeByTemplateName("vue3-filter", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testVue3Index() {
+        String code = getCodeByTemplateName("vue3-index", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testVue3TreeIndex() {
+        String code = getCodeByTemplateName("vue3-tree", true);
+        System.out.println(code);
+    }
+
+    @Test
+    void testVue3ExtendedComponents() {
+        String code = getCodeByTemplateName("vue3-extendedComponents", true);
         System.out.println(code);
     }
 
