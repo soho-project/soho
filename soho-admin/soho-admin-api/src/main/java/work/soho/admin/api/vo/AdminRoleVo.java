@@ -1,5 +1,6 @@
 package work.soho.admin.api.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -17,6 +18,7 @@ public class AdminRoleVo {
 
     private Integer enable;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createdTime;
 
     private List<Long> resourceIds;

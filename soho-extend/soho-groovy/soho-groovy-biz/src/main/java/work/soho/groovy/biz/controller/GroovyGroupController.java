@@ -17,7 +17,6 @@ import work.soho.groovy.biz.service.GroovyGroupService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 /**
  * groovy分组Controller
@@ -98,14 +97,15 @@ public class GroovyGroupController {
      */
     @GetMapping("options")
     @Node(value = "groovyGroup::options", name = "groovy分组;;option:id~titleOptions")
-    public R<HashMap<Integer, String>> options() {
+    public R<List<OptionVo<String, String>>> options() {
         List<GroovyGroup> list = groovyGroupService.list();
-        List<OptionVo<Integer, String>> options = new ArrayList<>();
-
-        HashMap<Integer, String> map = new HashMap<>();
+        List<OptionVo<String, String>> options = new ArrayList<>();
         for(GroovyGroup item: list) {
-            map.put(item.getId(), item.getTitle());
+            OptionVo<String, String> optionVo = new OptionVo<>();
+            optionVo.setValue(item.getId().toString());
+            optionVo.setLabel(item.getTitle());
+            options.add(optionVo);
         }
-        return R.success(map);
+        return R.success(options);
     }
 }
