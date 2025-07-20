@@ -1,10 +1,13 @@
 SOHO后台管理系统
 ==============
 
+<div align="center">
+
 [![star](https://gitee.com/fang/soho/badge/star.svg?theme=dark)](https://gitee.com/fang/soho/stargazers)   
 [![fork](https://gitee.com/fang/soho/badge/fork.svg?theme=dark)](https://gitee.com/fang/soho/members)
 [![Fork me on Gitee](https://gitee.com/fang/soho/widgets/widget_6.svg)](https://gitee.com/fang/soho)
 
+</div>
 
 一款简单易用基于Spring boot开发的管理后台； 主要实现的功能有，菜单管理， 用户管理，权限管理， 角色管理， 鉴权， 以及一些基础组件库
 
@@ -34,6 +37,8 @@ SOHO后台管理系统
 -------
 
 - [预览地址](https://www.soho.work/)   演示账号： admin:123456
+- [预览地址2(基于antd5)](https://adminv2.demo.soho.work/login/) 演示账号： admin:123456
+- [预览地址3（基于antd vue）](https://admin-vue.demo.soho.work/login/)  延时账号： admin:123456
 - [文档地址](https://docs.soho.work/)
 - [前端仓库地址](https://gitee.com/fang/soho-admin-front)
 - [相关技术文档](docs/learn/main.md)
