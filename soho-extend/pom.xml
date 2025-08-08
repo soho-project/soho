@@ -33,5 +33,6 @@
         <module>soho-open</module>
         <module>soho-mobile-verification</module>
         <module>soho-temporal-db</module>
+        <module>soho-diy</module>
     </modules>
 </project>
