@@ -61,4 +61,17 @@ public class GuestDiyPageController {
         return R.success(diyPageService.getById(id));
     }
 
+    /**
+     * 根据路径获取详情
+     *
+     * @param path
+     * @return
+     */
+    @GetMapping("/detailsByPath")
+    @Node(value = "guest::diyPage::details", name = "获取  详情")
+    public R<DiyPage> getByPath(String path) {
+        LambdaQueryWrapper<DiyPage> lqw = new LambdaQueryWrapper<DiyPage>();
+        lqw.eq(DiyPage::getRoute, path);
+        return R.success(diyPageService.getOne(lqw));
+    }
 }
