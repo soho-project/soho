@@ -15,6 +15,7 @@
         <module>soho-admin-web</module>
         <module>soho-extend</module>
         <module>soho-common-cloud</module>
+        <module>soho-common/soho-common-ratelimiter</module>
     </modules>
 
     <properties>
