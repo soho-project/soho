@@ -52,6 +52,7 @@ public class AdminResourceController {
          if(!StringUtils.isEmpty(adminResource.getIconName())) {
             lqw.like(AdminResource::getIconName, adminResource.getIconName());
         }
+         lqw.orderByDesc(AdminResource::getId);
         PageUtils.startPage();
         return R.success(new PageSerializable<>(adminResourceService.list(lqw)));
     }

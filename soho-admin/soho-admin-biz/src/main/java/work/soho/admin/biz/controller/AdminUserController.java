@@ -60,7 +60,7 @@ public class AdminUserController extends BaseController {
             AdminUser adminUser = adminUserService.getById(userDetails.getId());
             //获取当前用户所有角色下的资源ID
             List<AdminRoleUser> userRoleList = adminRoleUserService.list(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, adminUser.getId())
-                    .eq(AdminRoleUser::getStatus, 1));
+                    .eq(AdminRoleUser::getStatus, 1).orderByDesc(AdminRoleUser::getId));
             List<Long> adminRoleIds = userRoleList.stream().map(AdminRoleUser::getRoleId).collect(Collectors.toList());
 
             //获取ID最小的角色
@@ -130,7 +130,7 @@ public class AdminUserController extends BaseController {
         lqw.eq(StringUtils.isNotEmpty(adminUserVo.getPhone()), AdminUser::getPhone, adminUserVo.getPhone());
         lqw.eq(StringUtils.isNotEmpty(adminUserVo.getEmail()), AdminUser::getEmail, adminUserVo.getEmail());
         lqw.eq(AdminUser::getIsDeleted, 0);
-
+        lqw.orderByDesc(AdminUser::getId);
         startPage();
         List<AdminUser> list = adminUserService.list(lqw);
         List<AdminUserVo> voList = new ArrayList<>();

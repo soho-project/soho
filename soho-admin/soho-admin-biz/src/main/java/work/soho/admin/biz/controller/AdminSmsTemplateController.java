@@ -46,6 +46,7 @@ public class AdminSmsTemplateController {
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, AdminSmsTemplate::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, AdminSmsTemplate::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
         lqw.eq(adminSmsTemplate.getUpdatedTime() != null, AdminSmsTemplate::getUpdatedTime ,adminSmsTemplate.getUpdatedTime());
+        lqw.orderByDesc(AdminSmsTemplate::getId);
         List<AdminSmsTemplate> list = adminSmsTemplateService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }

@@ -67,6 +67,7 @@ public class AdminConfigController extends BaseController {
         if (adminConfig.getCreatedTime() != null){
             lqw.eq(AdminConfig::getCreatedTime ,adminConfig.getCreatedTime());
         }
+        lqw.orderByDesc(AdminConfig::getId);
         List<AdminConfig> list = adminConfigService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }

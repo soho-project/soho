@@ -44,6 +44,7 @@ public class AdminEmailTemplateController {
         lqw.eq(adminEmailTemplate.getUpdatedTime() != null, AdminEmailTemplate::getUpdatedTime ,adminEmailTemplate.getUpdatedTime());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, AdminEmailTemplate::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, AdminEmailTemplate::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
+        lqw.orderByDesc(AdminEmailTemplate::getId);
         List<AdminEmailTemplate> list = adminEmailTemplateService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }

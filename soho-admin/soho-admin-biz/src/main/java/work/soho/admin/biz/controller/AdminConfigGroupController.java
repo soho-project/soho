@@ -53,6 +53,7 @@ public class AdminConfigGroupController extends BaseController {
         if (adminConfigGroup.getCreatedTime() != null){
             lqw.eq(AdminConfigGroup::getCreatedTime ,adminConfigGroup.getCreatedTime());
         }
+        lqw.orderByDesc(AdminConfigGroup::getId);
         List<AdminConfigGroup> list = adminConfigGroupService.list(lqw);
         return R.success((Page<AdminConfigGroup>)list);
     }

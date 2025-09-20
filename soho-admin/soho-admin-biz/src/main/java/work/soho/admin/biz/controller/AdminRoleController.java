@@ -49,6 +49,7 @@ public class AdminRoleController extends BaseController {
 		if(!StringUtils.isEmpty(name)) {
 			lqw.like(AdminRole::getName, name);
 		}
+		lqw.orderByDesc(AdminRole::getId);
 		startPage();
 		List<AdminRole> list = adminRoleService.list(lqw);
 		return R.success(new PageSerializable<>(list));
