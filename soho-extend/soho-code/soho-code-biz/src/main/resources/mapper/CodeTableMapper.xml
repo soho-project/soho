@@ -9,10 +9,11 @@
             <result property="name" column="name" jdbcType="VARCHAR"/>
             <result property="title" column="title" jdbcType="VARCHAR"/>
             <result property="comment" column="comment" jdbcType="VARCHAR"/>
+            <result property="dbSource" column="db_source" jdbcType="VARCHAR" />
     </resultMap>
 
     <sql id="Base_Column_List">
         id,name,title,
-        comment
+        comment,db_source
     </sql>
 </mapper>

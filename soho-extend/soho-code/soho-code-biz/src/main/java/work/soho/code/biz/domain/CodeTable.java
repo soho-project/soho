@@ -44,6 +44,13 @@ public class CodeTable implements Serializable {
     @TableField(value = "comment")
     private String comment;
 
+    /**
+     * 所属数据源
+     */
+    @ApiModelProperty(value = "数据源")
+    @TableField(value = "db_source")
+    private String dbSource;
+
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 }
