@@ -20,7 +20,7 @@ public class GameDataSourceAspect {
     /**
      * 定义切入点：work.soho.game.biz.mapper 包下的所有 Mapper 类的方法
      */
-    @Pointcut("execution(* work.soho.game.biz.mapper..*.*(..))")
+    @Pointcut("execution(* work.soho.game.biz.service.*.*(..))")
     public void mapperPointcut() {}
 
     @Before("mapperPointcut()")

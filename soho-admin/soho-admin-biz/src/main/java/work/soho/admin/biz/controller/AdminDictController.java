@@ -46,7 +46,7 @@ public class AdminDictController {
         } else {
             lqw.eq(AdminDict::getParentId, 0);
         }
-
+        lqw.orderByDesc(AdminDict::getId);
         PageUtils.startPage();
         List<AdminDict> list = adminDictService.list(lqw);
         return R.success(new PageSerializable<>(list));

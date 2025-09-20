@@ -53,6 +53,7 @@ public class AdminReleaseController {
         lqw.eq(adminRelease.getUpdatedTime() != null, AdminRelease::getUpdatedTime ,adminRelease.getUpdatedTime());
         lqw.like(StringUtils.isNotBlank(adminRelease.getUrl()),AdminRelease::getUrl ,adminRelease.getUrl());
         lqw.eq(adminRelease.getPlatformType() != null, AdminRelease::getPlatformType ,adminRelease.getPlatformType());
+        lqw.orderByDesc(AdminRelease::getId);
         List<AdminRelease> list = adminReleaseService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }

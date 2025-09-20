@@ -74,6 +74,7 @@ public class AdminNotificationController extends BaseController {
         if (adminNotification.getIsRead() != null){
             lqw.eq(AdminNotification::getIsRead ,adminNotification.getIsRead());
         }
+        lqw.orderByDesc(AdminNotification::getId);
         List<AdminNotification> list = adminNotificationService.list(lqw);
         PageSerializable pageSerializable = new PageSerializable<>(list);
         if(!list.isEmpty()) {
