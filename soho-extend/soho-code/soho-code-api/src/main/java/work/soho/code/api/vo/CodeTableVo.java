@@ -14,6 +14,11 @@ public class CodeTableVo {
     private Integer id;
 
     /**
+     * 数据源
+     */
+    private String dbSource;
+
+    /**
      * 表名
      */
     private String name;

@@ -171,9 +171,9 @@ public class CodeTableController {
         }
 
         //检查远程表是否存在
-        if(dbService.isExistsTable(codeTable.getName())) {
+        if(dbService.isExistsTable(codeTable.getName(), codeTable.getDbSource())) {
             //获取远程表结构
-            CodeTableVo remoteCodeTable = dbService.getTableByName(codeTable.getName());
+            CodeTableVo remoteCodeTable = dbService.getTableByName(codeTable.getName(), codeTable.getDbSource());
             return R.success(codeTable.toDiffSql(remoteCodeTable));
         } else {
             return R.success(codeTable.toCreateSql());
@@ -188,9 +188,11 @@ public class CodeTableController {
      */
     @GetMapping("syncTable2CodeTable/{id}")
     public R<Boolean> syncTable2CodeTable(@PathVariable Integer id) {
-        CodeTableVo codeTable = dbService.getTableByName(codeTableService.getById(id).getName());
+        CodeTable codeTable = codeTableService.getById(id);
         Assert.notNull(codeTable, "表不存在， 请检查");
-        codeTableService.table2CodeTable(codeTable);
+        CodeTableVo codeTableVo = dbService.getTableByName(codeTable.getName(), codeTable.getDbSource());
+        Assert.notNull(codeTableVo, "表不存在， 请检查");
+        codeTableService.table2CodeTable(codeTableVo);
         return R.success();
     }
 
@@ -212,16 +214,16 @@ public class CodeTableController {
                 return R.error("表不存在， 请检查");
             }
             if(drop) {
-                dbService.dropTable(codeTable.getName());
+                dbService.dropTable(codeTable.getName(), codeTable.getDbSource());
             }
             if(isDiff !=null && isDiff) {
                 //查询远程数据结构
                 CodeTableVo remoteCodeTable = dbService.getTableByName(codeTable.getName());
                 log.info(codeTable.toDiffSql(remoteCodeTable));
-                dbService.execute(codeTable.toDiffSql(remoteCodeTable));
+                dbService.execute(codeTable.toDiffSql(remoteCodeTable), codeTable.getDbSource());
             } else {
                 log.info(codeTable.toCreateSql());
-                dbService.execute(codeTable.toCreateSql());
+                dbService.execute(codeTable.toCreateSql(), codeTable.getDbSource());
             }
             connection.commit();
             return R.success();
@@ -464,14 +466,29 @@ public class CodeTableController {
     }
 
     /**
+     * 获取数据库列表
+     *
+     * @return
+     */
+    @GetMapping("/getDbMap")
+    public R<HashMap<String, String>> getDbSet() {
+        Set<String> dbList = dbService.getDbList();
+        HashMap<String, String> map = new HashMap<>();
+        for(String item: dbList) {
+            map.put(item, item);
+        }
+        return R.success(map);
+    }
+
+    /**
      * 获取数据库中的表
      *
      * @return
      */
     @GetMapping("/getDbTables")
-    public R<HashMap<Object, Object>> getTables() {
+    public R<HashMap<Object, Object>> getTables(String db) {
 //        dbService.getTableByName("pay_info");
-        List<Object> list = dbService.getTableNames();
+        List<Object> list = dbService.getTableNames(db);
         HashMap<Object, Object> map = new HashMap<>();
         for(Object item: list) {
             map.put(item, item);
@@ -485,13 +502,13 @@ public class CodeTableController {
      * @return
      */
     @GetMapping("/saveTables")
-    public R<Boolean> loadTable(String[] tableNames) {
+    public R<Boolean> loadTable(String[] tableNames, String db) {
         if(tableNames == null || tableNames.length == 0) {
             return R.error("请选择需要导入的表");
         }
 
         for(int i=0; i<tableNames.length; i++) {
-            CodeTableVo tableVo = dbService.getTableByName(tableNames[i]);
+            CodeTableVo tableVo = dbService.getTableByName(tableNames[i], db);
 
             //保存数据
             CodeTable codeTable = BeanUtils.copy(tableVo, CodeTable.class);

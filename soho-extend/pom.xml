@@ -34,5 +34,6 @@
         <module>soho-mobile-verification</module>
         <module>soho-temporal-db</module>
         <module>soho-diy</module>
+        <module>soho-game</module>
     </modules>
 </project>
