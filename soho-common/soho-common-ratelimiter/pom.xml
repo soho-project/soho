@@ -9,7 +9,6 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>work.soho.common</groupId>
     <artifactId>soho-common-ratelimiter</artifactId>
 
     <properties>
