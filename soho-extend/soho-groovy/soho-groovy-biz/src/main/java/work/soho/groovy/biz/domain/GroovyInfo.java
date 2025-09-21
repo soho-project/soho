@@ -19,6 +19,7 @@ public class GroovyInfo implements Serializable {
     */
     @ApiModelProperty(value = "ID")
     @TableId(value = "id", type = IdType.AUTO)
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer id;
 
     /**
@@ -26,6 +27,7 @@ public class GroovyInfo implements Serializable {
     */
     @ApiModelProperty(value = "组ID")
     @TableField(value = "group_id")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer groupId;
 
     /**
