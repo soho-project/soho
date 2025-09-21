@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -64,6 +65,7 @@ public class UserInfo implements Serializable {
      */
     @ApiModelProperty(value = "状态;0:禁用,1:活跃")
     @TableField(value = "status")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer status;
 
     /**
@@ -78,6 +80,7 @@ public class UserInfo implements Serializable {
      */
     @ApiModelProperty(value = "性别;0:女,1:男")
     @TableField(value = "sex")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer sex;
 
     /**
