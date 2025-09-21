@@ -19,6 +19,7 @@ public class AdminUserLoginLog implements Serializable {
     */
     @ApiModelProperty(value = "ID;;")
     @TableId(value = "id", type = IdType.AUTO)
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer id;
 
     /**
@@ -26,6 +27,7 @@ public class AdminUserLoginLog implements Serializable {
     */
     @ApiModelProperty(value = "后台用户ID;admin_user.id~username;frontType:select,")
     @TableField(value = "admin_user_id")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long adminUserId;
 
     /**

@@ -1,13 +1,13 @@
 package work.soho.admin.biz.domain;
 
-import java.io.Serializable;
-import java.util.Date;
-
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
-import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+
+import java.io.Serializable;
+import java.util.Date;
 
 /**
  *
@@ -23,6 +23,7 @@ public class AdminUser implements Serializable {
      */
     @ApiModelProperty("ID")
     @TableId(type = IdType.AUTO)
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     /**
