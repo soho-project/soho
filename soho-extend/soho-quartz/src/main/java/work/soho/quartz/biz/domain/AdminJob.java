@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -36,6 +37,7 @@ public class AdminJob implements Serializable {
      */
     @ApiModelProperty(value = "能否并发执行")
     @TableField(value = "can_concurrency")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer canConcurrency;
 
     /**
@@ -50,6 +52,7 @@ public class AdminJob implements Serializable {
      */
     @ApiModelProperty(value = "状态 1 可执行  0 禁止执行")
     @TableField(value = "status")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer status;
 
     /**

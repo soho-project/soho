@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -43,6 +44,7 @@ public class AdminJobLog implements Serializable {
      */
     @ApiModelProperty(value = "任务执行状态; 1 执行中  2 执行完成  3 任务取消")
     @TableField(value = "status")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer status;
 
     /**
