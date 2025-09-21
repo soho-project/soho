@@ -18,10 +18,14 @@ public class AdminUserVo {
     private String avatar;
     private String realName;
     private String phone;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer sex;
     private Integer age;
     private String email;
     private String password;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date updatedTime;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdTime;
     private List<Long> roleIds;
