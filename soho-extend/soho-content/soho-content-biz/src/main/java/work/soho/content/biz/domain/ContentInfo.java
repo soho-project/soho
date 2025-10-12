@@ -1,9 +1,8 @@
 package work.soho.content.biz.domain;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.alibaba.excel.annotation.ExcelProperty;
+import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -14,13 +13,14 @@ import java.time.LocalDateTime;
  * 系统内容表
  * @TableName admin_content
  */
-@TableName(value ="admin_content")
+@TableName(value ="content_info")
 @Data
-public class AdminContent implements Serializable {
+public class ContentInfo implements Serializable {
     /**
      * ID
      */
     @ApiModelProperty("ID")
+    @ExcelProperty("ID")
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
@@ -28,6 +28,7 @@ public class AdminContent implements Serializable {
      * 文章标题
      */
     @ApiModelProperty("文章标题")
+    @ExcelProperty("文章标题")
     @TableField(value = "title")
     private String title;
 
@@ -35,6 +36,7 @@ public class AdminContent implements Serializable {
      * 文章描述
      */
     @ApiModelProperty("文章描述")
+    @ExcelProperty("文章描述")
     @TableField(value = "description")
     private String description;
 
@@ -42,6 +44,7 @@ public class AdminContent implements Serializable {
      * 关键字
      */
     @ApiModelProperty("关键字")
+    @ExcelProperty("关键字")
     @TableField(value = "keywords")
     private String keywords;
 
@@ -49,6 +52,7 @@ public class AdminContent implements Serializable {
      * 缩略图
      */
     @ApiModelProperty("缩略图")
+    @ExcelProperty("缩略图")
     @TableField(value = "thumbnail")
     private String thumbnail;
 
@@ -56,6 +60,7 @@ public class AdminContent implements Serializable {
      * 文章内容
      */
     @ApiModelProperty("文章内容")
+    @ExcelProperty("文章内容")
     @TableField(value = "body")
     private String body;
 
@@ -63,20 +68,22 @@ public class AdminContent implements Serializable {
      * 创建时间
      */
     @ApiModelProperty("创建时间")
-    @TableField(value = "updated_time")
+    @ExcelProperty("创建时间")
+    @TableField(value = "updated_time", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedTime;
 
     /**
      * 创建时间
      */
     @ApiModelProperty("创建时间")
-    @TableField(value = "created_time")
+    @TableField(value = "created_time", fill = FieldFill.INSERT)
     private LocalDateTime createdTime;
 
     /**
      * 文章分类ID
      */
     @ApiModelProperty("文章分类ID")
+    @ExcelProperty("文章分类")
     @TableField(value = "category_id")
     private Long categoryId;
 
@@ -84,6 +91,7 @@ public class AdminContent implements Serializable {
      * 添加的管理员ID
      */
     @ApiModelProperty("添加的管理员ID")
+    @ExcelProperty("管理员ID")
     @TableField(value = "user_id")
     private Long userId;
 
@@ -91,20 +99,25 @@ public class AdminContent implements Serializable {
      * 文章状态；  0 禁用  1 发布
      */
     @ApiModelProperty("文章状态；  0 禁用  1 发布")
+    @ExcelProperty("文章状态")
     @TableField(value = "status")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer status;
 
     /**
      * 是否置顶
      */
     @ApiModelProperty("是否置顶")
+    @ExcelProperty("是否置顶")
     @TableField(value = "is_top")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer isTop;
 
     /**
      * 加星数量
      */
     @ApiModelProperty("加星数量")
+    @ExcelProperty("加星数量")
     @TableField(value = "star")
     private Integer star;
 
@@ -112,6 +125,7 @@ public class AdminContent implements Serializable {
      * like数量
      */
     @ApiModelProperty("like数量")
+    @ExcelProperty("like数量")
     @TableField(value = "likes")
     private Integer likes;
 
@@ -119,6 +133,7 @@ public class AdminContent implements Serializable {
      * 踩数据
      */
     @ApiModelProperty("踩数据")
+    @ExcelProperty("踩数据")
     @TableField(value = "dis_likes")
     private Integer disLikes;
 
@@ -126,6 +141,7 @@ public class AdminContent implements Serializable {
      * 评论数量
      */
     @ApiModelProperty("评论数量")
+    @ExcelProperty("评论数量")
     @TableField(value = "comments_count")
     private Integer commentsCount;
 

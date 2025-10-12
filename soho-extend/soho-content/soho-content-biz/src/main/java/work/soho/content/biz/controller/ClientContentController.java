@@ -10,8 +10,8 @@ import work.soho.admin.api.vo.NavVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
-import work.soho.content.biz.domain.AdminContent;
-import work.soho.content.biz.domain.AdminContentCategory;
+import work.soho.content.biz.domain.ContentInfo;
+import work.soho.content.biz.domain.ContentCategory;
 import work.soho.content.biz.service.AdminContentCategoryService;
 import work.soho.content.biz.service.AdminContentService;
 import work.soho.user.api.dto.UserInfoDto;
@@ -36,22 +36,22 @@ public class ClientContentController {
     }
 
     @GetMapping("list")
-    public R<List<AdminContent>> list() {
-        LambdaQueryWrapper<AdminContent> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(AdminContent::getStatus, 1);
+    public R<List<ContentInfo>> list() {
+        LambdaQueryWrapper<ContentInfo> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ContentInfo::getStatus, 1);
         PageUtils.startPage();
-        List<AdminContent> list = adminContentService.list(lambdaQueryWrapper);
+        List<ContentInfo> list = adminContentService.list(lambdaQueryWrapper);
         return R.success(list);
     }
 
     @GetMapping("category")
     public R<AdminContentCategoryListVo> category(Long id) {
         AdminContentCategoryListVo adminContentCategoryListVo;
-        AdminContentCategory adminContentCategory = adminContentCategoryService.getById(id);
+        ContentCategory adminContentCategory = adminContentCategoryService.getById(id);
         adminContentCategoryListVo = BeanUtils.copy(adminContentCategory, AdminContentCategoryListVo.class);
         //获取文章导航信息
-        List<AdminContentCategory> navaList = adminContentCategoryService.getCategorysBySonId(adminContentCategory.getParentId());
-        for (AdminContentCategory adminContentCategory1: navaList) {
+        List<ContentCategory> navaList = adminContentCategoryService.getCategorysBySonId(adminContentCategory.getParentId());
+        for (ContentCategory adminContentCategory1: navaList) {
             AdminContentVo.NavItem nav = new AdminContentVo.NavItem();
             nav.setName(adminContentCategory1.getName());
             nav.setId(adminContentCategory1.getId());
@@ -64,8 +64,8 @@ public class ClientContentController {
 
     @GetMapping("nav")
     public R<List<NavVo>> nav() {
-        List<AdminContentCategory> list = adminContentCategoryService.list();
-        Map<Long, List<AdminContentCategory>> map = list.stream().collect(Collectors.groupingBy(AdminContentCategory::getParentId));
+        List<ContentCategory> list = adminContentCategoryService.list();
+        Map<Long, List<ContentCategory>> map = list.stream().collect(Collectors.groupingBy(ContentCategory::getParentId));
         NavVo tmpNavVo = new NavVo();
         tmpNavVo.setKey("0");
         loopNav(map, tmpNavVo);
@@ -79,10 +79,10 @@ public class ClientContentController {
      * @param navVo
      * @return
      */
-    private void loopNav(Map<Long, List<AdminContentCategory>> map,NavVo navVo) {
-        List<AdminContentCategory> listTmp = null;
+    private void loopNav(Map<Long, List<ContentCategory>> map, NavVo navVo) {
+        List<ContentCategory> listTmp = null;
         if((listTmp = map.get(Long.parseLong(navVo.getKey()))) != null) {
-            for(AdminContentCategory item: listTmp) {
+            for(ContentCategory item: listTmp) {
                 NavVo nav = new NavVo();
                 nav.setKey(String.valueOf(item.getId()));
                 nav.setLabel(item.getName());
@@ -94,7 +94,7 @@ public class ClientContentController {
 
     @GetMapping("content")
     public R<AdminContentVo> content(Long id) {
-        AdminContent adminContent = adminContentService.getById(id);
+        ContentInfo adminContent = adminContentService.getById(id);
         //检查文章状态
         if(adminContent == null || adminContent.getStatus() != 1) {
             return R.error("请传递有效文章ID");
@@ -105,8 +105,8 @@ public class ClientContentController {
             adminContentVo.setUsername(user.getUsername());
         }
         //获取文章导航信息
-        List<AdminContentCategory> navaList = adminContentCategoryService.getCategorysBySonId(adminContent.getCategoryId());
-        for (AdminContentCategory adminContentCategory: navaList) {
+        List<ContentCategory> navaList = adminContentCategoryService.getCategorysBySonId(adminContent.getCategoryId());
+        for (ContentCategory adminContentCategory: navaList) {
             AdminContentVo.NavItem nav = new AdminContentVo.NavItem();
             nav.setName(adminContentCategory.getName());
             nav.setId(adminContentCategory.getId());
@@ -124,7 +124,7 @@ public class ClientContentController {
 
     @PostMapping("like")
     public R<Boolean> like(@RequestBody Map<String,Long> map) {
-        AdminContent adminContent = adminContentService.getById(map.get("id"));
+        ContentInfo adminContent = adminContentService.getById(map.get("id"));
         //检查文章状态
         if(adminContent == null || adminContent.getStatus() != 1) {
             return R.error("请传递有效文章ID");
@@ -136,7 +136,7 @@ public class ClientContentController {
 
     @PostMapping("disLike")
     public R<Boolean> dislike(@RequestBody Map<String,Long> map) {
-        AdminContent adminContent = adminContentService.getById(map.get("id"));
+        ContentInfo adminContent = adminContentService.getById(map.get("id"));
         //检查文章状态
         if(adminContent == null || adminContent.getStatus() != 1) {
             return R.error("请传递有效文章ID");

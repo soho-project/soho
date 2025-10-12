@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="work.soho.content.biz.mapper.AdminContentCategoryMapper">
 
-    <resultMap id="BaseResultMap" type="work.soho.content.biz.domain.AdminContentCategory">
+    <resultMap id="BaseResultMap" type="work.soho.content.biz.domain.ContentCategory">
             <result property="id" column="id" jdbcType="INTEGER"/>
             <result property="name" column="name" jdbcType="VARCHAR"/>
             <result property="parentId" column="parent_id" jdbcType="INTEGER"/>

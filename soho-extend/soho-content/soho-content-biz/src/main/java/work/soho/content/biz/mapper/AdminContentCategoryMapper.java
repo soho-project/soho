@@ -1,7 +1,7 @@
 package work.soho.content.biz.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import work.soho.content.biz.domain.AdminContentCategory;
+import work.soho.content.biz.domain.ContentCategory;
 
 /**
 * @author i
@@ -9,7 +9,7 @@ import work.soho.content.biz.domain.AdminContentCategory;
 * @createDate 2022-09-03 01:14:08
 * @Entity work.soho.admin.domain.AdminContentCategory
 */
-public interface AdminContentCategoryMapper extends BaseMapper<AdminContentCategory> {
+public interface AdminContentCategoryMapper extends BaseMapper<ContentCategory> {
 
 }
 
