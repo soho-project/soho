@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import work.soho.admin.api.event.DashboardEvent;
-import work.soho.content.biz.domain.AdminContent;
+import work.soho.content.biz.domain.ContentInfo;
 import work.soho.content.biz.service.AdminContentService;
 
 import java.util.HashMap;
@@ -20,12 +20,12 @@ public class ListCardEventListener {
 
     @EventListener
     public void listCard(DashboardEvent event) {
-        LambdaQueryWrapper<AdminContent> lambdaQueryWrapper = new LambdaQueryWrapper<AdminContent>();
-        lambdaQueryWrapper.orderByDesc(AdminContent::getId);
+        LambdaQueryWrapper<ContentInfo> lambdaQueryWrapper = new LambdaQueryWrapper<ContentInfo>();
+        lambdaQueryWrapper.orderByDesc(ContentInfo::getId);
         lambdaQueryWrapper.last(" limit 6");
-        List<AdminContent> list = adminContentService.list(lambdaQueryWrapper);
+        List<ContentInfo> list = adminContentService.list(lambdaQueryWrapper);
         LinkedList<HashMap<String, Object>> data = new LinkedList<>();
-        for (AdminContent item: list) {
+        for (ContentInfo item: list) {
             LinkedHashMap<String, Object> row = new LinkedHashMap<>();
             row.put("ID", item.getId());
             row.put("标题", item.getTitle());

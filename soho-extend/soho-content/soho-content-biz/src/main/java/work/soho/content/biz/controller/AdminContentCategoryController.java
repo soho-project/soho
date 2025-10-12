@@ -11,7 +11,7 @@ import work.soho.admin.api.vo.TreeContentCategoryVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
-import work.soho.content.biz.domain.AdminContentCategory;
+import work.soho.content.biz.domain.ContentCategory;
 import work.soho.content.biz.service.AdminContentCategoryService;
 
 import java.time.LocalDateTime;
@@ -37,42 +37,42 @@ public class AdminContentCategoryController {
      */
     @GetMapping("/list")
     @Node(value = "adminContentCategory::list", name = "内容分类列表")
-    public R<PageSerializable<AdminContentCategory>> list(AdminContentCategory adminContentCategory)
+    public R<PageSerializable<ContentCategory>> list(ContentCategory adminContentCategory)
     {
         PageUtils.startPage();
-        LambdaQueryWrapper<AdminContentCategory> lqw = new LambdaQueryWrapper<AdminContentCategory>();
+        LambdaQueryWrapper<ContentCategory> lqw = new LambdaQueryWrapper<ContentCategory>();
 
         if (adminContentCategory.getId() != null){
-            lqw.eq(AdminContentCategory::getId ,adminContentCategory.getId());
+            lqw.eq(ContentCategory::getId ,adminContentCategory.getId());
         }
         if (StringUtils.isNotBlank(adminContentCategory.getName())){
-            lqw.like(AdminContentCategory::getName ,adminContentCategory.getName());
+            lqw.like(ContentCategory::getName ,adminContentCategory.getName());
         }
         if (adminContentCategory.getParentId() != null){
-            lqw.eq(AdminContentCategory::getParentId ,adminContentCategory.getParentId());
+            lqw.eq(ContentCategory::getParentId ,adminContentCategory.getParentId());
         }
         if (StringUtils.isNotBlank(adminContentCategory.getDescription())){
-            lqw.like(AdminContentCategory::getDescription ,adminContentCategory.getDescription());
+            lqw.like(ContentCategory::getDescription ,adminContentCategory.getDescription());
         }
         if (StringUtils.isNotBlank(adminContentCategory.getKeyword())){
-            lqw.like(AdminContentCategory::getKeyword ,adminContentCategory.getKeyword());
+            lqw.like(ContentCategory::getKeyword ,adminContentCategory.getKeyword());
         }
         if (StringUtils.isNotBlank(adminContentCategory.getContent())){
-            lqw.like(AdminContentCategory::getContent ,adminContentCategory.getContent());
+            lqw.like(ContentCategory::getContent ,adminContentCategory.getContent());
         }
         if (adminContentCategory.getOrder() != null){
-            lqw.eq(AdminContentCategory::getOrder ,adminContentCategory.getOrder());
+            lqw.eq(ContentCategory::getOrder ,adminContentCategory.getOrder());
         }
         if (adminContentCategory.getIsDisplay() != null){
-            lqw.eq(AdminContentCategory::getIsDisplay ,adminContentCategory.getIsDisplay());
+            lqw.eq(ContentCategory::getIsDisplay ,adminContentCategory.getIsDisplay());
         }
         if (adminContentCategory.getUpdateTime() != null){
-            lqw.eq(AdminContentCategory::getUpdateTime ,adminContentCategory.getUpdateTime());
+            lqw.eq(ContentCategory::getUpdateTime ,adminContentCategory.getUpdateTime());
         }
         if (adminContentCategory.getCreatedTime() != null){
-            lqw.eq(AdminContentCategory::getCreatedTime ,adminContentCategory.getCreatedTime());
+            lqw.eq(ContentCategory::getCreatedTime ,adminContentCategory.getCreatedTime());
         }
-        List<AdminContentCategory> list = adminContentCategoryService.list(lqw);
+        List<ContentCategory> list = adminContentCategoryService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }
 
@@ -81,7 +81,7 @@ public class AdminContentCategoryController {
      */
     @GetMapping(value = "/{id}" )
     @Node(value = "adminContentCategory::getInfo", name = "内容分类详细信息")
-    public R<AdminContentCategory> getInfo(@PathVariable("id" ) Long id) {
+    public R<ContentCategory> getInfo(@PathVariable("id" ) Long id) {
         return R.success(adminContentCategoryService.getById(id));
     }
 
@@ -90,7 +90,7 @@ public class AdminContentCategoryController {
      */
     @PostMapping
     @Node(value = "adminContentCategory::add", name = "内容分类新增")
-    public R<Boolean> add(@RequestBody AdminContentCategory adminContentCategory) {
+    public R<Boolean> add(@RequestBody ContentCategory adminContentCategory) {
         adminContentCategory.setUpdateTime(LocalDateTime.now());
         adminContentCategory.setCreatedTime(LocalDateTime.now());
         return R.success(adminContentCategoryService.save(adminContentCategory));
@@ -101,7 +101,7 @@ public class AdminContentCategoryController {
      */
     @PutMapping
     @Node(value = "adminContentCategory::edit", name = "内容分类修改")
-    public R<Boolean> edit(@RequestBody AdminContentCategory adminContentCategory) {
+    public R<Boolean> edit(@RequestBody ContentCategory adminContentCategory) {
         adminContentCategory.setUpdateTime(LocalDateTime.now());
         return R.success(adminContentCategoryService.updateById(adminContentCategory));
     }
@@ -117,16 +117,16 @@ public class AdminContentCategoryController {
 
     @GetMapping("")
     @Node(value = "adminContentCategory::details", name = "内容分类详情")
-    public R<AdminContentCategory> details(Long id) {
+    public R<ContentCategory> details(Long id) {
         return R.success(adminContentCategoryService.getById(id));
     }
 
     @GetMapping("/tree")
     public R<List<TreeContentCategoryVo>> tree() {
-        List<AdminContentCategory> originList = adminContentCategoryService.list();
+        List<ContentCategory> originList = adminContentCategoryService.list();
         //对象复制
         ArrayList<TreeContentCategoryVo> list = new ArrayList<>();
-        for (AdminContentCategory adminContentCategory: originList) {
+        for (ContentCategory adminContentCategory: originList) {
             TreeContentCategoryVo treeContentCategoryVo = new TreeContentCategoryVo();
             treeContentCategoryVo.setKey(adminContentCategory.getId());
             treeContentCategoryVo.setValue(adminContentCategory.getId());
@@ -160,8 +160,8 @@ public class AdminContentCategoryController {
 
     @GetMapping("/options")
     public R<Map<Long, String>> getOptions() {
-        LambdaQueryWrapper<AdminContentCategory> lqw = new LambdaQueryWrapper<AdminContentCategory>();
-        Map<Long, String> map = adminContentCategoryService.list(lqw).stream().collect(Collectors.toMap(AdminContentCategory::getId, AdminContentCategory::getName));
+        LambdaQueryWrapper<ContentCategory> lqw = new LambdaQueryWrapper<ContentCategory>();
+        Map<Long, String> map = adminContentCategoryService.list(lqw).stream().collect(Collectors.toMap(ContentCategory::getId, ContentCategory::getName));
         return R.success(map);
     }
 }

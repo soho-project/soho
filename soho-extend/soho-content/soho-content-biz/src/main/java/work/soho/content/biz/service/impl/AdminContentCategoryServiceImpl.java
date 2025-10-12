@@ -3,7 +3,7 @@ package work.soho.content.biz.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
 import org.springframework.stereotype.Service;
-import work.soho.content.biz.domain.AdminContentCategory;
+import work.soho.content.biz.domain.ContentCategory;
 import work.soho.content.biz.mapper.AdminContentCategoryMapper;
 import work.soho.content.biz.service.AdminContentCategoryService;
 
@@ -16,11 +16,11 @@ import java.util.List;
 * @createDate 2022-09-03 01:14:08
 */
 @Service
-public class AdminContentCategoryServiceImpl extends ServiceImpl<AdminContentCategoryMapper, AdminContentCategory>
+public class AdminContentCategoryServiceImpl extends ServiceImpl<AdminContentCategoryMapper, ContentCategory>
     implements AdminContentCategoryService {
-    public List<AdminContentCategory> getCategorysBySonId(Long id) {
-        LinkedList<AdminContentCategory> list = new LinkedList<>();
-        AdminContentCategory adminContentCategory = null;
+    public List<ContentCategory> getCategorysBySonId(Long id) {
+        LinkedList<ContentCategory> list = new LinkedList<>();
+        ContentCategory adminContentCategory = null;
 
         while((adminContentCategory = getById(id)) != null) {
             list.addFirst(adminContentCategory);
