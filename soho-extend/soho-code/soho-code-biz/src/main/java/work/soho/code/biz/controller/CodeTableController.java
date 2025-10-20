@@ -502,11 +502,14 @@ public class CodeTableController {
      * @return
      */
     @GetMapping("/saveTables")
-    public R<Boolean> loadTable(String[] tableNames, String db) {
+    public R<Boolean> loadTable(@RequestParam("tableNames") String tables, @RequestParam String db) {
+        String[] tableNames = tables.split( ",");
+
         if(tableNames == null || tableNames.length == 0) {
             return R.error("请选择需要导入的表");
         }
 
+        // soho_shop.shop_freight_rule,shop_freight_template,shop_freight_calc_log
         for(int i=0; i<tableNames.length; i++) {
             CodeTableVo tableVo = dbService.getTableByName(tableNames[i], db);
 

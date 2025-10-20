@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.shop.biz.mapper.ShopProductFreightMapper">
+    <resultMap id="BaseResultMap" type="work.soho.shop.biz.domain.ShopProductFreight">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="productId" column="product_id" jdbcType="BIGINT"/>
+        <id property="templateId" column="template_id" jdbcType="BIGINT"/>
+        <id property="weight" column="weight" jdbcType="VARCHAR"/>
+        <id property="length" column="length" jdbcType="VARCHAR"/>
+        <id property="width" column="width" jdbcType="VARCHAR"/>
+        <id property="height" column="height" jdbcType="VARCHAR"/>
+        <id property="volumetricWeight" column="volumetric_weight" jdbcType="VARCHAR"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,product_id,template_id,weight,length,width,height,volumetric_weight,created_time,updated_time
+    </sql>
+</mapper>

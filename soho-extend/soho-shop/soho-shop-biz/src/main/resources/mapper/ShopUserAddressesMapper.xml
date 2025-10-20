@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.shop.biz.mapper.ShopUserAddressesMapper">
+    <resultMap id="BaseResultMap" type="work.soho.shop.biz.domain.ShopUserAddresses">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="userId" column="user_id" jdbcType="BIGINT"/>
+        <id property="recipientName" column="recipient_name" jdbcType="VARCHAR"/>
+        <id property="recipientPhone" column="recipient_phone" jdbcType="VARCHAR"/>
+        <id property="country" column="country" jdbcType="VARCHAR"/>
+        <id property="province" column="province" jdbcType="VARCHAR"/>
+        <id property="city" column="city" jdbcType="VARCHAR"/>
+        <id property="district" column="district" jdbcType="VARCHAR"/>
+        <id property="postalCode" column="postal_code" jdbcType="VARCHAR"/>
+        <id property="detailAddress" column="detail_address" jdbcType="VARCHAR"/>
+        <id property="isDefault" column="is_default" jdbcType="TINYINT"/>
+        <id property="addressTags" column="address_tags" jdbcType="VARCHAR"/>
+        <id property="latitude" column="latitude" jdbcType="VARCHAR"/>
+        <id property="longitude" column="longitude" jdbcType="VARCHAR"/>
+        <id property="createdTime" column="created_time" jdbcType="VARCHAR"/>
+        <id property="updatedTime" column="updated_time" jdbcType="VARCHAR"/>
+        <id property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,user_id,recipient_name,recipient_phone,country,province,city,district,postal_code,detail_address,is_default,address_tags,latitude,longitude,created_time,updated_time,is_deleted
+    </sql>
+</mapper>

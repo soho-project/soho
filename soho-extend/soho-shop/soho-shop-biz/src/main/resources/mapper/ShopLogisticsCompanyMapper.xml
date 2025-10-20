@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.shop.biz.mapper.ShopLogisticsCompanyMapper">
+    <resultMap id="BaseResultMap" type="work.soho.shop.biz.domain.ShopLogisticsCompany">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="companyCode" column="company_code" jdbcType="VARCHAR"/>
+        <id property="companyName" column="company_name" jdbcType="VARCHAR"/>
+        <id property="contactPhone" column="contact_phone" jdbcType="VARCHAR"/>
+        <id property="isEnabled" column="is_enabled" jdbcType="TINYINT"/>
+        <id property="volumetricRatio" column="volumetric_ratio" jdbcType="VARCHAR"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,company_code,company_name,contact_phone,is_enabled,volumetric_ratio,created_time
+    </sql>
+</mapper>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.shop.biz.mapper.ShopProductSpecValueMapper">
+    <resultMap id="BaseResultMap" type="work.soho.shop.biz.domain.ShopProductSpecValue">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="productId" column="product_id" jdbcType="INTEGER"/>
+        <id property="skuId" column="sku_id" jdbcType="INTEGER"/>
+        <id property="specId" column="spec_id" jdbcType="INTEGER"/>
+        <id property="sortOrder" column="sort_order" jdbcType="VARCHAR"/>
+        <id property="value" column="value" jdbcType="VARCHAR"/>
+        <id property="extend" column="extend" jdbcType="VARCHAR"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,product_id,sku_id,spec_id,sort_order,value,extend,updated_time,created_time
+    </sql>
+</mapper>
