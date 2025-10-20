@@ -19,7 +19,7 @@ import java.util.InvalidPropertiesFormatException;
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
 @SpringBootTest(classes = TestApp.class)
-@ActiveProfiles("local")
+@ActiveProfiles("dev")
 class GroovyServiceTest {
     @Autowired
     private GroovyService groovyService;
@@ -32,12 +32,16 @@ class GroovyServiceTest {
 
     // 表名  这个应该是固定的专门为测试定义的表 155439140
 //    private static final Integer TABLE_ID = 155439140;  // 测试用例表
-    private static final Integer TABLE_ID = 155439128;  // 内容表
+//    private static final Integer TABLE_ID = 155439128;  // 内容表
+//    private static final Integer TABLE_ID = 155439198;  // shop_coupon_usage_logs
+    private static final Integer TABLE_ID = 155439202;  // shop_coupon_usage_logs
 //    private static final Integer TABLE_ID = 155439180;  // 计划任务表
 //    private static final Integer TABLE_ID = 155439179; // 系统资源表， tree
 
+    private String moduleName = "shop";
+
     //example 分类表ID
-    private static final Integer EXAMPLE_CATEGORY_TABLE_ID = 155439141;
+//    private static final Integer EXAMPLE_CATEGORY_TABLE_ID = 155439141;
 
     // 代码临时目录
     private static final String CODE_TMP_DIR = "/home/fang/work/java/admin/soho-extend/soho-example/soho-example-biz";
@@ -49,6 +53,7 @@ class GroovyServiceTest {
             HashMap<String, String> binds = new HashMap<>();
             binds.put("baseNamespace", "work.soho.example."); //基本命名空间
             binds.put("basePath", CODE_TMP_DIR); //基本写入路径
+            binds.put("moduleName", moduleName);
 
             CodeTableVo codeTableVo = codeTableService.getTableVoById(tableId);
             if(codeTableVo == null) {

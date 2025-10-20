@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.shop.biz.mapper.ShopInfoMapper">
+    <resultMap id="BaseResultMap" type="work.soho.shop.biz.domain.ShopInfo">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="name" column="name" jdbcType="VARCHAR"/>
+        <id property="keywords" column="keywords" jdbcType="VARCHAR"/>
+        <id property="Introduction" column="Introduction" jdbcType="VARCHAR"/>
+        <id property="tel" column="tel" jdbcType="VARCHAR"/>
+        <id property="address" column="address" jdbcType="VARCHAR"/>
+        <id property="shopQualificationsImgs" column="shop_qualifications_imgs" jdbcType="VARCHAR"/>
+        <id property="userId" column="user_id" jdbcType="INTEGER"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,name,keywords,Introduction,tel,address,shop_qualifications_imgs,user_id,status,updated_time,created_time
+    </sql>
+</mapper>

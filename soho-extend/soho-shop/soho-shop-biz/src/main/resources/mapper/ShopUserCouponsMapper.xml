@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.shop.biz.mapper.ShopUserCouponsMapper">
+    <resultMap id="BaseResultMap" type="work.soho.shop.biz.domain.ShopUserCoupons">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="userId" column="user_id" jdbcType="BIGINT"/>
+        <id property="couponId" column="coupon_id" jdbcType="BIGINT"/>
+        <id property="couponCode" column="coupon_code" jdbcType="VARCHAR"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="usedTime" column="used_time" jdbcType="DATE"/>
+        <id property="orderId" column="order_id" jdbcType="BIGINT"/>
+        <id property="receivedAt" column="received_at" jdbcType="VARCHAR"/>
+        <id property="expiredAt" column="expired_at" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,user_id,coupon_id,coupon_code,status,used_time,order_id,received_at,expired_at
+    </sql>
+</mapper>

@@ -35,5 +35,6 @@
         <module>soho-temporal-db</module>
         <module>soho-diy</module>
         <module>soho-game</module>
+        <module>soho-shop</module>
     </modules>
 </project>
