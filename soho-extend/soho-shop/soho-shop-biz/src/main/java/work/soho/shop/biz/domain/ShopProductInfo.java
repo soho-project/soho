@@ -156,6 +156,6 @@ public class ShopProductInfo implements Serializable {
     @ExcelProperty("created_time")
     @ApiModelProperty(value = "created_time")
     @TableField(value = "created_time", fill = FieldFill.INSERT)
-    private Integer createdTime;
+    private LocalDateTime createdTime;
 
 }
