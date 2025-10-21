@@ -16,6 +16,7 @@ import work.soho.shop.biz.service.ShopInfoService;
 import work.soho.shop.biz.service.ShopOrderInfoService;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -101,8 +102,9 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
             shopOrderSkuList.add(shopOrderSku);
         }
 
-        //TODO 检查商品所属店铺， 店铺状态是否正常; 根据店铺进行拆单
-//        ShopInfo shopInfo = shopInfoService.getById(request.getShopId());
+        // 计算订单运费
+        BigDecimal deliveryFee = getFreightAmount(shopOrderSkuList, shopUserAddresses);
+        shopOrderInfo.setDeliveryFee(deliveryFee);
 
         // 优惠劵计算
         if(request.getCouponId() != null) {
@@ -254,7 +256,12 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
      */
     private BigDecimal getFreightAmount(List<ShopOrderSku> shopOrderSkus, ShopUserAddresses shopUserAddresses) {
         List<Long> productIds = shopOrderSkus.stream().map(shopOrderSku -> shopOrderSku.getProductId()).collect(Collectors.toList());
-        List<ShopProductFreight> shopProductFreights = shopProductFreightMapper.selectBatchIds(productIds);
+        // 对应商品的运费信息
+        List<ShopProductFreight> shopProductFreights = shopProductFreightMapper.selectList(
+                new LambdaQueryWrapper<ShopProductFreight>()
+                .in(ShopProductFreight::getProductId, productIds)
+        );
+        // 运费模板id
         List<Long> shopFreightTemplateIds = shopProductFreights.stream().map(shopProductFreight -> shopProductFreight.getTemplateId()).collect(Collectors.toList());
         // 获取模板信息
         List<ShopFreightTemplate> shopFreightTemplates = shopFreightTemplateMapper.selectBatchIds(shopFreightTemplateIds);
@@ -333,7 +340,7 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
                 // 按体积
                 value = templateOrderSkus.stream().map(shopOrderSku ->{
                     ShopProductFreight shopProductFreight = templateProductFreightMap.get(shopOrderSku.getProductId());
-                    return shopProductFreight.getWeight().multiply(shopProductFreight.getLength()).multiply(shopProductFreight.getHeight()).multiply(BigDecimal.valueOf(shopOrderSku.getQty()));
+                    return shopProductFreight.getWidth().multiply(shopProductFreight.getLength()).multiply(shopProductFreight.getHeight()).multiply(BigDecimal.valueOf(shopOrderSku.getQty()));
                 }).reduce(BigDecimal.ZERO, BigDecimal::add);
             } else if (shopFreightTemplate.getType() == ShopFreightTemplateEnums.Type.FLAT_SHIPPING_RATE.getId()) {
                 // 固定运费;  直接加上一个固定值无须继续计算了
@@ -347,7 +354,8 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
                 freightAmount = freightAmount.add(currentShopFreightRule.getFirstUnitPrice());
                 value = value.subtract(currentShopFreightRule.getFirstUnit());
             }
-            int number = value.divide(currentShopFreightRule.getContinueUnit(), BigDecimal.ROUND_UP).intValue();
+
+            int number = (int)Math.ceil(value.divide(currentShopFreightRule.getContinueUnit(), RoundingMode.UP).doubleValue());
             freightAmount = freightAmount.add(currentShopFreightRule.getContinueUnitPrice().multiply(new BigDecimal(number)));
 
         }

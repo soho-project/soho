@@ -1,5 +1,6 @@
 package work.soho.shop.biz.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,13 +8,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
+import work.soho.common.core.util.BeanUtils;
 import work.soho.shop.api.request.OrderCreateRequest;
 import work.soho.shop.api.vo.ProductSkuVo;
+import work.soho.shop.biz.domain.ShopOrderInfo;
+import work.soho.shop.biz.domain.ShopProductFreight;
 import work.soho.test.TestApp;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
@@ -25,6 +31,9 @@ class ShopOrderInfoServiceTest {
 
     @Autowired
     private ShopOrderInfoService shopOrderInfoService;
+
+    @Autowired
+    private ShopProductFreightService shopProductFreightService;
 
     @Test
     void createOrder() {
@@ -50,9 +59,89 @@ class ShopOrderInfoServiceTest {
         product.setQty(2);
         product.setTotalAmount(BigDecimal.valueOf(100.00));
         products.add(product);
-
         request.setProducts(products);
 
-        shopOrderInfoService.createOrder( request);
+
+
+        ShopProductFreight productFreight = shopProductFreightService.getOne(new LambdaQueryWrapper<ShopProductFreight>()
+                .eq(ShopProductFreight::getProductId, product.getProductId())
+        );
+
+        ShopProductFreight changeProductFreight = null;
+        ShopOrderInfo order = null;
+
+//        // 按重量不续重测试
+//        changeProductFreight = BeanUtils.copy(productFreight, ShopProductFreight.class);
+//        changeProductFreight.setWeight(new BigDecimal("1.000"))
+//                .setLength(new BigDecimal("1.000"))
+//                .setWidth(new BigDecimal("1.000"))
+//                .setHeight(new BigDecimal("1.000"))
+//                .setVolumetricWeight(new BigDecimal("1.000"))
+//                .setTemplateId(2L)  // 按重量计算运费
+//        ;
+//        shopProductFreightService.updateById(changeProductFreight);
+//        order = shopOrderInfoService.createOrder( request);
+//        assertTrue(new BigDecimal("1.00").compareTo(order.getDeliveryFee()) == 0);
+//
+//
+//        // 测试免运费
+//        changeProductFreight = BeanUtils.copy(productFreight, ShopProductFreight.class);
+//        changeProductFreight.setWeight(new BigDecimal("1.000"))
+//                .setLength(new BigDecimal("1.000"))
+//                .setWidth(new BigDecimal("1.000"))
+//                .setHeight(new BigDecimal("1.000"))
+//                .setVolumetricWeight(new BigDecimal("1.000"))
+//                .setTemplateId(1L)  // 按重量计算运费
+//        ;
+//        shopProductFreightService.updateById(changeProductFreight);
+//        order = shopOrderInfoService.createOrder( request);
+//        assertTrue(new BigDecimal("0.00").compareTo(order.getDeliveryFee()) == 0);
+
+
+//        // 按重量计算运费 续费测试
+//        changeProductFreight = BeanUtils.copy(productFreight, ShopProductFreight.class);
+//        changeProductFreight.setWeight(new BigDecimal("8.000"))
+//                .setLength(new BigDecimal("1.000"))
+//                .setWidth(new BigDecimal("1.000"))
+//                .setHeight(new BigDecimal("1.000"))
+//                .setVolumetricWeight(new BigDecimal("1.000"))
+//                .setTemplateId(2L)  // 按重量计算运费
+//        ;
+//        shopProductFreightService.updateById(changeProductFreight);
+//
+//        order = shopOrderInfoService.createOrder( request);
+//        assertTrue(new BigDecimal("10.00").compareTo(order.getDeliveryFee()) == 0);
+
+
+        // 按体积计算
+//        changeProductFreight = BeanUtils.copy(productFreight, ShopProductFreight.class);
+//        changeProductFreight.setWeight(new BigDecimal("8.000"))
+//                .setLength(new BigDecimal("1.000"))
+//                .setWidth(new BigDecimal("1.000"))
+//                .setHeight(new BigDecimal("8.000"))
+//                .setVolumetricWeight(new BigDecimal("1.000"))
+//                .setTemplateId(3L)  // 按重量计算运费
+//        ;
+//        shopProductFreightService.updateById(changeProductFreight);
+//        order = shopOrderInfoService.createOrder( request);
+//        assertTrue(new BigDecimal("14.00").compareTo(order.getDeliveryFee()) == 0);
+
+
+        // 按照商品数量计数
+        changeProductFreight = BeanUtils.copy(productFreight, ShopProductFreight.class);
+        changeProductFreight.setWeight(new BigDecimal("8.000"))
+                .setLength(new BigDecimal("1.000"))
+                .setWidth(new BigDecimal("1.000"))
+                .setHeight(new BigDecimal("8.000"))
+                .setVolumetricWeight(new BigDecimal("1.000"))
+                .setTemplateId(4L)  // 按重量计算运费
+        ;
+        shopProductFreightService.updateById(changeProductFreight);
+        order = shopOrderInfoService.createOrder( request);
+        assertTrue(new BigDecimal("5.00").compareTo(order.getDeliveryFee()) == 0);
+
+
+        // 恢复测试影响
+        shopProductFreightService.updateById(productFreight);
     }
 }
