@@ -213,12 +213,16 @@ public class CodeTableController {
             if(codeTable == null) {
                 return R.error("表不存在， 请检查");
             }
-            if(drop) {
+
+            // 检查表是否存在
+            Boolean isExistsTable = dbService.isExistsTable(codeTable.getName(), codeTable.getDbSource());
+
+            if(isExistsTable && drop) {
                 dbService.dropTable(codeTable.getName(), codeTable.getDbSource());
             }
             if(isDiff !=null && isDiff) {
                 //查询远程数据结构
-                CodeTableVo remoteCodeTable = dbService.getTableByName(codeTable.getName());
+                CodeTableVo remoteCodeTable = dbService.getTableByName(codeTable.getName(), codeTable.getDbSource());
                 log.info(codeTable.toDiffSql(remoteCodeTable));
                 dbService.execute(codeTable.toDiffSql(remoteCodeTable), codeTable.getDbSource());
             } else {
