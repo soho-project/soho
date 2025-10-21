@@ -37,6 +37,7 @@ public class ShopFreightTemplateEnums {
     @RequiredArgsConstructor
     @Getter
     public enum FreeConditionType {
+        BY_NO(0,"无条件"),
         BY_AMOUNT(1,"按金额"),
         BY_QUANTITY(2,"按件数"),
         BY_WEIGHT(3,"按重量");

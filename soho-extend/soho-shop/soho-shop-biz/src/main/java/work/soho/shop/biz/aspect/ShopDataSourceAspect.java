@@ -2,10 +2,9 @@ package work.soho.shop.biz.aspect;
 
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.After;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -17,24 +16,16 @@ public class ShopDataSourceAspect {
     private static final String READ_DB_NAME = "shop"; // 读数据源
     private static final String WRITE_DB_NAME = "shop";  // 写数据源
 
-    /**
-     * 定义切入点：work.soho.shop.biz.mapper 包下的所有 Mapper 类的方法
-     */
-    @Pointcut("execution(* work.soho.shop.biz.service.*.*(..))")
-    public void mapperPointcut() {}
-
-    @Before("mapperPointcut()")
-    public void beforeMapperMethod(JoinPoint joinPoint) {
-        System.out.println("ShopDataSourceAspect.beforeMapperMethod");
-        String dataSource = determineDataSource(joinPoint);
-        // 设置当前数据源到上下文
-        DynamicDataSourceContextHolder.push(dataSource);
-    }
-
-    @After("mapperPointcut()")
-    public void afterMapperMethod(JoinPoint joinPoint) {
-        // 清理数据源上下文
-        DynamicDataSourceContextHolder.poll();
+    @Around("execution(* work.soho.shop.biz.mapper..*(..)) || execution(* work.soho.shop.biz.service..*(..))")
+    public Object dbAround(ProceedingJoinPoint joinPoint) throws Throwable {
+        try {
+            DynamicDataSourceContextHolder.push(determineDataSource(joinPoint));
+            return joinPoint.proceed();
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
     }
 
     /**
