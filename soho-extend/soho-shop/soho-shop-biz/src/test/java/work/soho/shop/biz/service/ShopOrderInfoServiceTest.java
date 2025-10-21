@@ -32,7 +32,7 @@ class ShopOrderInfoServiceTest {
         OrderCreateRequest request = new OrderCreateRequest();
         request.setUserId(1);
         request.setUserAddressId(1);
-        request.setCouponId(1L);
+        request.setCouponId(null);
         request.setRemark("备注");
         request.setType(1);
         request.setSource(1);
@@ -42,7 +42,7 @@ class ShopOrderInfoServiceTest {
         // 添加商品
         List<ProductSkuVo> products = new ArrayList<>();
         ProductSkuVo product = new ProductSkuVo();
-        product.setProductId(1);
+        product.setProductId(1L);
         product.setSkuId(7);
         product.setName("商品1");
         product.setMainImage("https://www.baidu.com");

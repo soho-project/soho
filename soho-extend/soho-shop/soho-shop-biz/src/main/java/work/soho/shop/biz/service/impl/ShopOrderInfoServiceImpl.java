@@ -10,19 +10,14 @@ import work.soho.common.core.util.StringUtils;
 import work.soho.shop.api.request.OrderCreateRequest;
 import work.soho.shop.api.vo.ProductSkuVo;
 import work.soho.shop.biz.domain.*;
-import work.soho.shop.biz.enums.ShopCouponApplyRangesEnums;
-import work.soho.shop.biz.enums.ShopCouponsEnums;
-import work.soho.shop.biz.enums.ShopOrderInfoEnums;
-import work.soho.shop.biz.enums.ShopUserCouponsEnums;
+import work.soho.shop.biz.enums.*;
 import work.soho.shop.biz.mapper.*;
 import work.soho.shop.biz.service.ShopInfoService;
 import work.soho.shop.biz.service.ShopOrderInfoService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -38,6 +33,9 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
     private final ShopUserCouponsMapper shopUserCouponsMapper;
     private final ShopCouponApplyRangesMapper shopCouponApplyRangesMapper;
     private final ShopInfoService shopInfoService;
+    private final ShopProductFreightMapper shopProductFreightMapper;
+    private final ShopFreightTemplateMapper shopFreightTemplateMapper;
+    private final ShopFreightRuleMapper shopFreightRuleMapper;
 
     @Override
     public ShopOrderInfo createOrder(OrderCreateRequest request) {
@@ -101,17 +99,19 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
             orderProductTotalAmount = orderProductTotalAmount.add(shopOrderSku.getTotalAmount());
 
             shopOrderSkuList.add(shopOrderSku);
-
         }
 
         //TODO 检查商品所属店铺， 店铺状态是否正常; 根据店铺进行拆单
 //        ShopInfo shopInfo = shopInfoService.getById(request.getShopId());
 
         // 优惠劵计算
-        ShopCouponUsageLogs shopCouponUsageLogs = createCouponUsageLogs(request);
-        if(shopCouponUsageLogs != null) {
-            shopOrderInfo.setDiscountAmount(shopCouponUsageLogs.getDiscountAmount());
+        if(request.getCouponId() != null) {
+            ShopCouponUsageLogs shopCouponUsageLogs = createCouponUsageLogs(request);
+            if(shopCouponUsageLogs != null) {
+                shopOrderInfo.setDiscountAmount(shopCouponUsageLogs.getDiscountAmount());
+            }
         }
+
 
         // 保存订单信息
         shopOrderInfo.setProductTotalAmount(orderProductTotalAmount);
@@ -244,5 +244,114 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
                 .setUsedAt(LocalDateTime.now());
 
         return shopCouponUsageLogs;
+    }
+
+    /**
+     * 获取运费金额
+     *
+     * @param shopOrderSkus
+     * @return
+     */
+    private BigDecimal getFreightAmount(List<ShopOrderSku> shopOrderSkus, ShopUserAddresses shopUserAddresses) {
+        List<Long> productIds = shopOrderSkus.stream().map(shopOrderSku -> shopOrderSku.getProductId()).collect(Collectors.toList());
+        List<ShopProductFreight> shopProductFreights = shopProductFreightMapper.selectBatchIds(productIds);
+        List<Long> shopFreightTemplateIds = shopProductFreights.stream().map(shopProductFreight -> shopProductFreight.getTemplateId()).collect(Collectors.toList());
+        // 获取模板信息
+        List<ShopFreightTemplate> shopFreightTemplates = shopFreightTemplateMapper.selectBatchIds(shopFreightTemplateIds);
+        Map<Long, ShopFreightTemplate> shopFreightTemplateMap = shopFreightTemplates.stream().collect(Collectors.toMap(ShopFreightTemplate::getId, shopFreightTemplate -> shopFreightTemplate));
+        // 分模板计算运费
+        Map<Long, List<ShopProductFreight>> shopProductFreightMap = shopProductFreights.stream().collect(Collectors.groupingBy(ShopProductFreight::getTemplateId));
+
+        BigDecimal freightAmount = BigDecimal.ZERO;
+
+        for(Long shopFreightTemplateId : shopProductFreightMap.keySet()) {
+            List<ShopProductFreight> productFreights = shopProductFreightMap.get(shopFreightTemplateId);
+            ShopFreightTemplate shopFreightTemplate = shopFreightTemplateMap.get(shopFreightTemplateId);
+            List<Long> templateProductIds = productFreights.stream().map(productFreight -> productFreight.getProductId()).collect(Collectors.toList());
+            List<ShopOrderSku> templateOrderSkus = shopOrderSkus.stream().filter(shopOrderSku -> templateProductIds.contains(shopOrderSku.getProductId())).collect(Collectors.toList());
+            Map<Long, ShopProductFreight> templateProductFreightMap = productFreights.stream().collect(Collectors.toMap(ShopProductFreight::getProductId, shopProductFreight -> shopProductFreight));
+
+            // 检查商品是否符合免运费条件; 如果符合免运费条件直接跳过
+            if(shopFreightTemplate.getIsFreeShipping() == ShopFreightTemplateEnums.IsFreeShipping.YES.getId()) {
+                // 检查免运费条件
+                if(shopFreightTemplate.getFreeConditionType() == ShopFreightTemplateEnums.FreeConditionType.BY_NO.getId()) {
+                    continue;
+                } else if(shopFreightTemplate.getFreeConditionType() == ShopFreightTemplateEnums.FreeConditionType.BY_AMOUNT.getId()) {
+                    // 按照商品金额免运费
+                    // 获取该模板下商品的金额
+                    BigDecimal productAmount = templateOrderSkus.stream()
+                            .map(shopOrderSku -> shopOrderSku.getTotalAmount()).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    if(productAmount.compareTo(shopFreightTemplate.getFreeConditionValue()) >= 0) {
+                        // 符合免邮条件
+                        continue;
+                    }
+                } else if(shopFreightTemplate.getFreeConditionType() == ShopFreightTemplateEnums.FreeConditionType.BY_QUANTITY.getId()) {
+                    // 按照件数免运费
+                    // 获取该运费模板下面的商品数量
+                    int productQuantity = templateOrderSkus.stream().map(shopOrderSku -> shopOrderSku.getQty()).reduce(0, Integer::sum);
+                    if(BigDecimal.valueOf(productQuantity).compareTo(shopFreightTemplate.getFreeConditionValue())>=0) {
+                        // 符合免邮条件
+                        continue;
+                    }
+                } else if(shopFreightTemplate.getFreeConditionType() == ShopFreightTemplateEnums.FreeConditionType.BY_WEIGHT.getId()) {
+                    // 按照重量免运费
+                    BigDecimal productWeight = templateOrderSkus.stream().map(shopOrderSku ->
+                            templateProductFreightMap.get(shopOrderSku.getProductId()).getWeight().multiply(BigDecimal.valueOf(shopOrderSku.getQty()))
+                    ).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    if(productWeight.compareTo(shopFreightTemplate.getFreeConditionValue())>=0) {
+                        // 符合免邮条件
+                        continue;
+                    }
+                }
+            }
+
+            // 获取运费模板规则
+            List<ShopFreightRule> shopFreightRules = shopFreightRuleMapper.selectList(new LambdaQueryWrapper<ShopFreightRule>().eq(ShopFreightRule::getTemplateId, shopFreightTemplateId));
+            // 查找默认货运规则
+            ShopFreightRule defaultShopFreightRule = shopFreightRules.stream().filter(shopFreightRule -> shopFreightRule.getIsDefault() == 1).findFirst().orElse(null);
+            // 根据地区码匹配运费规则
+            ShopFreightRule currentShopFreightRule = shopFreightRules.stream().filter(shopFreightRule -> {
+                List<String> areaCodes = Arrays.stream(shopFreightRule.getRegionCodes().split(",")).collect(Collectors.toList());
+                return areaCodes.contains(shopUserAddresses.getDistrict());
+            }).findFirst().orElse(defaultShopFreightRule);
+
+            Assert.notNull(currentShopFreightRule, "没有匹配的运费规则");
+
+
+            // 获取运费计算值
+            BigDecimal value = BigDecimal.ZERO;
+
+            if(shopFreightTemplate.getType() == ShopFreightTemplateEnums.Type.BY_QUANTITY.getId()) {
+                // 按数量
+                value = BigDecimal.valueOf(templateOrderSkus.stream().map(shopOrderSku -> shopOrderSku.getQty()).reduce(0, Integer::sum));
+            } else if(shopFreightTemplate.getType() == ShopFreightTemplateEnums.Type.BY_WEIGHT.getId()) {
+                // 按照重量计算
+                value = templateOrderSkus.stream().map(shopOrderSku ->
+                        templateProductFreightMap.get(shopOrderSku.getProductId()).getWeight().multiply(BigDecimal.valueOf(shopOrderSku.getQty()))
+                ).reduce(BigDecimal.ZERO, BigDecimal::add);
+            } else if (shopFreightTemplate.getType() == ShopFreightTemplateEnums.Type.BY_VOLUME.getId()) {
+                // 按体积
+                value = templateOrderSkus.stream().map(shopOrderSku ->{
+                    ShopProductFreight shopProductFreight = templateProductFreightMap.get(shopOrderSku.getProductId());
+                    return shopProductFreight.getWeight().multiply(shopProductFreight.getLength()).multiply(shopProductFreight.getHeight()).multiply(BigDecimal.valueOf(shopOrderSku.getQty()));
+                }).reduce(BigDecimal.ZERO, BigDecimal::add);
+            } else if (shopFreightTemplate.getType() == ShopFreightTemplateEnums.Type.FLAT_SHIPPING_RATE.getId()) {
+                // 固定运费;  直接加上一个固定值无须继续计算了
+                // nothing
+                freightAmount = freightAmount.add(currentShopFreightRule.getFirstUnitPrice());
+                continue;
+            }
+
+            // 计算运费
+            if(value.compareTo(currentShopFreightRule.getFirstUnit())>=0) {
+                freightAmount = freightAmount.add(currentShopFreightRule.getFirstUnitPrice());
+                value = value.subtract(currentShopFreightRule.getFirstUnit());
+            }
+            int number = value.divide(currentShopFreightRule.getContinueUnit(), BigDecimal.ROUND_UP).intValue();
+            freightAmount = freightAmount.add(currentShopFreightRule.getContinueUnitPrice().multiply(new BigDecimal(number)));
+
+        }
+
+        return freightAmount;
     }
 }
