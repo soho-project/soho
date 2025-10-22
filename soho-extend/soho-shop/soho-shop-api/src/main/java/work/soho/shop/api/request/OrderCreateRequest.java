@@ -27,7 +27,7 @@ public class OrderCreateRequest {
     /**
      * 优惠券ID
      */
-    private Long couponId;
+    private Long userCouponId;
 
     /**
      * 订单备注
