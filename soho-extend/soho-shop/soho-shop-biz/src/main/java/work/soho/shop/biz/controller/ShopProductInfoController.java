@@ -13,6 +13,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
+import work.soho.admin.api.vo.OptionVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
@@ -328,6 +329,31 @@ public class ShopProductInfoController {
     @Node(value = "shopProductInfo::remove", name = "删除 商品信息")
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(shopProductInfoService.removeByIds(Arrays.asList(ids)));
+    }
+
+    /**
+     * 获取该商品信息 选项
+     *
+     * @return
+     */
+    @GetMapping("options")
+    @Node(value = "shopProductInfo::options", name = "获取 商品信息 选项")
+    public R<List<OptionVo<Long, String>>> options(ShopProductInfo shopProductInfo) {
+        LambdaQueryWrapper<ShopProductInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(shopProductInfo.getShopId() != null,ShopProductInfo::getShopId, shopProductInfo.getShopId());
+        queryWrapper.like(StringUtils.isNotBlank(shopProductInfo.getName()), ShopProductInfo::getName, shopProductInfo.getName());
+        queryWrapper.like(StringUtils.isNotBlank(shopProductInfo.getSpuCode()), ShopProductInfo::getSpuCode, shopProductInfo.getSpuCode());
+
+        List<ShopProductInfo> list = shopProductInfoService.list(queryWrapper);
+        List<OptionVo<Long, String>> options = new ArrayList<>();
+
+        for(ShopProductInfo item: list) {
+            OptionVo<Long, String> optionVo = new OptionVo<>();
+            optionVo.setValue(item.getId());
+            optionVo.setLabel(item.getSpuCode());
+            options.add(optionVo);
+        }
+        return R.success(options);
     }
 
     /**

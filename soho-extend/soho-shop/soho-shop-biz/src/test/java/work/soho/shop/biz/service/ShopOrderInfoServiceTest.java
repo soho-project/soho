@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
@@ -41,7 +41,7 @@ class ShopOrderInfoServiceTest {
         OrderCreateRequest request = new OrderCreateRequest();
         request.setUserId(1);
         request.setUserAddressId(1);
-        request.setCouponId(null);
+        request.setUserCouponId(null);
         request.setRemark("备注");
         request.setType(1);
         request.setSource(1);
@@ -127,7 +127,22 @@ class ShopOrderInfoServiceTest {
 //        assertTrue(new BigDecimal("14.00").compareTo(order.getDeliveryFee()) == 0);
 
 
-        // 按照商品数量计数
+//        // 按照商品数量计数
+//        changeProductFreight = BeanUtils.copy(productFreight, ShopProductFreight.class);
+//        changeProductFreight.setWeight(new BigDecimal("8.000"))
+//                .setLength(new BigDecimal("1.000"))
+//                .setWidth(new BigDecimal("1.000"))
+//                .setHeight(new BigDecimal("8.000"))
+//                .setVolumetricWeight(new BigDecimal("1.000"))
+//                .setTemplateId(4L)  // 按重量计算运费
+//        ;
+//        shopProductFreightService.updateById(changeProductFreight);
+//        order = shopOrderInfoService.createOrder( request);
+//        assertTrue(new BigDecimal("5.00").compareTo(order.getDeliveryFee()) == 0);
+
+
+        // 测试订单优惠劵功能
+        request.setUserCouponId(1L);
         changeProductFreight = BeanUtils.copy(productFreight, ShopProductFreight.class);
         changeProductFreight.setWeight(new BigDecimal("8.000"))
                 .setLength(new BigDecimal("1.000"))
@@ -139,6 +154,7 @@ class ShopOrderInfoServiceTest {
         shopProductFreightService.updateById(changeProductFreight);
         order = shopOrderInfoService.createOrder( request);
         assertTrue(new BigDecimal("5.00").compareTo(order.getDeliveryFee()) == 0);
+
 
 
         // 恢复测试影响

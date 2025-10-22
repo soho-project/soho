@@ -67,7 +67,6 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
         );
         shopOrderInfo.setConsignee(shopUserAddresses.getRecipientName());
         shopOrderInfo.setReceivingPhoneNumber(shopUserAddresses.getRecipientPhone());
-        Integer orderId = 1;
 
         BigDecimal orderProductTotalAmount = BigDecimal.ZERO;
         List<ShopOrderSku> shopOrderSkuList = new ArrayList<>();
@@ -83,7 +82,6 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
 
             // 插入订单商品信息
             ShopOrderSku shopOrderSku = new ShopOrderSku()
-                    .setOrderId(orderId)
                     .setProductId(productInfo.getId())
                     .setSkuId(product.getSkuId())
                     .setName(product.getName())
@@ -107,7 +105,7 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
         shopOrderInfo.setDeliveryFee(deliveryFee);
 
         // 优惠劵计算
-        if(request.getCouponId() != null) {
+        if(request.getUserCouponId() != null) {
             ShopCouponUsageLogs shopCouponUsageLogs = createCouponUsageLogs(request);
             if(shopCouponUsageLogs != null) {
                 shopOrderInfo.setDiscountAmount(shopCouponUsageLogs.getDiscountAmount());
@@ -153,23 +151,18 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
      * @return
      */
     private ShopCouponUsageLogs createCouponUsageLogs(OrderCreateRequest request) {
+        ShopUserCoupons shopUserCoupons = shopUserCouponsMapper.selectById(request.getUserCouponId());
+        Assert.notNull(shopUserCoupons, "优惠劵不存在或者已经过期");
+
         // 查找优惠劵相关信息
-        ShopCoupons shopCoupons = shopCouponsMapper.selectById(request.getCouponId());
+        ShopCoupons shopCoupons = shopCouponsMapper.selectById(shopUserCoupons.getCouponId());
         Assert.notNull(shopCoupons, "优惠劵不存在");
         Assert.equals(shopCoupons.getStatus(), ShopCouponsEnums.Status.ENABLE.getId(), "优惠劵已禁用");
-        // 检查当前下单用户是否有优惠劵; expired_at > now()
-        ShopUserCoupons shopUserCoupons = shopUserCouponsMapper.selectOne(
-                new LambdaQueryWrapper<ShopUserCoupons>()
-                        .eq(ShopUserCoupons::getUserId, request.getUserId())
-                        .eq(ShopUserCoupons::getCouponId, request.getCouponId())
-                        .eq(ShopUserCoupons::getStatus, ShopUserCouponsEnums.Status.UNUSED.getId())
-                .and(wrapper -> wrapper.gt(ShopUserCoupons::getExpiredAt, LocalDateTime.now()))
-        );
-        Assert.notNull(shopUserCoupons, "优惠劵不存在或者已经过期");
+
         // 获取优惠券限制条件
         List<ShopCouponApplyRanges> shopCouponApplyRangesList = shopCouponApplyRangesMapper.selectList(
                 new LambdaQueryWrapper<ShopCouponApplyRanges>()
-                        .eq(ShopCouponApplyRanges::getCouponId, request.getCouponId())
+                        .eq(ShopCouponApplyRanges::getCouponId, shopCoupons.getId())
         );
         // 获取符合条件的分类ID
         HashSet<Long> couponApplyCategoryIds = (HashSet<Long>) shopCouponApplyRangesList.stream().filter(
@@ -239,7 +232,7 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
         // 创建优惠劵使用记录
         ShopCouponUsageLogs shopCouponUsageLogs = new ShopCouponUsageLogs();
         shopCouponUsageLogs.setUserId(Long.valueOf(request.getUserId()))
-                .setCouponId(Long.valueOf(request.getCouponId()))
+                .setCouponId(shopCoupons.getId())
 //                .setOrderId(shopOrderInfo.getId())
                 .setOrderAmount(couponProductTotalAmount)
                 .setDiscountAmount(discountAmount)

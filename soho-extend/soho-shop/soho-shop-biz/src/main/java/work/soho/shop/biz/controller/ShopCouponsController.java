@@ -12,16 +12,26 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.admin.api.service.AdminDictApiService;
+import work.soho.admin.api.vo.OptionVo;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.BeanUtils;
+import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.excel.annotation.ExcelExport;
 import work.soho.common.security.annotation.Node;
+import work.soho.shop.api.vo.CouponsVo;
+import work.soho.shop.biz.annotation.ShopDB;
+import work.soho.shop.biz.domain.ShopCouponApplyRanges;
 import work.soho.shop.biz.domain.ShopCoupons;
+import work.soho.shop.biz.service.ShopCouponApplyRangesService;
 import work.soho.shop.biz.service.ShopCouponsService;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * 优惠券主表Controller
  *
@@ -35,6 +45,7 @@ import java.util.List;
 public class ShopCouponsController {
 
     private final ShopCouponsService shopCouponsService;
+    private final ShopCouponApplyRangesService shopCouponApplyRangesService;
     private final AdminDictApiService adminDictApiService;
 
     /**
@@ -80,6 +91,55 @@ public class ShopCouponsController {
     }
 
     /**
+     * 获取优惠券主表详细信息
+     */
+    @GetMapping(value = "/details/{id}" )
+    @Node(value = "shopCoupons::getDetailsInfo", name = "获取 优惠券主表 详细信息")
+    public R<CouponsVo> getDetailsInfo(@PathVariable("id" ) Long id) {
+        ShopCoupons shopCoupons = shopCouponsService.getById(id);
+        CouponsVo couponsVo = BeanUtils.copy(shopCoupons, CouponsVo.class);
+
+        // 查询匹配规则
+        List<CouponsVo.CouponApplyScope> couponApplyScopes = shopCouponApplyRangesService.list(new LambdaQueryWrapper<ShopCouponApplyRanges>()
+                .eq(ShopCouponApplyRanges::getCouponId, id)
+        ).stream().map(item -> {
+            return BeanUtils.copy(item, CouponsVo.CouponApplyScope.class);
+        }).collect(Collectors.toList());
+
+        couponsVo.setRanges(couponApplyScopes);
+
+        return R.success(couponsVo);
+    }
+
+    /**
+     * 保存优惠券主表
+     */
+    @ShopDB
+    @PostMapping("/save")
+    @Node(value = "shopCoupons::save", name = "保存 优惠券主表")
+    public R<Boolean> save(@RequestBody CouponsVo couponsVo) {
+        ShopCoupons shopCoupons = BeanUtils.copy(couponsVo, ShopCoupons.class);
+        if(StringUtils.isBlank(shopCoupons.getCode())) {
+            shopCoupons.setCode(IDGeneratorUtils.snowflake().toString());
+        }
+        shopCouponsService.saveOrUpdate(shopCoupons);
+
+        // 删除原有规则
+        if(couponsVo.getId() != null) {
+            shopCouponApplyRangesService.remove(new LambdaQueryWrapper<ShopCouponApplyRanges>().eq(ShopCouponApplyRanges::getCouponId, couponsVo.getId()));
+        }
+
+        couponsVo.getRanges().forEach(range->{
+            ShopCouponApplyRanges shopCouponsApplyScope = BeanUtils.copy(range, ShopCouponApplyRanges.class);
+            shopCouponsApplyScope.setCouponId(shopCoupons.getId());
+            shopCouponsApplyScope.setShopId(shopCoupons.getShopId());
+            shopCouponApplyRangesService.save(shopCouponsApplyScope);
+        });
+
+        return R.success();
+    }
+
+    /**
      * 新增优惠券主表
      */
     @PostMapping
@@ -104,6 +164,26 @@ public class ShopCouponsController {
     @Node(value = "shopCoupons::remove", name = "删除 优惠券主表")
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(shopCouponsService.removeByIds(Arrays.asList(ids)));
+    }
+
+    /**
+     * 获取该优惠券主表 选项
+     *
+     * @return
+     */
+    @GetMapping("options")
+    @Node(value = "shopCoupons::options", name = "获取 优惠券主表 选项")
+    public R<List<OptionVo<Long, String>>> options() {
+        List<ShopCoupons> list = shopCouponsService.list();
+        List<OptionVo<Long, String>> options = new ArrayList<>();
+
+        for(ShopCoupons item: list) {
+            OptionVo<Long, String> optionVo = new OptionVo<>();
+            optionVo.setValue(item.getId());
+            optionVo.setLabel(item.getName());
+            options.add(optionVo);
+        }
+        return R.success(options);
     }
 
     /**
