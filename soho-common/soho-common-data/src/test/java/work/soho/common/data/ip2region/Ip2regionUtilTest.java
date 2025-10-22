@@ -10,8 +10,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.web.WebAppConfiguration;
 import work.soho.common.TestCommonApplication;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
 @TestPropertySource(locations="classpath:/application.yml")
@@ -50,5 +48,20 @@ class Ip2regionUtilTest {
         Assert.assertTrue("".equals(regionInfo.getProvince()));
         Assert.assertTrue("内网IP".equals(regionInfo.getCity()));
         Assert.assertTrue("内网IP".equals(regionInfo.getIsp()));
+
+        regionInfo =  Ip2regionUtil.getRegionInfoByIp("240e:385:489:f300:e4bf:3e8a:ae1d:2f92");
+        System.out.println(regionInfo);
+        Assert.assertTrue("中国".equals(regionInfo.getCountry()));
+        Assert.assertTrue("北京市".equals(regionInfo.getProvince()));
+        Assert.assertTrue("北京市".equals(regionInfo.getCity()));
+        Assert.assertTrue("家庭宽带".equals(regionInfo.getIsp()));
+
+
+        regionInfo =  Ip2regionUtil.getRegionInfoByIp("175.10.90.232");
+        System.out.println(regionInfo);
+        Assert.assertTrue("中国".equals(regionInfo.getCountry()));
+        Assert.assertTrue("湖南省".equals(regionInfo.getProvince()));
+        Assert.assertTrue("长沙市".equals(regionInfo.getCity()));
+        Assert.assertTrue("电信".equals(regionInfo.getIsp()));
     }
 }
