@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.excel.annotation.ExcelExport;
@@ -74,6 +75,7 @@ public class ShopUserCouponsController {
     @PostMapping
     @Node(value = "shopUserCoupons::add", name = "新增 用户优惠券表")
     public R<Boolean> add(@RequestBody ShopUserCoupons shopUserCoupons) {
+        shopUserCoupons.setCouponCode(IDGeneratorUtils.snowflake().toString());
         return R.success(shopUserCouponsService.save(shopUserCoupons));
     }
 

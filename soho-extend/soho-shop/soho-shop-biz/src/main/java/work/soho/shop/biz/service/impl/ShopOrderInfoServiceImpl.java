@@ -46,8 +46,6 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
         // 检查地址是否为当前用户的地址
         Assert.isTrue(shopUserAddresses.getUserId().equals(request.getUserId()), "收货地址不属于当前用户");
 
-        //TODO 优惠劵等信息装备
-
         ShopOrderInfo shopOrderInfo = new ShopOrderInfo();
         shopOrderInfo.setNo(IDGeneratorUtils.snowflake().toString());
         shopOrderInfo.setUserId(request.getUserId());
@@ -106,13 +104,13 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
 
         // 优惠劵计算
         if(request.getUserCouponId() != null) {
-            ShopCouponUsageLogs shopCouponUsageLogs = createCouponUsageLogs(request);
+            ShopCouponUsageLogs shopCouponUsageLogs = createCouponUsageLogs(request.getUserCouponId(), shopOrderSkuList, shopOrderInfo);
             if(shopCouponUsageLogs != null) {
                 shopOrderInfo.setDiscountAmount(shopCouponUsageLogs.getDiscountAmount());
             }
         }
 
-
+        ////////////////////////////////////////////////////////////  数据保存
         // 保存订单信息
         shopOrderInfo.setProductTotalAmount(orderProductTotalAmount);
         shopOrderInfo.setAmount(orderProductTotalAmount.add(shopOrderInfo.getDeliveryFee()).subtract(shopOrderInfo.getDiscountAmount()));
@@ -147,11 +145,13 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
     /**
      * 创建优惠劵使用记录
      *
-     * @param request
+     * @param userCouponId
+     * @param shopOrderSkuList
+     * @param shopOrderInfo
      * @return
      */
-    private ShopCouponUsageLogs createCouponUsageLogs(OrderCreateRequest request) {
-        ShopUserCoupons shopUserCoupons = shopUserCouponsMapper.selectById(request.getUserCouponId());
+    private ShopCouponUsageLogs createCouponUsageLogs(Long userCouponId, List<ShopOrderSku> shopOrderSkuList, ShopOrderInfo shopOrderInfo) {
+        ShopUserCoupons shopUserCoupons = shopUserCouponsMapper.selectById(userCouponId);
         Assert.notNull(shopUserCoupons, "优惠劵不存在或者已经过期");
 
         // 查找优惠劵相关信息
@@ -175,8 +175,8 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
 
         // 获取符合条件的商品金额
         BigDecimal couponProductTotalAmount = BigDecimal.ZERO;
-        for(ProductSkuVo product : request.getProducts()) {
-            ShopProductInfo productInfo = shopProductInfoMapper.selectById(product.getProductId());
+        for(ShopOrderSku orderSku : shopOrderSkuList) {
+            ShopProductInfo productInfo = shopProductInfoMapper.selectById(orderSku.getProductId());
             Assert.notNull(productInfo, "商品不存在");
 
             // 非全平台，店铺ID对不上直接跳过
@@ -186,42 +186,40 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
                 continue;
             }
 
-            if(shopCoupons.getApplyScope() == ShopCouponsEnums.ApplyScope.ALL_PLATFORMS.getId()) {
-                // 全平台
-                couponProductTotalAmount = couponProductTotalAmount.add(product.getTotalAmount());
-            } else if(shopCoupons.getApplyScope() == ShopCouponsEnums.ApplyScope.SPECIFY_CLASSIFICATION.getId()) {
-                // 指定分类商品
-                if(couponApplyCategoryIds.contains(productInfo.getCategoryId())) {
-                    couponProductTotalAmount = couponProductTotalAmount.add(product.getTotalAmount());
-                }
-            } else if(shopCoupons.getApplyScope() == ShopCouponsEnums.ApplyScope.SPECIFIED_GOODS.getId()) {
-                // 指定商品
-                if(couponApplyProductIds.contains(productInfo.getId())) {
-                    couponProductTotalAmount = couponProductTotalAmount.add(product.getTotalAmount());
-                }
-            } else if(shopCoupons.getApplyScope() == ShopCouponsEnums.ApplyScope.WHOLE_STORE.getId()) {
-                // 店铺商品
-                if(productInfo.getShopId().equals(shopCoupons.getShopId())) {
-                    couponProductTotalAmount = couponProductTotalAmount.add(product.getTotalAmount());
+            // 过滤掉不符合条件的产品
+            if(couponApplyCategoryIds.size()>0 || couponApplyProductIds.size()>0) {
+                if(
+                        (couponApplyCategoryIds.size()>0 && !couponApplyCategoryIds.contains(productInfo.getCategoryId())) // 检查是否满足分类条件
+                        &&
+                                (couponApplyProductIds.size()>0 && !couponApplyProductIds.contains(productInfo.getId()))  // 检查是否满足商品条件
+                ) {
+                    continue;
                 }
             }
+            couponProductTotalAmount = couponProductTotalAmount.add(orderSku.getTotalAmount());
+        }
+
+        // 检查是否达到使用优惠劵的条件
+        if(shopCoupons.getMinOrderAmount() != null &&
+                couponProductTotalAmount.compareTo(shopCoupons.getMinOrderAmount()) < 0) {
+            return null;
         }
 
         // 计算优惠金额
         BigDecimal discountAmount = BigDecimal.ZERO;
         // 满额减计算
         if(shopCoupons.getType() == ShopCouponsEnums.Type.FULL_REDUCTION.getId()) {
-            if(couponProductTotalAmount.compareTo(shopCoupons.getMinOrderAmount()) >= 0) {
-                discountAmount = couponProductTotalAmount.subtract(shopCoupons.getDiscountValue());
-            }
+            discountAmount = shopCoupons.getDiscountValue();
         } else if(shopCoupons.getType() == ShopCouponsEnums.Type.FULL_DISCOUNT.getId()) {
             discountAmount = couponProductTotalAmount.multiply(shopCoupons.getDiscountValue());
-            if(discountAmount.compareTo(shopCoupons.getMaxDiscountAmount()) > 0) {
-                discountAmount = shopCoupons.getMaxDiscountAmount();
-            }
         } else if(shopCoupons.getType() == ShopCouponsEnums.Type.FREE_SHIPPING.getId()) {
             // 免运费
-            discountAmount = request.getDeliveryFee();
+            discountAmount = shopOrderInfo.getDeliveryFee();
+        }
+
+        // 最大优惠金额矫正
+        if(discountAmount.compareTo(shopCoupons.getMaxDiscountAmount()) > 0) {
+            discountAmount = shopCoupons.getMaxDiscountAmount();
         }
 
         // 如果没有优惠；则说明优惠劵没有优惠
@@ -231,7 +229,7 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
 
         // 创建优惠劵使用记录
         ShopCouponUsageLogs shopCouponUsageLogs = new ShopCouponUsageLogs();
-        shopCouponUsageLogs.setUserId(Long.valueOf(request.getUserId()))
+        shopCouponUsageLogs.setUserId(Long.valueOf(shopOrderInfo.getUserId()))
                 .setCouponId(shopCoupons.getId())
 //                .setOrderId(shopOrderInfo.getId())
                 .setOrderAmount(couponProductTotalAmount)
