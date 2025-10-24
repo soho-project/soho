@@ -94,6 +94,18 @@
             <groupId>work.soho</groupId>
             <artifactId>soho-common-security</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>dynamic-datasource-spring</artifactId>
+            <version>4.3.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>dynamic-datasource-spring-boot-common</artifactId>
+            <version>4.3.0</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 </project>

@@ -1,6 +1,7 @@
 package work.soho.shop.biz.aspect;
 
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import lombok.extern.log4j.Log4j2;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -11,19 +12,22 @@ import org.springframework.stereotype.Component;
 @Aspect
 @Component
 @Order(-1)
+@Log4j2
 public class ShopDataSourceAspect {
 
     private static final String READ_DB_NAME = "shop"; // 读数据源
     private static final String WRITE_DB_NAME = "shop";  // 写数据源
 
-    @Around("execution(* work.soho.shop.biz.mapper..*(..)) || execution(* work.soho.shop.biz.service..*(..))")
+    @Around("execution(* work.soho.shop.biz.service..*+.*(..)) && execution(* com.baomidou.mybatisplus.extension.service.IService+.*(..))")
     public Object dbAround(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
+            log.debug("切换数据源：" + determineDataSource(joinPoint));
             DynamicDataSourceContextHolder.push(determineDataSource(joinPoint));
             return joinPoint.proceed();
         } catch (Exception e) {
             throw e;
         } finally {
+            log.debug("切换数据源退出:" + DynamicDataSourceContextHolder.peek());
             DynamicDataSourceContextHolder.poll();
         }
     }

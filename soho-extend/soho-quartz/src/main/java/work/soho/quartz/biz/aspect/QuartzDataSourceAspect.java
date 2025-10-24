@@ -1,4 +1,4 @@
-package work.soho.admin.biz.aspect;
+package work.soho.quartz.biz.aspect;
 
 import com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DynamicDataSourceProperties;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
@@ -14,11 +14,13 @@ import org.springframework.stereotype.Component;
 @Component
 @Order(-1)
 @Log4j2
-public class AdminDataSourceAspect {
+public class QuartzDataSourceAspect {
+
     @Autowired
     private DynamicDataSourceProperties properties;
-    @Around("execution(* work.soho.admin.biz.service..*+.*(..)) && execution(* com.baomidou.mybatisplus.extension.service.IService+.*(..))")
-    public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
+
+    @Around("execution(* work.soho.quartz.biz.service..*+.*(..)) && execution(* com.baomidou.mybatisplus.extension.service.IService+.*(..))")
+    public Object dbAround(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
             log.debug("切换数据源：" + getDefaultDataSource());
             DynamicDataSourceContextHolder.push(getDefaultDataSource());

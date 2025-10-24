@@ -22,8 +22,7 @@ import work.soho.test.TestApp;
 import work.soho.test.security.support.SohoWithUser;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -83,6 +82,17 @@ class ShopProductInfoControllerTest {
         mockMvc.perform(post("/shop/admin/shopProductInfo/update")
                         .content(JacksonUtils.toJson(productInfoRequest))
                         .contentType("application/json")
+                )
+                //.andExpect(status().is(404))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+    }
+
+    @Test
+    @SohoWithUser(id = 1, username = "admin",  role = "admin")
+    void remove() throws Exception {
+        mockMvc.perform(delete("/shop/admin/shopProductInfo/27,26")
                 )
                 //.andExpect(status().is(404))
                 .andDo(print())
