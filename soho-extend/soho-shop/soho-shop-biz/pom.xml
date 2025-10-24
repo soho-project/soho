@@ -74,7 +74,6 @@
             <groupId>work.soho</groupId>
             <artifactId>soho-common-database</artifactId>
             <version>1.0-SNAPSHOT</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>work.soho</groupId>
