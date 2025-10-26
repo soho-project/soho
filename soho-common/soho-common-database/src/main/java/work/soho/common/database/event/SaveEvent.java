@@ -13,9 +13,20 @@ import java.util.Map;
 @Data
 public class SaveEvent extends ApplicationEvent {
     private String entityType;
+
+    /**
+     * 旧实体列表; saveOrUpdate 时可能会有数据
+     */
     private Map<Object, Object> oldEntities;
-    private List<Object> entities; // 即将被删除的实体列表
-    private String operation;
+
+    /**
+     * 保存的实体列表
+     */
+    private List<Object> entities;
+
+    /**
+     * 事件发生时间
+     */
     private Instant eventTime;
 
     public SaveEvent(Object source) {
@@ -27,7 +38,6 @@ public class SaveEvent extends ApplicationEvent {
         super(source);
         this.entityType = entityType;
         this.entities = entities;
-        this.operation = operation;
         this.eventTime = Instant.now();
     }
 }

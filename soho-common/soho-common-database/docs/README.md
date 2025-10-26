@@ -12,7 +12,13 @@
 ## 关联删除
 
     // 删除发送通知； 可以直接使用注解
-    @PublishBatchDeleteNotify
+    @PublishDeleteNotify
+
+    // 保存通知
+    @PublishSaveNotify
+
+    // 更新通知
+    @PublishUpdateNotify
 
     // 在方法上添加注解可以接收删除通知
     @OnBeforeBatchDelete

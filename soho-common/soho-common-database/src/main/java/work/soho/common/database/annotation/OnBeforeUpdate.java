@@ -11,6 +11,9 @@ public @interface OnBeforeUpdate {
      */
     Class<?> entityType() default void.class;
 
+    /**
+     * 删除顺序（数值越小越先执行）
+     */
     int order() default 0;
 
     /**
