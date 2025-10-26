@@ -34,7 +34,8 @@ class GroovyServiceTest {
 //    private static final Integer TABLE_ID = 155439140;  // 测试用例表
 //    private static final Integer TABLE_ID = 155439128;  // 内容表
 //    private static final Integer TABLE_ID = 155439198;  // shop_coupon_usage_logs
-    private static final Integer TABLE_ID = 155439202;  // shop_coupon_usage_logs
+//    private static final Integer TABLE_ID = 155439202;  // shop_coupon_usage_logs
+    private static final Integer TABLE_ID = 155439106;  // pay_info
 //    private static final Integer TABLE_ID = 155439180;  // 计划任务表
 //    private static final Integer TABLE_ID = 155439179; // 系统资源表， tree
 
