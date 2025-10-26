@@ -12,7 +12,6 @@ public class UpdateEvent extends ApplicationEvent {
     private String entityType;
     private Map<Object,  Object> oldEntities;
     private List<Object> entities; // 即将被删除的实体列表
-    private String operation;
     private Instant eventTime;
 
     public UpdateEvent(Object source) {
@@ -24,7 +23,6 @@ public class UpdateEvent extends ApplicationEvent {
         super(source);
         this.entityType = entityType;
         this.entities = entities;
-        this.operation = operation;
         this.eventTime = Instant.now();
     }
 }

@@ -67,46 +67,16 @@ public class ServiceUpdateEventAspect {
         Map<Object, Object> oldEntitiesMap = new HashMap<>();
         if(annotation.needOldData()) {
             oldEntitiesMap = getOldEntitiesFromDatabase(joinPoint.getTarget(), entityParam, annotation);
-            log.info("oldEntitiesMap: " + oldEntitiesMap);
+            log.debug("oldEntitiesMap: " + oldEntitiesMap);
         }
 
-        // 检查是否需要发布事件
-        if (shouldPublishEvent(entityParam)) {
-            // 发布保存前事件
-            publishBeforeUpdateEvent(joinPoint.getTarget(), entityParam, annotation, oldEntitiesMap);
-            // 执行原方法
-            Object result = joinPoint.proceed();
-            // 这里发布保存后事件
-            publishAfterUpdateEvent(joinPoint.getTarget(), entityParam, annotation, oldEntitiesMap);
-            return result;
-        }
-
-        return joinPoint.proceed();
-    }
-
-    /**
-     * 判断是否需要发布事件
-     */
-    private boolean shouldPublishEvent(Object entityParam) {
-        if (entityParam == null) {
-            return false;
-        }
-
-        if (entityParam instanceof Collection) {
-            Collection<?> collection = (Collection<?>) entityParam;
-            if (collection.isEmpty()) {
-                return false;
-            }
-            // 检查集合中第一个元素的类是否有注解
-//            Object firstEntity = collection.iterator().next();
-//            return firstEntity != null &&
-//                    AnnotationUtils.findAnnotation(firstEntity.getClass(), PublishSaveNotify.class) != null;
-            return true;
-        } else {
-            // 检查单个实体类是否有注解
-//            return AnnotationUtils.findAnnotation(entityParam.getClass(), PublishSaveNotify.class) != null;
-            return true;
-        }
+        // 发布保存前事件
+        publishBeforeUpdateEvent(joinPoint.getTarget(), entityParam, annotation, oldEntitiesMap);
+        // 执行原方法
+        Object result = joinPoint.proceed();
+        // 这里发布保存后事件
+        publishAfterUpdateEvent(joinPoint.getTarget(), entityParam, annotation, oldEntitiesMap);
+        return result;
     }
 
     /**
@@ -165,7 +135,6 @@ public class ServiceUpdateEventAspect {
             }
 
             try {
-                System.out.println(method);
                 if(event instanceof UpdateEvent) {
                     method.invoke(targetBean, (UpdateEvent)event);
                 } else if(event instanceof UpdateEvent) {
@@ -251,9 +220,6 @@ public class ServiceUpdateEventAspect {
             if(annotation.entityType() != null) {
                 TableInfo tableInfo = TableInfoHelper.getTableInfo(annotation.entityType());
                 idFieldName = tableInfo.getKeyProperty();
-                //Object idValue = tableInfo.getPropertyValue(entityParam, tableInfo.getKeyProperty());
-                System.out.println(idFieldName);
-                // idFieldName = tableInfo.getKeyProperty();
             }
             final String finalIdFieldName = idFieldName;
 

@@ -1,5 +1,7 @@
 package work.soho.common.database.aspect;
 
+import com.baomidou.mybatisplus.core.metadata.TableInfo;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.service.IService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -8,7 +10,6 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -32,10 +33,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ServiceSaveEventAspect {
     private final ApplicationContext applicationContext;
-    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 切点：拦截 IService 的保存相关方法
+     *
+     * TODO saveOrUpdate 需要特殊处理  只处理保存部分的数据
      */
     @Pointcut("(execution(* com.baomidou.mybatisplus.extension.service.IService+.save*(..)) || " +
             "execution(* com.baomidou.mybatisplus.extension.service.IService+.saveOrUpdate*(..)))" +
@@ -86,6 +88,11 @@ public class ServiceSaveEventAspect {
             event.setEntities(List.of(entityParam));
         }
 
+        // 老数据的条数同传参条数一样 则说明没有新增数据  无须分发
+        if(oldEntiesMap.size() == event.getEntities().size()) {
+            return;
+        }
+
         List<MethodHandler> handlers = findOnBeforeSaveHandlers( annotation);
 
         if(annotation.async()) {
@@ -107,6 +114,11 @@ public class ServiceSaveEventAspect {
             event.setEntities((List<Object>) entityParam);
         } else {
             event.setEntities(List.of(entityParam));
+        }
+
+        // 老数据的条数同传参条数一样 则说明没有新增数据  无须分发
+        if(oldEntiesMap.size() == event.getEntities().size()) {
+            return;
         }
 
         List<MethodHandler> handlers = findOnAfterSaveHandlers(annotation);
@@ -213,12 +225,13 @@ public class ServiceSaveEventAspect {
             // 获取实体ID字段名（假设使用MyBatis-Plus，默认使用"id"字段）
             String idFieldName = "id";
 
-//            if(annotation.entityType() != null) {
-//                TableInfo tableInfo = TableInfoHelper.getTableInfo(annotation.entityType());
-////                Object idValue = tableInfo.getPropertyValue(entityParam, tableInfo.getKeyProperty());
-//                idFieldName = tableInfo.getKeyProperty();
-//            }
+            if(annotation.entityType() != null) {
+                TableInfo tableInfo = TableInfoHelper.getTableInfo(annotation.entityType());
+//                Object idValue = tableInfo.getPropertyValue(entityParam, tableInfo.getKeyProperty());
+                idFieldName = tableInfo.getKeyProperty();
+            }
 
+            final String idFieldNameFinal = idFieldName;
 
 
 
@@ -226,7 +239,7 @@ public class ServiceSaveEventAspect {
                 // 批量保存的情况
                 Collection<?> entities = (Collection<?>) entityParam;
                 List<Object> ids = entities.stream()
-                        .map(entity -> getEntityId(entity, idFieldName))
+                        .map(entity -> getEntityId(entity, idFieldNameFinal))
                         .filter(Objects::nonNull)
                         .collect(Collectors.toList());
 
@@ -237,7 +250,7 @@ public class ServiceSaveEventAspect {
 
                     // 构建ID到实体的映射
                     for (Object oldEntity : oldEntities) {
-                        Object id = getEntityId(oldEntity, idFieldName);
+                        Object id = getEntityId(oldEntity, idFieldNameFinal);
                         if (id != null) {
                             oldEntitiesMap.put(id, oldEntity);
                         }
@@ -245,7 +258,7 @@ public class ServiceSaveEventAspect {
                 }
             } else {
                 // 单个实体保存的情况
-                Object id = getEntityId(entityParam, idFieldName);
+                Object id = getEntityId(entityParam, idFieldNameFinal);
                 if (id != null) {
                     // 调用service的getById方法获取旧数据
                     Method getByIdMethod = service.getClass().getMethod("getById", id.getClass());
