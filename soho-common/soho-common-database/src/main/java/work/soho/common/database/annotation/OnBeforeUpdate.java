@@ -5,7 +5,7 @@ import java.lang.annotation.*;
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface OnAfterUpdate {
+public @interface OnBeforeUpdate {
     /**
      * 实体类型
      */

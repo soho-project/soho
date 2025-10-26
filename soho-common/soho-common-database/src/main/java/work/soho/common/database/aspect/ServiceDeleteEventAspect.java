@@ -1,42 +1,47 @@
 package work.soho.common.database.aspect;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import work.soho.common.database.annotation.OnAfterDelete;
+import work.soho.common.database.annotation.OnBeforeDelete;
 import work.soho.common.database.annotation.PublishDeleteNotify;
-import work.soho.common.database.event.BeforeBatchDeleteEvent;
+import work.soho.common.database.event.DeleteEvent;
+import work.soho.common.database.handler.MethodHandler;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Aspect
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class ServiceDeleteEventAspect {
 
     private final ApplicationEventPublisher eventPublisher;
     private final ExpressionParser expressionParser = new SpelExpressionParser();
-
-    public ServiceDeleteEventAspect(ApplicationEventPublisher eventPublisher) {
-        this.eventPublisher = eventPublisher;
-    }
+    private final ApplicationContext applicationContext;
+    private final Map<String, List<MethodHandler>> handlerBeforeCache = new ConcurrentHashMap<>();
+    private final Map<String, List<MethodHandler>> handlerAfterCache = new ConcurrentHashMap<>();
 
     /**
      * 拦截被 @PublishDeleteEvents 注解的类中的删除方法
@@ -60,14 +65,6 @@ public class ServiceDeleteEventAspect {
             return joinPoint.proceed();
         }
 
-//        // 获取方法级别的注解（如果有）
-//        PublishDeleteNotify methodAnnotation = method.getAnnotation(PublishDeleteNotify.class);
-//
-//        // 如果方法级别配置了跳过，则直接执行
-//        if (methodAnnotation != null) {
-//            return joinPoint.proceed();
-//        }
-
         // 1. 在删除前查询数据
         Object entityToDelete = resolveEntityToDelete(joinPoint, method, classAnnotation);
         Object entityId = resolveEntityId(joinPoint, method, classAnnotation, entityToDelete);
@@ -75,7 +72,7 @@ public class ServiceDeleteEventAspect {
         // 2. 发布删除前事件
         if (entityId != null && entityToDelete != null) {
             publishBeforeDeleteEvent(joinPoint, classAnnotation,
-                    methodName, entityId, entityToDelete);
+                    methodName, entityId, entityToDelete, Boolean.TRUE);
         }
 
         // 3. 执行删除操作
@@ -83,6 +80,11 @@ public class ServiceDeleteEventAspect {
 
         // 4. 记录执行结果
         logDeleteResult(methodName, entityId, result);
+
+        if (entityId != null && entityToDelete != null) {
+            publishBeforeDeleteEvent(joinPoint, classAnnotation,
+                    methodName, entityId, entityToDelete, Boolean.FALSE);
+        }
 
         return result;
     }
@@ -231,7 +233,7 @@ public class ServiceDeleteEventAspect {
      */
     private void publishBeforeDeleteEvent(ProceedingJoinPoint joinPoint,
                                           PublishDeleteNotify classAnnotation,
-                                          String methodName, Object entityId, Object entity) {
+                                          String methodName, Object entityId, Object entity, Boolean isBefore) {
         // 确定实体类型
         Class<?> entityType = classAnnotation.entityType();
 
@@ -239,50 +241,16 @@ public class ServiceDeleteEventAspect {
             entityType = getEntityClass(joinPoint.getTarget().getClass());
         }
 
-        BeforeBatchDeleteEvent batchEvent = new BeforeBatchDeleteEvent(
+        DeleteEvent batchEvent = new DeleteEvent(
                 joinPoint.getTarget(),
                 entityType.getName(),
                 (entityId instanceof Collection ? new ArrayList<>((Collection<?>) entityId) : Collections.singletonList(entityId)),
                 (entity instanceof Collection ? new ArrayList<>( (Collection<?>) entity) : new ArrayList<>(Arrays.asList( entity))),
                 methodName
         );        // 发布事件
-        eventPublisher.publishEvent(batchEvent);
+//        eventPublisher.publishEvent(batchEvent);
+        handleBeforeBatchDelete(batchEvent, isBefore);
         log.debug("Published delete event for {} in method: {}", entityType, methodName);
-
-
-
-//        if (entity instanceof Collection) {
-//            // 批量删除事件
-//            List<Object> entities = new ArrayList<>((Collection<?>) entity);
-//            List<Object> entityIds = entities.stream()
-//                    .map(this::extractIdFromEntity)
-//                    .collect(Collectors.toList());
-//
-//            BeforeBatchDeleteEvent batchEvent = new BeforeBatchDeleteEvent(
-//                    joinPoint.getTarget(),
-//                    entityType.getName(),
-//                    entityIds,
-//                    entities,
-//                    methodName
-//            );        // 发布事件
-//            eventPublisher.publishEvent(batchEvent);
-//            log.debug("Published delete event for {} in method: {}", entityType, methodName);
-//
-//        } else {
-//            // 单个删除事件
-//            BeforeDeleteEvent event = new BeforeDeleteEvent(
-//                    joinPoint.getTarget(),
-//                    entityType.getName(),
-//                    entityId,
-//                    entity,
-//                    methodName
-//            );
-//            // 发布事件
-//            eventPublisher.publishEvent(event);
-//            log.debug("Published delete event for {} in method: {}", entityType, methodName);
-//        }
-
-
     }
 
     /**
@@ -327,6 +295,7 @@ public class ServiceDeleteEventAspect {
             Class<?> clazz = entity.getClass();
 
             // 查找常见的ID字段名
+            // TODO 从结构中获取主键ID
             for (String fieldName : Arrays.asList("id", "Id", "ID", "entityId")) {
                 try {
                     idField = clazz.getDeclaredField(fieldName);
@@ -357,5 +326,145 @@ public class ServiceDeleteEventAspect {
             log.debug("Delete operation {} may have failed or no records affected for ID: {}",
                     methodName, entityId);
         }
+    }
+
+    // 分发事件=============================================
+    public void handleBeforeBatchDelete(DeleteEvent event, Boolean isBefore) {
+        String entityType = event.getEntityType();
+        List<Object> entityIds = event.getEntityIds();
+        List<Object> entities = event.getEntities();
+
+        log.info("开始处理批量删除前事件，实体类型: {}, 实体ID数量: {}", entityType, entityIds.size());
+
+        // 获取所有相关的处理方法
+        List<MethodHandler> handlers = null;
+        if(isBefore) {
+            handlers = findBeforeHandlersForEntity(entityType);
+        } else {
+            handlers = findAfterHandlersForEntity(entityType);
+        }
+
+        // 执行处理方法
+        for (MethodHandler handler : handlers) {
+            try {
+                if (handler.isAsync()) {
+                    // 异步执行
+                    executeAsync(handler, entityIds, entities, event);
+                } else {
+                    // 同步执行
+                    executeSync(handler, entityIds, entities, event);
+                }
+            } catch (Exception e) {
+                log.error("执行关联数据删除方法失败: {}", handler.getMethod().getName(), e);
+                // 根据业务需求决定是否抛出异常
+                // throw new RuntimeException("关联数据删除失败", e);
+            }
+        }
+
+        log.info("批量删除前事件处理完成，实体类型: {}", entityType);
+    }
+
+    /**
+     * 同步执行
+     */
+    private void executeSync(MethodHandler handler, List<Object> entityIds,
+                             List<Object> entities, DeleteEvent event) {
+        Object targetBean = handler.getTargetBean();
+        Method method = handler.getMethod();
+
+        try {
+            // 根据方法参数类型调用
+            if (method.getParameterCount() == 1) {
+                if (method.getParameterTypes()[0].equals(List.class)) {
+                    method.invoke(targetBean, entityIds);
+                } else if (method.getParameterTypes()[0].equals(DeleteEvent.class)) {
+                    method.invoke(targetBean, event);
+                }
+            } else if (method.getParameterCount() == 2) {
+                method.invoke(targetBean, entityIds, entities);
+            } else {
+                method.invoke(targetBean);
+            }
+
+            log.debug("同步执行关联删除方法成功: {}.{}",
+                    targetBean.getClass().getSimpleName(), method.getName());
+        } catch (Exception e) {
+            log.error("同步执行关联删除方法失败: {}.{}",
+                    targetBean.getClass().getSimpleName(), method.getName(), e);
+            throw new RuntimeException("关联数据删除失败", e);
+        }
+    }
+
+    /**
+     * 异步执行
+     */
+    @Async
+    public void executeAsync(MethodHandler handler, List<Object> entityIds,
+                             List<Object> entities, DeleteEvent event) {
+        executeSync(handler, entityIds, entities, event);
+    }
+
+    /**
+     * 查找实体对应的执行前处理方法
+     */
+    private List<MethodHandler> findBeforeHandlersForEntity(String entityType) {
+        return handlerBeforeCache.computeIfAbsent(entityType, this::scanBeforeHandlers);
+    }
+
+    /**
+     * 查找实体对应的执行后处理方法
+     */
+    private List<MethodHandler> findAfterHandlersForEntity(String entityType) {
+        return handlerAfterCache.computeIfAbsent(entityType, this::scanAfterHandlers);
+    }
+
+    /**
+     * 扫描所有执行前处理方法
+     */
+    private List<MethodHandler> scanBeforeHandlers(String entityType) {
+        List<MethodHandler> handlers = new ArrayList<>();
+
+        // 获取所有Spring Bean
+        Map<String, Object> beans = applicationContext.getBeansWithAnnotation(org.springframework.stereotype.Service.class);
+
+        for (Object bean : beans.values()) {
+            Method[] methods = bean.getClass().getMethods();
+            for (Method method : methods) {
+                OnBeforeDelete annotation = AnnotationUtils.findAnnotation(method, OnBeforeDelete.class);
+                if (annotation != null && annotation.entityType().getName().equals(entityType)) {
+                    handlers.add(new MethodHandler(bean, method, annotation.order(), annotation.async()));
+                    log.info("注册关联删除处理器: {}.{} -> {}",
+                            bean.getClass().getSimpleName(), method.getName(), entityType);
+                }
+            }
+        }
+        // 按order排序
+        handlers.sort(Comparator.comparingInt(MethodHandler::getOrder));
+        return handlers;
+    }
+
+    /**
+     * 扫描所有执行后处理方法
+     */
+    private List<MethodHandler> scanAfterHandlers(String entityType) {
+        List<MethodHandler> handlers = new ArrayList<>();
+
+        // 获取所有Spring Bean
+        Map<String, Object> beans = applicationContext.getBeansWithAnnotation(org.springframework.stereotype.Service.class);
+
+        for (Object bean : beans.values()) {
+            Method[] methods = bean.getClass().getMethods();
+            for (Method method : methods) {
+                OnAfterDelete annotation = AnnotationUtils.findAnnotation(method, OnAfterDelete.class);
+                if (annotation != null && annotation.entityType().getName().equals(entityType)) {
+                    handlers.add(new MethodHandler(bean, method, annotation.order(), annotation.async()));
+                    log.info("注册关联删除处理器: {}.{} -> {}",
+                            bean.getClass().getSimpleName(), method.getName(), entityType);
+                }
+            }
+        }
+        // 按order排序
+        handlers.sort(Comparator.comparingInt(MethodHandler::getOrder));
+        return handlers;
     }
 }

@@ -8,4 +8,13 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PublishSaveNotify {
+    /**
+     * 实体类型
+     */
+    Class<?> entityType() default void.class;
+
+    /**
+     * 是否启用异步事件处理
+     */
+    boolean async() default true;
 }

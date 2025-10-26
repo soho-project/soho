@@ -8,15 +8,15 @@ import java.util.List;
 
 // 批量删除前事件
 @Data
-public class BeforeBatchDeleteEvent extends ApplicationEvent {
+public class DeleteEvent extends ApplicationEvent {
     private String entityType;
     private List<Object> entityIds;
     private List<Object> entities; // 即将被删除的实体列表
     private String operation;
     private Instant eventTime;
 
-    public BeforeBatchDeleteEvent(Object source, String entityType, List<Object> entityIds,
-                                  List<Object> entities, String operation) {
+    public DeleteEvent(Object source, String entityType, List<Object> entityIds,
+                       List<Object> entities, String operation) {
         super(source);
         this.entityType = entityType;
         this.entityIds = entityIds;

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.StringUtils;
+import work.soho.common.database.annotation.PublishDeleteNotify;
 import work.soho.shop.api.request.OrderCreateRequest;
 import work.soho.shop.api.vo.ProductSkuVo;
 import work.soho.shop.biz.domain.*;
@@ -21,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@PublishDeleteNotify
 @RequiredArgsConstructor
 @Service
 public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, ShopOrderInfo>

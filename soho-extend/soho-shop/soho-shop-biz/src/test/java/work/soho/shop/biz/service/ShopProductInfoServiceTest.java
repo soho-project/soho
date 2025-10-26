@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
+import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.shop.biz.domain.ShopProductInfo;
 import work.soho.shop.biz.domain.ShopProductSku;
 import work.soho.shop.biz.domain.ShopProductSpecValue;
@@ -33,6 +34,7 @@ class ShopProductInfoServiceTest {
     private ShopProductInfo crateProductByTemplate(Long id) {
         ShopProductInfo templateProduct = shopProductInfoService.getById(id);
         templateProduct.setId(null);
+        templateProduct.setSpuCode(IDGeneratorUtils.snowflake().toString());
         shopProductInfoService.save(templateProduct);
         List<ShopProductSku> skuList = shopProductSkuService.list(new LambdaQueryWrapper<ShopProductSku>()
                 .eq(ShopProductSku::getProductId, id));
@@ -80,6 +82,24 @@ class ShopProductInfoServiceTest {
         ShopProductInfo templateProduct = crateProductByTemplate(1L);
         System.out.println(templateProduct);
 
+        // 测试更新
+        shopProductInfoService.updateById(templateProduct);
+
+        // 测试删除
         shopProductInfoService.removeById(templateProduct.getId());
+    }
+
+    @Test
+    public void testUpdate() {
+        ShopProductInfo templateProduct = shopProductInfoService.getById(1L);
+        shopProductInfoService.updateById(templateProduct);
+    }
+
+    @Test
+    public void testSave() {
+        ShopProductInfo templateProduct = shopProductInfoService.getById(1L);
+        templateProduct.setId(null);
+        templateProduct.setSpuCode(IDGeneratorUtils.snowflake().toString());
+        shopProductInfoService.updateById(templateProduct);
     }
 }

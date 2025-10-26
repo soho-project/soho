@@ -18,7 +18,8 @@ public class ShopDataSourceAspect {
     private static final String READ_DB_NAME = "shop"; // 读数据源
     private static final String WRITE_DB_NAME = "shop";  // 写数据源
 
-    @Around("execution(* work.soho.shop.biz.service..*+.*(..)) && execution(* com.baomidou.mybatisplus.extension.service.IService+.*(..))")
+//    @Around("execution(* work.soho.shop.biz.service..*+.*(..)) && execution(* com.baomidou.mybatisplus.extension.service.IService+.*(..))")
+    @Around("bean(shop*ServiceImpl) && execution(* com.baomidou.mybatisplus.extension.service.IService+.*(..))")
     public Object dbAround(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
             log.debug("切换数据源：" + determineDataSource(joinPoint));

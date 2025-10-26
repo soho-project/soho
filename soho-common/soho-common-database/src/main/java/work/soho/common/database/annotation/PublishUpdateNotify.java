@@ -14,6 +14,11 @@ public @interface PublishUpdateNotify {
     Class<?> entityType() default void.class;
 
     /**
+     * 是否需要旧数据
+     */
+    boolean needOldData() default false;
+
+    /**
      * 是否异步发布事件
      */
     boolean async() default false;
