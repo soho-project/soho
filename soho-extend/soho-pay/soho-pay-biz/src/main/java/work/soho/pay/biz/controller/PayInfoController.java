@@ -1,18 +1,27 @@
 package work.soho.pay.biz.controller;
 
+import com.alibaba.excel.context.AnalysisContext;
+import com.alibaba.excel.read.listener.ReadListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.*;
+import work.soho.admin.api.request.BetweenCreatedTimeRequest;
+import work.soho.admin.api.vo.OptionVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
+import work.soho.common.data.excel.annotation.ExcelExport;
 import work.soho.common.security.annotation.Node;
 import work.soho.pay.biz.domain.PayInfo;
 import work.soho.pay.biz.service.PayInfoService;
+import org.springframework.web.multipart.MultipartFile;
+import com.alibaba.excel.EasyExcelFactory;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +32,7 @@ import java.util.List;
  * @author i
  * @date 2022-11-11 16:36:32
  */
+@Log4j2
 @Api(tags = "客户端支付信息")
 @RequiredArgsConstructor
 @RestController
@@ -132,8 +142,8 @@ public class PayInfoController {
      *
      * @return
      */
-    @GetMapping("options")
-    public R<HashMap<Integer, String>> options() {
+    @GetMapping("optionsV1")
+    public R<HashMap<Integer, String>> optionsV1() {
         List<PayInfo> list = payInfoService.list();
         HashMap<Integer, String> map = new HashMap<>();
         for(PayInfo item: list) {
@@ -141,5 +151,82 @@ public class PayInfoController {
             map.put(item.getId(), item.getTitle());
         }
         return R.success(map);
+    }
+
+    /**
+     * 获取该支付表 选项
+     *
+     * @return
+     */
+    @GetMapping("options")
+    @Node(value = "payInfo::options", name = "获取 支付表 选项")
+    public R<List<OptionVo<Integer, String>>> options() {
+        List<PayInfo> list = payInfoService.list();
+        List<OptionVo<Integer, String>> options = new ArrayList<>();
+
+        for(PayInfo item: list) {
+            OptionVo<Integer, String> optionVo = new OptionVo<>();
+            optionVo.setValue(item.getId());
+            optionVo.setLabel(item.getTitle());
+            options.add(optionVo);
+        }
+        return R.success(options);
+    }
+
+    /**
+     * 导出 支付表 Excel
+     */
+    @GetMapping("/exportExcel")
+    @ExcelExport(fileName = "excel.xls", modelClass = PayInfo.class)
+    @Node(value = "payInfo::exportExcel", name = "导出 支付表 Excel")
+    public Object exportExcel(PayInfo payInfo, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
+    {
+        LambdaQueryWrapper<PayInfo> lqw = new LambdaQueryWrapper<PayInfo>();
+        lqw.like(StringUtils.isNotBlank(payInfo.getPlatform()),PayInfo::getPlatform ,payInfo.getPlatform());
+        lqw.eq(payInfo.getStatus() != null, PayInfo::getStatus ,payInfo.getStatus());
+        lqw.like(StringUtils.isNotBlank(payInfo.getAdapterName()),PayInfo::getAdapterName ,payInfo.getAdapterName());
+        lqw.eq(payInfo.getId() != null, PayInfo::getId ,payInfo.getId());
+        lqw.like(StringUtils.isNotBlank(payInfo.getTitle()),PayInfo::getTitle ,payInfo.getTitle());
+        lqw.like(StringUtils.isNotBlank(payInfo.getName()),PayInfo::getName ,payInfo.getName());
+        lqw.like(StringUtils.isNotBlank(payInfo.getAccountAppId()),PayInfo::getAccountAppId ,payInfo.getAccountAppId());
+        lqw.like(StringUtils.isNotBlank(payInfo.getAccountId()),PayInfo::getAccountId ,payInfo.getAccountId());
+        lqw.like(StringUtils.isNotBlank(payInfo.getAccountPrivateKey()),PayInfo::getAccountPrivateKey ,payInfo.getAccountPrivateKey());
+        lqw.like(StringUtils.isNotBlank(payInfo.getAccountSerialNumber()),PayInfo::getAccountSerialNumber ,payInfo.getAccountSerialNumber());
+        lqw.like(StringUtils.isNotBlank(payInfo.getAccountPublicKey()),PayInfo::getAccountPublicKey ,payInfo.getAccountPublicKey());
+        lqw.like(StringUtils.isNotBlank(payInfo.getAccountImg()),PayInfo::getAccountImg ,payInfo.getAccountImg());
+        lqw.like(StringUtils.isNotBlank(payInfo.getClientType()),PayInfo::getClientType ,payInfo.getClientType());
+        lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, PayInfo::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
+        lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, PayInfo::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
+        lqw.eq(payInfo.getUpdatedTime() != null, PayInfo::getUpdatedTime ,payInfo.getUpdatedTime());
+        lqw.orderByDesc(PayInfo::getId);
+        return payInfoService.list(lqw);
+    }
+
+    /**
+     * 导入 支付表 Excel
+     *
+     * @param file
+     * @return
+     */
+    @PostMapping("/importExcel")
+    @Node(value = "payInfo::importExcel", name = "导入 自动化样例 Excel")
+    public R importExcel(@RequestParam(value = "file")MultipartFile file) {
+        try {
+            EasyExcelFactory.read(file.getInputStream(), PayInfo.class, new ReadListener<PayInfo>() {
+                @Override
+                public void invoke(PayInfo payInfo, AnalysisContext analysisContext) {
+                    payInfoService.save(payInfo);
+                }
+
+                @Override
+                public void doAfterAllAnalysed(AnalysisContext analysisContext) {
+                    //nothing todo
+                }
+            }).sheet().doRead();
+            return R.success();
+        } catch (Exception e) {
+            log.error(e.toString());
+            return R.error(e.getMessage());
+        }
     }
 }

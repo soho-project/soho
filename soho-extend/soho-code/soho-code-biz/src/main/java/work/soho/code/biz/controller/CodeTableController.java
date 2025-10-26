@@ -72,6 +72,7 @@ public class CodeTableController {
         if (codeTable.getId() != null){
             lqw.eq(CodeTable::getId ,codeTable.getId());
         }
+        lqw.like(StringUtils.isNotBlank(codeTable.getDbSource()), CodeTable::getDbSource, codeTable.getDbSource());
         if (StringUtils.isNotBlank(codeTable.getName())){
             lqw.like(CodeTable::getName ,codeTable.getName());
         }
