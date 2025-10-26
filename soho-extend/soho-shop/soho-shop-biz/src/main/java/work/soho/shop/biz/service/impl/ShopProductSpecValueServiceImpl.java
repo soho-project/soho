@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import work.soho.common.database.annotation.OnBeforeDelete;
-import work.soho.common.database.event.BeforeBatchDeleteEvent;
+import work.soho.common.database.event.DeleteEvent;
 import work.soho.shop.biz.domain.ShopProductInfo;
 import work.soho.shop.biz.domain.ShopProductSpecValue;
 import work.soho.shop.biz.mapper.ShopProductSpecValueMapper;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class ShopProductSpecValueServiceImpl extends ServiceImpl<ShopProductSpecValueMapper, ShopProductSpecValue>
     implements ShopProductSpecValueService{
     @OnBeforeDelete(entityType = ShopProductInfo.class)
-    public void handleBeforeDelete(BeforeBatchDeleteEvent event) {
+    public void handleBeforeDelete(DeleteEvent event) {
         // 查找所有的sku
         List<ShopProductSpecValue> skus = list(new LambdaQueryWrapper<ShopProductSpecValue>().in(ShopProductSpecValue::getProductId,
                 event.getEntityIds().stream().map(id -> (Long)id).collect(Collectors.toList())

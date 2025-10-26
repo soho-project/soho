@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 public class AdminDataSourceAspect {
     @Autowired
     private DynamicDataSourceProperties properties;
-    @Around("execution(* work.soho.admin.biz.service..*+.*(..)) && execution(* com.baomidou.mybatisplus.extension.service.IService+.*(..))")
+    @Around("bean(admin*ServiceImpl) && execution(* com.baomidou.mybatisplus.extension.service.IService+.*(..))")
     public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
             log.debug("切换数据源：" + getDefaultDataSource());

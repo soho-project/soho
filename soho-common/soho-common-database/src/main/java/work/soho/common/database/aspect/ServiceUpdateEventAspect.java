@@ -1,5 +1,7 @@
 package work.soho.common.database.aspect;
 
+import com.baomidou.mybatisplus.core.metadata.TableInfo;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.service.IService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -12,13 +14,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import work.soho.common.database.annotation.OnAfterSave;
-import work.soho.common.database.annotation.OnBeforeSave;
-import work.soho.common.database.annotation.PublishSaveNotify;
-import work.soho.common.database.event.SaveEvent;
+import work.soho.common.database.annotation.OnAfterUpdate;
+import work.soho.common.database.annotation.OnBeforeUpdate;
+import work.soho.common.database.annotation.PublishUpdateNotify;
+import work.soho.common.database.event.UpdateEvent;
 import work.soho.common.database.handler.MethodHandler;
 
-import java.lang.reflect.InvocationTargetException;
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,16 +32,16 @@ import java.util.stream.Collectors;
 @Log4j2
 @Component
 @RequiredArgsConstructor
-public class ServiceSaveEventAspect {
+public class ServiceUpdateEventAspect {
     private final ApplicationContext applicationContext;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 切点：拦截 IService 的保存相关方法
      */
-    @Pointcut("(execution(* com.baomidou.mybatisplus.extension.service.IService+.save*(..)) || " +
+    @Pointcut("(execution(* com.baomidou.mybatisplus.extension.service.IService+.updateById(..)) || " +
             "execution(* com.baomidou.mybatisplus.extension.service.IService+.saveOrUpdate*(..)))" +
-            " && @target(work.soho.common.database.annotation.PublishSaveNotify)")
+            " && @target(work.soho.common.database.annotation.PublishUpdateNotify)")
     public void saveMethods() {}
 
     /**
@@ -47,13 +49,13 @@ public class ServiceSaveEventAspect {
      */
     @Around("saveMethods()")
     public Object publishSaveEvent(ProceedingJoinPoint joinPoint) throws Throwable {
-        log.debug("进入保存事件发布切面+++++++++++++");
+        log.debug("进入更新事件发布切面+++++++++++++");
         Object[] args = joinPoint.getArgs();
         if (args.length == 0) {
             return joinPoint.proceed();
         }
 
-        PublishSaveNotify annotation = joinPoint.getTarget().getClass().getAnnotation(PublishSaveNotify.class);
+        PublishUpdateNotify annotation = joinPoint.getTarget().getClass().getAnnotation(PublishUpdateNotify.class);
         if (annotation == null) {
             return joinPoint.proceed();
         }
@@ -62,32 +64,66 @@ public class ServiceSaveEventAspect {
         Object entityParam = args[0];
 
         // 获取保存前数据库中的数据
-        Map<Object, Object> oldEntitiesMap = getOldEntitiesFromDatabase(joinPoint.getTarget(), entityParam, annotation);
-        // 发布保存前事件
-        publishBeforeSaveEvent(joinPoint.getTarget(), entityParam, annotation, oldEntitiesMap);
-        // 执行原方法
-        Object result = joinPoint.proceed();
-        // 如果需要，可以在这里发布保存后事件
-        publishAfterSaveEvent(joinPoint.getTarget(), entityParam, annotation, oldEntitiesMap);
-        return result;
+        Map<Object, Object> oldEntitiesMap = new HashMap<>();
+        if(annotation.needOldData()) {
+            oldEntitiesMap = getOldEntitiesFromDatabase(joinPoint.getTarget(), entityParam, annotation);
+            log.info("oldEntitiesMap: " + oldEntitiesMap);
+        }
+
+        // 检查是否需要发布事件
+        if (shouldPublishEvent(entityParam)) {
+            // 发布保存前事件
+            publishBeforeUpdateEvent(joinPoint.getTarget(), entityParam, annotation, oldEntitiesMap);
+            // 执行原方法
+            Object result = joinPoint.proceed();
+            // 这里发布保存后事件
+            publishAfterUpdateEvent(joinPoint.getTarget(), entityParam, annotation, oldEntitiesMap);
+            return result;
+        }
+
+        return joinPoint.proceed();
+    }
+
+    /**
+     * 判断是否需要发布事件
+     */
+    private boolean shouldPublishEvent(Object entityParam) {
+        if (entityParam == null) {
+            return false;
+        }
+
+        if (entityParam instanceof Collection) {
+            Collection<?> collection = (Collection<?>) entityParam;
+            if (collection.isEmpty()) {
+                return false;
+            }
+            // 检查集合中第一个元素的类是否有注解
+//            Object firstEntity = collection.iterator().next();
+//            return firstEntity != null &&
+//                    AnnotationUtils.findAnnotation(firstEntity.getClass(), PublishSaveNotify.class) != null;
+            return true;
+        } else {
+            // 检查单个实体类是否有注解
+//            return AnnotationUtils.findAnnotation(entityParam.getClass(), PublishSaveNotify.class) != null;
+            return true;
+        }
     }
 
     /**
      * 发布保存前事件
      */
     @SuppressWarnings("unchecked")
-    private void publishBeforeSaveEvent(Object publisher, Object entityParam, PublishSaveNotify annotation, Map<Object, Object> oldEntiesMap) throws InvocationTargetException, IllegalAccessException {
-        SaveEvent event = new SaveEvent(publisher);
+    private void publishBeforeUpdateEvent(Object publisher, Object entityParam, PublishUpdateNotify annotation, Map<Object, Object> oldEntities) {
+        UpdateEvent event = new UpdateEvent(publisher);
         event.setEntityType(annotation.entityType().getName());
-        event.setOldEntities(oldEntiesMap);
+        event.setOldEntities(oldEntities);
         if (entityParam instanceof Collection) {
             event.setEntities((List<Object>) entityParam);
         } else {
             event.setEntities(List.of(entityParam));
         }
 
-        List<MethodHandler> handlers = findOnBeforeSaveHandlers( annotation);
-
+        List<MethodHandler> handlers = findOnBeforeUpdateHandlers( annotation);
         if(annotation.async()) {
             asyncPublishEvent(handlers, event);
         } else {
@@ -99,18 +135,17 @@ public class ServiceSaveEventAspect {
      * 发布保存后事件（可选）
      */
     @SuppressWarnings("unchecked")
-    private void publishAfterSaveEvent(Object publisher, Object entityParam, PublishSaveNotify annotation, Map<Object, Object> oldEntiesMap) throws InvocationTargetException, IllegalAccessException {
-        SaveEvent event = new SaveEvent(publisher);
+    private void publishAfterUpdateEvent(Object publisher, Object entityParam, PublishUpdateNotify annotation, Map<Object, Object> oldEntities) {
+        UpdateEvent event = new UpdateEvent(publisher);
         event.setEntityType(annotation.entityType().getName());
-        event.setOldEntities(oldEntiesMap);
+        event.setOldEntities(oldEntities);
         if (entityParam instanceof Collection) {
             event.setEntities((List<Object>) entityParam);
         } else {
             event.setEntities(List.of(entityParam));
         }
 
-        List<MethodHandler> handlers = findOnAfterSaveHandlers(annotation);
-
+        List<MethodHandler> handlers = findOnAfterUpdateHandlers(annotation);
         if(annotation.async()) {
             asyncPublishEvent(handlers, event);
         } else {
@@ -119,7 +154,7 @@ public class ServiceSaveEventAspect {
     }
 
     // 触发消息分发
-    public void publishEvent(List<MethodHandler> handlers, SaveEvent event) throws InvocationTargetException, IllegalAccessException {
+    public void publishEvent(List<MethodHandler> handlers, UpdateEvent event) {
         for(MethodHandler handler : handlers) {
             Object targetBean = handler.getTargetBean();
             Method method = handler.getMethod();
@@ -130,34 +165,37 @@ public class ServiceSaveEventAspect {
             }
 
             try {
-                if(event instanceof SaveEvent) {
-                    method.invoke(targetBean, event);
+                System.out.println(method);
+                if(event instanceof UpdateEvent) {
+                    method.invoke(targetBean, (UpdateEvent)event);
+                } else if(event instanceof UpdateEvent) {
+                    method.invoke(targetBean, (UpdateEvent)event);
                 }
+
             } catch (Exception e) {
                 e.printStackTrace();
-                throw e;
             }
         }
     }
 
     @Async
-    public void asyncPublishEvent(List<MethodHandler> handler, SaveEvent event) throws InvocationTargetException, IllegalAccessException {
+    public void asyncPublishEvent(List<MethodHandler> handler, UpdateEvent event) {
         publishEvent( handler, event);
     }
 
     /**
-     * 获取所有 OnAfterSave 注解的方法处理器
+     * 获取所有 OnAfterUpdate 注解的方法处理器
      *
      * @return
      */
-    private List<MethodHandler> findOnAfterSaveHandlers(PublishSaveNotify publishSaveNotify) {
+    private List<MethodHandler> findOnAfterUpdateHandlers(PublishUpdateNotify publishSaveNotify) {
         List<MethodHandler> handlers = new ArrayList<>();
         Map<String, Object> beans =  applicationContext.getBeansWithAnnotation(org.springframework.stereotype.Service.class);
 
         for(Object bean : beans.values()) {
             Method[] methods = bean.getClass().getMethods();
             for(Method method : methods) {
-                OnAfterSave annotation = AnnotationUtils.findAnnotation(method, OnAfterSave.class);
+                OnAfterUpdate annotation = AnnotationUtils.findAnnotation(method, OnAfterUpdate.class);
                 if(annotation != null && annotation.entityType().getName().equals(publishSaveNotify.entityType().getName())) {
                     handlers.add(new MethodHandler(bean, method, annotation.order(), annotation.async()));
                 }
@@ -166,23 +204,22 @@ public class ServiceSaveEventAspect {
 
         // 按照order排序； 升序
         handlers.sort(Comparator.comparingInt(MethodHandler::getOrder));
-
         return handlers;
     }
 
-    private List<MethodHandler> findOnBeforeSaveHandlers(PublishSaveNotify publishSaveNotify) {
+    /**
+     * 获取所有 OnBeforeUpdate 注解的方法处理器
+     *
+     * @return
+     */
+    private List<MethodHandler> findOnBeforeUpdateHandlers(PublishUpdateNotify publishSaveNotify) {
         List<MethodHandler> handlers = new ArrayList<>();
         Map<String, Object> beans =  applicationContext.getBeansWithAnnotation(org.springframework.stereotype.Service.class);
-
 
         for(Object bean : beans.values()) {
             Method[] methods = bean.getClass().getMethods();
             for(Method method : methods) {
-                OnBeforeSave annotation = AnnotationUtils.findAnnotation(method, OnBeforeSave.class);
-                if(annotation != null) {
-                    System.out.println(annotation.entityType().getName());
-                    System.out.println(publishSaveNotify.entityType().getName());
-                }
+                OnBeforeUpdate annotation = AnnotationUtils.findAnnotation(method, OnBeforeUpdate.class);
                 if(annotation != null && annotation.entityType().getName().equals(publishSaveNotify.entityType().getName())) {
                     handlers.add(new MethodHandler(bean, method, annotation.order(), annotation.async()));
                 }
@@ -191,7 +228,6 @@ public class ServiceSaveEventAspect {
 
         // 按照order排序； 升序
         handlers.sort(Comparator.comparingInt(MethodHandler::getOrder));
-
         return handlers;
     }
 
@@ -200,7 +236,7 @@ public class ServiceSaveEventAspect {
      * 从数据库获取保存前的旧数据
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private Map<Object, Object> getOldEntitiesFromDatabase(Object service, Object entityParam, PublishSaveNotify annotation) {
+    private Map<Object, Object> getOldEntitiesFromDatabase(Object service, Object entityParam, PublishUpdateNotify annotation) {
         Map<Object, Object> oldEntitiesMap = new HashMap<>();
 
         // 检查service是否实现了IService接口
@@ -212,21 +248,20 @@ public class ServiceSaveEventAspect {
         try {
             // 获取实体ID字段名（假设使用MyBatis-Plus，默认使用"id"字段）
             String idFieldName = "id";
-
-//            if(annotation.entityType() != null) {
-//                TableInfo tableInfo = TableInfoHelper.getTableInfo(annotation.entityType());
-////                Object idValue = tableInfo.getPropertyValue(entityParam, tableInfo.getKeyProperty());
-//                idFieldName = tableInfo.getKeyProperty();
-//            }
-
-
-
+            if(annotation.entityType() != null) {
+                TableInfo tableInfo = TableInfoHelper.getTableInfo(annotation.entityType());
+                idFieldName = tableInfo.getKeyProperty();
+                //Object idValue = tableInfo.getPropertyValue(entityParam, tableInfo.getKeyProperty());
+                System.out.println(idFieldName);
+                // idFieldName = tableInfo.getKeyProperty();
+            }
+            final String finalIdFieldName = idFieldName;
 
             if (entityParam instanceof Collection) {
                 // 批量保存的情况
                 Collection<?> entities = (Collection<?>) entityParam;
                 List<Object> ids = entities.stream()
-                        .map(entity -> getEntityId(entity, idFieldName))
+                        .map(entity -> getEntityId(entity, finalIdFieldName))
                         .filter(Objects::nonNull)
                         .collect(Collectors.toList());
 
@@ -248,7 +283,7 @@ public class ServiceSaveEventAspect {
                 Object id = getEntityId(entityParam, idFieldName);
                 if (id != null) {
                     // 调用service的getById方法获取旧数据
-                    Method getByIdMethod = service.getClass().getMethod("getById", id.getClass());
+                    Method getByIdMethod = service.getClass().getMethod("getById", Serializable.class);
                     Object oldEntity = getByIdMethod.invoke(service, id);
                     if (oldEntity != null) {
                         oldEntitiesMap.put(id, oldEntity);
