@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.shop.biz.mapper.ShopCartItemsMapper">
+    <resultMap id="BaseResultMap" type="work.soho.shop.biz.domain.ShopCartItems">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="userId" column="user_id" jdbcType="INTEGER"/>
+        <id property="sessionId" column="session_id" jdbcType="VARCHAR"/>
+        <id property="productId" column="product_id" jdbcType="INTEGER"/>
+        <id property="skuId" column="sku_id" jdbcType="INTEGER"/>
+        <id property="qty" column="qty" jdbcType="INTEGER"/>
+        <id property="isSelected" column="is_selected" jdbcType="TINYINT"/>
+        <id property="price" column="price" jdbcType="VARCHAR"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,user_id,session_id,product_id,sku_id,qty,is_selected,price,created_time,updated_time
+    </sql>
+</mapper>

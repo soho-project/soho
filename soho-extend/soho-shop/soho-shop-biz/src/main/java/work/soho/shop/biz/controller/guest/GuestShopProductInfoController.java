@@ -1,19 +1,25 @@
 package work.soho.shop.biz.controller.guest;
 
+import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
-import work.soho.shop.biz.domain.ShopProductInfo;
-import work.soho.shop.biz.service.ShopProductInfoService;
+import work.soho.shop.api.vo.ProductDetailsVo;
+import work.soho.shop.biz.domain.*;
+import work.soho.shop.biz.service.*;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 ;
 /**
@@ -27,6 +33,11 @@ import java.util.List;
 public class GuestShopProductInfoController {
 
     private final ShopProductInfoService shopProductInfoService;
+    private final ShopProductSkuService shopProductSkuService;
+    private final ShopProductSpecValueService shopProductSpecValueService;
+    private final ShopProductFreightService shopProductFreightService;
+    private final ShopProductModelSpecService shopProductModelSpecService;
+    private final ShopProductCategoryService shopProductCategoryService;
 
     /**
      * 查询商品信息列表
@@ -64,8 +75,61 @@ public class GuestShopProductInfoController {
      */
     @GetMapping(value = "/{id}" )
     @Node(value = "guest::shopProductInfo::getInfo", name = "获取 商品信息 详细信息")
-    public R<ShopProductInfo> getInfo(@PathVariable("id" ) Long id) {
-        return R.success(shopProductInfoService.getById(id));
+    public R<ProductDetailsVo> getDetails(@PathVariable("id" ) Long id) {
+        ShopProductInfo shopProductInfo = shopProductInfoService.getById(id);
+
+        Assert.notNull(shopProductInfo, "商品信息不存在");
+
+        ProductDetailsVo productDetailsVo = BeanUtils.copy(shopProductInfo, ProductDetailsVo.class);
+        // 查询sku信息
+        List<ShopProductSku> skuList = shopProductSkuService.list(new LambdaQueryWrapper<ShopProductSku>().eq(ShopProductSku::getProductId, id));
+        List<ProductDetailsVo.SkuInfo> skus = skuList.stream().map(sku -> BeanUtils.copy(sku, ProductDetailsVo.SkuInfo.class)).collect(Collectors.toList());
+
+        // 生成sku map信息
+        HashMap<String, ProductDetailsVo.SkuInfo> skusMap = new HashMap<>();
+        skus.forEach(sku -> {
+            List<ShopProductSpecValue> specValues = shopProductSpecValueService.list(
+                    new LambdaQueryWrapper<ShopProductSpecValue>()
+                            .eq(ShopProductSpecValue::getSkuId, sku.getId())
+                            .orderByDesc(ShopProductSpecValue::getSortOrder));
+            String key = "";
+            for(ShopProductSpecValue specValue: specValues) {
+                if(!key.equals("")) {
+                    key += ";";
+                }
+                key += specValue.getSpecId() + ":" + specValue.getValue();
+            }
+            skusMap.put(key, sku);
+        });
+        productDetailsVo.setSkus(skusMap);
+
+        // 获取商品规格信息
+        List<ShopProductSpecValue> specList = shopProductSpecValueService.list(
+                new LambdaQueryWrapper<ShopProductSpecValue>().eq(ShopProductSpecValue::getProductId, id)
+                        .eq(ShopProductSpecValue::getSkuId, 0)
+//                        .isNull(ShopProductSpecValue::getSkuId)
+                        .orderByDesc(ShopProductSpecValue::getSortOrder)
+        );
+
+        Map<Integer, String> specs = specList.stream().collect(Collectors.toMap(ShopProductSpecValue::getSpecId, ShopProductSpecValue::getValue));
+        productDetailsVo.setSpecs(specs);
+
+        // 获取商品运费信息
+        ShopProductFreight shopProductFreight = shopProductFreightService.getOne(new LambdaQueryWrapper<ShopProductFreight>().eq(ShopProductFreight::getProductId, id));
+        if(shopProductFreight != null) {
+            ProductDetailsVo.FeightInfo feightInfo = BeanUtils.copy(shopProductFreight, ProductDetailsVo.FeightInfo.class);
+            productDetailsVo.setFeightInfo(feightInfo);
+        }
+
+        // 获取规格名称信息
+        ShopProductCategory shopProductCategory = shopProductCategoryService.getById(shopProductInfo.getCategoryId());
+        Assert.notNull(shopProductCategory, "商品分类不存在");
+        List<ShopProductModelSpec> modelSpecs = shopProductModelSpecService.list(
+                new LambdaQueryWrapper<ShopProductModelSpec>()
+                        .eq(ShopProductModelSpec::getModelId, shopProductCategory.getModelId()));
+        Map<Integer, String> specsNames = modelSpecs.stream().collect(Collectors.toMap(ShopProductModelSpec::getId, ShopProductModelSpec::getName));
+        productDetailsVo.setSpecsNames(specsNames);
+        return R.success(productDetailsVo);
     }
 
     /**

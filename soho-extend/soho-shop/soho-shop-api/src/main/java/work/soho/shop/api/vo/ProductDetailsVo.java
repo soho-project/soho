@@ -70,6 +70,26 @@ public class ProductDetailsVo {
     private Integer commentCount;
 
     /**
+     * rating
+     */
+    private Integer rating;
+
+    /**
+     * sold_qty
+     */
+    private Integer soldQty;
+
+    /**
+     * like_count
+     */
+    private Integer likeCount;
+
+    /**
+     * view_count
+     */
+    private Integer viewCount;
+
+    /**
      * category_id
      */
     private String categoryId;
@@ -107,6 +127,11 @@ public class ProductDetailsVo {
      */
     private Map<Integer, String> specs;
 
+    /**
+     * specs_names
+     */
+    private Map<Integer, String> specsNames;
+
     @Data
     public static class SkuInfo {
         private Integer id;
@@ -114,7 +139,7 @@ public class ProductDetailsVo {
         /**
          * product_id
          */
-        private Integer productId;
+        private Long productId;
 
         /**
          * code
