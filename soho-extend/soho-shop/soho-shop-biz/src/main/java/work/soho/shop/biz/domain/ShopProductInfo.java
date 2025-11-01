@@ -115,6 +115,38 @@ public class ShopProductInfo implements Serializable {
     private Integer commentCount;
 
     /**
+    * rating
+    */
+    @ExcelProperty("rating")
+    @ApiModelProperty(value = "rating")
+    @TableField(value = "rating")
+    private Integer rating;
+
+    /**
+    * sold_qty
+    */
+    @ExcelProperty("sold_qty")
+    @ApiModelProperty(value = "sold_qty")
+    @TableField(value = "sold_qty")
+    private Integer soldQty;
+
+    /**
+    * like_count
+    */
+    @ExcelProperty("like_count")
+    @ApiModelProperty(value = "like_count")
+    @TableField(value = "like_count")
+    private Integer likeCount;
+
+    /**
+    * view_count
+    */
+    @ExcelProperty("view_count")
+    @ApiModelProperty(value = "view_count")
+    @TableField(value = "view_count")
+    private Integer viewCount;
+
+    /**
     * category_id
     */
     @ExcelProperty("category_id")
