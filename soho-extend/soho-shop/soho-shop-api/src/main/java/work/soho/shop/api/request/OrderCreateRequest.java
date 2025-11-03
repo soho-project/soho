@@ -17,7 +17,7 @@ public class OrderCreateRequest {
      *
      * 服务器端填充
      */
-    private Integer userId;
+    private Long userId;
 
     /**
      * 用户地址ID

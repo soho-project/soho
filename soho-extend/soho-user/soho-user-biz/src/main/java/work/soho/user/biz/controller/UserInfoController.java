@@ -124,10 +124,10 @@ public class UserInfoController {
      */
     @GetMapping("options")
     @Node(value = "userInfo::options", name = "用户信息;;option:id~usernameOptions")
-    public R<HashMap<Integer, String>> options() {
+    public R<HashMap<Long, String>> options() {
         List<UserInfo> list = userInfoService.list();
 
-        HashMap<Integer, String> map = new HashMap<>();
+        HashMap<Long, String> map = new HashMap<>();
         for(UserInfo item: list) {
             map.put(item.getId(), item.getUsername());
         }

@@ -38,7 +38,7 @@ public class ShopOrderInfo implements Serializable {
     @ApiModelProperty(value = "user_id")
     @TableField(value = "user_id")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Integer userId;
+    private Long userId;
 
     /**
     * amount

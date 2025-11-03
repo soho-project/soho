@@ -31,7 +31,7 @@ public class ShopUserAddresses implements Serializable {
     @ExcelProperty("user_id")
     @ApiModelProperty(value = "user_id")
     @TableField(value = "user_id")
-    private Integer userId;
+    private Long userId;
 
     /**
     * recipient_name
