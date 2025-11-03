@@ -2,6 +2,7 @@ package work.soho.common.data.captcha.utils;
 
 import com.google.code.kaptcha.impl.DefaultKaptcha;
 import lombok.experimental.UtilityClass;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.core.env.Environment;
 import work.soho.common.core.support.SpringContextHolder;
 import work.soho.common.core.util.IpUtils;
@@ -15,6 +16,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 
+@Log4j2
 @UtilityClass
 public class CaptchaUtils {
     /**

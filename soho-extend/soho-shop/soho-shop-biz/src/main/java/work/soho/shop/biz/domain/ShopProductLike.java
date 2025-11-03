@@ -1,19 +1,18 @@
 package work.soho.shop.biz.domain;
 
-import com.alibaba.excel.annotation.ExcelProperty;
-import com.alibaba.excel.annotation.format.DateTimeFormat;
+import io.swagger.annotations.ApiModelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Data;
-
+import com.alibaba.excel.annotation.ExcelProperty;
+import com.alibaba.excel.annotation.format.DateTimeFormat;
 import java.io.Serializable;
+import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@TableName(value ="shop_cart_items")
-public class ShopCartItems implements Serializable {
+@TableName(value ="shop_product_like")
+public class ShopProductLike implements Serializable {
     /**
     * id
     */
@@ -33,14 +32,6 @@ public class ShopCartItems implements Serializable {
     private Long userId;
 
     /**
-    * session_id
-    */
-    @ExcelProperty("session_id")
-    @ApiModelProperty(value = "session_id")
-    @TableField(value = "session_id")
-    private String sessionId;
-
-    /**
     * product_id
     */
     @ExcelProperty("product_id")
@@ -48,41 +39,6 @@ public class ShopCartItems implements Serializable {
     @TableField(value = "product_id")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long productId;
-
-    /**
-    * sku_id
-    */
-    @ExcelProperty("sku_id")
-    @ApiModelProperty(value = "sku_id")
-    @TableField(value = "sku_id")
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Long skuId;
-
-    /**
-    * qty
-    */
-    @ExcelProperty("qty")
-    @ApiModelProperty(value = "qty")
-    @TableField(value = "qty")
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Integer qty;
-
-    /**
-    * is_selected
-    */
-    @ExcelProperty("is_selected")
-    @ApiModelProperty(value = "is_selected")
-    @TableField(value = "is_selected")
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Integer isSelected;
-
-    /**
-    * price
-    */
-    @ExcelProperty("price")
-    @ApiModelProperty(value = "price")
-    @TableField(value = "price")
-    private BigDecimal price;
 
     /**
     * created_time
