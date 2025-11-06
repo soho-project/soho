@@ -12,9 +12,9 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@TableName(value ="shop_product_info")
 @Data
 @Accessors(chain = true)
+@TableName(value ="shop_product_info")
 public class ShopProductInfo implements Serializable {
     /**
     * id
@@ -112,6 +112,7 @@ public class ShopProductInfo implements Serializable {
     @ExcelProperty("comment_count")
     @ApiModelProperty(value = "comment_count")
     @TableField(value = "comment_count")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer commentCount;
 
     /**
@@ -120,6 +121,7 @@ public class ShopProductInfo implements Serializable {
     @ExcelProperty("rating")
     @ApiModelProperty(value = "rating")
     @TableField(value = "rating")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer rating;
 
     /**
@@ -128,6 +130,7 @@ public class ShopProductInfo implements Serializable {
     @ExcelProperty("sold_qty")
     @ApiModelProperty(value = "sold_qty")
     @TableField(value = "sold_qty")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer soldQty;
 
     /**
@@ -136,6 +139,7 @@ public class ShopProductInfo implements Serializable {
     @ExcelProperty("like_count")
     @ApiModelProperty(value = "like_count")
     @TableField(value = "like_count")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer likeCount;
 
     /**
@@ -144,6 +148,7 @@ public class ShopProductInfo implements Serializable {
     @ExcelProperty("view_count")
     @ApiModelProperty(value = "view_count")
     @TableField(value = "view_count")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer viewCount;
 
     /**
@@ -152,7 +157,8 @@ public class ShopProductInfo implements Serializable {
     @ExcelProperty("category_id")
     @ApiModelProperty(value = "category_id")
     @TableField(value = "category_id")
-    private String categoryId;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long categoryId;
 
     /**
     * shelf_status
@@ -173,6 +179,14 @@ public class ShopProductInfo implements Serializable {
     private Integer auditStatus;
 
     /**
+    * tags
+    */
+    @ExcelProperty("tags")
+    @ApiModelProperty(value = "tags")
+    @TableField(value = "tags")
+    private String tags;
+
+    /**
     * updated_time
     */
     @ExcelProperty("updated_time")
@@ -188,6 +202,8 @@ public class ShopProductInfo implements Serializable {
     @ExcelProperty("created_time")
     @ApiModelProperty(value = "created_time")
     @TableField(value = "created_time", fill = FieldFill.INSERT)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
 
 }

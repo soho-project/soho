@@ -39,7 +39,7 @@ class ShopOrderInfoServiceTest {
     void createOrder() {
         System.out.println("createOrder");
         OrderCreateRequest request = new OrderCreateRequest();
-        request.setUserId(1);
+        request.setUserId(1L);
         request.setUserAddressId(1);
         request.setUserCouponId(null);
         request.setRemark("备注");

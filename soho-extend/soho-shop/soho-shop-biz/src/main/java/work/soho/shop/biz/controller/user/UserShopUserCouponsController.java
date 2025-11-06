@@ -1,31 +1,23 @@
 package work.soho.shop.biz.controller.user;
 
-import java.time.LocalDateTime;
-import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 import work.soho.common.core.result.R;
-import work.soho.common.security.annotation.Node;;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
+import work.soho.common.security.annotation.Node;
+import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.shop.biz.domain.ShopUserCoupons;
+import work.soho.shop.biz.enums.ShopUserCouponsEnums;
 import work.soho.shop.biz.service.ShopUserCouponsService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.admin.api.vo.OptionVo;
-import work.soho.admin.api.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.admin.api.vo.TreeNodeVo;
-import work.soho.admin.api.service.AdminDictApiService;
+
+import java.util.Arrays;
+import java.util.List;
+
+;
 /**
  * 用户优惠券表Controller
  *
@@ -94,5 +86,20 @@ public class UserShopUserCouponsController {
     @Node(value = "user::shopUserCoupons::remove", name = "删除 用户优惠券表")
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(shopUserCouponsService.removeByIds(Arrays.asList(ids)));
+    }
+
+    /**
+     * 获取用户未使用的优惠券数量
+     *
+     * @param sohoUserDetails
+     * @return
+     */
+    @GetMapping("/unuseCount")
+    public R<Long> unuseCount(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        return R.success(shopUserCouponsService.count(
+                new LambdaQueryWrapper<ShopUserCoupons>()
+                        .eq(ShopUserCoupons::getUserId, sohoUserDetails.getId())
+                        .eq(ShopUserCoupons::getStatus, ShopUserCouponsEnums.Status.UNUSED.getId())
+        ));
     }
 }

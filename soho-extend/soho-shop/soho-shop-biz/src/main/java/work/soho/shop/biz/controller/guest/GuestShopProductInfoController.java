@@ -60,7 +60,7 @@ public class GuestShopProductInfoController {
         lqw.like(StringUtils.isNotBlank(shopProductInfo.getThumbnails()),ShopProductInfo::getThumbnails ,shopProductInfo.getThumbnails());
         lqw.like(StringUtils.isNotBlank(shopProductInfo.getDetailHtml()),ShopProductInfo::getDetailHtml ,shopProductInfo.getDetailHtml());
         lqw.eq(shopProductInfo.getCommentCount() != null, ShopProductInfo::getCommentCount ,shopProductInfo.getCommentCount());
-        lqw.like(StringUtils.isNotBlank(shopProductInfo.getCategoryId()),ShopProductInfo::getCategoryId ,shopProductInfo.getCategoryId());
+        lqw.like(shopProductInfo.getCategoryId() != null,ShopProductInfo::getCategoryId ,shopProductInfo.getCategoryId());
         lqw.like(shopProductInfo.getShelfStatus() != null,ShopProductInfo::getShelfStatus ,shopProductInfo.getShelfStatus());
         lqw.eq(shopProductInfo.getAuditStatus() != null, ShopProductInfo::getAuditStatus ,shopProductInfo.getAuditStatus());
         lqw.eq(shopProductInfo.getUpdatedTime() != null, ShopProductInfo::getUpdatedTime ,shopProductInfo.getUpdatedTime());

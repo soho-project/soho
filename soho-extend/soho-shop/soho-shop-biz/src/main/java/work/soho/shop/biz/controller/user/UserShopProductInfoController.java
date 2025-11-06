@@ -8,10 +8,12 @@ import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
+import work.soho.common.database.utils.DbSortUtil;
 import work.soho.common.security.annotation.Node;
 import work.soho.shop.biz.domain.ShopProductInfo;
 import work.soho.shop.biz.service.ShopProductInfoService;
 
+import java.io.InvalidClassException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -33,8 +35,10 @@ public class UserShopProductInfoController {
      */
     @GetMapping("/list")
     @Node(value = "user::shopProductInfo::list", name = "获取 商品信息 列表")
-    public R<PageSerializable<ShopProductInfo>> list(ShopProductInfo shopProductInfo, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
-    {
+    public R<PageSerializable<ShopProductInfo>> list(ShopProductInfo shopProductInfo,
+                                                     BetweenCreatedTimeRequest betweenCreatedTimeRequest,
+                                                     String keyword,
+                                                     String sort) throws InvalidClassException {
         PageUtils.startPage();
         LambdaQueryWrapper<ShopProductInfo> lqw = new LambdaQueryWrapper<ShopProductInfo>();
         lqw.eq(shopProductInfo.getId() != null, ShopProductInfo::getId ,shopProductInfo.getId());
@@ -49,12 +53,21 @@ public class UserShopProductInfoController {
         lqw.like(StringUtils.isNotBlank(shopProductInfo.getThumbnails()),ShopProductInfo::getThumbnails ,shopProductInfo.getThumbnails());
         lqw.like(StringUtils.isNotBlank(shopProductInfo.getDetailHtml()),ShopProductInfo::getDetailHtml ,shopProductInfo.getDetailHtml());
         lqw.eq(shopProductInfo.getCommentCount() != null, ShopProductInfo::getCommentCount ,shopProductInfo.getCommentCount());
-        lqw.like(StringUtils.isNotBlank(shopProductInfo.getCategoryId()),ShopProductInfo::getCategoryId ,shopProductInfo.getCategoryId());
-        lqw.like(shopProductInfo.getShelfStatus() != null,ShopProductInfo::getShelfStatus ,shopProductInfo.getShelfStatus());
+        lqw.eq(shopProductInfo.getCategoryId() != null,ShopProductInfo::getCategoryId ,shopProductInfo.getCategoryId());
+        lqw.eq(shopProductInfo.getShelfStatus() != null,ShopProductInfo::getShelfStatus ,shopProductInfo.getShelfStatus());
         lqw.eq(shopProductInfo.getAuditStatus() != null, ShopProductInfo::getAuditStatus ,shopProductInfo.getAuditStatus());
         lqw.eq(shopProductInfo.getUpdatedTime() != null, ShopProductInfo::getUpdatedTime ,shopProductInfo.getUpdatedTime());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, ShopProductInfo::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, ShopProductInfo::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
+        if(StringUtils.isNotBlank(keyword)) {
+            lqw.like(ShopProductInfo::getName, keyword);
+            lqw.or().like(ShopProductInfo::getSpuCode, keyword);
+            lqw.or().like(ShopProductInfo::getSubTitle, keyword);
+            lqw.or().like(ShopProductInfo::getTags, keyword);
+        }
+
+        //应用排序
+        DbSortUtil.applySort(lqw, Arrays.asList(ShopProductInfo::getSoldQty, ShopProductInfo::getSellingPrice),  sort);
         List<ShopProductInfo> list = shopProductInfoService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }

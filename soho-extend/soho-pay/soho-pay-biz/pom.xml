@@ -92,6 +92,17 @@
             <groupId>work.soho</groupId>
             <artifactId>soho-common-data</artifactId>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-user-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

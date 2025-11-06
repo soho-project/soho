@@ -2,7 +2,10 @@ package work.soho.pay.biz.platform.wechat.adapter;
 
 
 import com.wechat.pay.java.service.payments.app.AppService;
-import com.wechat.pay.java.service.payments.app.model.*;
+import com.wechat.pay.java.service.payments.app.model.Amount;
+import com.wechat.pay.java.service.payments.app.model.PrepayRequest;
+import com.wechat.pay.java.service.payments.app.model.PrepayResponse;
+import com.wechat.pay.java.service.payments.app.model.SceneInfo;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.IpUtils;
 import work.soho.pay.biz.platform.PayConfig;

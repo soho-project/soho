@@ -6,12 +6,14 @@ import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
+import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
 import work.soho.user.biz.domain.UserInfo;
 import work.soho.user.biz.service.UserInfoService;
+import work.soho.admin.api.vo.OptionVo;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -29,7 +31,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/user/admin/userInfo" )
 public class UserInfoController {
-
+    private final AdminDictApiService adminDictApiService;
     private final UserInfoService userInfoService;
 
     /**
@@ -132,5 +134,15 @@ public class UserInfoController {
             map.put(item.getId(), item.getUsername());
         }
         return R.success(map);
+    }
+
+    /**
+     * 获取 用户信息 level 字典选项
+     *
+     * @return
+     */
+    @GetMapping("/queryLevelOptions")
+    public R<List<OptionVo<Integer, String>>> queryLevelOptions(){
+        return R.success(adminDictApiService.getOptionsByCode("user-info-level"));
     }
 }

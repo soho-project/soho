@@ -1,7 +1,7 @@
 package work.soho.pay.biz.mapper;
 
-import work.soho.pay.biz.domain.PayInfo;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import work.soho.pay.biz.domain.PayInfo;
 
 /**
 * @author i

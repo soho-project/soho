@@ -76,6 +76,27 @@ public class ProductInfoRequest {
     private Integer commentCount;
 
     /**
+     *  rating
+     */
+    private Integer rating;
+
+    /**
+     * sold_qty
+     */
+    private Integer soldQty;
+
+    /**
+     * like_count
+     */
+    private Integer likeCount;
+
+    /**
+     * view_count
+     */
+    private Integer viewCount;
+
+
+    /**
      * category_id
      */
     private String categoryId;
@@ -89,6 +110,11 @@ public class ProductInfoRequest {
      * audit_status
      */
     private Integer auditStatus;
+
+    /**
+     * tags
+     */
+    private String tags;
 
     /**
      * 产品运费信息

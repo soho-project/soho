@@ -15,4 +15,19 @@ public class UserApiServiceImpl implements UserApiService {
     public UserInfoDto getUserById(Long id) {
         return userApiFeign.getUserById(id);
     }
+
+    @Override
+    public UserInfoDto getUserInfoByPhone(String phone) {
+        return null;
+    }
+
+    @Override
+    public Boolean verificationUserInfoPayPassword(Long userId, String payPassword) {
+        return null;
+    }
+
+    @Override
+    public UserInfoDto updateUserInfoDto(UserInfoDto userInfoDto) {
+        return null;
+    }
 }

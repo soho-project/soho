@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.wallet.biz.mapper.WalletWithdrawalOrderMapper">
+    <resultMap id="BaseResultMap" type="work.soho.wallet.biz.domain.WalletWithdrawalOrder">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="userId" column="user_id" jdbcType="INTEGER"/>
+        <id property="walletId" column="wallet_id" jdbcType="INTEGER"/>
+        <id property="amount" column="amount" jdbcType="VARCHAR"/>
+        <id property="notes" column="notes" jdbcType="VARCHAR"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="adminId" column="admin_id" jdbcType="INTEGER"/>
+        <id property="adminNotes" column="admin_notes" jdbcType="VARCHAR"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,user_id,wallet_id,amount,notes,status,admin_id,admin_notes,updated_time,created_time
+    </sql>
+</mapper>

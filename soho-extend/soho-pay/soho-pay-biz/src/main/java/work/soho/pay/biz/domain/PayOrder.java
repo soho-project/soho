@@ -84,6 +84,22 @@ public class PayOrder implements Serializable {
     private String notifyUrl;
 
     /**
+     * 用户ID
+     *
+     * 非必填，默认为 null
+     */
+    @ApiModelProperty(value = "用户ID")
+    @TableField(value = "user_id")
+    private Long userId;
+
+    /**
+     * 对应支付钱包用户ID
+     */
+    @ApiModelProperty(value = "用户ID")
+    @TableField(value = "user_cust_id")
+    private String userCustId;
+
+    /**
      * 创建时间
      */
     @ApiModelProperty(value = "创建时间")

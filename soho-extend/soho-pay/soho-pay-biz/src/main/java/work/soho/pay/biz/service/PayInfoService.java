@@ -1,7 +1,7 @@
 package work.soho.pay.biz.service;
 
-import work.soho.pay.biz.domain.PayInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
+import work.soho.pay.biz.domain.PayInfo;
 
 /**
 * @author i

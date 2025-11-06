@@ -91,6 +91,14 @@ public class UserInfo implements Serializable {
     private Integer sex;
 
     /**
+     * 等级;;frontName:等级
+     */
+    @ApiModelProperty(value = "等级")
+    @TableField(value = "level")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Integer level;
+
+    /**
      * 更新时间
      */
     @ApiModelProperty(value = "更新时间")

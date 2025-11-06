@@ -235,7 +235,7 @@ public class AdminUserController extends BaseController {
                 return R.error("请传递正确的图片格式");
             }
             System.out.println(file.getContentType());
-            String url = UploadUtils.upload("user/avatar", file);
+            String url = UploadUtils.upload("admin/avatar", file);
             return R.success(url);
         } catch (Exception ioException) {
             logger.error(ioException.toString());
