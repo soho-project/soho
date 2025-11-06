@@ -1,9 +1,7 @@
 package work.soho.pay.biz.platform.model;
 
-import com.wechat.pay.java.service.payments.model.Transaction;
 import lombok.Data;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.Date;

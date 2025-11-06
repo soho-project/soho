@@ -18,7 +18,7 @@ import java.util.List;
 @Api(tags = "客户端支付")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/pay/client/api/pay" )
+@RequestMapping("/pay/guest/api/pay" )
 public class ClientApiPayController {
     private final PayInfoService payInfoService;
     private final PayOrderService payOrderService;

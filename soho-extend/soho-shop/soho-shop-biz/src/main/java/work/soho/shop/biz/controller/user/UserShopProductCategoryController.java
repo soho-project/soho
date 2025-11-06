@@ -92,11 +92,11 @@ public class UserShopProductCategoryController {
     @GetMapping("tree")
     public R<List<TreeNodeVo>> tree() {
         List<ShopProductCategory> list = shopProductCategoryService.list();
-        List<TreeNodeVo<Integer, Integer, Integer, String>> listVo = list.stream().map(item->{
+        List<TreeNodeVo<Long, Long, Long, String>> listVo = list.stream().map(item->{
             return new TreeNodeVo<>(item.getId(), item.getId(), item.getParentId(), item.getName());
         }).collect(Collectors.toList());
 
-        Map<Integer, List<TreeNodeVo>> mapVo = new HashMap<>();
+        Map<Long, List<TreeNodeVo>> mapVo = new HashMap<>();
         listVo.stream().forEach(item -> {
             if(mapVo.get(item.getParentId()) == null) {
                 mapVo.put(item.getParentId(), new ArrayList<>());
@@ -109,6 +109,6 @@ public class UserShopProductCategoryController {
                 item.setChildren(mapVo.get(item.getKey()));
             }
         });
-        return R.success(mapVo.get(0));
+        return R.success(mapVo.get(0L));
     }
 }

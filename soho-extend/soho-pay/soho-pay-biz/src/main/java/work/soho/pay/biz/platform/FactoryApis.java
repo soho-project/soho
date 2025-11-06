@@ -2,6 +2,7 @@ package work.soho.pay.biz.platform;
 
 import work.soho.pay.biz.platform.alipay.adapter.WapApis;
 import work.soho.pay.biz.platform.alipay.adapter.WebApis;
+import work.soho.pay.biz.platform.payapis.HftCreateWallet;
 import work.soho.pay.biz.platform.payapis.Pay;
 import work.soho.pay.biz.platform.wechat.adapter.AppApis;
 import work.soho.pay.biz.platform.wechat.adapter.H5Apis;
@@ -18,6 +19,8 @@ public class FactoryApis {
      */
     public static Pay getApisByName(String name, PayConfig payConfig) {
         switch (name) {
+            case "adapay_h5":
+                return new work.soho.pay.biz.platform.adapay.adapter.WapApis(payConfig);
             case "wechat_jsapi":
                 return new JsapiApis(payConfig);
             case "wechat_h5":
@@ -30,6 +33,15 @@ public class FactoryApis {
                 return new WapApis(payConfig);
             case "alipay_web":
                 return new WebApis(payConfig);
+            default:
+                return null;
+        }
+    }
+
+    public static HftCreateWallet getHftCreateWalletApisByName(String name, PayConfig payConfig) {
+        switch (name) {
+            case "adapay_h5":
+                return new work.soho.pay.biz.platform.adapay.adapter.WapApis(payConfig);
             default:
                 return null;
         }

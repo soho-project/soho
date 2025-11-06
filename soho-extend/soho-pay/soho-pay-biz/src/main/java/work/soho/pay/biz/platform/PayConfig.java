@@ -5,6 +5,12 @@ import lombok.Data;
 @Data
 public class PayConfig {
     /**
+     * 支付平台ID
+     * 本地配置信息ID
+     */
+    private Integer id;
+
+    /**
      * 应用ID
      */
     private String appId;

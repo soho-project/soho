@@ -22,7 +22,7 @@ public class ShopProductCategory implements Serializable {
     @ApiModelProperty(value = "id")
     @TableId(value = "id", type = IdType.AUTO)
     @JsonSerialize(using = ToStringSerializer.class)
-    private Integer id;
+    private Long id;
 
     /**
     * name
@@ -39,7 +39,7 @@ public class ShopProductCategory implements Serializable {
     @ApiModelProperty(value = "parent_id")
     @TableField(value = "parent_id")
     @JsonSerialize(using = ToStringSerializer.class)
-    private Integer parentId;
+    private Long parentId;
 
     /**
     * level

@@ -92,7 +92,8 @@ public class ProductDetailsVo {
     /**
      * category_id
      */
-    private String categoryId;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long categoryId;
 
     /**
      * shelf_status
@@ -105,6 +106,11 @@ public class ProductDetailsVo {
      */
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer auditStatus;
+
+    /**
+     *  tags
+     */
+    private String tags;
 
     /**
      * freight_template_id

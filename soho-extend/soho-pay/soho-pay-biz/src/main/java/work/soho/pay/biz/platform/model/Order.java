@@ -40,4 +40,11 @@ public class Order {
      * 支付用户openId
      */
     private String openId;
+
+    // 下面是汇付通的一些参数
+
+    /**
+     * 用户钱包用户id
+     */
+    private String userCustId;
 }

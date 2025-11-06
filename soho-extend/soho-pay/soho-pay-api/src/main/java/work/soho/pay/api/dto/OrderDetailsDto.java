@@ -1,6 +1,9 @@
 package work.soho.pay.api.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
@@ -8,7 +11,17 @@ import java.math.BigDecimal;
  * 支付请求数据格式
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class OrderDetailsDto {
+    /**
+     * 用户ID
+     *
+     * 部分支付方式可能会用到； 例如 汇付通
+     */
+    private Long userId;
+
     /**
      * 支付方方式ID
      *
