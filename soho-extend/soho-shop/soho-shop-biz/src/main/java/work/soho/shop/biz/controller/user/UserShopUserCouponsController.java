@@ -10,12 +10,18 @@ import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
 import work.soho.common.security.userdetails.SohoUserDetails;
+import work.soho.shop.api.vo.ShopUserCouponsVo;
+import work.soho.shop.biz.domain.ShopCoupons;
 import work.soho.shop.biz.domain.ShopUserCoupons;
 import work.soho.shop.biz.enums.ShopUserCouponsEnums;
+import work.soho.shop.biz.service.ShopCouponsService;
 import work.soho.shop.biz.service.ShopUserCouponsService;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.Map;
+import work.soho.common.core.util.BeanUtils;
 
 ;
 /**
@@ -25,10 +31,12 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/user/shopUserCoupons" )
+@RequestMapping("/shop/user/shopUserCoupons" )
 public class UserShopUserCouponsController {
 
     private final ShopUserCouponsService shopUserCouponsService;
+
+    private final ShopCouponsService shopCouponsService;
 
     /**
      * 查询用户优惠券表列表
@@ -50,6 +58,28 @@ public class UserShopUserCouponsController {
         lqw.eq(shopUserCoupons.getExpiredAt() != null, ShopUserCoupons::getExpiredAt ,shopUserCoupons.getExpiredAt());
         List<ShopUserCoupons> list = shopUserCouponsService.list(lqw);
         return R.success(new PageSerializable<>(list));
+    }
+
+    /**
+     * 获取用户优惠券表列表
+     */
+    @GetMapping("/getUserCoupons")
+    public R<List<ShopUserCouponsVo>> getUserCoupons(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        List<ShopUserCoupons> list = shopUserCouponsService.getUserCoupons(sohoUserDetails.getId());
+        List<Long> couponIds = list.stream().map(ShopUserCoupons::getCouponId).collect(Collectors.toList());
+
+        Map<Long, ShopCoupons> couponsMap = shopCouponsService.listByIds(couponIds).stream().collect(Collectors.toMap(ShopCoupons::getId, v -> v));
+
+        List<ShopUserCouponsVo> voList = list.stream().map(item -> {
+            ShopCoupons coupon = couponsMap.get(item.getCouponId());
+            ShopUserCouponsVo vo = BeanUtils.copy(coupon, ShopUserCouponsVo.class);
+            vo.setId(item.getId());
+            vo.setCode(item.getCouponCode());
+            // TODO 检查优惠劵是否可用
+            return vo;
+        }).collect(Collectors.toList());
+
+        return R.success(voList);
     }
 
     /**

@@ -3,12 +3,14 @@ package work.soho.shop.biz.controller.user;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
+import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.shop.biz.domain.ShopUserAddresses;
 import work.soho.shop.biz.service.ShopUserAddressesService;
 
@@ -33,10 +35,14 @@ public class UserShopUserAddressesController {
      */
     @GetMapping("/list")
     @Node(value = "user::shopUserAddresses::list", name = "获取 用户收货地址表 列表")
-    public R<PageSerializable<ShopUserAddresses>> list(ShopUserAddresses shopUserAddresses, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
+    public R<PageSerializable<ShopUserAddresses>> list(ShopUserAddresses shopUserAddresses,
+                                                       BetweenCreatedTimeRequest betweenCreatedTimeRequest,
+                                                       @AuthenticationPrincipal SohoUserDetails userDetails
+                                                       )
     {
         PageUtils.startPage();
         LambdaQueryWrapper<ShopUserAddresses> lqw = new LambdaQueryWrapper<ShopUserAddresses>();
+        lqw.eq(ShopUserAddresses::getUserId ,userDetails.getId());
         lqw.eq(shopUserAddresses.getId() != null, ShopUserAddresses::getId ,shopUserAddresses.getId());
         lqw.eq(shopUserAddresses.getUserId() != null, ShopUserAddresses::getUserId ,shopUserAddresses.getUserId());
         lqw.like(StringUtils.isNotBlank(shopUserAddresses.getRecipientName()),ShopUserAddresses::getRecipientName ,shopUserAddresses.getRecipientName());

@@ -18,6 +18,9 @@ public class ProductSkuVo {
     // 商品名称
     private String name;
 
+    // 商品规格信息
+    private String specs;
+
     // 图片
     private String mainImage;
 

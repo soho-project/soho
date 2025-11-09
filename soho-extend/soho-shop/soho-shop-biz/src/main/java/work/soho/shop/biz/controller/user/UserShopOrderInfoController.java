@@ -12,8 +12,11 @@ import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
 import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.shop.api.request.OrderCreateRequest;
+import work.soho.shop.api.vo.OrderDetailsVo;
+import work.soho.shop.biz.domain.ShopCouponUsageLogs;
 import work.soho.shop.biz.domain.ShopOrderInfo;
 import work.soho.shop.biz.service.ShopOrderInfoService;
+import work.soho.shop.biz.service.ShopUserCouponsService;
 
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +33,8 @@ import java.util.List;
 public class UserShopOrderInfoController {
 
     private final ShopOrderInfoService shopOrderInfoService;
+
+    private final ShopUserCouponsService shopUserCouponsService;
 
     /**
      * 查询订单列表
@@ -55,6 +60,28 @@ public class UserShopOrderInfoController {
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, ShopOrderInfo::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
         List<ShopOrderInfo> list = shopOrderInfoService.list(lqw);
         return R.success(new PageSerializable<>(list));
+    }
+
+    /**
+     * 订单计算
+     *
+     * TODO 订单拆分店铺计算
+     *
+     * @param orderCreateRequest
+     */
+    @PostMapping("/calculationOrder")
+    public R<OrderDetailsVo> calculationOrder(@RequestBody  OrderCreateRequest orderCreateRequest,@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        orderCreateRequest.setUserId(sohoUserDetails.getId());
+        OrderDetailsVo order = shopOrderInfoService.calculationOrder(orderCreateRequest);
+        return R.success(order);
+    }
+
+    /**
+     * 订单结算页面获取优惠劵列表
+     */
+    @GetMapping("/getCouponsList" )
+    public void getCouponsList(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+
     }
 
     /**

@@ -5,10 +5,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.database.annotation.PublishDeleteNotify;
 import work.soho.shop.api.request.OrderCreateRequest;
+import work.soho.shop.api.vo.OrderDetailsVo;
 import work.soho.shop.api.vo.ProductSkuVo;
 import work.soho.shop.biz.domain.*;
 import work.soho.shop.biz.enums.*;
@@ -30,6 +32,7 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
 
     private final ShopProductInfoMapper shopProductInfoMapper;
     private final ShopProductSkuMapper shopProductSkuMapper;
+    private final ShopProductSpecValueMapper shopProductSpecValueMapper;
     private final ShopOrderSkuMapper shopOrderSkuMapper;
     private final ShopUserAddressesMapper shopUserAddressesMapper;
     private final ShopCouponsMapper shopCouponsMapper;
@@ -39,6 +42,100 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
     private final ShopProductFreightMapper shopProductFreightMapper;
     private final ShopFreightTemplateMapper shopFreightTemplateMapper;
     private final ShopFreightRuleMapper shopFreightRuleMapper;
+
+    @Override
+    public OrderDetailsVo calculationOrder(OrderCreateRequest request)
+    {
+        // 获取用户收货地址
+        ShopUserAddresses shopUserAddresses = shopUserAddressesMapper.selectById(request.getUserAddressId());
+        Assert.notNull(shopUserAddresses, "收货地址不存在");
+        // 检查地址是否为当前用户的地址
+        Assert.isTrue(shopUserAddresses.getUserId().equals(request.getUserId()), "收货地址不属于当前用户");
+
+        ShopOrderInfo shopOrderInfo = new ShopOrderInfo();
+        shopOrderInfo.setNo(IDGeneratorUtils.snowflake().toString());
+        shopOrderInfo.setUserId(request.getUserId());
+        shopOrderInfo.setDeliveryFee(request.getDeliveryFee());
+        shopOrderInfo.setDiscountAmount(BigDecimal.ZERO);
+//        shopOrderInfo.setAmount(BigDecimal.valueOf(100.00));
+        shopOrderInfo.setStatus(ShopOrderInfoEnums.Status.PENDING.getId());
+        shopOrderInfo.setPayStatus(ShopOrderInfoEnums.PayStatus.PENDING_PAYMENT.getId());
+        shopOrderInfo.setFreightStatus(0);
+        shopOrderInfo.setOrderType(request.getType()!=null ? request.getType() : ShopOrderInfoEnums.OrderType.PHYSICAL_ORDER.getId());
+        shopOrderInfo.setSource(request.getSource()!=null ? request.getSource() : ShopOrderInfoEnums.Source.WAP.getId());
+        shopOrderInfo.setRemark(request.getRemark());
+        shopOrderInfo.setReceivingAddress(shopUserAddresses.getProvince()
+                + " " + shopUserAddresses.getCity()
+                + " " + shopUserAddresses.getDistrict()
+                + " " + shopUserAddresses.getDetailAddress()
+        );
+        shopOrderInfo.setConsignee(shopUserAddresses.getRecipientName());
+        shopOrderInfo.setReceivingPhoneNumber(shopUserAddresses.getRecipientPhone());
+
+        BigDecimal orderProductTotalAmount = BigDecimal.ZERO;
+        List<ShopOrderSku> shopOrderSkuList = new ArrayList<>();
+        for(ProductSkuVo product : request.getProducts()) {
+            ShopProductInfo productInfo = shopProductInfoMapper.selectById(product.getProductId());
+            Assert.notNull(productInfo, "商品不存在");
+            Assert.isTrue(productInfo.getShelfStatus() == 1, "商品已下架");
+            Assert.isTrue(productInfo.getQty() >= product.getQty(), "商品库存不足");
+            // 检查sku信息能对的上
+            ShopProductSku sku = shopProductSkuMapper.selectById(product.getSkuId());
+            Assert.notNull(sku, "商品sku不存在");
+            Assert.isTrue(sku.getProductId().equals(productInfo.getId()), "商品sku信息不匹配");
+            // 获取商品规格信息
+            List<ShopProductSpecValue> specList = shopProductSpecValueMapper.selectList(new LambdaQueryWrapper<ShopProductSpecValue>()
+                    .eq(ShopProductSpecValue::getSkuId, sku.getId())
+            );
+            List<String> specValues = specList.stream().map(ShopProductSpecValue::getValue).collect(Collectors.toList());
+            String specs = String.join(" ", specValues);
+            // 插入订单商品信息
+            ShopOrderSku shopOrderSku = new ShopOrderSku()
+                    .setProductId(productInfo.getId())
+                    .setSkuId(product.getSkuId())
+                    .setName(productInfo.getName())
+                    .setSpecs(specs)
+                    .setMainImage(
+                            StringUtils.isNotBlank(sku.getMainImage()) ?
+                                    sku.getMainImage() :
+                                    productInfo.getMainImage()
+                    )
+                    .setAmount(sku.getSellingPrice())
+                    .setQty(product.getQty())
+                    .setTotalAmount(sku.getSellingPrice().multiply(BigDecimal.valueOf(product.getQty())));
+
+            // 计算订单总金额
+            orderProductTotalAmount = orderProductTotalAmount.add(shopOrderSku.getTotalAmount());
+
+            shopOrderSkuList.add(shopOrderSku);
+        }
+
+        // 计算订单运费
+        BigDecimal deliveryFee = getFreightAmount(shopOrderSkuList, shopUserAddresses);
+        shopOrderInfo.setDeliveryFee(deliveryFee);
+
+        // 优惠劵计算
+        if(request.getUserCouponId() != null) {
+            ShopCouponUsageLogs shopCouponUsageLogs = createCouponUsageLogs(request.getUserCouponId(), shopOrderSkuList, shopOrderInfo);
+            if(shopCouponUsageLogs != null) {
+                shopOrderInfo.setDiscountAmount(shopCouponUsageLogs.getDiscountAmount());
+            }
+        }
+
+        ////////////////////////////////////////////////////////////  数据保存
+        // 保存订单信息
+        shopOrderInfo.setProductTotalAmount(orderProductTotalAmount);
+        shopOrderInfo.setAmount(orderProductTotalAmount.add(shopOrderInfo.getDeliveryFee()).subtract(shopOrderInfo.getDiscountAmount()));
+
+
+        OrderDetailsVo orderDetailsVo = new OrderDetailsVo();
+        orderDetailsVo.setOrder(BeanUtils.copy(shopOrderInfo, OrderDetailsVo.OrderInfoVo.class));
+        // 配置订单商品信息
+        List<OrderDetailsVo.OrderProductItemVo> orderProductItemVos = shopOrderSkuList.stream().map(shopOrderSku -> BeanUtils.copy(shopOrderSku, OrderDetailsVo.OrderProductItemVo.class)).collect(Collectors.toList());
+        orderDetailsVo.setOrderSkus(orderProductItemVos);
+
+        return orderDetailsVo;
+    }
 
     @Override
     public ShopOrderInfo createOrder(OrderCreateRequest request) {
