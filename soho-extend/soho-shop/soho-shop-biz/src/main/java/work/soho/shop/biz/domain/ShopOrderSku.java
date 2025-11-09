@@ -57,6 +57,14 @@ public class ShopOrderSku implements Serializable {
     private String name;
 
     /**
+    * specs
+    */
+    @ExcelProperty("specs")
+    @ApiModelProperty(value = "specs")
+    @TableField(value = "specs")
+    private String specs;
+
+    /**
     * main_image
     */
     @ExcelProperty("main_image")
