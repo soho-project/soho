@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.common.core.result.R;
@@ -11,6 +12,7 @@ import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
 import work.soho.common.security.userdetails.SohoUserDetails;
+import work.soho.shop.api.request.CreatePayRequest;
 import work.soho.shop.api.request.OrderCreateRequest;
 import work.soho.shop.api.vo.OrderDetailsVo;
 import work.soho.shop.biz.domain.ShopCouponUsageLogs;
@@ -18,7 +20,12 @@ import work.soho.shop.biz.domain.ShopOrderInfo;
 import work.soho.shop.biz.service.ShopOrderInfoService;
 import work.soho.shop.biz.service.ShopUserCouponsService;
 
+import work.soho.pay.api.service.PayOrderApiService;
+import work.soho.pay.api.dto.OrderDetailsDto;
+
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 ;
@@ -35,6 +42,8 @@ public class UserShopOrderInfoController {
     private final ShopOrderInfoService shopOrderInfoService;
 
     private final ShopUserCouponsService shopUserCouponsService;
+
+    private final PayOrderApiService payOrderApiService;
 
     /**
      * 查询订单列表
@@ -74,6 +83,27 @@ public class UserShopOrderInfoController {
         orderCreateRequest.setUserId(sohoUserDetails.getId());
         OrderDetailsVo order = shopOrderInfoService.calculationOrder(orderCreateRequest);
         return R.success(order);
+    }
+
+    /**
+     * 订单支付参数
+     */
+    @PostMapping("/queryPayParams")
+    public R<Map<String, String>> queryPayParams(@RequestBody CreatePayRequest createPayRequest, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ShopOrderInfo order = shopOrderInfoService.getById(createPayRequest.getOrderId());
+        Assert.notNull(order, "订单不存在");
+
+        OrderDetailsDto orderDetailsDto = OrderDetailsDto.builder()
+                .userId(order.getUserId())
+                .payInfoId(createPayRequest.getPayInfoId())
+                .amount(order.getAmount())
+                .description("订单：" + order.getNo() +  "支付")
+                .outTradeNo(order.getNo())
+                .openId(createPayRequest.getOpenId())
+                .build();
+
+        Map<String, String> payParams = payOrderApiService.payOrder(orderDetailsDto);
+        return R.success(payParams);
     }
 
     /**
