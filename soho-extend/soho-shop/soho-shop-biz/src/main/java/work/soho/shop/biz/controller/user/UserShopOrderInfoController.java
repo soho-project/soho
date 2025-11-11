@@ -8,6 +8,7 @@ import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
@@ -17,7 +18,9 @@ import work.soho.shop.api.request.OrderCreateRequest;
 import work.soho.shop.api.vo.OrderDetailsVo;
 import work.soho.shop.biz.domain.ShopCouponUsageLogs;
 import work.soho.shop.biz.domain.ShopOrderInfo;
+import work.soho.shop.biz.domain.ShopOrderSku;
 import work.soho.shop.biz.service.ShopOrderInfoService;
+import work.soho.shop.biz.service.ShopOrderSkuService;
 import work.soho.shop.biz.service.ShopUserCouponsService;
 
 import work.soho.pay.api.service.PayOrderApiService;
@@ -27,6 +30,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import com.github.pagehelper.Page;
 
 ;
 /**
@@ -41,6 +47,8 @@ public class UserShopOrderInfoController {
 
     private final ShopOrderInfoService shopOrderInfoService;
 
+    private final ShopOrderSkuService shopOrderSkuService;
+
     private final ShopUserCouponsService shopUserCouponsService;
 
     private final PayOrderApiService payOrderApiService;
@@ -50,10 +58,11 @@ public class UserShopOrderInfoController {
      */
     @GetMapping("/list")
     @Node(value = "user::shopOrderInfo::list", name = "获取 订单 列表")
-    public R<PageSerializable<ShopOrderInfo>> list(ShopOrderInfo shopOrderInfo, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
+    public R<PageSerializable<OrderDetailsVo>> list(ShopOrderInfo shopOrderInfo, BetweenCreatedTimeRequest betweenCreatedTimeRequest,@AuthenticationPrincipal SohoUserDetails sohoUserDetails)
     {
         PageUtils.startPage();
         LambdaQueryWrapper<ShopOrderInfo> lqw = new LambdaQueryWrapper<ShopOrderInfo>();
+        lqw.eq(ShopOrderInfo::getUserId, sohoUserDetails.getId()); // 只能查询当前用户订单
         lqw.eq(shopOrderInfo.getId() != null, ShopOrderInfo::getId ,shopOrderInfo.getId());
         lqw.like(StringUtils.isNotBlank(shopOrderInfo.getNo()),ShopOrderInfo::getNo ,shopOrderInfo.getNo());
         lqw.eq(shopOrderInfo.getUserId() != null, ShopOrderInfo::getUserId ,shopOrderInfo.getUserId());
@@ -67,8 +76,33 @@ public class UserShopOrderInfoController {
         lqw.eq(shopOrderInfo.getUpdatedTime() != null, ShopOrderInfo::getUpdatedTime ,shopOrderInfo.getUpdatedTime());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, ShopOrderInfo::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, ShopOrderInfo::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
+        lqw.orderByDesc(ShopOrderInfo::getId);
         List<ShopOrderInfo> list = shopOrderInfoService.list(lqw);
-        return R.success(new PageSerializable<>(list));
+
+        // 获取所有的订单ID
+        List<Integer> orderIds = list.stream().map(ShopOrderInfo::getId).collect(Collectors.toList());
+        List<ShopOrderSku> shopOrderSkus = shopOrderSkuService.list(new LambdaQueryWrapper<ShopOrderSku>().in(ShopOrderSku::getOrderId, orderIds));
+        Map<Integer, List<ShopOrderSku>> skuMap = shopOrderSkus.stream().collect(Collectors.groupingBy(ShopOrderSku::getOrderId));
+        Page<OrderDetailsVo> page = new Page<>();
+        list.forEach(order -> {
+            try {
+                OrderDetailsVo orderDetailsVo = new OrderDetailsVo();
+                orderDetailsVo.setOrder(BeanUtils.copy( order, OrderDetailsVo.OrderInfoVo.class));
+                List<ShopOrderSku> tmpSkus = skuMap.get(order.getId());
+                if(tmpSkus != null && tmpSkus.size() > 0) {
+                    List<OrderDetailsVo.OrderProductItemVo> orderProductItemVos = BeanUtils.copyList(tmpSkus, OrderDetailsVo.OrderProductItemVo.class);
+                    orderDetailsVo.setOrderSkus(orderProductItemVos);
+                }
+
+                page.add(orderDetailsVo);
+            } catch (Exception e) {
+                System.out.println(order);
+                e.printStackTrace();
+            }
+
+        });
+        page.setTotal(((Page)list).getTotal());
+        return R.success(new PageSerializable<>(page));
     }
 
     /**
