@@ -8,8 +8,11 @@ public class ShopOrderInfoEnums {
     @Getter
     public enum Status {
         PENDING(0,"待处理"),
-        ORDER_CANCELLATION(30,"订单取消"),
-        COMPLETED(20,"已完成");
+        PAYMENT_SUCCESS(10,"支付成功"),
+        SHIPPED(15,"已发货"),
+        COMPLETED(20,"已完成"),
+        ORDER_CANCELLATION(30,"订单取消");
+
         private final int id;
         private final String name;
     }
