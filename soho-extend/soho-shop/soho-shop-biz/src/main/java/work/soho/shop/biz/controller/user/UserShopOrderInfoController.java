@@ -19,12 +19,15 @@ import work.soho.shop.api.vo.OrderDetailsVo;
 import work.soho.shop.biz.domain.ShopCouponUsageLogs;
 import work.soho.shop.biz.domain.ShopOrderInfo;
 import work.soho.shop.biz.domain.ShopOrderSku;
+import work.soho.shop.biz.enums.ShopOrderInfoEnums;
 import work.soho.shop.biz.service.ShopOrderInfoService;
 import work.soho.shop.biz.service.ShopOrderSkuService;
 import work.soho.shop.biz.service.ShopUserCouponsService;
 
 import work.soho.pay.api.service.PayOrderApiService;
 import work.soho.pay.api.dto.OrderDetailsDto;
+
+import work.soho.shop.api.request.CancelOrderRequest;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -138,6 +141,19 @@ public class UserShopOrderInfoController {
 
         Map<String, String> payParams = payOrderApiService.payOrder(orderDetailsDto);
         return R.success(payParams);
+    }
+
+    /**
+     * 取消订单
+     */
+    @PostMapping("/cancelOrder")
+    public R cancelOrder(@RequestBody CancelOrderRequest cancelOrderRequest, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        ShopOrderInfo order = shopOrderInfoService.getById(cancelOrderRequest.getOrderId());
+        Assert.notNull(order, "订单不存在");
+        Assert.isTrue(order.getStatus() != ShopOrderInfoEnums.Status.PENDING.getId(), "订单已支付, 暂不支持手动取消订单");
+        order.setStatus(ShopOrderInfoEnums.Status.ORDER_CANCELLATION.getId());
+        shopOrderInfoService.updateById(order);
+        return R.success();
     }
 
     /**
