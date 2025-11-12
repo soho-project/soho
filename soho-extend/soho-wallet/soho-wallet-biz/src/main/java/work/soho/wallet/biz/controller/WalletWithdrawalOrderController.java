@@ -58,7 +58,6 @@ import work.soho.common.core.util.BeanUtils;
 public class WalletWithdrawalOrderController {
 
     private final WalletWithdrawalOrderService walletWithdrawalOrderService;
-//    private final AdminDictApiService adminDictApiService;
 
     /**
      * 查询提现单列表

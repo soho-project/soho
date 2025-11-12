@@ -38,11 +38,10 @@ import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 @Log4j2
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/walletLog" )
+@RequestMapping("/wallet/admin/walletLog" )
 public class WalletLogController {
 
     private final WalletLogService walletLogService;
-//    private final AdminDictApiService adminDictApiService;
 
     /**
      * 查询钱包变更日志列表

@@ -26,7 +26,6 @@ import com.github.pagehelper.PageSerializable;
 import work.soho.common.core.result.R;
 import work.soho.common.data.excel.annotation.ExcelExport;
 import work.soho.common.security.annotation.Node;
-import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.wallet.biz.domain.WalletRecharge;
 import work.soho.wallet.biz.service.WalletRechargeService;
 import java.util.ArrayList;
@@ -35,7 +34,7 @@ import work.soho.admin.api.vo.OptionVo;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import java.util.stream.Collectors;
 import work.soho.admin.api.vo.TreeNodeVo;
-import work.soho.admin.api.service.AdminDictApiService;
+
 /**
  * 钱包充值Controller
  *
@@ -49,7 +48,6 @@ import work.soho.admin.api.service.AdminDictApiService;
 public class WalletRechargeController {
 
     private final WalletRechargeService walletRechargeService;
-    private final AdminDictApiService adminDictApiService;
 
     /**
      * 查询钱包充值列表

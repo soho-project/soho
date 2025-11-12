@@ -40,11 +40,10 @@ import work.soho.wallet.biz.service.WalletInfoService;
 @Log4j2
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/walletInfo" )
+@RequestMapping("/wallet/admin/walletInfo" )
 public class WalletInfoController {
 
     private final WalletInfoService walletInfoService;
-//    private final AdminDictApiService adminDictApiService;
 
     /**
      * 查询列表

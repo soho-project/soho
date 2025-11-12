@@ -145,74 +145,14 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
         // 检查地址是否为当前用户的地址
         Assert.isTrue(shopUserAddresses.getUserId().equals(request.getUserId()), "收货地址不属于当前用户");
 
-        ShopOrderInfo shopOrderInfo = new ShopOrderInfo();
-        shopOrderInfo.setNo(IDGeneratorUtils.snowflake().toString());
-        shopOrderInfo.setUserId(request.getUserId());
-        shopOrderInfo.setDeliveryFee(request.getDeliveryFee());
-        shopOrderInfo.setDiscountAmount(BigDecimal.ZERO);
-//        shopOrderInfo.setAmount(BigDecimal.valueOf(100.00));
-        shopOrderInfo.setStatus(ShopOrderInfoEnums.Status.PENDING.getId());
-        shopOrderInfo.setPayStatus(ShopOrderInfoEnums.PayStatus.PENDING_PAYMENT.getId());
-        shopOrderInfo.setFreightStatus(0);
-        shopOrderInfo.setOrderType(request.getType()!=null ? request.getType() : ShopOrderInfoEnums.OrderType.PHYSICAL_ORDER.getId());
-        shopOrderInfo.setSource(request.getSource()!=null ? request.getSource() : ShopOrderInfoEnums.Source.WAP.getId());
-        shopOrderInfo.setRemark(request.getRemark());
-        shopOrderInfo.setReceivingAddress(shopUserAddresses.getProvince()
-            + " " + shopUserAddresses.getCity()
-            + " " + shopUserAddresses.getDistrict()
-            + " " + shopUserAddresses.getDetailAddress()
-        );
-        shopOrderInfo.setConsignee(shopUserAddresses.getRecipientName());
-        shopOrderInfo.setReceivingPhoneNumber(shopUserAddresses.getRecipientPhone());
-
-        BigDecimal orderProductTotalAmount = BigDecimal.ZERO;
-        List<ShopOrderSku> shopOrderSkuList = new ArrayList<>();
-        for(ProductSkuVo product : request.getProducts()) {
-            ShopProductInfo productInfo = shopProductInfoMapper.selectById(product.getProductId());
-            Assert.notNull(productInfo, "商品不存在");
-            Assert.isTrue(productInfo.getShelfStatus() == 1, "商品已下架");
-            Assert.isTrue(productInfo.getQty() >= product.getQty(), "商品库存不足");
-            // 检查sku信息能对的上
-            ShopProductSku sku = shopProductSkuMapper.selectById(product.getSkuId());
-            Assert.notNull(sku, "商品sku不存在");
-            Assert.isTrue(sku.getProductId().equals(productInfo.getId()), "商品sku信息不匹配");
-
-            // 插入订单商品信息
-            ShopOrderSku shopOrderSku = new ShopOrderSku()
-                    .setProductId(productInfo.getId())
-                    .setSkuId(product.getSkuId())
-                    .setName(product.getName())
-                    .setMainImage(
-                            StringUtils.isNotBlank(sku.getMainImage()) ?
-                                    sku.getMainImage() :
-                                    productInfo.getMainImage()
-                    )
-                    .setAmount(sku.getSellingPrice())
-                    .setQty(product.getQty())
-                    .setTotalAmount(sku.getSellingPrice().multiply(BigDecimal.valueOf(product.getQty())));
-
-            // 计算订单总金额
-            orderProductTotalAmount = orderProductTotalAmount.add(shopOrderSku.getTotalAmount());
-
-            shopOrderSkuList.add(shopOrderSku);
-        }
-
-        // 计算订单运费
-        BigDecimal deliveryFee = getFreightAmount(shopOrderSkuList, shopUserAddresses);
-        shopOrderInfo.setDeliveryFee(deliveryFee);
-
-        // 优惠劵计算
-        if(request.getUserCouponId() != null) {
-            ShopCouponUsageLogs shopCouponUsageLogs = createCouponUsageLogs(request.getUserCouponId(), shopOrderSkuList, shopOrderInfo);
-            if(shopCouponUsageLogs != null) {
-                shopOrderInfo.setDiscountAmount(shopCouponUsageLogs.getDiscountAmount());
-            }
-        }
+        OrderDetailsVo orderDetailsVo = calculationOrder( request);
+        ShopOrderInfo shopOrderInfo = BeanUtils.copy(orderDetailsVo.getOrder(), ShopOrderInfo.class);
+        List<ShopOrderSku> shopOrderSkuList = BeanUtils.copyList(orderDetailsVo.getOrderSkus(), ShopOrderSku.class);
 
         ////////////////////////////////////////////////////////////  数据保存
         // 保存订单信息
-        shopOrderInfo.setProductTotalAmount(orderProductTotalAmount);
-        shopOrderInfo.setAmount(orderProductTotalAmount.add(shopOrderInfo.getDeliveryFee()).subtract(shopOrderInfo.getDiscountAmount()));
+//        shopOrderInfo.setProductTotalAmount(orderProductTotalAmount);
+//        shopOrderInfo.setAmount(orderProductTotalAmount.add(shopOrderInfo.getDeliveryFee()).subtract(shopOrderInfo.getDiscountAmount()));
         save(shopOrderInfo);
         // 保存订单商品信息
         for(ShopOrderSku shopOrderSku : shopOrderSkuList) {

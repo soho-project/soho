@@ -49,7 +49,6 @@ import work.soho.admin.api.service.AdminDictApiService;
 public class WalletTransferController {
 
     private final WalletTransferService walletTransferService;
-    private final AdminDictApiService adminDictApiService;
 
 
     /**

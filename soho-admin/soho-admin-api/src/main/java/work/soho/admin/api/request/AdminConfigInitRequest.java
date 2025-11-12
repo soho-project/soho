@@ -78,7 +78,12 @@ public class AdminConfigInitRequest {
         TEXT(1, "文本"),
         JSON(2, "JSON"),
         BOOL(3, "布尔值"),
-        UPLOAD(4, "上传");
+        UPLOAD(4, "上传"),
+        COLOR(5, "颜色"),
+        DATETIME(6, "时间"),
+        EDITOR(7, "编辑器"),
+        CODE(8, "代码"),
+        MULTI_UPLOAD(9, "多文件上传");
 
 
         private int type;
