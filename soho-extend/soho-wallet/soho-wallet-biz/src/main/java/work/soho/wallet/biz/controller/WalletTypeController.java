@@ -40,7 +40,7 @@ import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 @Log4j2
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/walletType" )
+@RequestMapping("/wallet/admin/walletType" )
 public class WalletTypeController {
 
     private final WalletTypeService walletTypeService;

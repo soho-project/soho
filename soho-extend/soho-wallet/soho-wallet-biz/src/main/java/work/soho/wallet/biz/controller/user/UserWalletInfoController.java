@@ -19,7 +19,6 @@ import work.soho.wallet.api.enums.WalletLogEnums;
 import work.soho.wallet.api.service.WalletInfoApiService;
 import work.soho.wallet.api.vo.WalletInfoVo;
 import work.soho.wallet.api.vo.WalletTransferVo;
-import work.soho.wallet.biz.config.WalletSysConfig;
 import work.soho.wallet.biz.domain.WalletInfo;
 import work.soho.wallet.biz.domain.WalletTransfer;
 import work.soho.wallet.biz.domain.WalletType;
@@ -49,7 +48,6 @@ public class UserWalletInfoController {
     private final WalletInfoApiService walletInfoApiService;
     private final WalletTypeService walletTypeService;
     private final UserApiService userApiService;
-    private final WalletSysConfig walletSysConfig;
     private final WalletTransferService walletTransferService;
 
     /**

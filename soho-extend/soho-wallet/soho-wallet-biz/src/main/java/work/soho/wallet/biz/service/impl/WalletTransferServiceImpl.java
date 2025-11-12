@@ -9,7 +9,6 @@ import work.soho.user.api.service.UserApiService;
 import work.soho.wallet.api.enums.WalletLogEnums;
 import work.soho.wallet.api.enums.WalletTypeNameEnums;
 import work.soho.wallet.api.service.WalletInfoApiService;
-import work.soho.wallet.biz.config.WalletSysConfig;
 import work.soho.wallet.biz.domain.WalletInfo;
 import work.soho.wallet.biz.domain.WalletLog;
 import work.soho.wallet.biz.domain.WalletTransfer;
@@ -32,7 +31,6 @@ public class WalletTransferServiceImpl extends ServiceImpl<WalletTransferMapper,
     private final WalletInfoService walletInfoService;
     private final WalletTypeService walletTypeService;
     private final UserApiService userApiService;
-    private final WalletSysConfig walletSysConfig;
     private final WalletLogMapper  walletLogMapper;
 
     /**
@@ -89,10 +87,6 @@ public class WalletTransferServiceImpl extends ServiceImpl<WalletTransferMapper,
         if(walletLog != null) {
             dayAmount = walletLog.getBeforeAmount();
         }
-        // 检查是否超过当日转账限额
-//        if (dailyTransferAmount != null && dailyTransferAmount.add(amount).compareTo(walletSysConfig.getWalletRyTransferDayMaxRate().multiply(dayAmount)) >= 0) {
-//            throw new RuntimeException("当日转账金额已达上限");
-//        }
 
         // 计算实际到账金额
         BigDecimal commissionAmount = amount.multiply(fromWalletType.getWithdrawalCommissionRate());

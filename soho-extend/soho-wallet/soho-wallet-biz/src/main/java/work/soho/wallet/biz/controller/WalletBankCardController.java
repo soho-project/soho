@@ -49,7 +49,6 @@ import work.soho.admin.api.service.AdminDictApiService;
 public class WalletBankCardController {
 
     private final WalletBankCardService walletBankCardService;
-//    private final AdminDictApiService adminDictApiService;
 
     /**
      * 查询用户钱包银行卡信息表列表
