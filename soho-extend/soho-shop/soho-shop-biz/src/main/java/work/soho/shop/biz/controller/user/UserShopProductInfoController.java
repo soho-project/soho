@@ -39,7 +39,6 @@ public class UserShopProductInfoController {
                                                      BetweenCreatedTimeRequest betweenCreatedTimeRequest,
                                                      String keyword,
                                                      String sort) throws InvalidClassException {
-        PageUtils.startPage();
         LambdaQueryWrapper<ShopProductInfo> lqw = new LambdaQueryWrapper<ShopProductInfo>();
         lqw.eq(shopProductInfo.getId() != null, ShopProductInfo::getId ,shopProductInfo.getId());
         lqw.like(StringUtils.isNotBlank(shopProductInfo.getSpuCode()),ShopProductInfo::getSpuCode ,shopProductInfo.getSpuCode());
@@ -68,6 +67,7 @@ public class UserShopProductInfoController {
 
         //应用排序
         DbSortUtil.applySort(lqw, Arrays.asList(ShopProductInfo::getSoldQty, ShopProductInfo::getSellingPrice),  sort);
+        PageUtils.startPage();
         List<ShopProductInfo> list = shopProductInfoService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }
