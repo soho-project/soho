@@ -31,6 +31,7 @@ public class PayOrder implements Serializable {
      */
     @ApiModelProperty(value = "支付方式ID")
     @TableField(value = "pay_id")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer payId;
 
     /**
@@ -66,6 +67,7 @@ public class PayOrder implements Serializable {
      */
     @ApiModelProperty(value = "支付单状态;1:待支付,10:已扫码,20:支付成功,30:支付失败;")
     @TableField(value = "status")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer status;
 
     /**
