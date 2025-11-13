@@ -116,6 +116,7 @@ public class PayInfo implements Serializable {
      */
     @ApiModelProperty(value = "状态; 0:禁用,1:启用;frontType:select")
     @TableField(value = "status")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer status;
 
     /**

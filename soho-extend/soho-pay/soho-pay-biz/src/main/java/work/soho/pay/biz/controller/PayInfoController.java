@@ -5,6 +5,7 @@ import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import work.soho.admin.api.vo.OptionVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
@@ -13,8 +14,8 @@ import work.soho.pay.biz.domain.PayInfo;
 import work.soho.pay.biz.service.PayInfoService;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -128,18 +129,22 @@ public class PayInfoController {
     }
 
     /**
-     * 获取该表options
+     * 获取该支付表 选项
      *
      * @return
      */
     @GetMapping("options")
-    public R<HashMap<Integer, String>> options() {
+    @Node(value = "payInfo::options", name = "获取 支付表 选项")
+    public R<List<OptionVo<Integer, String>>> options() {
         List<PayInfo> list = payInfoService.list();
-        HashMap<Integer, String> map = new HashMap<>();
-        for(PayInfo item: list) {
+        List<OptionVo<Integer, String>> options = new ArrayList<>();
 
-            map.put(item.getId(), item.getTitle());
+        for(PayInfo item: list) {
+            OptionVo<Integer, String> optionVo = new OptionVo<>();
+            optionVo.setValue(item.getId());
+            optionVo.setLabel(item.getTitle());
+            options.add(optionVo);
         }
-        return R.success(map);
+        return R.success(options);
     }
 }
