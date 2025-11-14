@@ -163,10 +163,10 @@ public class UserAuthController {
         }
 
         // 检查验证码是否正确
-        if(userLoginVo.getCaptcha() == null || userLoginVo.getCaptcha().isEmpty()
-                ||  !CaptchaUtils.checking(userLoginVo.getCaptcha())) {
-            return R.error("请检查验证码");
-        }
+//        if(userLoginVo.getCaptcha() == null || userLoginVo.getCaptcha().isEmpty()
+//                ||  !CaptchaUtils.checking(userLoginVo.getCaptcha())) {
+//            return R.error("请检查验证码");
+//        }
 
         String ip = IpUtils.getClientIp();
         String id = String.valueOf(IDGeneratorUtils.snowflake().longValue());
@@ -223,18 +223,22 @@ public class UserAuthController {
     @PostMapping("register")
     public R<UserInfo> register(@RequestBody UserRegisterVo userRegisterVo) {
         //TODO  检查用户是否存在
-
+        Boolean isDev = userSysConfig.getLoginDev();
         // 检查用户是否通过短信验证
         String ip = IpUtils.getClientIp();
         String codeId = userRegisterVo.getCodeId();
         String code = userRegisterVo.getVerifyCode();
         if(codeId == null || codeId.isEmpty() || code == null || code.isEmpty()) {
-            return R.error("请输入验证码");
+            if(!isDev) {
+                return R.error("请输入验证码");
+            }
         }
         String oldCode = getCode(ip, codeId);
         if(!code.equals(oldCode)) {
             log.info("验证码错误, ip: {}, id: {}, {}, oldCode: {}", ip, codeId, code, oldCode);
-            return R.error("验证码错误");
+            if(!isDev) {
+                return R.error("验证码错误");
+            }
         }
 
         String password = userRegisterVo.getPassword();

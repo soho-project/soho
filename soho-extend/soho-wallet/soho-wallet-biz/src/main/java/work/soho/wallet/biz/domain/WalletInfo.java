@@ -36,6 +36,7 @@ public class WalletInfo implements Serializable {
     @ExcelProperty("钱包类型")
     @ApiModelProperty(value = "钱包类型")
     @TableField(value = "type")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer type;
 
     /**
@@ -52,6 +53,7 @@ public class WalletInfo implements Serializable {
     @ExcelProperty("status")
     @ApiModelProperty(value = "status")
     @TableField(value = "status")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer status;
 
     /**

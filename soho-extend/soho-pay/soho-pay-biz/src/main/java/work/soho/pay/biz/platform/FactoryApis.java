@@ -4,6 +4,7 @@ import work.soho.pay.biz.platform.alipay.adapter.WapApis;
 import work.soho.pay.biz.platform.alipay.adapter.WebApis;
 import work.soho.pay.biz.platform.payapis.HftCreateWallet;
 import work.soho.pay.biz.platform.payapis.Pay;
+import work.soho.pay.biz.platform.wallet.adapter.WalletApis;
 import work.soho.pay.biz.platform.wechat.adapter.AppApis;
 import work.soho.pay.biz.platform.wechat.adapter.H5Apis;
 import work.soho.pay.biz.platform.wechat.adapter.JsapiApis;
@@ -33,6 +34,8 @@ public class FactoryApis {
                 return new WapApis(payConfig);
             case "alipay_web":
                 return new WebApis(payConfig);
+            case "wallet": // 内部钱包支付
+                return new WalletApis(payConfig);
             default:
                 return null;
         }
