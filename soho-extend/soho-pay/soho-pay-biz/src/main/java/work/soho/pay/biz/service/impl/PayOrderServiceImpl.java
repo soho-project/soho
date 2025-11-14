@@ -9,9 +9,11 @@ import work.soho.common.core.support.SpringContextHolder;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.RequestUtil;
+import work.soho.pay.api.dto.CreatePayInfoDto;
 import work.soho.pay.api.dto.OrderDetailsDto;
 import work.soho.pay.api.event.PayCallbackEvent;
 import work.soho.pay.api.service.PayOrderApiService;
+import work.soho.pay.api.vo.PayOrderVo;
 import work.soho.pay.biz.domain.PayHfpayWallet;
 import work.soho.pay.biz.domain.PayInfo;
 import work.soho.pay.biz.domain.PayOrder;
@@ -44,7 +46,7 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder>
     private final PayHfpayWalletMapper payHfpayWalletMapper;
 
     @Override
-    public Map<String, String> payOrder(OrderDetailsDto orderDetailsDto) {
+    public CreatePayInfoDto payOrder(OrderDetailsDto orderDetailsDto) {
         return pay(orderDetailsDto);
     }
 
@@ -55,7 +57,7 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder>
      * @return
      */
     @Override
-    public Map<String, String> pay(OrderDetailsDto orderDetailsDto) {
+    public CreatePayInfoDto pay(OrderDetailsDto orderDetailsDto) {
         try {
             //获取支付方案
             PayInfo payInfo = payInfoService.getById(orderDetailsDto.getPayInfoId());
@@ -89,7 +91,13 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder>
 
             order.setUserCustId(payOrder.getUserCustId());
             order.setOutTradeNo(payOrder.getOrderNo());
-            return payApis.pay(order);
+            Map<String, String> result = payApis.pay(order);
+
+            CreatePayInfoDto createPayInfoDto = new CreatePayInfoDto();
+            createPayInfoDto.setPayOrder(BeanUtils.copy(payOrder, PayOrderVo.class));
+            createPayInfoDto.setPayParams(result);
+
+            return createPayInfoDto;
         } catch (Exception e) {
             e.printStackTrace();
             log.error(e.getMessage());

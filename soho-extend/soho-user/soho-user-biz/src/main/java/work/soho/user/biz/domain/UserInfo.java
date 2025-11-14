@@ -1,5 +1,6 @@
 package work.soho.user.biz.domain;
 
+import com.alibaba.excel.annotation.format.DateTimeFormat;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -103,6 +104,8 @@ public class UserInfo implements Serializable {
      */
     @ApiModelProperty(value = "更新时间")
     @TableField(value = "updated_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedTime;
 
     /**
@@ -110,6 +113,8 @@ public class UserInfo implements Serializable {
      */
     @ApiModelProperty(value = "头像")
     @TableField(value = "created_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
 
     @TableField(exist = false)

@@ -21,6 +21,9 @@ public class UserSysConfig implements InitializingBean {
     private final String SYS_USER_AUTO_REALNAME_KEY = "user_auto_realname";
     private final String SYS_USER_AUTO_REALNAME = "false";
 
+    // 登录开发模式
+    private final String SYS_USER_LOGIN_DEV = "user_login_dev";
+
     /**
      * 层级计算根用户
      */
@@ -38,6 +41,10 @@ public class UserSysConfig implements InitializingBean {
         items.add(AdminConfigInitRequest.Item.builder().groupKey(SYS_USER_CONFIG_GROUP).key(SYS_USER_DEFAULT_AVATAR_KEY).value(SYS_USER_DEFAULT_AVATAR).type(AdminConfigInitRequest.ItemType.UPLOAD.getType()).explain("用户默认头像地址").build());
 
         items.add(AdminConfigInitRequest.Item.builder().groupKey(SYS_USER_CONFIG_GROUP).key(SYS_USER_AUTO_REALNAME_KEY).value(SYS_USER_AUTO_REALNAME).type(AdminConfigInitRequest.ItemType.BOOL.getType()).explain("是否开启自动实名认证").build());
+
+        items.add(AdminConfigInitRequest.Item.builder().groupKey(SYS_USER_CONFIG_GROUP).key(ROOT_USER_ID).value("1").type(AdminConfigInitRequest.ItemType.TEXT.getType()).explain("推荐层级用户根用户ID").build());
+
+        items.add(AdminConfigInitRequest.Item.builder().groupKey(SYS_USER_CONFIG_GROUP).key(SYS_USER_LOGIN_DEV).value("false").type(AdminConfigInitRequest.ItemType.BOOL.getType()).explain("是否开启登录开发模式").build());
 
         adminConfigApiService.initItems(AdminConfigInitRequest.builder().items(items).groupList(groups).build());
     }
@@ -67,5 +74,14 @@ public class UserSysConfig implements InitializingBean {
      */
     public Long getRootUserId() {
         return adminConfigApiService.getByKey(ROOT_USER_ID, Long.class, 1L);
+    }
+
+    /**
+     * 获取登录开发模式
+     *
+     * @return
+     */
+    public Boolean getLoginDev() {
+        return adminConfigApiService.getByKey(SYS_USER_LOGIN_DEV, Boolean.class, false);
     }
 }

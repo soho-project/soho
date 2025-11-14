@@ -1,45 +1,31 @@
 package work.soho.wallet.biz.controller.user;
 
-import java.time.LocalDateTime;
-
 import cn.hutool.core.lang.Assert;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.PageSerializable;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
-import work.soho.common.core.util.IDGeneratorUtils;
-import work.soho.common.security.userdetails.SohoUserDetails;import work.soho.common.core.util.PageUtils;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.security.utils.SecurityUtils;
-import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
+import org.springframework.web.bind.annotation.*;
+import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.common.core.result.R;
-import work.soho.common.security.annotation.Node;
+import work.soho.common.core.util.IDGeneratorUtils;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
+import work.soho.common.security.userdetails.SohoUserDetails;
+import work.soho.pay.api.dto.CreatePayInfoDto;
+import work.soho.pay.api.dto.OrderDetailsDto;
+import work.soho.pay.api.service.PayOrderApiService;
+import work.soho.wallet.api.enums.WalletTypeNameEnums;
+import work.soho.wallet.biz.domain.WalletInfo;
 import work.soho.wallet.biz.domain.WalletRecharge;
 import work.soho.wallet.biz.domain.WalletType;
+import work.soho.wallet.biz.enums.WalletRechargeEnums;
 import work.soho.wallet.biz.service.WalletInfoService;
 import work.soho.wallet.biz.service.WalletRechargeService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.admin.api.vo.OptionVo;
-import work.soho.admin.api.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.admin.api.vo.TreeNodeVo;
-import work.soho.admin.api.service.AdminDictApiService;
-import work.soho.wallet.biz.enums.WalletRechargeEnums;
-import work.soho.pay.api.service.PayOrderApiService;
-import work.soho.pay.api.dto.OrderDetailsDto;
 import work.soho.wallet.biz.service.WalletTypeService;
-import work.soho.wallet.biz.domain.*;
-import work.soho.wallet.api.enums.WalletTypeNameEnums;
+
+import java.util.List;
 
 /**
  * 钱包充值Controller
@@ -94,7 +80,7 @@ public class UserWalletRechargeController {
      */
     @Transactional(rollbackFor = Exception.class)
     @PostMapping
-    public R<Map<String, String>> add(@RequestBody WalletRecharge walletRecharge, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+    public R<CreatePayInfoDto> add(@RequestBody WalletRecharge walletRecharge, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         walletRecharge.setUserId(sohoUserDetails.getId());
 
         //目前只支持rmb钱包充值， 检查钱包类型是否为 rmb 类型
@@ -113,7 +99,7 @@ public class UserWalletRechargeController {
             return R.error("充值失败");
         }
 
-        Map<String, String> map = payOrderApiService.payOrder(OrderDetailsDto.builder()
+        CreatePayInfoDto map = payOrderApiService.payOrder(OrderDetailsDto.builder()
                 .userId(sohoUserDetails.getId())
                 .payInfoId(walletRecharge.getPayId()) // TODO 调用后台配置地址
                 .amount(walletRecharge.getAmount())
@@ -122,7 +108,7 @@ public class UserWalletRechargeController {
                 .build());
 
         // 判断支付预调接口是否成功
-        if(!"C00000".equals(map.get("resp_code"))) {
+        if(!"C00000".equals(map.getPayParams().get("resp_code"))) {
             // 这里支付失败了， 需要进行额外的处理
             throw new RuntimeException("支付遇到问题， 请检查是否开通创建支付钱包！");
         }

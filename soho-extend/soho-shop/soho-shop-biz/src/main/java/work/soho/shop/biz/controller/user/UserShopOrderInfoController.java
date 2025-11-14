@@ -1,6 +1,7 @@
 package work.soho.shop.biz.controller.user;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.Page;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,10 +14,13 @@ import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
 import work.soho.common.security.userdetails.SohoUserDetails;
+import work.soho.pay.api.dto.CreatePayInfoDto;
+import work.soho.pay.api.dto.OrderDetailsDto;
+import work.soho.pay.api.service.PayOrderApiService;
+import work.soho.shop.api.request.CancelOrderRequest;
 import work.soho.shop.api.request.CreatePayRequest;
 import work.soho.shop.api.request.OrderCreateRequest;
 import work.soho.shop.api.vo.OrderDetailsVo;
-import work.soho.shop.biz.domain.ShopCouponUsageLogs;
 import work.soho.shop.biz.domain.ShopOrderInfo;
 import work.soho.shop.biz.domain.ShopOrderSku;
 import work.soho.shop.biz.enums.ShopOrderInfoEnums;
@@ -24,18 +28,10 @@ import work.soho.shop.biz.service.ShopOrderInfoService;
 import work.soho.shop.biz.service.ShopOrderSkuService;
 import work.soho.shop.biz.service.ShopUserCouponsService;
 
-import work.soho.pay.api.service.PayOrderApiService;
-import work.soho.pay.api.dto.OrderDetailsDto;
-
-import work.soho.shop.api.request.CancelOrderRequest;
-
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-
-import com.github.pagehelper.Page;
 
 ;
 /**
@@ -82,8 +78,15 @@ public class UserShopOrderInfoController {
         lqw.orderByDesc(ShopOrderInfo::getId);
         List<ShopOrderInfo> list = shopOrderInfoService.list(lqw);
 
+        // 预防没有订单报错
+        if(list == null || list.size() == 0) {
+            return R.success(new PageSerializable<>(new Page<OrderDetailsVo>()));
+        }
+
         // 获取所有的订单ID
         List<Integer> orderIds = list.stream().map(ShopOrderInfo::getId).collect(Collectors.toList());
+        System.out.println("订单ID");
+        System.out.println(orderIds);
         List<ShopOrderSku> shopOrderSkus = shopOrderSkuService.list(new LambdaQueryWrapper<ShopOrderSku>().in(ShopOrderSku::getOrderId, orderIds));
         Map<Integer, List<ShopOrderSku>> skuMap = shopOrderSkus.stream().collect(Collectors.groupingBy(ShopOrderSku::getOrderId));
         Page<OrderDetailsVo> page = new Page<>();
@@ -126,7 +129,7 @@ public class UserShopOrderInfoController {
      * 订单支付参数
      */
     @PostMapping("/queryPayParams")
-    public R<Map<String, String>> queryPayParams(@RequestBody CreatePayRequest createPayRequest, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+    public R<CreatePayInfoDto> queryPayParams(@RequestBody CreatePayRequest createPayRequest, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         ShopOrderInfo order = shopOrderInfoService.getById(createPayRequest.getOrderId());
         Assert.notNull(order, "订单不存在");
 
@@ -139,7 +142,7 @@ public class UserShopOrderInfoController {
                 .openId(createPayRequest.getOpenId())
                 .build();
 
-        Map<String, String> payParams = payOrderApiService.payOrder(orderDetailsDto);
+        CreatePayInfoDto payParams = payOrderApiService.payOrder(orderDetailsDto);
         return R.success(payParams);
     }
 
