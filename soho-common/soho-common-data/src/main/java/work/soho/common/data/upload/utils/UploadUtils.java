@@ -2,6 +2,8 @@ package work.soho.common.data.upload.utils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MimeType;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.multipart.MultipartFile;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.data.upload.UploadManage;
@@ -93,8 +95,17 @@ public class UploadUtils {
         if(originFileName == null) {
             return null;
         }
-        String ext = originFileName.substring(originFileName.lastIndexOf("."));
-        dirPath = dirPath + "/" + generateRandomFilename() + ext;
+
+        // fixed 有些客户端上传的文件，文件名没有扩展名
+        String ext = "bin";
+        if(originFileName.lastIndexOf(".")>0) {
+            ext = originFileName.substring(originFileName.lastIndexOf(".") + 1);
+        } else {
+            MimeType mimeType = MimeTypeUtils.parseMimeType(file.getContentType());
+            ext = mimeType.getSubtype();
+        }
+
+        dirPath = dirPath + "/" + generateRandomFilename() + "." + ext;
         try {
             return upload(channelName, dirPath, file.getInputStream());
         } catch (IOException ioException) {

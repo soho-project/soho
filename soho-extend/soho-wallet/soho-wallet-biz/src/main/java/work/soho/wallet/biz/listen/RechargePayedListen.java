@@ -5,16 +5,16 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import work.soho.pay.api.event.PayCallbackEvent;
 import work.soho.wallet.api.enums.WalletTypeNameEnums;
 import work.soho.wallet.biz.domain.WalletInfo;
+import work.soho.wallet.biz.domain.WalletRecharge;
 import work.soho.wallet.biz.domain.WalletType;
 import work.soho.wallet.biz.enums.WalletRechargeEnums;
-import work.soho.wallet.biz.service.WalletRechargeService;
-import work.soho.wallet.biz.domain.WalletRecharge;
 import work.soho.wallet.biz.service.WalletInfoService;
+import work.soho.wallet.biz.service.WalletRechargeService;
 import work.soho.wallet.biz.service.WalletTypeService;
+
 import java.time.LocalDateTime;
 
 @Component
@@ -24,8 +24,8 @@ public class RechargePayedListen {
     private final WalletTypeService walletTypeService;
     private final WalletInfoService walletInfoService;
 
-    @EventListener
-    @Transactional
+//    @Transactional
+    @EventListener(PayCallbackEvent.class)
     public void onApplicationEvent(PayCallbackEvent event) {
         System.out.println("充值成功");
         // 检查是否是充值单

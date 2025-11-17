@@ -21,6 +21,11 @@ public class OrderDetailsVo {
     private List<OrderProductItemVo> orderSkus;
 
     /**
+     * 优惠券id
+     */
+    private Long shopUserCouponId;
+
+    /**
      * 订单信息
      */
     @Data
@@ -29,7 +34,7 @@ public class OrderDetailsVo {
          * id
          */
         @JsonFormat(shape = JsonFormat.Shape.STRING)
-        private Integer id;
+        private Long id;
 
         /**
          * no
@@ -130,12 +135,12 @@ public class OrderDetailsVo {
      */
     @Data
     public static class OrderProductItemVo {
-        private Integer id;
+        private Long id;
 
         /**
          * order_id
          */
-        private Integer orderId;
+        private Long orderId;
 
         /**
          * product_id

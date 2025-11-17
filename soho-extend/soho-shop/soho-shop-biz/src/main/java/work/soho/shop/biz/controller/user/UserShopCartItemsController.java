@@ -19,7 +19,6 @@ import work.soho.shop.biz.service.ShopCartItemsService;
 import work.soho.shop.biz.service.ShopProductInfoService;
 import work.soho.shop.biz.service.ShopProductSkuService;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
@@ -42,10 +41,14 @@ public class UserShopCartItemsController {
      */
     @GetMapping("/list")
     @Node(value = "user::shopCartItems::list", name = "获取 购物车表 列表")
-    public R<PageSerializable<ShopCartItems>> list(ShopCartItems shopCartItems, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
+    public R<PageSerializable<ShopCartItems>> list(ShopCartItems shopCartItems,
+                                                   BetweenCreatedTimeRequest betweenCreatedTimeRequest,
+                                                   @AuthenticationPrincipal SohoUserDetails userDetails
+                                                   )
     {
         PageUtils.startPage();
         LambdaQueryWrapper<ShopCartItems> lqw = new LambdaQueryWrapper<ShopCartItems>();
+        lqw.eq(ShopCartItems::getUserId, userDetails.getId());
         lqw.eq(shopCartItems.getId() != null, ShopCartItems::getId ,shopCartItems.getId());
         lqw.eq(shopCartItems.getUserId() != null, ShopCartItems::getUserId ,shopCartItems.getUserId());
         lqw.like(StringUtils.isNotBlank(shopCartItems.getSessionId()),ShopCartItems::getSessionId ,shopCartItems.getSessionId());

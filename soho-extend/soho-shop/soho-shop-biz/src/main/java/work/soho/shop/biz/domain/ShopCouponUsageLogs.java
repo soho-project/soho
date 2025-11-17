@@ -44,6 +44,14 @@ public class ShopCouponUsageLogs implements Serializable {
     private Long couponId;
 
     /**
+     * user_coupon_id
+     */
+    @ExcelProperty("user_coupon_id")
+    @ApiModelProperty(value = "user_coupon_id")
+    @TableField(value = "user_coupon_id")
+    private Long userCouponId;
+
+    /**
     * order_id
     */
     @ExcelProperty("order_id")

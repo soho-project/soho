@@ -3,6 +3,7 @@ package work.soho.user.biz.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.security.service.SohoUserDetailsService;
@@ -40,8 +41,15 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo>
 
     @Override
     public Boolean verificationUserInfoPayPassword(Long userId, String payPassword) {
-        // TODO 实现支付密码验证
-        return true;
+        UserInfo userInfo = getById(userId);
+        return verificationUserInfoPayPassword(userInfo, payPassword);
+    }
+
+    public Boolean verificationUserInfoPayPassword(UserInfo userInfo, String payPassword) {
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        // 更新密码
+        String password = userInfo.getPayPassword();
+        return encoder.matches(payPassword, password);
     }
 
     @Override
