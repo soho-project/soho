@@ -22,7 +22,7 @@ public class ShopOrderSku implements Serializable {
     @ExcelProperty("id")
     @ApiModelProperty(value = "id")
     @TableId(value = "id", type = IdType.AUTO)
-    private Integer id;
+    private Long id;
 
     /**
     * order_id
@@ -30,7 +30,7 @@ public class ShopOrderSku implements Serializable {
     @ExcelProperty("order_id")
     @ApiModelProperty(value = "order_id")
     @TableField(value = "order_id")
-    private Integer orderId;
+    private Long orderId;
 
     /**
      * product_id

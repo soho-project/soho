@@ -57,8 +57,6 @@ public class UserAuthController {
     @Autowired
     private Map<String, SohoUserDetailsService> detailsServiceMap;
 
-    private Boolean debug = true;
-
     @ApiOperation("用户登录")
     @PostMapping(value = "/login")
     public Object login(@RequestBody UserLoginVo userLoginVo) {
@@ -189,7 +187,7 @@ public class UserAuthController {
             int sixDigit = 100000 + random.nextInt(900000);
             code = String.valueOf(sixDigit);
 
-            if(debug) {
+            if(userSysConfig.getLoginDev()) {
                 code = "111111";
             }
 
@@ -246,19 +244,6 @@ public class UserAuthController {
             return R.error("请输入密码");
         }
 
-        // 必须输入推荐码
-//        if(userRegisterVo.getInviteCode() == null || userRegisterVo.getInviteCode() == 0) {
-//            return R.error("请输入推荐码");
-//        }
-//
-//        // 检查推荐码是否正确
-//        LambdaQueryWrapper<UserInfo> lambdaQuery = new LambdaQueryWrapper<>();
-//        lambdaQuery.eq(UserInfo::getId, userRegisterVo.getInviteCode());
-//        UserInfo isUserInfo = userInfoService.getOne(lambdaQuery);
-//        if(isUserInfo == null) {
-//            return R.error("推荐码错误");
-//        }
-
         // 确定用户名
         String username = userRegisterVo.getUsername();
         if(username == null || username.isEmpty()) {
@@ -270,6 +255,16 @@ public class UserAuthController {
         }
 
         UserInfo userInfo = new UserInfo();
+        userInfo.setCode(IDGeneratorUtils.snowflake().toString());
+
+        if(userRegisterVo.getInviteCode() != null) {
+            LambdaQueryWrapper<UserInfo> lambdaQuery = new LambdaQueryWrapper<>();
+            lambdaQuery.eq(UserInfo::getId, userRegisterVo.getInviteCode());
+            UserInfo isUserInfo = userInfoService.getOne(lambdaQuery);
+            if(isUserInfo != null) {
+                userInfo.setReferrerId(isUserInfo.getId());
+            }
+        }
 
         password = new BCryptPasswordEncoder().encode(password);
         userInfo.setUsername(username);

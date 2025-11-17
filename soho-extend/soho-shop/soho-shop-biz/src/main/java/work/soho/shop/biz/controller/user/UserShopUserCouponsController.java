@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
@@ -17,11 +18,11 @@ import work.soho.shop.biz.enums.ShopUserCouponsEnums;
 import work.soho.shop.biz.service.ShopCouponsService;
 import work.soho.shop.biz.service.ShopUserCouponsService;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.Map;
-import work.soho.common.core.util.BeanUtils;
+import java.util.stream.Collectors;
 
 ;
 /**
@@ -67,6 +68,10 @@ public class UserShopUserCouponsController {
     public R<List<ShopUserCouponsVo>> getUserCoupons(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         List<ShopUserCoupons> list = shopUserCouponsService.getUserCoupons(sohoUserDetails.getId());
         List<Long> couponIds = list.stream().map(ShopUserCoupons::getCouponId).collect(Collectors.toList());
+
+        if(couponIds == null || couponIds.isEmpty()) {
+            return R.success(new ArrayList<>());
+        }
 
         Map<Long, ShopCoupons> couponsMap = shopCouponsService.listByIds(couponIds).stream().collect(Collectors.toMap(ShopCoupons::getId, v -> v));
 

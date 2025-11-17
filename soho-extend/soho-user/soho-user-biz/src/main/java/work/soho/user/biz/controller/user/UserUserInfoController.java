@@ -43,7 +43,7 @@ public class UserUserInfoController {
      * 更新用户信息
      */
     @PutMapping
-    public R<UserInfo> updateUserInfo(@AuthenticationPrincipal SohoUserDetails sohoUserDetails, UserInfo info) {
+    public R<UserInfo> updateUserInfo(@AuthenticationPrincipal SohoUserDetails sohoUserDetails, @RequestBody UserInfo info) {
         UserInfo userInfo = userInfoService.getById(sohoUserDetails.getId());
         userInfo.setAvatar(info.getAvatar());
         userInfo.setNickname(info.getNickname());
@@ -68,6 +68,7 @@ public class UserUserInfoController {
     @PostMapping("/uploadAvatar")
     public Object uploadAvatar(@RequestParam(value = "avatar") MultipartFile file) {
         try {
+            System.out.println(file);
             MimeType mimeType = MimeTypeUtils.parseMimeType(file.getContentType());
             if(!mimeType.getType().equals("image")) {
                 return R.error("请传递正确的图片格式");

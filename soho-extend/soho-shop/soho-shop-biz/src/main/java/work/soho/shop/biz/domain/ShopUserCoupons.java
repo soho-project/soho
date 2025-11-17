@@ -9,11 +9,13 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
+@Accessors(chain = true)
 @TableName(value ="shop_user_coupons")
 public class ShopUserCoupons implements Serializable {
     /**

@@ -1,6 +1,7 @@
 package work.soho.shop.api.request;
 
 import lombok.Data;
+import lombok.Getter;
 import work.soho.shop.api.vo.ProductSkuVo;
 
 import java.math.BigDecimal;
@@ -74,4 +75,35 @@ public class OrderCreateRequest {
      */
     private List<ProductSkuVo> products;
 
+    /**
+     * 订单来源
+     */
+    private Integer orderFrom;
+
+    /**
+     * 订单来源
+     */
+    @Getter
+    public static enum OrderForm {
+        /**
+         * 购物车
+         */
+        CART(1, "购物车"),
+        /**
+         * 立即购买
+         */
+        BUY_NOW(2, "立即购买"),
+        /**
+         * 订单
+         */
+        ORDER(3, "订单");
+
+        private Integer code;
+        private String name;
+
+        OrderForm(int i, String name) {
+            this.code = i;
+            this.name = name;
+        }
+    }
 }

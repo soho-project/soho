@@ -21,7 +21,7 @@ public class ShopOrderInfo implements Serializable {
     @ApiModelProperty(value = "id")
     @TableId(value = "id", type = IdType.AUTO)
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Integer id;
+    private Long id;
 
     /**
     * no

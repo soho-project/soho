@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Aspect
 @Component
-@Order(-1)
+@Order(Integer.MIN_VALUE)
 @Log4j2
 public class WalletDataSourceAspect {
 
@@ -21,13 +21,13 @@ public class WalletDataSourceAspect {
     @Around("bean(wallet*ServiceImpl) && execution(* com.baomidou.mybatisplus.extension.service.IService+.*(..))")
     public Object dbAround(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
-            log.debug("切换数据源：" + determineDataSource(joinPoint));
+            log.info("切换数据源：" + determineDataSource(joinPoint));
             DynamicDataSourceContextHolder.push(determineDataSource(joinPoint));
             return joinPoint.proceed();
         } catch (Exception e) {
             throw e;
         } finally {
-            log.debug("切换数据源退出:" + DynamicDataSourceContextHolder.peek());
+            log.info("切换数据源退出:" + DynamicDataSourceContextHolder.peek());
             DynamicDataSourceContextHolder.poll();
         }
     }
@@ -37,7 +37,7 @@ public class WalletDataSourceAspect {
      */
     private String determineDataSource(JoinPoint joinPoint) {
         String methodName = joinPoint.getSignature().getName();
-
+        System.out.println(methodName);
         // 读操作的方法前缀
         if (methodName.startsWith("get") ||
                 methodName.startsWith("select") ||

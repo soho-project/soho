@@ -84,11 +84,11 @@ public class UserShopOrderInfoController {
         }
 
         // 获取所有的订单ID
-        List<Integer> orderIds = list.stream().map(ShopOrderInfo::getId).collect(Collectors.toList());
+        List<Long> orderIds = list.stream().map(ShopOrderInfo::getId).collect(Collectors.toList());
         System.out.println("订单ID");
         System.out.println(orderIds);
         List<ShopOrderSku> shopOrderSkus = shopOrderSkuService.list(new LambdaQueryWrapper<ShopOrderSku>().in(ShopOrderSku::getOrderId, orderIds));
-        Map<Integer, List<ShopOrderSku>> skuMap = shopOrderSkus.stream().collect(Collectors.groupingBy(ShopOrderSku::getOrderId));
+        Map<Long, List<ShopOrderSku>> skuMap = shopOrderSkus.stream().collect(Collectors.groupingBy(ShopOrderSku::getOrderId));
         Page<OrderDetailsVo> page = new Page<>();
         list.forEach(order -> {
             try {
@@ -175,6 +175,27 @@ public class UserShopOrderInfoController {
     public R<ShopOrderInfo> getInfo(@PathVariable("id" ) Long id) {
         return R.success(shopOrderInfoService.getById(id));
     }
+
+    /**
+     * 根据订单号获取订单详细信息
+     *
+     * @param no
+     * @return
+     */
+    @GetMapping(value = "/byOrderNo/{no}" )
+    @Node(value = "user::shopOrderInfo::byOrderNo", name = "获取 订单 详细信息")
+    public R<OrderDetailsVo> getDetailsByNo(@PathVariable("no" ) String no) {
+        ShopOrderInfo shopOrderInfo = shopOrderInfoService.getOne(new LambdaQueryWrapper<ShopOrderInfo>().eq(ShopOrderInfo::getNo, no));
+        Assert.notNull(shopOrderInfo, "订单不存在");
+        OrderDetailsVo orderDetailsVo = new OrderDetailsVo();
+        orderDetailsVo.setOrder(BeanUtils.copy( shopOrderInfo, OrderDetailsVo.OrderInfoVo.class));
+        List<ShopOrderSku> shopOrderSkus = shopOrderSkuService.list(new LambdaQueryWrapper<ShopOrderSku>().eq(ShopOrderSku::getOrderId, shopOrderInfo.getId()));
+        List<OrderDetailsVo.OrderProductItemVo> orderProductItemVos = BeanUtils.copyList(shopOrderSkus, OrderDetailsVo.OrderProductItemVo.class);
+        orderDetailsVo.setOrderSkus(orderProductItemVos);
+
+        return R.success(orderDetailsVo);
+    }
+
 
     /**
      * 新增订单

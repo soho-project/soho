@@ -42,15 +42,19 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
     private final ShopProductFreightMapper shopProductFreightMapper;
     private final ShopFreightTemplateMapper shopFreightTemplateMapper;
     private final ShopFreightRuleMapper shopFreightRuleMapper;
+    private final ShopCartItemsMapper shopCartItemsMapper;
+    private final ShopCouponUsageLogsMapper shopCouponUsageLogsMapper;
 
     @Override
     public OrderDetailsVo calculationOrder(OrderCreateRequest request)
     {
         // 获取用户收货地址
         ShopUserAddresses shopUserAddresses = shopUserAddressesMapper.selectById(request.getUserAddressId());
-        Assert.notNull(shopUserAddresses, "收货地址不存在");
-        // 检查地址是否为当前用户的地址
-        Assert.isTrue(shopUserAddresses.getUserId().equals(request.getUserId()), "收货地址不属于当前用户");
+        if(shopUserAddresses != null) {
+            //        Assert.notNull(shopUserAddresses, "收货地址不存在");
+            // 检查地址是否为当前用户的地址
+            Assert.isTrue(shopUserAddresses.getUserId().equals(request.getUserId()), "收货地址不属于当前用户");
+        }
 
         ShopOrderInfo shopOrderInfo = new ShopOrderInfo();
         shopOrderInfo.setNo(IDGeneratorUtils.snowflake().toString());
@@ -64,13 +68,16 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
         shopOrderInfo.setOrderType(request.getType()!=null ? request.getType() : ShopOrderInfoEnums.OrderType.PHYSICAL_ORDER.getId());
         shopOrderInfo.setSource(request.getSource()!=null ? request.getSource() : ShopOrderInfoEnums.Source.WAP.getId());
         shopOrderInfo.setRemark(request.getRemark());
-        shopOrderInfo.setReceivingAddress(shopUserAddresses.getProvince()
-                + " " + shopUserAddresses.getCity()
-                + " " + shopUserAddresses.getDistrict()
-                + " " + shopUserAddresses.getDetailAddress()
-        );
-        shopOrderInfo.setConsignee(shopUserAddresses.getRecipientName());
-        shopOrderInfo.setReceivingPhoneNumber(shopUserAddresses.getRecipientPhone());
+
+        if(shopUserAddresses != null) {
+            shopOrderInfo.setReceivingAddress(shopUserAddresses.getProvince()
+                    + " " + shopUserAddresses.getCity()
+                    + " " + shopUserAddresses.getDistrict()
+                    + " " + shopUserAddresses.getDetailAddress()
+            );
+            shopOrderInfo.setConsignee(shopUserAddresses.getRecipientName());
+            shopOrderInfo.setReceivingPhoneNumber(shopUserAddresses.getRecipientPhone());
+        }
 
         BigDecimal orderProductTotalAmount = BigDecimal.ZERO;
         List<ShopOrderSku> shopOrderSkuList = new ArrayList<>();
@@ -130,6 +137,10 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
 
         OrderDetailsVo orderDetailsVo = new OrderDetailsVo();
         orderDetailsVo.setOrder(BeanUtils.copy(shopOrderInfo, OrderDetailsVo.OrderInfoVo.class));
+        // 设置使用的用户优惠劵ID
+        if(shopOrderInfo.getDiscountAmount() != null) {
+            orderDetailsVo.setShopUserCouponId(request.getUserCouponId());
+        }
         // 配置订单商品信息
         List<OrderDetailsVo.OrderProductItemVo> orderProductItemVos = shopOrderSkuList.stream().map(shopOrderSku -> BeanUtils.copy(shopOrderSku, OrderDetailsVo.OrderProductItemVo.class)).collect(Collectors.toList());
         orderDetailsVo.setOrderSkus(orderProductItemVos);
@@ -175,9 +186,35 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
                                 .setId(shopOrderSku.getSkuId())
                                 .setQty(skuInfo.getQty() - shopOrderSku.getQty())
                 );
+
+                //从购物车扣除移出对应的商品
+                if( request.getOrderFrom() != null && request.getOrderFrom().equals(OrderCreateRequest.OrderForm.CART.getCode())) {
+                    shopCartItemsMapper.delete(new LambdaQueryWrapper<ShopCartItems>()
+                            .eq(ShopCartItems::getUserId, request.getUserId())
+                            .eq(ShopCartItems::getProductId, shopOrderSku.getProductId())
+                            .eq(ShopCartItems::getSkuId, shopOrderSku.getSkuId())
+                    );
+                }
             }
         }
 
+        // 保存优惠劵使用记录
+        if(orderDetailsVo.getShopUserCouponId() != null) {
+            ShopUserCoupons shopUserCoupons = shopUserCouponsMapper.selectById(orderDetailsVo.getShopUserCouponId());
+            ShopCouponUsageLogs shopCouponUsageLogs = new ShopCouponUsageLogs();
+            shopCouponUsageLogs.setUserId(shopUserCoupons.getUserId());
+            shopCouponUsageLogs.setCouponId(shopUserCoupons.getCouponId());
+            shopCouponUsageLogs.setUserCouponId(shopUserCoupons.getId());
+            shopCouponUsageLogs.setOrderId(shopOrderInfo.getId());
+            shopCouponUsageLogs.setOrderAmount(shopOrderInfo.getAmount());
+            shopCouponUsageLogs.setDiscountAmount(shopOrderInfo.getDiscountAmount());
+            shopCouponUsageLogs.setUsedAt(LocalDateTime.now());
+            shopCouponUsageLogsMapper.insert(shopCouponUsageLogs);
+            shopUserCouponsMapper.updateById(
+                    shopUserCoupons
+                            .setStatus(ShopUserCouponsEnums.Status.USED.getId())
+            );
+        }
         return shopOrderInfo;
     }
 
@@ -271,9 +308,12 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
         shopCouponUsageLogs.setUserId(Long.valueOf(shopOrderInfo.getUserId()))
                 .setCouponId(shopCoupons.getId())
 //                .setOrderId(shopOrderInfo.getId())
+                .setUserCouponId(shopUserCoupons.getId())
                 .setOrderAmount(couponProductTotalAmount)
                 .setDiscountAmount(discountAmount)
                 .setUsedAt(LocalDateTime.now());
+
+        // TODO 对购物车商品信息进行处理
 
         return shopCouponUsageLogs;
     }
@@ -285,6 +325,12 @@ public class ShopOrderInfoServiceImpl extends ServiceImpl<ShopOrderInfoMapper, S
      * @return
      */
     private BigDecimal getFreightAmount(List<ShopOrderSku> shopOrderSkus, ShopUserAddresses shopUserAddresses) {
+        // 检查是否有传递配送地址
+        if(shopUserAddresses == null) {
+            return BigDecimal.ZERO;
+        }
+
+
         List<Long> productIds = shopOrderSkus.stream().map(shopOrderSku -> shopOrderSku.getProductId()).collect(Collectors.toList());
         // 对应商品的运费信息
         List<ShopProductFreight> shopProductFreights = shopProductFreightMapper.selectList(

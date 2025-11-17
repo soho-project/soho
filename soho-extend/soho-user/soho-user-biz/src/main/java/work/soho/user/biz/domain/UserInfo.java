@@ -27,6 +27,13 @@ public class UserInfo implements Serializable {
     private Long id;
 
     /**
+     * 唯一标识;;frontName:唯一标识
+     */
+    @ApiModelProperty(value = "唯一标识")
+    @TableField(value = "code")
+    private String code;
+
+    /**
      * 用户名
      */
     @ApiModelProperty(value = "用户名")
@@ -60,6 +67,13 @@ public class UserInfo implements Serializable {
     @ApiModelProperty(value = "密码")
     @TableField(value = "password")
     private String password;
+
+    /**
+     * 支付密码;;frontType:password,ignoreInList:true
+     */
+    @ApiModelProperty(value = "支付密码")
+    @TableField(value = "pay_password")
+    private String payPassword;
 
     /**
      * 头像;;frontType:upload,uploadCount:1,ignoreInList:true
@@ -98,6 +112,14 @@ public class UserInfo implements Serializable {
     @TableField(value = "level")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer level;
+
+    /**
+     * 推荐人ID;;frontName:推荐人ID
+     */
+    @ApiModelProperty(value = "推荐人ID")
+    @TableField(value = "referrer_id")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long referrerId;
 
     /**
      * 更新时间

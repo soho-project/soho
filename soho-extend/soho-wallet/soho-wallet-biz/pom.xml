@@ -7,7 +7,6 @@
         <groupId>work.soho</groupId>
         <artifactId>soho-wallet</artifactId>
         <version>1.0-SNAPSHOT</version>
-<!--        <relativePath>../../../pom.xml</relativePath>-->
     </parent>
 
     <artifactId>soho-wallet-biz</artifactId>
