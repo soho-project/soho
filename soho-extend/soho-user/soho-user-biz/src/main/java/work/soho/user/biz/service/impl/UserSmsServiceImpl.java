@@ -129,12 +129,12 @@ public class UserSmsServiceImpl implements UserSmsService, UserSmsApiService {
         }
 
         String code = randomCode();
-        setPhoneSendSmsCode(phone, code);
-
         // 获取用户手机号
         HashMap<String, String> map  = new HashMap<>();
         map.put("code", code);
         smsApiService.sendSms(phone, "code", map);
+
+        setPhoneSendSmsCode(phone, code);
         setPhoneSendSmsLasttime( phone);
     }
 
