@@ -128,4 +128,12 @@ public class UserShopCartItemsController {
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(shopCartItemsService.removeByIds(Arrays.asList(ids)));
     }
+
+    /**
+     * 删除购物车表
+     */
+    @DeleteMapping("/removeAll" )
+    public R<Boolean> removeAll(@AuthenticationPrincipal SohoUserDetails userDetails) {
+        return R.success(shopCartItemsService.remove(new LambdaQueryWrapper<ShopCartItems>().eq(ShopCartItems::getUserId, userDetails.getId())));
+    }
 }

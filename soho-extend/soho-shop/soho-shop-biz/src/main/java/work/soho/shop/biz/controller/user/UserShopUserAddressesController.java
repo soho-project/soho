@@ -1,6 +1,7 @@
 package work.soho.shop.biz.controller.user;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,6 +13,7 @@ import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
 import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.shop.biz.domain.ShopUserAddresses;
+import work.soho.shop.biz.enums.ShopUserAddressesEnums;
 import work.soho.shop.biz.service.ShopUserAddressesService;
 
 import java.util.Arrays;
@@ -70,8 +72,12 @@ public class UserShopUserAddressesController {
      */
     @GetMapping(value = "/{id}" )
     @Node(value = "user::shopUserAddresses::getInfo", name = "获取 用户收货地址表 详细信息")
-    public R<ShopUserAddresses> getInfo(@PathVariable("id" ) Long id) {
-        return R.success(shopUserAddressesService.getById(id));
+    public R<ShopUserAddresses> getInfo(@PathVariable("id" ) Long id, @AuthenticationPrincipal SohoUserDetails userDetails) {
+        ShopUserAddresses shopUserAddresses = shopUserAddressesService.getById(id);
+        if (shopUserAddresses == null || !shopUserAddresses.getUserId().equals(userDetails.getId())) {
+            return R.error("无权限");
+        }
+        return R.success(shopUserAddresses);
     }
 
     /**
@@ -79,7 +85,13 @@ public class UserShopUserAddressesController {
      */
     @PostMapping
     @Node(value = "user::shopUserAddresses::add", name = "新增 用户收货地址表")
-    public R<Boolean> add(@RequestBody ShopUserAddresses shopUserAddresses) {
+    public R<Boolean> add(@RequestBody ShopUserAddresses shopUserAddresses, @AuthenticationPrincipal SohoUserDetails userDetails) {
+        shopUserAddresses.setUserId(userDetails.getId());
+        // 如果为默认则将其他地址更新为非默认
+        if (shopUserAddresses.getIsDefault() == ShopUserAddressesEnums.IsDefault.YES.getId()) {
+            shopUserAddressesService.update(new LambdaUpdateWrapper<ShopUserAddresses>().eq(ShopUserAddresses::getUserId, userDetails.getId())
+                    .set(ShopUserAddresses::getIsDefault, ShopUserAddressesEnums.IsDefault.NO.getId()));
+        }
         return R.success(shopUserAddressesService.save(shopUserAddresses));
     }
 
@@ -88,7 +100,16 @@ public class UserShopUserAddressesController {
      */
     @PutMapping
     @Node(value = "user::shopUserAddresses::edit", name = "修改 用户收货地址表")
-    public R<Boolean> edit(@RequestBody ShopUserAddresses shopUserAddresses) {
+    public R<Boolean> edit(@RequestBody ShopUserAddresses shopUserAddresses, @AuthenticationPrincipal SohoUserDetails userDetails) {
+        ShopUserAddresses shopUserAddresses1 = shopUserAddressesService.getById(shopUserAddresses.getId());
+        if (shopUserAddresses1 == null || !shopUserAddresses1.getUserId().equals(userDetails.getId())) {
+            return R.error("无权限");
+        }
+        // 如果为默认则将其他地址更新为非默认
+        if (shopUserAddresses.getIsDefault() == ShopUserAddressesEnums.IsDefault.YES.getId()) {
+            shopUserAddressesService.update(new LambdaUpdateWrapper<ShopUserAddresses>().eq(ShopUserAddresses::getUserId, userDetails.getId())
+                    .set(ShopUserAddresses::getIsDefault, ShopUserAddressesEnums.IsDefault.NO.getId()));
+        }
         return R.success(shopUserAddressesService.updateById(shopUserAddresses));
     }
 
