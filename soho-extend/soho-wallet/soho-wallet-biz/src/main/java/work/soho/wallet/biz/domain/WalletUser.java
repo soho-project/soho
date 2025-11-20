@@ -1,13 +1,13 @@
 package work.soho.wallet.biz.domain;
 
-import io.swagger.annotations.ApiModelProperty;
-import com.baomidou.mybatisplus.annotation.*;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.format.DateTimeFormat;
-import java.io.Serializable;
+import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
-import java.math.BigDecimal;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
@@ -20,7 +20,7 @@ public class WalletUser implements Serializable {
     @ApiModelProperty(value = "id")
     @TableId(value = "id", type = IdType.AUTO)
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Integer id;
+    private Long id;
 
     /**
     * user_id
@@ -29,7 +29,7 @@ public class WalletUser implements Serializable {
     @ApiModelProperty(value = "user_id")
     @TableField(value = "user_id")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Integer userId;
+    private Long userId;
 
     /**
     * pay_password

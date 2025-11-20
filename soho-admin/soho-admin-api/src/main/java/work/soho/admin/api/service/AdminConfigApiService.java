@@ -1,7 +1,9 @@
 package work.soho.admin.api.service;
 
+import org.springframework.stereotype.Service;
 import work.soho.admin.api.request.AdminConfigInitRequest;
 
+@Service
 public interface AdminConfigApiService {
     /**
      * 获取后台配置信息
