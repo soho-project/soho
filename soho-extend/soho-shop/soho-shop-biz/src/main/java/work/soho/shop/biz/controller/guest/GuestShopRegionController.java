@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  */
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/guest/shopRegion" )
+@RequestMapping("/shop/guest/shopRegion" )
 public class GuestShopRegionController {
 
     private final ShopRegionService shopRegionService;
