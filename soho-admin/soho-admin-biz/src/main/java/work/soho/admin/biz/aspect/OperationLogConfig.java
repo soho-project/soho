@@ -4,19 +4,18 @@ import cn.hutool.json.JSONUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import work.soho.admin.api.annotation.IgnoreOperationLog;
-import work.soho.common.security.utils.SecurityUtils;
 import work.soho.admin.biz.config.AdminSysConfig;
 import work.soho.admin.biz.domain.AdminOperationLog;
 import work.soho.admin.biz.service.AdminOperationLogService;
-import work.soho.common.security.annotation.Node;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.common.core.util.RequestUtil;
+import work.soho.common.security.annotation.Node;
+import work.soho.common.security.utils.SecurityUtils;
 
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
@@ -36,7 +35,7 @@ public class OperationLogConfig {
 
     private final AdminSysConfig adminSysConfig;
 
-    @Around(value = "@within(org.springframework.web.bind.annotation.RestController)")
+//    @Around(value = "@within(org.springframework.web.bind.annotation.RestController)")
     public Object around(ProceedingJoinPoint invocation) throws Throwable {
         Boolean isEnable = adminSysConfig.getAdminOperationLogEnable();
         AdminOperationLog adminOperationLog = null;

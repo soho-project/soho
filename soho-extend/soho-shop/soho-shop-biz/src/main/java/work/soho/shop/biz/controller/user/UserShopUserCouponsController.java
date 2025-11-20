@@ -11,11 +11,18 @@ import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
 import work.soho.common.security.userdetails.SohoUserDetails;
+import work.soho.shop.api.request.OrderCreateRequest;
+import work.soho.shop.api.vo.ProductSkuVo;
 import work.soho.shop.api.vo.ShopUserCouponsVo;
+import work.soho.shop.biz.domain.ShopCouponApplyRanges;
 import work.soho.shop.biz.domain.ShopCoupons;
+import work.soho.shop.biz.domain.ShopProductInfo;
 import work.soho.shop.biz.domain.ShopUserCoupons;
+import work.soho.shop.biz.enums.ShopCouponUsageLogsEnums;
 import work.soho.shop.biz.enums.ShopUserCouponsEnums;
+import work.soho.shop.biz.service.ShopCouponApplyRangesService;
 import work.soho.shop.biz.service.ShopCouponsService;
+import work.soho.shop.biz.service.ShopProductInfoService;
 import work.soho.shop.biz.service.ShopUserCouponsService;
 
 import java.util.ArrayList;
@@ -38,6 +45,10 @@ public class UserShopUserCouponsController {
     private final ShopUserCouponsService shopUserCouponsService;
 
     private final ShopCouponsService shopCouponsService;
+
+    private final ShopProductInfoService shopProductInfoService;
+
+    private final ShopCouponApplyRangesService shopCouponApplyRangesService;
 
     /**
      * 查询用户优惠券表列表
@@ -64,8 +75,8 @@ public class UserShopUserCouponsController {
     /**
      * 获取用户优惠券表列表
      */
-    @GetMapping("/getUserCoupons")
-    public R<List<ShopUserCouponsVo>> getUserCoupons(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+    @PostMapping("/getUserCoupons")
+    public R<List<ShopUserCouponsVo>> getUserCoupons(@AuthenticationPrincipal SohoUserDetails sohoUserDetails,@RequestBody OrderCreateRequest request) {
         List<ShopUserCoupons> list = shopUserCouponsService.getUserCoupons(sohoUserDetails.getId());
         List<Long> couponIds = list.stream().map(ShopUserCoupons::getCouponId).collect(Collectors.toList());
 
@@ -75,12 +86,51 @@ public class UserShopUserCouponsController {
 
         Map<Long, ShopCoupons> couponsMap = shopCouponsService.listByIds(couponIds).stream().collect(Collectors.toMap(ShopCoupons::getId, v -> v));
 
+        // 获取当前订单所有的商品信息
+        List<Long> productIds = request.getProducts().stream().map(ProductSkuVo::getProductId).collect(Collectors.toList());
+        List<ShopProductInfo> products = shopProductInfoService.listByIds(productIds);
+        Map<Long, ShopProductInfo> productsMap = products.stream().collect(Collectors.toMap(ShopProductInfo::getId, v -> v));
+        // 获取所有商品的分类id
+        List<Long> categoryIds = products.stream().map(ShopProductInfo::getCategoryId).collect(Collectors.toList());
+        // 获取商品所有的店铺ID
+        List<Integer> shopIds = products.stream().map(ShopProductInfo::getShopId).collect(Collectors.toList());
+
         List<ShopUserCouponsVo> voList = list.stream().map(item -> {
             ShopCoupons coupon = couponsMap.get(item.getCouponId());
+            // 获取符合店铺的产品ID
+            List<Long> shopProductIds;
+            if(coupon.getShopId() != null) {
+                shopProductIds = products.stream().filter(product -> product.getShopId().equals(coupon.getShopId())).map(ShopProductInfo::getId).collect(Collectors.toList());
+            } else {
+                shopProductIds = productIds;
+            }
             ShopUserCouponsVo vo = BeanUtils.copy(coupon, ShopUserCouponsVo.class);
             vo.setId(item.getId());
             vo.setCode(item.getCouponCode());
-            // TODO 检查优惠劵是否可用
+
+            // 获取优惠劵对应的限制条件
+            List<ShopCouponApplyRanges> ranges = shopCouponApplyRangesService.list(new LambdaQueryWrapper<ShopCouponApplyRanges>()
+                .eq(ShopCouponApplyRanges::getCouponId, coupon.getId()));
+
+            // 使用代码
+            boolean isActive = ranges.stream().anyMatch(range -> {
+                ShopCouponUsageLogsEnums.ScopeType scopeType = ShopCouponUsageLogsEnums.ScopeType.fromId(range.getScopeType());
+                boolean active = false;
+                switch(scopeType) {
+                    case PRODUCT:
+                        active = shopProductIds.contains(range.getScopeId());
+                        break;
+                    case CATEGORY:
+                        active = categoryIds.contains(range.getScopeId()) && shopProductIds.contains(range.getScopeId());
+                        break;
+                        default:
+                        active = false;
+                }
+
+                return active;
+            });
+
+            vo.setIsActive(isActive);
             return vo;
         }).collect(Collectors.toList());
 

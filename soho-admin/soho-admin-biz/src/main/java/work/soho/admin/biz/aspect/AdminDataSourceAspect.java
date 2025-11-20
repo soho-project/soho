@@ -17,16 +17,17 @@ import org.springframework.stereotype.Component;
 public class AdminDataSourceAspect {
     @Autowired
     private DynamicDataSourceProperties properties;
-    @Around("bean(admin*ServiceImpl) && execution(* com.baomidou.mybatisplus.extension.service.IService+.*(..))")
+//    @Around("bean(admin*ServiceImpl) && execution(* com.baomidou.mybatisplus.extension.service.IService+.*(..))")
+    @Around("bean(admin*ServiceImpl) || bean(adminConfigApiService)")
     public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
-            log.debug("切换数据源：" + getDefaultDataSource());
+            log.info("切换数据源：" + getDefaultDataSource());
             DynamicDataSourceContextHolder.push(getDefaultDataSource());
             return joinPoint.proceed();
         } catch (Exception e) {
             throw e;
         } finally {
-            log.debug("切换数据源退出:" + DynamicDataSourceContextHolder.peek());
+            log.info("切换数据源退出:" + DynamicDataSourceContextHolder.peek());
             DynamicDataSourceContextHolder.poll();
         }
     }
