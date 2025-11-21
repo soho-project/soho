@@ -1,6 +1,7 @@
 package work.soho.shop.biz.controller.user;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.Page;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,10 +21,8 @@ import work.soho.shop.biz.domain.ShopProductInfo;
 import work.soho.shop.biz.domain.ShopUserCoupons;
 import work.soho.shop.biz.enums.ShopCouponUsageLogsEnums;
 import work.soho.shop.biz.enums.ShopUserCouponsEnums;
-import work.soho.shop.biz.service.ShopCouponApplyRangesService;
-import work.soho.shop.biz.service.ShopCouponsService;
-import work.soho.shop.biz.service.ShopProductInfoService;
-import work.soho.shop.biz.service.ShopUserCouponsService;
+import work.soho.shop.biz.service.*;
+import work.soho.shop.biz.domain.ShopInfo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,24 +40,22 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/shop/user/shopUserCoupons" )
 public class UserShopUserCouponsController {
-
     private final ShopUserCouponsService shopUserCouponsService;
-
     private final ShopCouponsService shopCouponsService;
-
     private final ShopProductInfoService shopProductInfoService;
-
     private final ShopCouponApplyRangesService shopCouponApplyRangesService;
+    private final ShopInfoService shopInfoService;
 
     /**
      * 查询用户优惠券表列表
      */
     @GetMapping("/list")
     @Node(value = "user::shopUserCoupons::list", name = "获取 用户优惠券表 列表")
-    public R<PageSerializable<ShopUserCoupons>> list(ShopUserCoupons shopUserCoupons)
+    public R<PageSerializable<ShopUserCouponsVo>> list(ShopUserCoupons shopUserCoupons, @AuthenticationPrincipal SohoUserDetails sohoUserDetails)
     {
         PageUtils.startPage();
         LambdaQueryWrapper<ShopUserCoupons> lqw = new LambdaQueryWrapper<ShopUserCoupons>();
+        lqw.eq(ShopUserCoupons::getUserId ,sohoUserDetails.getId());
         lqw.eq(shopUserCoupons.getId() != null, ShopUserCoupons::getId ,shopUserCoupons.getId());
         lqw.eq(shopUserCoupons.getUserId() != null, ShopUserCoupons::getUserId ,shopUserCoupons.getUserId());
         lqw.eq(shopUserCoupons.getCouponId() != null, ShopUserCoupons::getCouponId ,shopUserCoupons.getCouponId());
@@ -69,7 +66,36 @@ public class UserShopUserCouponsController {
         lqw.eq(shopUserCoupons.getReceivedAt() != null, ShopUserCoupons::getReceivedAt ,shopUserCoupons.getReceivedAt());
         lqw.eq(shopUserCoupons.getExpiredAt() != null, ShopUserCoupons::getExpiredAt ,shopUserCoupons.getExpiredAt());
         List<ShopUserCoupons> list = shopUserCouponsService.list(lqw);
-        return R.success(new PageSerializable<>(list));
+
+        List<ShopUserCouponsVo> listVo = new ArrayList<>();
+        if(list != null || !list.isEmpty()) {
+            // 获取所有优惠劵ID
+            List<Long> couponIds = list.stream().map(ShopUserCoupons::getCouponId).collect(Collectors.toList());
+            Map<Long, ShopCoupons> couponsMap = shopCouponsService.listByIds(couponIds).stream().collect(Collectors.toMap(ShopCoupons::getId, v -> v));
+
+            // 获取店铺信息
+            List<Integer> shopIds = couponsMap.values().stream().map(ShopCoupons::getShopId).collect(Collectors.toList());
+            Map<Integer, ShopInfo> shopInfoMap = shopInfoService.listByIds(shopIds).stream().collect(Collectors.toMap(ShopInfo::getId, v -> v));
+
+            listVo = list.stream().map(item -> {
+                ShopUserCouponsVo vo = BeanUtils.copy(couponsMap.get(item.getCouponId()), ShopUserCouponsVo.class);
+                if(couponsMap.get(item.getCouponId()).getShopId() != null && couponsMap.get(item.getCouponId()).getShopId()>0) {
+                    vo.setShopName(shopInfoMap.get(couponsMap.get(item.getCouponId()).getShopId()).getName());
+                } else {
+                    vo.setShopName("全平台");
+                }
+
+                vo.setId(item.getId());
+                vo.setCode(item.getCouponCode());
+                return vo;
+            }).collect(Collectors.toList());
+        }
+
+        Page<ShopUserCouponsVo> voPage = new Page<>();
+        voPage.setTotal(((Page)list).getTotal());
+        voPage.addAll(listVo);
+
+        return R.success(new PageSerializable<>(voPage));
     }
 
     /**
