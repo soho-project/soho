@@ -205,6 +205,13 @@ public class DbServiceImpl implements DbService {
                 i++;
                 if(parts.length>i) {
                     column.setComment(parts[i].substring(1, parts[i].length()-2));
+                    // 匹配标题；注释中第一个 ; 前面的内容即标题
+                    if(column.getComment() != null) {
+                        String commentParts[] = column.getComment().split(";");
+                        if(commentParts.length>=1) {
+                            column.setTitle(commentParts[0]);
+                        }
+                    }
                 }
                 i++;
                 continue;
