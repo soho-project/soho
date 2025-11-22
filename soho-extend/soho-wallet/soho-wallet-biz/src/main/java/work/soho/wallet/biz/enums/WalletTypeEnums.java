@@ -16,18 +16,27 @@ public class WalletTypeEnums {
 
     @RequiredArgsConstructor
     @Getter
-    public enum CanTransferOut {
-        NO(0,"否"),
-        YES(1,"是");
+    public enum CanWithdrawal {
+        CANNOT(0,"不能"),
+        CAN(1,"能");
         private final int id;
         private final String name;
     }
 
     @RequiredArgsConstructor
     @Getter
-    public enum CanWithdrawal {
-        CANNOT(0,"不能"),
+    public enum CanRecharge {
+        NO(0,"否"),
         CAN(1,"能");
+        private final int id;
+        private final String name;
+    }
+
+    @RequiredArgsConstructor
+    @Getter
+    public enum CanTransferOut {
+        NO(0,"否"),
+        YES(1,"是");
         private final int id;
         private final String name;
     }
