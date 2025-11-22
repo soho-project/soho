@@ -20,6 +20,7 @@ import work.soho.wallet.biz.domain.WalletInfo;
 import work.soho.wallet.biz.domain.WalletRecharge;
 import work.soho.wallet.biz.domain.WalletType;
 import work.soho.wallet.biz.enums.WalletRechargeEnums;
+import work.soho.wallet.biz.enums.WalletTypeEnums;
 import work.soho.wallet.biz.service.WalletInfoService;
 import work.soho.wallet.biz.service.WalletRechargeService;
 import work.soho.wallet.biz.service.WalletTypeService;
@@ -86,6 +87,7 @@ public class UserWalletRechargeController {
         lqw.eq(WalletType::getName, WalletTypeNameEnums.RMB.getName());
         WalletType walletType = walletTypeService.getOne(lqw);
         Assert.notNull(walletType, "钱包类型不存在");
+        Assert.isTrue(walletType.getCanRecharge()== WalletTypeEnums.CanRecharge.CAN.getId(), "该钱包类型不能充值");
 
         WalletInfo info = walletInfoService.getByUserIdAndType(sohoUserDetails.getId(), walletType.getId());
         Assert.notNull(info, "钱包不存在");

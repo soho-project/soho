@@ -11,8 +11,8 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@TableName(value ="wallet_type")
 @Data
+@TableName(value ="wallet_type")
 public class WalletType implements Serializable {
     /**
     * id
@@ -20,6 +20,7 @@ public class WalletType implements Serializable {
     @ExcelProperty("id")
     @ApiModelProperty(value = "id")
     @TableId(value = "id", type = IdType.AUTO)
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer id;
 
     /**
@@ -27,8 +28,8 @@ public class WalletType implements Serializable {
     */
     @ExcelProperty("钱包状态")
     @ApiModelProperty(value = "钱包状态")
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     @TableField(value = "status")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer status;
 
     /**
@@ -56,48 +57,6 @@ public class WalletType implements Serializable {
     private String notes;
 
     /**
-     * 提现最小金额
-     */
-    @ExcelProperty("提现最小金额")
-    @ApiModelProperty(value = "提现最小金额")
-    @TableField(value = "withdrawal_min_amount")
-    private BigDecimal withdrawalMinAmount;
-
-    /**
-     * 提现手续费费率
-     */
-    @ExcelProperty("提现手续费费率")
-    @ApiModelProperty(value = "提现手续费")
-    @TableField(value = "withdrawal_commission_rate")
-    private BigDecimal withdrawalCommissionRate;
-
-    /**
-     * 提现最小手续费
-     */
-    @ExcelProperty("提现最小手续费")
-    @ApiModelProperty(value = "提现最小手续费")
-    @TableField(value = "withdrawal_min_commission")
-    private BigDecimal withdrawalMinCommission;
-
-
-    @ExcelProperty("是否支持提现")
-    @ApiModelProperty(value = "是否支持提现")
-    @TableField(value = "can_withdrawal")
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Integer canWithdrawal;
-
-    @ExcelProperty("是否支持转出")
-    @ApiModelProperty(value = "是否支持转出")
-    @TableField(value = "can_transfer_out")
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Integer canTransferOut;
-
-    @ExcelProperty("是否支持转入")
-    @ApiModelProperty(value = "是否支持转入")
-    @TableField(value = "can_transfer_in_types")
-    private String canTransferInTypes;
-
-    /**
     * updated_time
     */
     @ExcelProperty("updated_time")
@@ -118,18 +77,77 @@ public class WalletType implements Serializable {
     private LocalDateTime createdTime;
 
     /**
-     * img_url
-     */
-    @ExcelProperty("图片地址")
-    @ApiModelProperty(value = "图片地址")
+    * withdrawal_min_amount
+    */
+    @ExcelProperty("withdrawal_min_amount")
+    @ApiModelProperty(value = "withdrawal_min_amount")
+    @TableField(value = "withdrawal_min_amount")
+    private BigDecimal withdrawalMinAmount;
+
+    /**
+    * withdrawal_commission_rate
+    */
+    @ExcelProperty("withdrawal_commission_rate")
+    @ApiModelProperty(value = "withdrawal_commission_rate")
+    @TableField(value = "withdrawal_commission_rate")
+    private BigDecimal withdrawalCommissionRate;
+
+    /**
+    * withdrawal_min_commission
+    */
+    @ExcelProperty("withdrawal_min_commission")
+    @ApiModelProperty(value = "withdrawal_min_commission")
+    @TableField(value = "withdrawal_min_commission")
+    private BigDecimal withdrawalMinCommission;
+
+    /**
+    * can_withdrawal
+    */
+    @ExcelProperty("can_withdrawal")
+    @ApiModelProperty(value = "can_withdrawal")
+    @TableField(value = "can_withdrawal")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Integer canWithdrawal;
+
+    /**
+    * can_recharge
+    */
+    @ExcelProperty("can_recharge")
+    @ApiModelProperty(value = "can_recharge")
+    @TableField(value = "can_recharge")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Integer canRecharge;
+
+    /**
+    * can_transfer_out
+    */
+    @ExcelProperty("can_transfer_out")
+    @ApiModelProperty(value = "can_transfer_out")
+    @TableField(value = "can_transfer_out")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Integer canTransferOut;
+
+    /**
+    * can_transfer_in_types
+    */
+    @ExcelProperty("can_transfer_in_types")
+    @ApiModelProperty(value = "can_transfer_in_types")
+    @TableField(value = "can_transfer_in_types")
+    private String canTransferInTypes;
+
+    /**
+    * img_url
+    */
+    @ExcelProperty("img_url")
+    @ApiModelProperty(value = "img_url")
     @TableField(value = "img_url")
     private String imgUrl;
 
     /**
-     * rate
-     */
-    @ExcelProperty("汇率")
-    @ApiModelProperty(value = "汇率")
+    * rate
+    */
+    @ExcelProperty("rate")
+    @ApiModelProperty(value = "rate")
     @TableField(value = "rate")
     private BigDecimal rate;
 
