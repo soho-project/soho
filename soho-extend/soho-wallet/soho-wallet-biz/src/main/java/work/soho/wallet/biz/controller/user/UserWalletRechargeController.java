@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.common.core.result.R;
@@ -78,8 +77,53 @@ public class UserWalletRechargeController {
     /**
      * 新增钱包充值
      */
-    @Transactional(rollbackFor = Exception.class)
-    @PostMapping
+    @PostMapping()
+    public R<WalletRecharge> create(@RequestBody WalletRecharge walletRecharge, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        walletRecharge.setUserId(sohoUserDetails.getId());
+
+        //目前只支持rmb钱包充值， 检查钱包类型是否为 rmb 类型
+        LambdaQueryWrapper<WalletType> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(WalletType::getName, WalletTypeNameEnums.RMB.getName());
+        WalletType walletType = walletTypeService.getOne(lqw);
+        Assert.notNull(walletType, "钱包类型不存在");
+
+        WalletInfo info = walletInfoService.getByUserIdAndType(sohoUserDetails.getId(), walletType.getId());
+        Assert.notNull(info, "钱包不存在");
+
+        walletRecharge.setCode(IDGeneratorUtils.snowflake().toString());
+        walletRecharge.setStatus(WalletRechargeEnums.Status.TO_BE_RECHARGED.getId());
+        walletRecharge.setWalletId(info.getId());
+        if(!walletRechargeService.save(walletRecharge)) {
+            return R.error("充值失败");
+        }
+        return R.success(walletRecharge);
+    }
+
+    /**
+     * 创建支付订单
+     */
+    @PostMapping("createPay")
+    public R<CreatePayInfoDto> createPay(@RequestBody WalletRecharge walletRecharge, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        WalletRecharge sourceWalletRecharge = walletRechargeService.getById(walletRecharge.getId());
+        Assert.notNull(sourceWalletRecharge, "充值单不存在");
+        Assert.isTrue(sourceWalletRecharge.getStatus() == WalletRechargeEnums.Status.TO_BE_RECHARGED.getId(), "充值单状态错误");
+
+        CreatePayInfoDto map = payOrderApiService.payOrder(OrderDetailsDto.builder()
+                .userId(sohoUserDetails.getId())
+                .payInfoId(walletRecharge.getPayId())
+                .amount(sourceWalletRecharge.getAmount())
+                .outTradeNo(sourceWalletRecharge.getCode())
+                .description("充值单："+ sourceWalletRecharge.getCode())
+                .build());
+
+        return R.success(map);
+    }
+
+    /**
+     * 新增钱包充值
+     */
+//    @Transactional(rollbackFor = Exception.class)
+    @PostMapping("/creeatePayOrder")
     public R<CreatePayInfoDto> add(@RequestBody WalletRecharge walletRecharge, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         walletRecharge.setUserId(sohoUserDetails.getId());
 
@@ -108,10 +152,10 @@ public class UserWalletRechargeController {
                 .build());
 
         // 判断支付预调接口是否成功
-        if(!"C00000".equals(map.getPayParams().get("resp_code"))) {
-            // 这里支付失败了， 需要进行额外的处理
-            throw new RuntimeException("支付遇到问题， 请检查是否开通创建支付钱包！");
-        }
+//        if(!"C00000".equals(map.getPayParams().get("resp_code"))) {
+//            // 这里支付失败了， 需要进行额外的处理
+//            throw new RuntimeException("支付遇到问题， 请检查是否开通创建支付钱包！");
+//        }
 
         return R.success(map);
     }

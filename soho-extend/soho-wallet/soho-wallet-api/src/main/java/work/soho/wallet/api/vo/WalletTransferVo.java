@@ -26,6 +26,11 @@ public class WalletTransferVo {
     private String toPhone;
 
     /**
+     * 转入钱包类型
+     */
+    private Integer toWalletType;
+
+    /**
      * 转账金额
      */
     private BigDecimal amount;

@@ -27,6 +27,7 @@ public class WalletType implements Serializable {
     */
     @ExcelProperty("钱包状态")
     @ApiModelProperty(value = "钱包状态")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     @TableField(value = "status")
     private Integer status;
 
@@ -82,7 +83,19 @@ public class WalletType implements Serializable {
     @ExcelProperty("是否支持提现")
     @ApiModelProperty(value = "是否支持提现")
     @TableField(value = "can_withdrawal")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer canWithdrawal;
+
+    @ExcelProperty("是否支持转出")
+    @ApiModelProperty(value = "是否支持转出")
+    @TableField(value = "can_transfer_out")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Integer canTransferOut;
+
+    @ExcelProperty("是否支持转入")
+    @ApiModelProperty(value = "是否支持转入")
+    @TableField(value = "can_transfer_in_types")
+    private String canTransferInTypes;
 
     /**
     * updated_time

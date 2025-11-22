@@ -1,30 +1,27 @@
 package work.soho.wallet.biz.controller.user;
 
-import java.time.LocalDateTime;
-
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import work.soho.admin.api.request.BetweenCreatedTimeRequest;
-import work.soho.common.core.util.PageUtils;
+import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.wallet.api.request.WalletLogListRequest;
 import work.soho.wallet.biz.domain.WalletInfo;
 import work.soho.wallet.biz.domain.WalletLog;
 import work.soho.wallet.biz.service.WalletInfoService;
 import work.soho.wallet.biz.service.WalletLogService;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * 钱包变更日志Controller
@@ -33,7 +30,7 @@ import work.soho.wallet.biz.service.WalletLogService;
  */
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/user/user/walletLog" )
+@RequestMapping("/wallet/user/walletLog" )
 public class UserWalletLogController {
 
     private final WalletLogService walletLogService;
@@ -50,6 +47,7 @@ public class UserWalletLogController {
     {
         // 获取对应类型的钱包ID
         WalletInfo walletInfo = walletInfoService.getByUserIdAndType(sohoUserDetails.getId(), walletLogListRequest.getType());
+        Assert.notNull(walletInfo, "钱包不存在");
 
         PageUtils.startPage();
         LambdaQueryWrapper<WalletLog> lqw = new LambdaQueryWrapper<>();
@@ -104,5 +102,24 @@ public class UserWalletLogController {
     @DeleteMapping("/{ids}" )
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(walletLogService.removeByIds(Arrays.asList(ids)));
+    }
+
+    /**
+     * 统计昨天钱包进出账总额
+     */
+    @ApiOperation(value = "统计昨天钱包进出账总额")
+    @GetMapping("/statistics/yesterday")
+    public R<HashMap<String, Object>> statisticsYesterday(@AuthenticationPrincipal SohoUserDetails sohoUserDetails, Integer typeId) {
+        WalletInfo walletInfo = walletInfoService.getByUserIdAndType(sohoUserDetails.getId(), typeId);
+        HashMap<String, Object> result = new HashMap<>();
+
+        // 获取今天的凌晨时间
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        // 获取昨天的凌晨时间
+        LocalDateTime yesterdayStart = todayStart.minusDays(1);
+
+        result.put("income", walletLogService.sumIncomeAmount(walletInfo.getId(), yesterdayStart, todayStart));
+        result.put("outcome", walletLogService.sumOutcomeAmount(walletInfo.getId(), yesterdayStart, todayStart));
+        return R.success(result);
     }
 }

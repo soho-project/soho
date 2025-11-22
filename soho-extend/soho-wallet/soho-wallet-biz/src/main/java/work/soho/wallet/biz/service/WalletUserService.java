@@ -5,5 +5,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 public interface WalletUserService extends IService<WalletUser> {
     // 验证密码
-    Boolean verificationPayPassword(Integer userId, String payPassword);
+    Boolean verificationPayPassword(Long userId, String payPassword);
 }

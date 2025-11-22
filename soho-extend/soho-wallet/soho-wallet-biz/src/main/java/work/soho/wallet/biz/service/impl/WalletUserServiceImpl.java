@@ -22,7 +22,7 @@ public class WalletUserServiceImpl extends ServiceImpl<WalletUserMapper, WalletU
      * @return
      */
     @Override
-    public Boolean verificationPayPassword(Integer userId, String payPassword) {
+    public Boolean verificationPayPassword(Long userId, String payPassword) {
         WalletUser walletUser = getById(userId);
         if (walletUser != null) {
             BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
