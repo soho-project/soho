@@ -1,26 +1,25 @@
 package work.soho.wallet.biz.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import work.soho.user.api.service.UserApiService;
+import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.wallet.api.enums.WalletLogEnums;
-import work.soho.wallet.api.enums.WalletTypeNameEnums;
 import work.soho.wallet.api.service.WalletInfoApiService;
 import work.soho.wallet.biz.domain.WalletInfo;
-import work.soho.wallet.biz.domain.WalletLog;
 import work.soho.wallet.biz.domain.WalletTransfer;
 import work.soho.wallet.biz.domain.WalletType;
-import work.soho.wallet.biz.mapper.WalletLogMapper;
+import work.soho.wallet.biz.enums.WalletTypeEnums;
+import work.soho.wallet.biz.mapper.WalletInfoMapper;
 import work.soho.wallet.biz.mapper.WalletTransferMapper;
-import work.soho.wallet.biz.service.WalletInfoService;
 import work.soho.wallet.biz.service.WalletTransferService;
 import work.soho.wallet.biz.service.WalletTypeService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -28,65 +27,52 @@ public class WalletTransferServiceImpl extends ServiceImpl<WalletTransferMapper,
     implements WalletTransferService{
 
     private final WalletInfoApiService walletInfoApiService;
-    private final WalletInfoService walletInfoService;
     private final WalletTypeService walletTypeService;
-    private final UserApiService userApiService;
-    private final WalletLogMapper  walletLogMapper;
+    private final WalletInfoMapper walletInfoMapper;
 
     /**
-     * 茸元转人民币
+     * 转账接口
      *
      * @param userId
+     * @param walletId
+     * @param toWalletId
      * @param amount
      * @param remark
-     * @param payPassword
      * @return
      */
     @Override
-    public WalletTransfer ry2RmbTransfer(Long userId, BigDecimal amount, String remark, String payPassword) {
-        // 获取用户ry钱包
-        WalletType fromWalletType = walletTypeService.getByName(WalletTypeNameEnums.RY.getName());
-        Assert.notNull(fromWalletType, "用户茸元钱包不存在");
-        Assert.isTrue(fromWalletType.getCanWithdrawal()==1, "茸元转账暂不可用");
-        WalletInfo fromWalletInfo = walletInfoService.getOne(new LambdaQueryWrapper<WalletInfo>().eq(WalletInfo::getUserId, userId).eq(WalletInfo::getType, fromWalletType.getId()));
-        Assert.notNull(fromWalletInfo, "用户茸元钱包不存在");
+    public WalletTransfer transfer(Long userId, Long walletId, Long toWalletId, BigDecimal amount, String remark) {
+        WalletInfo fromWalletInfo = walletInfoMapper.selectById(walletId);
+        Assert.notNull(fromWalletInfo, "用户钱包不存在");
+        Assert.isTrue(fromWalletInfo.getStatus()==1, "用户钱包不存在");
+        WalletInfo toWalletInfo = walletInfoMapper.selectById(toWalletId);
+        Assert.notNull(toWalletInfo, "用户钱包不存在");
+        Assert.isTrue(toWalletInfo.getStatus()==1, "用户钱包不存在");
+        Assert.isTrue(fromWalletInfo.getUserId().equals(toWalletInfo.getUserId()), "用户钱包不存在");
+
+
+        // 获取转出钱包类型
+        WalletType fromWalletType = walletTypeService.getById(fromWalletInfo.getType());
+        Assert.notNull(fromWalletType, "用户钱包异常");
+        Assert.isTrue(fromWalletType.getCanTransferOut()== WalletTypeEnums.CanTransferOut.YES.getId(), "该钱包转账暂不可用");
         // 获取用户rmb钱包
-        WalletType toWalletType = walletTypeService.getByName(WalletTypeNameEnums.RMB.getName());
-        Assert.notNull(toWalletType, "用户人民币钱包不存在");
-        WalletInfo toWalletInfo = walletInfoService.getOne(new LambdaQueryWrapper<WalletInfo>().eq(WalletInfo::getUserId, userId).eq(WalletInfo::getType, toWalletType.getId()));
-        Assert.notNull(toWalletInfo, "用户人民币钱包不存在");
+        WalletType toWalletType = walletTypeService.getById(toWalletInfo.getType());
+        Assert.notNull(toWalletType, "目标钱包类型异常");
 
-        // 检查支付密码是否正确
-        Assert.notNull(payPassword, "支付密码不能为空");
-
-        // TODO 支付密码检查验证
-
-//        Boolean verifyPwd = userApiService.verificationUserInfoPayPassword(userId, payPassword);
-//        Assert.isTrue(verifyPwd, "支付密码错误");
-
-        // 茸元单日转账金额限制
-        LambdaQueryWrapper<WalletTransfer> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(WalletTransfer::getFromUserId, userId);
-        queryWrapper.eq(WalletTransfer::getFromWalletId, fromWalletInfo.getId());
-        //添加当天时间区间
-        queryWrapper.between(WalletTransfer::getCreatedTime, LocalDateTime.now().withHour(0).withMinute(0).withSecond(0), LocalDateTime.now().withHour(23).withMinute(59).withSecond(59));
-        // 使用selectSum方法
-        BigDecimal dailyTransferAmount = list(queryWrapper)
-                .stream()
-                .map(WalletTransfer::getFromAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        // 从钱包日志中找到钱包当日钱包金额
-        LambdaQueryWrapper<WalletLog> queryWrapperAmountQuery =  new LambdaQueryWrapper<>();
-        queryWrapperAmountQuery.eq(WalletLog::getWalletId, fromWalletInfo.getId());
-//        queryWrapperAmountQuery.eq(WalletLog::getBizId, WalletLogEnums.BizId.WALLET_TRANSFER_OUT.getId());
-        queryWrapperAmountQuery.between(WalletLog::getCreatedTime, LocalDateTime.now().withHour(0).withMinute(0).withSecond(0), LocalDateTime.now().withHour(23).withMinute(59).withSecond(59));
-        queryWrapperAmountQuery.orderByAsc(WalletLog::getCreatedTime);
-        queryWrapperAmountQuery.last("limit 1");
-        WalletLog walletLog = walletLogMapper.selectOne(queryWrapperAmountQuery);
-        BigDecimal dayAmount = fromWalletInfo.getAmount();
-        if(walletLog != null) {
-            dayAmount = walletLog.getBeforeAmount();
+        // 检查转入钱包是否支持来源类型钱包
+        if(toWalletType.getCanTransferInTypes() == null) {
+            Assert.isTrue(toWalletType.getCanTransferInTypes().contains(fromWalletInfo.getType().toString()), "目标钱包不支持来源钱包类型");
+        } else {
+            List<String> canTransferInTypes = Arrays.asList(toWalletType.getCanTransferInTypes().split( ","));
+            if(!canTransferInTypes.contains(fromWalletInfo.getType().toString())) {
+                Assert.isTrue(false, "目标钱包不支持来源钱包类型");
+            }
         }
+
+        // 转账金额限制
+//        LambdaQueryWrapper<WalletTransfer> queryWrapper = new LambdaQueryWrapper<>();
+//        queryWrapper.eq(WalletTransfer::getFromUserId, userId);
+//        queryWrapper.eq(WalletTransfer::getFromWalletId, fromWalletInfo.getId());
 
         // 计算实际到账金额
         BigDecimal commissionAmount = amount.multiply(fromWalletType.getWithdrawalCommissionRate());
@@ -102,8 +88,6 @@ public class WalletTransferServiceImpl extends ServiceImpl<WalletTransferMapper,
         BigDecimal payAmount = amount.subtract(commissionAmount);
         // 计算入账金额
         BigDecimal toAmount = payAmount.multiply(toWalletType.getRate()).divide(fromWalletType.getRate());
-
-
 
         // 创建转账单
         WalletTransfer walletTransfer = new WalletTransfer();
@@ -122,6 +106,7 @@ public class WalletTransferServiceImpl extends ServiceImpl<WalletTransferMapper,
         walletTransfer.setRemark(remark);
         walletTransfer.setUpdatedTime(LocalDateTime.now());
         walletTransfer.setCreatedTime(LocalDateTime.now());
+        walletTransfer.setCode(IDGeneratorUtils.snowflake().toString());
         save(walletTransfer);
 
         // 执行转出操作

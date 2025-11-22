@@ -12,8 +12,8 @@ public class WalletLogEnums {
         MALL_PAYMENT(3, "商城支付"),
         MALL_REFUNDED(4, "商城退款"),
         WALLET_TRANSFER_OUT(5, "账户转账出账"),
-        WALLET_TRANSFER_IN(5, "账户转账入账"),
-        PAY_ORDER(6, "支付单"),
+        WALLET_TRANSFER_IN(6, "账户转账入账"),
+        PAY_ORDER(7, "支付单"),
         ;
 
         private final int id;

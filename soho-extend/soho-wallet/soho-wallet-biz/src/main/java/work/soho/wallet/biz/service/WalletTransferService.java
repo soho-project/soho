@@ -5,5 +5,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import java.math.BigDecimal;
 
 public interface WalletTransferService extends IService<WalletTransfer> {
-    WalletTransfer ry2RmbTransfer(Long userId, BigDecimal amount, String remark, String payPassword);
+    WalletTransfer transfer(Long userId, Long walletId, Long toWalletId, BigDecimal amount, String remark);
 }

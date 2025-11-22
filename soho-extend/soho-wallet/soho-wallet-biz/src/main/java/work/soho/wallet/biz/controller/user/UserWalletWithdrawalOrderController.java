@@ -1,42 +1,29 @@
 package work.soho.wallet.biz.controller.user;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.PageSerializable;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
-import work.soho.common.core.util.IDGeneratorUtils;
-import work.soho.common.security.userdetails.SohoUserDetails;import work.soho.common.core.util.PageUtils;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
+import org.springframework.web.bind.annotation.*;
+import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.IDGeneratorUtils;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
+import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.user.api.dto.UserInfoDto;
+import work.soho.user.api.service.UserApiService;
 import work.soho.wallet.api.request.CreateWithdrawalOrderRequest;
 import work.soho.wallet.biz.domain.*;
 import work.soho.wallet.biz.enums.WalletWithdrawalOrderEnums;
-import work.soho.wallet.biz.service.WalletBankCardService;
-import work.soho.wallet.biz.service.WalletInfoService;
-import work.soho.wallet.biz.service.WalletTypeService;
-import work.soho.wallet.biz.service.WalletWithdrawalOrderService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.admin.api.vo.OptionVo;
-import work.soho.admin.api.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.admin.api.vo.TreeNodeVo;
-import work.soho.admin.api.service.AdminDictApiService;
-import work.soho.user.api.service.UserApiService;
+import work.soho.wallet.biz.service.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * 提现单Controller
@@ -53,6 +40,7 @@ public class UserWalletWithdrawalOrderController {
     private final WalletInfoService walletInfoService;
     private final UserApiService userApiService;
     private final WalletTypeService walletTypeService;
+    private final WalletUserService walletUserService;
 
     /**
      * 查询提现单列表
@@ -112,7 +100,7 @@ public class UserWalletWithdrawalOrderController {
             return R.error("钱包信息错误");
         }
         // 验证支付密码
-        if (!userApiService.verificationUserInfoPayPassword(userInfo.getId(), createWithdrawalOrderRequest.getPayPassword())) {
+        if(!walletUserService.verificationPayPassword(sohoUserDetails.getId(), createWithdrawalOrderRequest.getPayPassword())) {
             return R.error("支付密码错误");
         }
 

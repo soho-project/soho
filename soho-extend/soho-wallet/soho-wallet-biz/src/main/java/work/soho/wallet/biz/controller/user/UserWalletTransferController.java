@@ -1,35 +1,28 @@
 package work.soho.wallet.biz.controller.user;
 
-import java.time.LocalDateTime;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.transaction.annotation.Transactional;
-import work.soho.common.security.userdetails.SohoUserDetails;import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.security.utils.SecurityUtils;
-import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
-import work.soho.common.security.annotation.Node;
-import work.soho.wallet.api.vo.WalletTransferVo;
-import work.soho.wallet.biz.domain.WalletTransfer;
-import work.soho.wallet.biz.service.WalletTransferService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.admin.api.vo.OptionVo;
+import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.admin.api.vo.TreeNodeVo;
-import work.soho.admin.api.service.AdminDictApiService;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
+import work.soho.common.security.annotation.Node;
+import work.soho.common.security.userdetails.SohoUserDetails;
+import work.soho.user.api.dto.UserInfoDto;
+import work.soho.user.api.service.UserApiService;
+import work.soho.wallet.api.vo.WalletTransferVo;
+import work.soho.wallet.biz.domain.WalletInfo;
+import work.soho.wallet.biz.domain.WalletTransfer;
+import work.soho.wallet.biz.service.WalletInfoService;
+import work.soho.wallet.biz.service.WalletTransferService;
+import work.soho.wallet.biz.service.WalletUserService;
+
+import java.util.List;
 /**
  * 钱包转账Controller
  *
@@ -41,25 +34,54 @@ import work.soho.admin.api.service.AdminDictApiService;
 public class UserWalletTransferController {
 
     private final WalletTransferService walletTransferService;
+    private final WalletUserService walletUserService;
+    private final WalletInfoService walletInfoService;
+    private final UserApiService userApiService;
 
     /**
-     * 茸元转人民币
+     * 转账接口
      *
      * @param sohoUserDetails
      * @param walletTransferVo
      * @return
      */
-    @Transactional
-    @PostMapping("/ry2RmbTransfer")
-    public R<WalletTransfer> ry2RmbTransfer(@AuthenticationPrincipal SohoUserDetails sohoUserDetails, @RequestBody WalletTransferVo walletTransferVo)
+    @PostMapping("/transfer")
+    @ApiOperation(value = "转账接口")
+    public R<WalletTransfer> transfer(@AuthenticationPrincipal SohoUserDetails sohoUserDetails,
+                                      @RequestBody WalletTransferVo walletTransferVo)
     {
         try {
-            WalletTransfer walletTransfer = walletTransferService.ry2RmbTransfer(sohoUserDetails.getId(), walletTransferVo.getAmount(), walletTransferVo.getRemark(), walletTransferVo.getPayPassword());
+            Assert.isTrue(walletTransferVo.getFromWalletId() != null
+                            && (walletTransferVo.getToWalletId() != null
+                            || (walletTransferVo.getToPhone() != null && walletTransferVo.getToWalletType() != null)),
+                    "请正确传递参数");
+            // 确认目标钱包ID
+            if(walletTransferVo.getToWalletId() == null) {
+                // 根据手机号码查询用户信息
+                UserInfoDto userInfoDto = userApiService.getUserInfoByPhone(walletTransferVo.getToPhone());
+                Assert.notNull(userInfoDto, "目标用户不存在");
+                WalletInfo toWalletInfo = walletInfoService.getByUserIdAndType(userInfoDto.getId(), walletTransferVo.getToWalletType());
+                Assert.notNull(toWalletInfo, "目标钱包不存在");
+                walletTransferVo.setToWalletId(toWalletInfo.getId());
+            }
+
+            if(!walletUserService.verificationPayPassword(sohoUserDetails.getId(), walletTransferVo.getPayPassword())) {
+                return R.error("支付密码错误");
+            }
+
+            // 执行转账
+            WalletTransfer walletTransfer = walletTransferService.transfer(
+                    sohoUserDetails.getId(),
+                    walletTransferVo.getFromWalletId(),
+                    walletTransferVo.getToWalletId(),
+                    walletTransferVo.getAmount(),
+                    walletTransferVo.getRemark()
+            );
             return R.success(walletTransfer);
         } catch (Exception e) {
+            e.printStackTrace();
             return R.error(e.getMessage());
         }
-
     }
 
 
