@@ -102,7 +102,7 @@ public class TokenServiceImpl implements SohoTokenService {
         String token = Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(new Date().getTime() + getTokenLeaseTerm()))
+                .setExpiration(new Date(System.currentTimeMillis() + getTokenLeaseTerm()))
                 .claim("authorities", loginUser.getAuthorities())
                 .signWith(SignatureAlgorithm.HS512, secret).compact();
         return token;
@@ -129,7 +129,7 @@ public class TokenServiceImpl implements SohoTokenService {
         HashMap<String, String> map = new HashMap<String, String>();
         map.put("token", createToken(loginUser, params));
         map.put("iat", String.valueOf(System.currentTimeMillis()));
-        map.put("exp", String.valueOf(new Date().getTime() + getTokenLeaseTerm()));
+        map.put("exp", String.valueOf(System.currentTimeMillis() + getTokenLeaseTerm()));
         return map;
     }
 

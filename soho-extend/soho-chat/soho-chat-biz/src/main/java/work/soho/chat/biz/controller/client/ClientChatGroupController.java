@@ -622,7 +622,7 @@ public class ClientChatGroupController {
         chatSessionService.removeById(chatSession);
 
         //通知客户端解散群
-        chatService.send2Session(chatSession, ChatMessage.builder().toSessionId(chatSession.getId()).fromUid(0l)
+        chatService.send2Session(chatSession, ChatMessage.builder().toSessionId(chatSession.getId()).fromUid(0L)
                 .message(RealTimeCmd.builder().name("dissolveGroup").params(null).build()).build());
 
         return R.success(true);
