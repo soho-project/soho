@@ -144,7 +144,7 @@ public class AdminContentCategoryController {
         ArrayList<TreeContentCategoryVo> result = new ArrayList<>();
         //关联关系
         for (TreeContentCategoryVo treeContentCategoryVo: list) {
-            if(0l == treeContentCategoryVo.getParentId()) {
+            if(0L == treeContentCategoryVo.getParentId()) {
                 result.add(treeContentCategoryVo);
             } else {
                 if(!map.containsKey(treeContentCategoryVo.getParentId())) {

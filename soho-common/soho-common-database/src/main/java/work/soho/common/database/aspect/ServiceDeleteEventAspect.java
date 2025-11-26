@@ -105,8 +105,12 @@ public class ServiceDeleteEventAspect {
      * 简单的模式匹配（支持 * 通配符）
      */
     private boolean matchesPattern(String methodName, String pattern) {
-        if (pattern.equals("*")) return true;
-        if (pattern.equals(methodName)) return true;
+        if (pattern.equals("*")) {
+            return true;
+        }
+        if (pattern.equals(methodName)) {
+            return true;
+        }
 
         if (pattern.endsWith("*")) {
             String prefix = pattern.substring(0, pattern.length() - 1);
@@ -287,7 +291,9 @@ public class ServiceDeleteEventAspect {
      * 工具方法：从实体中提取ID
      */
     private Object extractIdFromEntity(Object entity) {
-        if (entity == null) return null;
+        if (entity == null) {
+            return null;
+        }
 
         try {
             // 尝试通过反射获取ID字段

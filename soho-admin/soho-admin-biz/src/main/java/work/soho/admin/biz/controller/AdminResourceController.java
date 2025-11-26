@@ -88,7 +88,7 @@ public class AdminResourceController {
 
         //get all node id
         Set<Long> resourceIds = list.stream().map(AdminResource::getId).collect(Collectors.toSet());
-        resourceIds.add(1l);
+        resourceIds.add(1L);
         // 只返回有父节点的菜单
         list = list.stream().filter(item -> resourceIds.contains(item.getBreadcrumbParentId())).collect(Collectors.toList());
 
@@ -235,7 +235,7 @@ public class AdminResourceController {
         }
 
         //构造treevo
-        return R.success(getTree(0l, parentList, language).get(0));
+        return R.success(getTree(0L, parentList, language).get(0));
     }
 
     /**

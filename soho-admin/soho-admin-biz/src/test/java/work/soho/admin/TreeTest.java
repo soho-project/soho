@@ -31,9 +31,9 @@ public class TreeTest {
         treeUtils.loadData(list, c.getMethod("getId"), c.getMethod("getBreadcrumbParentId"));
 
         ArrayList<Long> ids = new ArrayList<>();
-        ids.add(2l);
-        ids.add(19l);
-        ids.add(29l);
+        ids.add(2L);
+        ids.add(19L);
+        ids.add(29L);
 
         List<AdminResource> myList = treeUtils.getAllTreeNodeWidthIds(ids);
         HashMap<String, AdminResource> map = (HashMap<String, AdminResource>) HashMapUtils.fromList(myList, "route");

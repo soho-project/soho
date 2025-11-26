@@ -32,7 +32,7 @@ public class AdminSmsApiServiceTest {
 
     @Test
     public void getAdminById() {
-        AdminUserVo info = adminInfoApiService.getAdminById(1l);
+        AdminUserVo info = adminInfoApiService.getAdminById(1L);
         System.out.println(info);
     }
 }

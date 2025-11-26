@@ -1,6 +1,5 @@
 package work.soho.common.data.lock.utils;
 
-import cn.hutool.core.lang.Assert;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RLock;
@@ -15,7 +14,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveTask;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
@@ -28,9 +27,9 @@ class LockUtilsTest {
     void getLockClient() throws ExecutionException, InterruptedException {
         //start time
         long start = System.currentTimeMillis();
-        long testCount = 1000000l;
+        long testCount = 1000000L;
         ForkJoinPool forkJoinPool = new ForkJoinPool();
-        LockJoinTask lockJoinTask = new LockJoinTask(0l, testCount);
+        LockJoinTask lockJoinTask = new LockJoinTask(0L, testCount);
         ForkJoinTask<Long> rootTask = forkJoinPool.submit(lockJoinTask);
         long resultCount = rootTask.get();
         assertEquals(resultCount, testCount);
