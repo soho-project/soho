@@ -57,7 +57,7 @@ public class SecurityUtils {
         String token = Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(new Date().getTime() + leaseTerm))
+                .setExpiration(new Date(System.currentTimeMillis() + leaseTerm))
                 .claim("authorities", loginUser.getAuthorities())
                 .signWith(SignatureAlgorithm.HS512, secret).compact();
         return token;
@@ -74,8 +74,8 @@ public class SecurityUtils {
     public Map<String, String> createTokenInfo(SohoUserDetails loginUser, Integer leaseTerm, String secret) {
         HashMap<String, String> map = new HashMap<String, String>();
         map.put("token", createToken(loginUser, leaseTerm, secret));
-        map.put("iat", String.valueOf(new Date().getTime()));
-        map.put("exp", String.valueOf(new Date().getTime() + leaseTerm));
+        map.put("iat", String.valueOf(System.currentTimeMillis()));
+        map.put("exp", String.valueOf(System.currentTimeMillis() + leaseTerm));
         return map;
     }
 }

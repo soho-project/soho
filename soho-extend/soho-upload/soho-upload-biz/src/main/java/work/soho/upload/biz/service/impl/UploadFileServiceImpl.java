@@ -36,6 +36,9 @@ import java.util.regex.Pattern;
 public class UploadFileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile>
     implements UploadFileService, Upload {
 
+    private  static Pattern FILE_EXTENSION_PATTERN = Pattern.compile("data:image/([a-zA-Z]+);base64,");
+    private static Pattern FILE_MIME_TYPE_PATTERN = Pattern.compile("data:([a-zA-Z/]+);base64,");
+
     @Override
     public UploadInfoVo save(MultipartFile file) {
         try {
@@ -235,8 +238,7 @@ public class UploadFileServiceImpl extends ServiceImpl<UploadFileMapper, UploadF
      */
     public String getFileExtension(String dataURI) {
         // 使用正则表达式匹配文件扩展名
-        Pattern pattern = Pattern.compile("data:image/([a-zA-Z]+);base64,");
-        Matcher matcher = pattern.matcher(dataURI);
+        Matcher matcher = FILE_EXTENSION_PATTERN.matcher(dataURI);
         if (matcher.find()) {
             return matcher.group(1);
         }
@@ -251,8 +253,7 @@ public class UploadFileServiceImpl extends ServiceImpl<UploadFileMapper, UploadF
      */
     public String getFileMimeType(String dataURI) {
         // 使用正则表达式匹配文件扩展名
-        Pattern pattern = Pattern.compile("data:([a-zA-Z/]+);base64,");
-        Matcher matcher = pattern.matcher(dataURI);
+        Matcher matcher = FILE_MIME_TYPE_PATTERN.matcher(dataURI);
         if (matcher.find()) {
             return matcher.group(1);
         }

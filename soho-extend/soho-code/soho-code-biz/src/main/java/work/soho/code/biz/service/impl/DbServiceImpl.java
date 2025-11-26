@@ -27,6 +27,9 @@ public class DbServiceImpl implements DbService {
 
     private static final String DEFAULT_DB = "master";
 
+    private static Pattern PK_PATTERN = Pattern.compile("PRIMARY KEY \\((.*)\\)"); // 主键
+    private static Pattern COLUMN_TYPE_PATTERN = Pattern.compile("(.*)\\((\\d+)\\)"); // 字段类型，长度
+    private static Pattern COLUMN_TYPE_POINT_LENGTH_PATTERN = Pattern.compile("(.*)\\((\\d+),(\\d+)\\)");
     @Override
     public List<Object> getTableNames() {
         return getTableNames(DEFAULT_DB);
@@ -113,8 +116,7 @@ public class DbServiceImpl implements DbService {
             }
 
             //处理匹配主键信息
-            p = Pattern.compile("PRIMARY KEY \\((.*)\\)");
-            matcher = p.matcher(sql);
+            matcher = PK_PATTERN.matcher(sql);
             while(matcher.find()) {
                 String[] parts = matcher.group(1).replace("`", "").split(",");
                 for (int i = 0; i < parts.length; i++) {
@@ -244,8 +246,7 @@ public class DbServiceImpl implements DbService {
      * @param column
      */
     private void parseLength(String str, CodeTableVo.Column column) {
-        Pattern pattern = Pattern.compile("(.*)\\((\\d+)\\)");
-        Matcher matcher = pattern.matcher(str);
+        Matcher matcher = COLUMN_TYPE_PATTERN.matcher(str);
         if(matcher.find()) {
             column.setDataType(matcher.group(1));
             //解析小数点
@@ -253,8 +254,7 @@ public class DbServiceImpl implements DbService {
         }
 
         //正则小数点位长度
-        Pattern pattern1 = Pattern.compile("(.*)\\((\\d+),(\\d+)\\)");
-        matcher = pattern1.matcher(str);
+        matcher = COLUMN_TYPE_POINT_LENGTH_PATTERN.matcher(str);
         if(matcher.find()) {
             column.setDataType(matcher.group(1));
             column.setLength(Integer.parseInt(matcher.group(2)));

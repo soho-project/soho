@@ -36,7 +36,7 @@ public class SecurityAspect {
             //write node
             Long uid = SecurityUtils.getLoginUserId();
 
-            if(uid != 1l) {
+            if(uid != 1L) {
                 SohoUserDetails userDetails = SecurityUtils.getLoginUser();
                 Optional<? extends GrantedAuthority> roleName = userDetails.getAuthorities().stream().findFirst();
                 //进行权限检查

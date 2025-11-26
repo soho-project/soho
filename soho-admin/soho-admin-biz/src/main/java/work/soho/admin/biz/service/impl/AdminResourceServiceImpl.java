@@ -47,7 +47,9 @@ public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, A
             HandlerMethod method = map.get(info);
 //            System.out.println(method.getMethod().getPar);
             Node node = method.getMethod().getAnnotation(Node.class);
-            if(node == null) continue;
+            if(node == null) {
+                continue;
+            }
             String tableName = getTableName(node.value());
             log.info(tableName);
             if(tableName == null) {
@@ -65,7 +67,9 @@ public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, A
                     .orderByAsc(AdminResource::getId).last(" limit 1")
             );
             log.info("父节点： {}", parentResource);
-            if(parentResource == null) continue;
+            if(parentResource == null) {
+                continue;
+            }
             //确定名称
             String nodeName = node.name();
             if(nodeName == null || "".equals(nodeName)) {
@@ -102,9 +106,13 @@ public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, A
     }
 
     private String getTableName(String key) {
-        if(key == null) return null;
+        if(key == null) {
+            return null;
+        }
         String[] parts = key.split("::");
-        if(parts.length != 2) return null;
+        if(parts.length != 2) {
+            return null;
+        }
         return camelToUnderline(parts[0]);
     }
 
@@ -115,9 +123,13 @@ public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, A
      * @return
      */
     private String getOperateName(String key) {
-        if(key == null) return null;
+        if(key == null) {
+            return null;
+        }
         String[] parts = key.split("::");
-        if(parts.length != 2) return null;
+        if(parts.length != 2) {
+            return null;
+        }
         return parts[1];
     }
 

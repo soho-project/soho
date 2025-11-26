@@ -1,7 +1,6 @@
 package work.soho.common.core.util;
 
 import lombok.experimental.UtilityClass;
-import work.soho.common.core.support.SpringContextHolder;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigInteger;
@@ -55,8 +54,7 @@ public class IpUtils {
             return ip.split(",")[0];
         }
 
-
-        /**
+    /**
      * 获取最大的long ip
      *
      * @return

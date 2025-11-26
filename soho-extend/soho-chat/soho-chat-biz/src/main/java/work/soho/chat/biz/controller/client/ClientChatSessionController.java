@@ -299,8 +299,12 @@ public class ClientChatSessionController {
 
         //同步到群组
         ChatGroup chatGroup = chatGroupService.getById(originChatSession.getTrackId());
-        if(StringUtils.isNotEmpty(chatSession.getTitle())) chatGroup.setTitle(originChatSession.getTitle());
-        if(StringUtils.isNotEmpty(chatSession.getAvatar())) chatGroup.setAvatar(originChatSession.getAvatar());
+        if(StringUtils.isNotEmpty(chatSession.getTitle())) {
+            chatGroup.setTitle(originChatSession.getTitle());
+        }
+        if(StringUtils.isNotEmpty(chatSession.getAvatar())) {
+            chatGroup.setAvatar(originChatSession.getAvatar());
+        }
         chatGroupService.updateById(chatGroup);
 
         //发送系统消息
@@ -310,7 +314,7 @@ public class ClientChatSessionController {
                 ).build()).build());
 
         //通知客户端刷新会话
-        chatService.send2Session(chatSession, ChatMessage.builder().toSessionId(chatSession.getId()).fromUid(0l)
+        chatService.send2Session(chatSession, ChatMessage.builder().toSessionId(chatSession.getId()).fromUid(0L)
                 .message(RealTimeCmd.builder().name("refreshSessionList").params(null).build()).build());
 
         return R.success(Boolean.TRUE);

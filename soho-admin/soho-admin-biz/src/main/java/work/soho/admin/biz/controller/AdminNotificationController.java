@@ -188,7 +188,9 @@ public class AdminNotificationController extends BaseController {
     public R<Boolean> read(@PathVariable Long[] ids, @AuthenticationPrincipal SohoUserDetails userDetails) {
         for (int i = 0; i < ids.length; i++) {
             AdminNotification adminNotification = adminNotificationService.getById(ids[i]);
-            if(adminNotification == null) continue;
+            if(adminNotification == null) {
+                continue;
+            }
             if(!adminNotification.getAdminUserId().equals(userDetails.getId())) {
                 continue;
             }

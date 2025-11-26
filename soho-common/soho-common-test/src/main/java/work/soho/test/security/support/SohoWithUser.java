@@ -1,7 +1,6 @@
 package work.soho.test.security.support;
 
 import org.springframework.core.annotation.AliasFor;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithSecurityContext;
@@ -21,7 +20,7 @@ public @interface SohoWithUser {
      * @return
      */
     @AliasFor("id")
-    long value() default 1l;
+    long value() default 1L;
 
     /**
      * 测试用用户名
@@ -36,7 +35,7 @@ public @interface SohoWithUser {
      * @return
      */
     @AliasFor("value")
-    long id() default 1l;
+    long id() default 1L;
 
     /**
      * 认证角色

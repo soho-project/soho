@@ -96,7 +96,7 @@ public class ClientChatGroupController {
 
         //计算已经加入的群
         List<Long> resultGroupIds = list.stream().map(ChatGroup::getId).collect(Collectors.toList());
-        resultGroupIds.add(0l);
+        resultGroupIds.add(0L);
         LambdaQueryWrapper<ChatGroupUser> lambdaQueryWrapper1 = new LambdaQueryWrapper<>();
         lambdaQueryWrapper1.in(ChatGroupUser::getGroupId, resultGroupIds)
                 .eq(ChatGroupUser::getChatUid, sohoUserDetails.getId());
@@ -126,7 +126,7 @@ public class ClientChatGroupController {
         lambdaQueryWrapper.eq(ChatGroupUser::getChatUid, sohoUserDetails.getId());
         List<ChatGroupUser> groupUsers = chatGroupUserService.list(lambdaQueryWrapper);
         List<Long> groupIds = groupUsers.stream().map(ChatGroupUser::getGroupId).collect(Collectors.toList());
-        groupIds.add(0l);
+        groupIds.add(0L);
 
         LambdaQueryWrapper<ChatGroup> lqw = new LambdaQueryWrapper<ChatGroup>();
         lqw.in(ChatGroup::getId, groupIds);
@@ -492,7 +492,7 @@ public class ClientChatGroupController {
 
             //通知客户端群用户信息变更
             //通知客户端群用户信息变更
-            chatService.send2Session(chatSession, ChatMessage.builder().toSessionId(chatSession.getId()).fromUid(0l)
+            chatService.send2Session(chatSession, ChatMessage.builder().toSessionId(chatSession.getId()).fromUid(0L)
                     .message(RealTimeCmd.builder().name("groupUserChange").params(null).build()).build());
 
             return R.success(true);

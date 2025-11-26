@@ -10,8 +10,6 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import work.soho.test.TestApp;
 import work.soho.test.security.support.SohoWithUser;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
 @SpringBootTest( classes = TestApp.class )
@@ -22,8 +20,8 @@ class ShopCartItemsServiceTest {
     private ShopCartItemsService shopCartItemsService;
 
     @Test
-    @SohoWithUser(id = 1l)
+    @SohoWithUser(id = 1L)
     void getUserCart() {
-        log.info(shopCartItemsService.getUserCart(1l));
+        log.info(shopCartItemsService.getUserCart(1L));
     }
 }
