@@ -33,7 +33,7 @@ class ApprovalProcessOrderServiceImplTest {
         ApprovalProcessOrderVo approvalProcessOrderVo = new ApprovalProcessOrderVo();
         approvalProcessOrderVo.setApprovalProcessNo("1");
         approvalProcessOrderVo.setOutNo(String.valueOf(IDGeneratorUtils.snowflake().longValue()));
-        approvalProcessOrderVo.setApplyUserId(1l);
+        approvalProcessOrderVo.setApplyUserId(1L);
         approvalProcessOrderVo.setContentItemList(list);
         approvalProcessOrderServer.create(approvalProcessOrderVo);
         System.out.println("hello wold");
