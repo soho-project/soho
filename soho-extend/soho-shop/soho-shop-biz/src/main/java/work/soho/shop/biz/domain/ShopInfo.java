@@ -83,6 +83,7 @@ public class ShopInfo implements Serializable {
     @ExcelProperty("status")
     @ApiModelProperty(value = "status")
     @TableField(value = "status")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer status;
 
     /**
