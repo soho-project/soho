@@ -382,8 +382,9 @@ public class CodeTableController {
             byte[] b = new byte[100];
             int len;
             try {
-                while ((len = inStream.read(b)) > 0)
+                while ((len = inStream.read(b)) > 0) {
                     response.getOutputStream().write(b, 0, len);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
                 log.error(e.getMessage());

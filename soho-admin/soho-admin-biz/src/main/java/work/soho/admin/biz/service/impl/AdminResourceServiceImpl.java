@@ -33,6 +33,7 @@ public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, A
 
     private final RequestMappingHandlerMapping requestMappingHandlerMapping;
 
+    private static Pattern CAMEL_UPPER_CAMEL_PATTERN = Pattern.compile("[A-Z]([a-z\\d]+)?");
 
     /**
      * sync resource to db
@@ -139,8 +140,7 @@ public class AdminResourceServiceImpl extends ServiceImpl<AdminResourceMapper, A
         }
         line=String.valueOf(line.charAt(0)).toUpperCase().concat(line.substring(1));
         StringBuffer sb=new StringBuffer();
-        Pattern pattern= Pattern.compile("[A-Z]([a-z\\d]+)?");
-        Matcher matcher=pattern.matcher(line);
+        Matcher matcher= CAMEL_UPPER_CAMEL_PATTERN.matcher(line);
         while(matcher.find()){
             String word=matcher.group();
             sb.append(word.toUpperCase());
