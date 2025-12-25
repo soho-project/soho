@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.open.biz.mapper.OpenUserMapper">
+    <resultMap id="BaseResultMap" type="work.soho.open.biz.domain.OpenUser">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="userId" column="user_id" jdbcType="INTEGER"/>
+        <id property="username" column="username" jdbcType="VARCHAR"/>
+        <id property="password" column="password" jdbcType="VARCHAR"/>
+        <id property="name" column="name" jdbcType="VARCHAR"/>
+        <id property="type" column="type" jdbcType="TINYINT"/>
+        <id property="contactName" column="contact_name" jdbcType="VARCHAR"/>
+        <id property="contactEmail" column="contact_email" jdbcType="VARCHAR"/>
+        <id property="contactPhone" column="contact_phone" jdbcType="VARCHAR"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,user_id,username,password,name,type,contact_name,contact_email,contact_phone,updated_time,created_time
+    </sql>
+</mapper>

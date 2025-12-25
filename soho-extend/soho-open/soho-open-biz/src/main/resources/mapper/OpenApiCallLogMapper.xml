@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.open.biz.mapper.OpenApiCallLogMapper">
+    <resultMap id="BaseResultMap" type="work.soho.open.biz.domain.OpenApiCallLog">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="appId" column="app_id" jdbcType="BIGINT"/>
+        <id property="apiId" column="api_id" jdbcType="BIGINT"/>
+        <id property="requestId" column="request_id" jdbcType="VARCHAR"/>
+        <id property="clientIp" column="client_ip" jdbcType="VARCHAR"/>
+        <id property="responseCode" column="response_code" jdbcType="INTEGER"/>
+        <id property="costMs" column="cost_ms" jdbcType="INTEGER"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,app_id,api_id,request_id,client_ip,response_code,cost_ms,created_time
+    </sql>
+</mapper>

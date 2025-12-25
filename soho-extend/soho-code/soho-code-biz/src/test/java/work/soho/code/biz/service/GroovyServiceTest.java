@@ -35,11 +35,12 @@ class GroovyServiceTest {
 //    private static final Integer TABLE_ID = 155439128;  // 内容表
 //    private static final Integer TABLE_ID = 155439198;  // shop_coupon_usage_logs
 //    private static final Integer TABLE_ID = 155439202;  // shop_coupon_usage_logs
-    private static final Integer TABLE_ID = 155439106;  // pay_info
+//    private static final Integer TABLE_ID = 155439106;  // pay_info
+    private static final Integer TABLE_ID = 155439223;  // open_api
 //    private static final Integer TABLE_ID = 155439180;  // 计划任务表
 //    private static final Integer TABLE_ID = 155439179; // 系统资源表， tree
 
-    private String moduleName = "shop";
+    private String moduleName = "open";
 
     //example 分类表ID
 //    private static final Integer EXAMPLE_CATEGORY_TABLE_ID = 155439141;
@@ -104,6 +105,15 @@ class GroovyServiceTest {
         String code = getCodeByTemplateName("adminJavaController", true);
         System.out.println(code);
     }
+
+    // userController
+    @Test
+    void testUserController() {
+        // adminJavaController
+        String code = getCodeByTemplateName("userController", true);
+        System.out.println(code);
+    }
+
     // 测试后台admin enums
     @Test
     void testAdminEnums() {

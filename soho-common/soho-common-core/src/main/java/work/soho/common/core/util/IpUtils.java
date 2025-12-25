@@ -153,7 +153,7 @@ public class IpUtils {
         String[] parts = subnet.split("/");
         Long longIp = IpUtils.ipToLong(checkIp);
         Long matchIp = IpUtils.ipToLong(parts[0]);
-        Integer matchLen = Integer.parseInt(parts[1]);
+        Integer matchLen = parts.length<2 ? 32 : Integer.parseInt(parts[1]);
         Integer outLen = 32 - matchLen;
         return (longIp>>outLen) == (matchIp>>outLen);
     }

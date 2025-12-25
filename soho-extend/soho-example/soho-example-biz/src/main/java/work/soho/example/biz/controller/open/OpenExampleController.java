@@ -1,28 +1,23 @@
 package work.soho.example.biz.controller.open;
 
-import java.time.LocalDateTime;
-import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.security.utils.SecurityUtils;
-import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
-import work.soho.common.security.annotation.Node;
-import work.soho.example.biz.domain.Example;
-import work.soho.example.biz.service.ExampleService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.approvalprocess.service.ApprovalProcessOrderService;
 import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
+import work.soho.common.security.annotation.Node;
+import work.soho.common.security.utils.SecurityUtils;
+import work.soho.example.biz.domain.Example;
+import work.soho.example.biz.service.ExampleService;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 自动化样例Controller
@@ -31,7 +26,7 @@ import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
  */
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/open/example" )
+@RequestMapping("/example/open" )
 public class OpenExampleController {
 
     private final ExampleService exampleService;
