@@ -77,7 +77,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                         "/api-docs/**" ,
                         "/v3/api-docs/**", //swagger-ui
                         "/swagger-resources/**" ,
-                        "/webjars/**"
+                        "/webjars/**",
+                        "/*/openApi/**"
                 ).permitAll()
                 .antMatchers(
                         HttpMethod.GET,
@@ -90,6 +91,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                 .antMatchers("/admin/**").hasAuthority("admin") //后台接口请使用 /admin/ 前缀开头路劲
                 .antMatchers("/*/admin/**").hasAuthority("admin") //后台接口请使用 /admin/ 前缀开头路劲
                 .antMatchers("/chat/**").hasAuthority("chat") //聊天模块鉴权
+                .antMatchers("/*/open/**").hasAuthority("open") // 开放接口鉴权
                 .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // 除上面外的所有请求全部需要鉴权认证
                 .anyRequest().authenticated()

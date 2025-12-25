@@ -22,3 +22,4 @@
 - [短信服务](sms-service.md)
 - [系统配置服务](sys-config.md)
 - [单元测试服务](test.md)
+- [限速模块](ratelimiter.md)

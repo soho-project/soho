@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.open.biz.mapper.OpenApiMapper">
+    <resultMap id="BaseResultMap" type="work.soho.open.biz.domain.OpenApi">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="apiCode" column="api_code" jdbcType="VARCHAR"/>
+        <id property="apiName" column="api_name" jdbcType="VARCHAR"/>
+        <id property="method" column="method" jdbcType="VARCHAR"/>
+        <id property="path" column="path" jdbcType="VARCHAR"/>
+        <id property="version" column="version" jdbcType="VARCHAR"/>
+        <id property="needAuth" column="need_auth" jdbcType="TINYINT"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="description" column="description" jdbcType="VARCHAR"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,api_code,api_name,method,path,version,need_auth,status,description,created_time,updated_time
+    </sql>
+</mapper>
