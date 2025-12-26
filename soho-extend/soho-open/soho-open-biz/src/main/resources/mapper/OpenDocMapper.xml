@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.open.biz.mapper.OpenDocMapper">
+    <resultMap id="BaseResultMap" type="work.soho.open.biz.domain.OpenDoc">
+        <id property="categoryKey" column="category_key" jdbcType="VARCHAR"/>
+        <id property="title" column="title" jdbcType="VARCHAR"/>
+        <id property="content" column="content" jdbcType="VARCHAR"/>
+        <id property="contentFormat" column="content_format" jdbcType="TINYINT"/>
+        <id property="sortNo" column="sort_no" jdbcType="INTEGER"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="parentId" column="parent_id" jdbcType="BIGINT"/>
+        <id property="categoryType" column="category_type" jdbcType="VARCHAR"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        category_key,title,content,content_format,sort_no,status,created_time,updated_time,id,parent_id,category_type
+    </sql>
+</mapper>
