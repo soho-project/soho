@@ -6,4 +6,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface ExpressOrderService extends IService<ExpressOrder> {
     void push(Long id, Long expressInfoId);
     Boolean cancel(Long id);
+    Boolean intercept(Long id);
+    Boolean interceptSuccess(Long id);
 }

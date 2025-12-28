@@ -91,6 +91,18 @@ public class ExpressOrderController {
         return R.success(expressOrderService.cancel(id));
     }
 
+    @GetMapping("/intercept/{id}")
+    @Node(value = "expressOrder::intercept", name = "拦截")
+    public R<Boolean> intercept(@PathVariable("id") Long id) {
+        return R.success(expressOrderService.intercept(id));
+    }
+
+    @GetMapping("/interceptSuccess/{id}")
+    @Node(value = "expressOrder::interceptSuccess", name = "拦截成功")
+    public R<Boolean> interceptSuccess(@PathVariable("id") Long id) {
+        return R.success(expressOrderService.interceptSuccess(id));
+    }
+
     /**
      * 获取快递单详细信息
      */
