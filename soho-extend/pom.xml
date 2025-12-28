@@ -37,5 +37,6 @@
         <module>soho-game</module>
         <module>soho-shop</module>
         <module>soho-wallet</module>
+        <module>soho-express</module>
     </modules>
 </project>

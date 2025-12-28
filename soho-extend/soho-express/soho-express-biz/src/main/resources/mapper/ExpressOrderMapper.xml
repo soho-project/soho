@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.express.biz.mapper.ExpressOrderMapper">
+    <resultMap id="BaseResultMap" type="work.soho.express.biz.domain.ExpressOrder">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <id property="no" column="no" jdbcType="VARCHAR"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="senderName" column="sender_name" jdbcType="VARCHAR"/>
+        <id property="senderPhone" column="sender_phone" jdbcType="VARCHAR"/>
+        <id property="senderMobile" column="sender_mobile" jdbcType="VARCHAR"/>
+        <id property="senderProvince" column="sender_province" jdbcType="VARCHAR"/>
+        <id property="senderCity" column="sender_city" jdbcType="VARCHAR"/>
+        <id property="senderDistrict" column="sender_district" jdbcType="VARCHAR"/>
+        <id property="senderAddress" column="sender_address" jdbcType="VARCHAR"/>
+        <id property="receiverName" column="receiver_name" jdbcType="VARCHAR"/>
+        <id property="receiverPhone" column="receiver_phone" jdbcType="VARCHAR"/>
+        <id property="receiverMobile" column="receiver_mobile" jdbcType="VARCHAR"/>
+        <id property="receiverProvince" column="receiver_province" jdbcType="VARCHAR"/>
+        <id property="receiverCity" column="receiver_city" jdbcType="VARCHAR"/>
+        <id property="receiverDistrict" column="receiver_district" jdbcType="VARCHAR"/>
+        <id property="receiverAddress" column="receiver_address" jdbcType="VARCHAR"/>
+        <id property="orderItems" column="order_items" jdbcType="VARCHAR"/>
+        <id property="summaryInfo" column="summary_info" jdbcType="VARCHAR"/>
+        <id property="orderVasList" column="order_vas_list" jdbcType="VARCHAR"/>
+        <id property="remark" column="remark" jdbcType="VARCHAR"/>
+        <id property="billCode" column="bill_code" jdbcType="VARCHAR"/>
+        <id property="partnerOrderNo" column="partner_order_no" jdbcType="VARCHAR"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,no,status,sender_name,sender_phone,sender_mobile,sender_province,sender_city,sender_district,sender_address,receiver_name,receiver_phone,receiver_mobile,receiver_province,receiver_city,receiver_district,receiver_address,order_items,summary_info,order_vas_list,remark,bill_code,partner_order_no,updated_time,created_time
+    </sql>
+</mapper>
