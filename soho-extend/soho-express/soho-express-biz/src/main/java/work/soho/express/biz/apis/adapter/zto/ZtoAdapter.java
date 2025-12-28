@@ -7,10 +7,13 @@ import com.zto.zop.dto.AccountInfoDTO;
 import com.zto.zop.dto.ReceiveInfoDTO;
 import com.zto.zop.dto.SenderInfoDTO;
 import com.zto.zop.request.CancelOrderRequest;
+import com.zto.zop.request.CreateInterceptRequest;
 import com.zto.zop.request.CreateOrderRequest;
 import com.zto.zop.response.CancelOrderResultDTO;
+import com.zto.zop.response.CreateInterceptResultDTO;
 import com.zto.zop.response.CreateOrderResultDTO;
 import com.zto.zop.response.Response;
+import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.express.biz.apis.adapter.AdapterInterface;
 import work.soho.express.biz.domain.ExpressInfo;
@@ -153,6 +156,43 @@ public class ZtoAdapter implements AdapterInterface {
             return response.getStatus();
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public Boolean intercept(ExpressOrder expressOrder) {
+        CreateInterceptRequest req = new CreateInterceptRequest();
+
+        req.setBillCode(expressOrder.getBillCode());
+        req.setRequestId(IDGeneratorUtils.snowflake().toString());
+//        req.setCustomerId("B17087481000");
+//        req.setCustomerName("客户名称");
+//        req.setReceivePhone("13000000000");
+//        req.setReceiveUsername(expressOrder.getReceiverName());
+//        req.setReceiveAddress(expressOrder.getReceiverAddress());
+//        req.setReceiveDistrict(expressOrder.getReceiverDistrict());
+//        req.setReceiveCity(expressOrder.getReceiverCity());
+//        req.setReceiveProvince(expressOrder.getReceiverProvince());
+        // 拦截类型:1 返回收件网点；2 返回寄件人地址；3 修改派送地址；4 退回指定地址（必填）
+        req.setDestinationType(2);
+        req.setThirdBizNo(expressOrder.getNo());
+
+        String appKey = "d577e7b5024ad20446e10";
+        String appSecret = "0e8e9457d493666ee2f5adb783e69abb";
+        ZopClient client = new ZopClient(appKey, appSecret);
+        ZopPublicRequest publicRequest = new ZopPublicRequest();
+        publicRequest.setBody(JacksonUtils.toJson( req));
+        publicRequest.setBase64(true);
+        publicRequest.setUrl(baseUrl + "thirdcenter.createIntercept");
+        publicRequest.setEncryptionType(EncryptionType.MD5);
+
+        try {
+            String r = getClient().execute(publicRequest);
+            Response<CreateInterceptResultDTO> response = JacksonUtils.toBean(r, Response.class);
+            return response.getStatus();
+        } catch (Exception e) {
+            // ignore
             return false;
         }
     }
