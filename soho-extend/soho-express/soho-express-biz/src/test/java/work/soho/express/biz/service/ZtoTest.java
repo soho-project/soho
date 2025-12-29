@@ -5,10 +5,7 @@ import com.zto.zop.EncryptionType;
 import com.zto.zop.ZopClient;
 import com.zto.zop.ZopPublicRequest;
 import com.zto.zop.dto.*;
-import com.zto.zop.request.CreateInterceptRequest;
-import com.zto.zop.request.CreateOrderRequest;
-import com.zto.zop.request.QueryInterceptAndReturnStatusRequest;
-import com.zto.zop.request.QueryTrackBillRequest;
+import com.zto.zop.request.*;
 import com.zto.zop.response.*;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Test;
@@ -164,6 +161,31 @@ class ZtoTest {
         System.out.println(response);
 
 //        System.out.println();
+    }
+
+    @Test
+    public void testQueryOrder() throws IOException {
+        QueryOrderInfoRequest request = new QueryOrderInfoRequest();
+//        request.setBillCode("73100130019486");
+//        request.setOrderCode("250913000004497101");
+        request.setOrderCode("251229000012445107");
+        request.setType(0);
+
+        String appKey = "d577e7b5024ad20446e10";
+        String appSecret = "0e8e9457d493666ee2f5adb783e69abb";
+        ZopClient client = new ZopClient(appKey, appSecret);
+        ZopPublicRequest publicRequest = new ZopPublicRequest();
+        publicRequest.setBody(JacksonUtils.toJson( request));
+        publicRequest.setBase64(true);
+        publicRequest.setUrl("https://japi-test.zto.com/zto.open.getOrderInfo");
+        publicRequest.setEncryptionType(EncryptionType.MD5);
+
+        String r = client.execute(publicRequest);
+        System.out.println(r);
+
+        Response<List<QueryOrderInfoResultDTO>> response = JacksonUtils.toBean(r, new TypeReference<Response<List<QueryOrderInfoResultDTO>>>() {});
+        System.out.println(response.getResult());
+        System.out.println(response);
     }
 
     @Test

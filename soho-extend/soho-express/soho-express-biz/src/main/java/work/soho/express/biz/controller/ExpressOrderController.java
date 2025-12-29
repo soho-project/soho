@@ -5,6 +5,7 @@ import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
+import com.zto.zop.response.ScanTraceDTO;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -95,6 +96,12 @@ public class ExpressOrderController {
     @Node(value = "expressOrder::intercept", name = "拦截")
     public R<Boolean> intercept(@PathVariable("id") Long id) {
         return R.success(expressOrderService.intercept(id));
+    }
+
+    @GetMapping("/queryTrack/{id}")
+    @Node(value = "expressOrder::queryTrack", name = "查询轨迹")
+    public R<List<ScanTraceDTO>> queryTrack(@PathVariable("id") Long id) {
+        return R.success(expressOrderService.queryTrack(id));
     }
 
     @GetMapping("/interceptSuccess/{id}")

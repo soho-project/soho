@@ -1,23 +1,22 @@
 package work.soho.express.biz.apis.adapter.zto;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.zto.zop.EncryptionType;
 import com.zto.zop.ZopClient;
 import com.zto.zop.ZopPublicRequest;
 import com.zto.zop.dto.AccountInfoDTO;
 import com.zto.zop.dto.ReceiveInfoDTO;
 import com.zto.zop.dto.SenderInfoDTO;
-import com.zto.zop.request.CancelOrderRequest;
-import com.zto.zop.request.CreateInterceptRequest;
-import com.zto.zop.request.CreateOrderRequest;
-import com.zto.zop.response.CancelOrderResultDTO;
-import com.zto.zop.response.CreateInterceptResultDTO;
-import com.zto.zop.response.CreateOrderResultDTO;
-import com.zto.zop.response.Response;
+import com.zto.zop.request.*;
+import com.zto.zop.response.*;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.express.biz.apis.adapter.AdapterInterface;
+import work.soho.express.biz.apis.dto.CreateOrderDTO;
 import work.soho.express.biz.domain.ExpressInfo;
 import work.soho.express.biz.domain.ExpressOrder;
+
+import java.util.List;
 
 public class ZtoAdapter implements AdapterInterface {
     private ExpressInfo expressInfo;
@@ -34,11 +33,11 @@ public class ZtoAdapter implements AdapterInterface {
     }
 
     @Override
-    public void createOrder(ExpressOrder expressOrder) {
+    public CreateOrderDTO createOrder(ExpressOrder expressOrder) {
         CreateOrderRequest request = new CreateOrderRequest();
 
         request.setPartnerType("2");
-        request.setOrderType("1");
+        request.setOrderType("3"); // 2 预约件 返回单号  3  预约件 不反回单号
         request.setPartnerOrderCode(expressOrder.getNo());
         request.setBillCode("");
 
@@ -129,11 +128,14 @@ public class ZtoAdapter implements AdapterInterface {
         try {
             String result = getClient().execute(publicRequest);
             Response<CreateOrderResultDTO> response = JacksonUtils.toBean(result, Response.class);
-            System.out.println(response.getResult());
-            System.out.println(response);
+            CreateOrderResultDTO r = response.getResult();
+            CreateOrderDTO createOrderDTO = new CreateOrderDTO();
+            createOrderDTO.setOrderNo(r.getOrderCode());
+            createOrderDTO.setBillCode(r.getBillCode());
+            return createOrderDTO;
         } catch (Exception e) {
             e.printStackTrace();
-            return;
+            return null;
         }
     }
 
@@ -178,9 +180,6 @@ public class ZtoAdapter implements AdapterInterface {
         req.setDestinationType(2);
         req.setThirdBizNo(expressOrder.getNo());
 
-        String appKey = "d577e7b5024ad20446e10";
-        String appSecret = "0e8e9457d493666ee2f5adb783e69abb";
-        ZopClient client = new ZopClient(appKey, appSecret);
         ZopPublicRequest publicRequest = new ZopPublicRequest();
         publicRequest.setBody(JacksonUtils.toJson( req));
         publicRequest.setBase64(true);
@@ -194,6 +193,51 @@ public class ZtoAdapter implements AdapterInterface {
         } catch (Exception e) {
             // ignore
             return false;
+        }
+    }
+
+    @Override
+    public List<ScanTraceDTO> queryTrackBill(ExpressOrder expressOrder) {
+        QueryTrackBillRequest req = new QueryTrackBillRequest();
+        req.setBillCode(expressOrder.getBillCode());
+
+        ZopPublicRequest publicRequest = new ZopPublicRequest();
+        publicRequest.setBody(JacksonUtils.toJson( req));
+        publicRequest.setBase64(true);
+        publicRequest.setUrl("https://japi-test.zto.com/zto.merchant.waybill.track.query");
+        publicRequest.setEncryptionType(EncryptionType.MD5);
+
+        try {
+            String r = getClient().execute(publicRequest);
+            Response<List<ScanTraceDTO>> response = JacksonUtils.toBean(r, new TypeReference<Response<List<ScanTraceDTO>>>() {});
+            System.out.println(response.getResult());
+            return response.getResult();
+        } catch (Exception e) {
+            // ignore
+            return null;
+        }
+    }
+
+    @Override
+    public List<QueryOrderInfoResultDTO> queryOrderInfo(ExpressOrder expressOrder) {
+        QueryOrderInfoRequest request = new QueryOrderInfoRequest();
+        request.setOrderCode(expressOrder.getNo());
+        request.setType(0);
+
+        ZopPublicRequest publicRequest = new ZopPublicRequest();
+        publicRequest.setBody(JacksonUtils.toJson( request));
+        publicRequest.setBase64(true);
+        publicRequest.setUrl(baseUrl + "zto.open.getOrderInfo");
+        publicRequest.setEncryptionType(EncryptionType.MD5);
+
+        try {
+            String r = getClient().execute(publicRequest);
+//            System.out.println(r);
+
+            Response<List<QueryOrderInfoResultDTO>> response = JacksonUtils.toBean(r, new TypeReference<Response<List<QueryOrderInfoResultDTO>>>() {});
+            return response.getResult();
+        } catch (Exception e) {
+            return null;
         }
     }
 }
