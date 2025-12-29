@@ -1,21 +1,28 @@
 package work.soho.express.biz.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zto.zop.response.QueryOrderInfoResultDTO;
+import com.zto.zop.response.ScanTraceDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.express.api.dto.SimpleExpressOrderDTO;
+import work.soho.express.api.service.ExpressOrderApiService;
 import work.soho.express.biz.apis.adapter.AdapterInterface;
 import work.soho.express.biz.apis.adapter.FactoryAdapter;
+import work.soho.express.biz.apis.dto.CreateOrderDTO;
 import work.soho.express.biz.domain.ExpressInfo;
 import work.soho.express.biz.domain.ExpressOrder;
 import work.soho.express.biz.enums.ExpressOrderEnums;
 import work.soho.express.biz.mapper.ExpressInfoMapper;
 import work.soho.express.biz.mapper.ExpressOrderMapper;
 import work.soho.express.biz.service.ExpressOrderService;
-import work.soho.express.api.service.ExpressOrderApiService;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -43,9 +50,13 @@ public class ExpressOrderServiceImpl extends ServiceImpl<ExpressOrderMapper, Exp
         Assert.notNull(expressInfo);
 
         AdapterInterface adapter = factoryAdapter.getAdapterByExpressInfo(expressInfo);
-        adapter.createOrder(expressOrder);
+        CreateOrderDTO createOrderResultDTO = adapter.createOrder(expressOrder);
         expressOrder.setStatus(ExpressOrderEnums.Status.SENT.getId());
-        updateById(expressOrder);
+        expressOrder.setPartnerOrderNo(createOrderResultDTO.getOrderNo());
+        if(createOrderResultDTO.getBillCode() != null && StringUtils.isNotBlank(createOrderResultDTO.getBillCode())) {
+            expressOrder.setBillCode(createOrderResultDTO.getBillCode());
+        }
+        updateById(expressOrder);it s
     }
 
     @Override
@@ -84,5 +95,56 @@ public class ExpressOrderServiceImpl extends ServiceImpl<ExpressOrderMapper, Exp
         ExpressOrder expressOrder = this.getById(id);
         expressOrder.setStatus(ExpressOrderEnums.Status.INTERCEPT_SUCCESS.getId());
         return updateById(expressOrder);
+    }
+
+    @Override
+    public List<ScanTraceDTO> queryTrack(Long id) {
+        ExpressOrder expressOrder = this.getById(id);
+        AdapterInterface adapter = factoryAdapter.getAdapterByExpressInfo(expressInfoMapper.selectById(expressOrder.getExpressInfoId()));
+        return adapter.queryTrackBill(expressOrder);
+    }
+
+    @Override
+    public void autoSyncBillCode() {
+        Long lastId = 0L;
+        LambdaQueryWrapper<ExpressOrder> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ExpressOrder::getStatus, ExpressOrderEnums.Status.SENT.getId());
+        queryWrapper.isNull(ExpressOrder::getBillCode);
+        queryWrapper.orderByAsc(ExpressOrder::getId);
+        do {
+            queryWrapper.gt(ExpressOrder::getId, lastId);
+            queryWrapper.last("limit 100");
+            List<ExpressOrder> expressOrders = this.list(queryWrapper);
+
+            // 数据处理
+            for (ExpressOrder expressOrder : expressOrders) {
+                syncBillCode(expressOrder);
+                lastId = expressOrder.getId();
+            }
+
+            if(expressOrders.size() <= 0) {
+                break;
+            }
+        } while (true);
+    }
+
+    /**
+     * 同步订单快递单号
+     *
+     * @param expressOrder
+     */
+    private void syncBillCode(ExpressOrder expressOrder) {
+        AdapterInterface adapter = factoryAdapter.getAdapterByExpressInfo(expressInfoMapper.selectById(expressOrder.getExpressInfoId()));
+        List<QueryOrderInfoResultDTO> queryOrderInfo = adapter.queryOrderInfo(expressOrder);
+        if(queryOrderInfo != null && queryOrderInfo.size() > 0) {
+            expressOrder.setBillCode(queryOrderInfo.get(0).getBillCode());
+            updateById(expressOrder);
+        }
+    }
+
+    @Override
+    public void syncBillCode(Long id) {
+        ExpressOrder expressOrder = this.getById(id);
+        syncBillCode(expressOrder);
     }
 }
