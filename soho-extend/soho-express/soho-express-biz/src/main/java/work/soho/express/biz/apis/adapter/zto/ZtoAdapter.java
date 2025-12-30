@@ -43,22 +43,33 @@ public class ZtoAdapter implements AdapterInterface {
 
         // ===== 账户信息 =====
         AccountInfoDTO accountInfo = new AccountInfoDTO();
-        accountInfo.setAccountId("test");
-        accountInfo.setAccountPassword("");
-        accountInfo.setType(1);
-        accountInfo.setCustomerId("GPG1576724269");
+        accountInfo.setAccountId(expressInfo.getBillAccount());
+        accountInfo.setAccountPassword(expressInfo.getBillAccountPassword());
+        accountInfo.setType(2);
+//        accountInfo.setCustomerId("GPG1576724269");
         request.setAccountInfo(accountInfo);
 
         // ===== 寄件人信息 =====
         SenderInfoDTO senderInfo = new SenderInfoDTO();
         senderInfo.setSenderId("");
-        senderInfo.setSenderName(expressOrder.getSenderName());
-        senderInfo.setSenderPhone(expressOrder.getSenderPhone());
-        senderInfo.setSenderMobile(expressOrder.getSenderMobile());
-        senderInfo.setSenderProvince(expressOrder.getSenderProvince());
-        senderInfo.setSenderCity(expressOrder.getSenderCity());
-        senderInfo.setSenderDistrict(expressOrder.getSenderDistrict());
-        senderInfo.setSenderAddress(expressOrder.getSenderAddress());
+        if(expressOrder.getSenderName() == null || expressOrder.getSenderName().isEmpty()) {
+            senderInfo.setSenderName(expressInfo.getSenderName());
+            senderInfo.setSenderPhone(expressInfo.getSenderPhone());
+            senderInfo.setSenderMobile(expressInfo.getSenderMobile());
+            senderInfo.setSenderProvince(expressInfo.getSenderProvince());
+            senderInfo.setSenderCity(expressInfo.getSenderCity());
+            senderInfo.setSenderDistrict(expressInfo.getSenderDistrict());
+            senderInfo.setSenderAddress(expressInfo.getSenderAddress());
+        } else {
+            senderInfo.setSenderName(expressOrder.getSenderName());
+            senderInfo.setSenderPhone(expressOrder.getSenderPhone());
+            senderInfo.setSenderMobile(expressOrder.getSenderMobile());
+            senderInfo.setSenderProvince(expressOrder.getSenderProvince());
+            senderInfo.setSenderCity(expressOrder.getSenderCity());
+            senderInfo.setSenderDistrict(expressOrder.getSenderDistrict());
+            senderInfo.setSenderAddress(expressOrder.getSenderAddress());
+        }
+
         request.setSenderInfo(senderInfo);
 
         // ===== 收件人信息 =====
@@ -127,7 +138,7 @@ public class ZtoAdapter implements AdapterInterface {
 
         try {
             String result = getClient().execute(publicRequest);
-            Response<CreateOrderResultDTO> response = JacksonUtils.toBean(result, Response.class);
+            Response<CreateOrderResultDTO> response = JacksonUtils.toBean(result, new TypeReference<Response<CreateOrderResultDTO>>() {});
             CreateOrderResultDTO r = response.getResult();
             CreateOrderDTO createOrderDTO = new CreateOrderDTO();
             createOrderDTO.setOrderNo(r.getOrderCode());
