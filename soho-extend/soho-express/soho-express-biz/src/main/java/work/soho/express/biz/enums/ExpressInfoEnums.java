@@ -8,11 +8,10 @@ public class ExpressInfoEnums {
     @RequiredArgsConstructor
     @Getter
     public enum ExpressType {
-        ZTO_EXPRESS(1,"中通快递", "zto"),
-        YTO_EXPRESS(2,"韵达快递", "yd");
+        ZTO_EXPRESS(1,"中通快递"),
+        YTO_EXPRESS(2,"韵达快递");
         private final int id;
         private final String name;
-        private final String code;
     }
 
     @RequiredArgsConstructor

@@ -12,8 +12,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id property="appSecret" column="app_secret" jdbcType="VARCHAR"/>
         <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
         <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="senderName" column="sender_name" jdbcType="VARCHAR"/>
+        <id property="senderPhone" column="sender_phone" jdbcType="VARCHAR"/>
+        <id property="senderMobile" column="sender_mobile" jdbcType="VARCHAR"/>
+        <id property="senderProvince" column="sender_province" jdbcType="VARCHAR"/>
+        <id property="senderCity" column="sender_city" jdbcType="VARCHAR"/>
+        <id property="senderDistrict" column="sender_district" jdbcType="VARCHAR"/>
+        <id property="senderAddress" column="sender_address" jdbcType="VARCHAR"/>
+        <id property="billAccount" column="bill_account" jdbcType="VARCHAR"/>
+        <id property="billAccountPassword" column="bill_account_password" jdbcType="VARCHAR"/>
     </resultMap>
     <sql id="Base_Column_List">
-        id,name,express_type,status,app_key,app_secret,updated_time,created_time
+        id,name,express_type,status,app_key,app_secret,updated_time,created_time,sender_name,sender_phone,sender_mobile,sender_province,sender_city,sender_district,sender_address,bill_account,bill_account_password
     </sql>
 </mapper>

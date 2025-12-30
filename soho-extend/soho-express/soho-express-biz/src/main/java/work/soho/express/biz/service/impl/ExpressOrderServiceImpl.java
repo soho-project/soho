@@ -56,7 +56,7 @@ public class ExpressOrderServiceImpl extends ServiceImpl<ExpressOrderMapper, Exp
         if(createOrderResultDTO.getBillCode() != null && StringUtils.isNotBlank(createOrderResultDTO.getBillCode())) {
             expressOrder.setBillCode(createOrderResultDTO.getBillCode());
         }
-        updateById(expressOrder);it s
+        updateById(expressOrder);
     }
 
     @Override

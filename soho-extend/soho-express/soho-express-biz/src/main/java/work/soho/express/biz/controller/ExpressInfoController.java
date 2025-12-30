@@ -68,6 +68,15 @@ public class ExpressInfoController {
         lqw.eq(expressInfo.getUpdatedTime() != null, ExpressInfo::getUpdatedTime ,expressInfo.getUpdatedTime());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, ExpressInfo::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, ExpressInfo::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderName()),ExpressInfo::getSenderName ,expressInfo.getSenderName());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderPhone()),ExpressInfo::getSenderPhone ,expressInfo.getSenderPhone());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderMobile()),ExpressInfo::getSenderMobile ,expressInfo.getSenderMobile());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderProvince()),ExpressInfo::getSenderProvince ,expressInfo.getSenderProvince());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderCity()),ExpressInfo::getSenderCity ,expressInfo.getSenderCity());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderDistrict()),ExpressInfo::getSenderDistrict ,expressInfo.getSenderDistrict());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderAddress()),ExpressInfo::getSenderAddress ,expressInfo.getSenderAddress());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getBillAccount()),ExpressInfo::getBillAccount ,expressInfo.getBillAccount());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getBillAccountPassword()),ExpressInfo::getBillAccountPassword ,expressInfo.getBillAccountPassword());
         lqw.orderByDesc(ExpressInfo::getId);
         List<ExpressInfo> list = expressInfoService.list(lqw);
         return R.success(new PageSerializable<>(list));
@@ -127,6 +136,15 @@ public class ExpressInfoController {
         lqw.eq(expressInfo.getUpdatedTime() != null, ExpressInfo::getUpdatedTime ,expressInfo.getUpdatedTime());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, ExpressInfo::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, ExpressInfo::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderName()),ExpressInfo::getSenderName ,expressInfo.getSenderName());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderPhone()),ExpressInfo::getSenderPhone ,expressInfo.getSenderPhone());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderMobile()),ExpressInfo::getSenderMobile ,expressInfo.getSenderMobile());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderProvince()),ExpressInfo::getSenderProvince ,expressInfo.getSenderProvince());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderCity()),ExpressInfo::getSenderCity ,expressInfo.getSenderCity());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderDistrict()),ExpressInfo::getSenderDistrict ,expressInfo.getSenderDistrict());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getSenderAddress()),ExpressInfo::getSenderAddress ,expressInfo.getSenderAddress());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getBillAccount()),ExpressInfo::getBillAccount ,expressInfo.getBillAccount());
+        lqw.like(StringUtils.isNotBlank(expressInfo.getBillAccountPassword()),ExpressInfo::getBillAccountPassword ,expressInfo.getBillAccountPassword());
         lqw.orderByDesc(ExpressInfo::getId);
         return expressInfoService.list(lqw);
     }
