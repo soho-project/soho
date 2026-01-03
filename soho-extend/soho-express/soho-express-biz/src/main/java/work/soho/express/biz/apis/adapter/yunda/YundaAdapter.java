@@ -33,4 +33,9 @@ public class YundaAdapter implements AdapterInterface {
     public List<QueryOrderInfoResultDTO> queryOrderInfo(ExpressOrder expressOrder) {
         return List.of();
     }
+
+    @Override
+    public byte[] createPdfBill(ExpressOrder expressOrder) throws Exception {
+        return new byte[0];
+    }
 }

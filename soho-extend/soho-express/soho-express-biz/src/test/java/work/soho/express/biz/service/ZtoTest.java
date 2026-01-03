@@ -18,9 +18,14 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.context.WebApplicationContext;
 import work.soho.common.core.util.JacksonUtils;
+import work.soho.express.api.dto.PrintInfoDTO;
+import work.soho.express.biz.apis.adapter.zto.PdfCreater;
 import work.soho.test.TestApp;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -167,8 +172,8 @@ class ZtoTest {
     public void testQueryOrder() throws IOException {
         QueryOrderInfoRequest request = new QueryOrderInfoRequest();
 //        request.setBillCode("73100130019486");
-//        request.setOrderCode("250913000004497101");
-        request.setOrderCode("251229000012445107");
+        request.setOrderCode("250913000004497101");
+//        request.setOrderCode("251229000012445107");
         request.setType(0);
 
         String appKey = "d577e7b5024ad20446e10";
@@ -263,5 +268,69 @@ class ZtoTest {
 //        System.out.println(response);
 
         response.getResult().forEach(System.out::println);
+    }
+
+    @Test
+    public void testPrint() throws Exception {
+        PrintInfoDTO printInfoDTO = new PrintInfoDTO();
+        printInfoDTO.setPartnerCode("ORD20231025001");
+        printInfoDTO.setChecked(true);
+        printInfoDTO.setPayType("在线支付");
+        printInfoDTO.setSheetMode("电子面单");
+        printInfoDTO.setRealName(1); // 实名
+
+        // 设置打印参数
+        PrintInfoDTO.PrintParam printParam = new PrintInfoDTO.PrintParam();
+        printParam.setParamType("标准模板");
+        printParam.setMailNo("123456789012");
+        printParam.setPrintMark("300- C3-09 011");
+        printParam.setPrintBagaddr("广州集包地");
+        printParam.setRemark("回购有惊喜；易碎品请轻拿轻放");
+        printInfoDTO.setPrintParam(printParam);
+
+        // 设置发件人信息
+        PrintInfoDTO.Sender sender = new PrintInfoDTO.Sender();
+        sender.setName("张三");
+        sender.setMobile("13800138000");
+        sender.setProv("广东省");
+        sender.setCity("深圳市");
+        sender.setCounty("南山区");
+        sender.setAddress("科技园南区1号楼");
+        printInfoDTO.setSender(sender);
+
+        // 设置收件人信息
+        PrintInfoDTO.Receiver receiver = new PrintInfoDTO.Receiver();
+        receiver.setName("李四");
+        receiver.setMobile("13900139000");
+        receiver.setProv("浙江省");
+        receiver.setCity("杭州市");
+        receiver.setCounty("西湖区");
+        receiver.setAddress("文三路456号");
+        printInfoDTO.setReceiver(receiver);
+
+        // 设置货物信息
+        PrintInfoDTO.Goods goods = new PrintInfoDTO.Goods();
+        goods.setName("电子产品");
+        goods.setQty(1);
+        goods.setWeight(1500L); // 克
+        goods.setFreight(2500L); // 分
+        goods.setRemark("易碎品，请轻拿轻放");
+        ArrayList<PrintInfoDTO.Goods> goodsList = new ArrayList<>();
+        goodsList.add(goods);
+        printInfoDTO.setGoods(goodsList);
+
+        // 设置增值服务信息
+        PrintInfoDTO.AppreciationDTOS appreciation = new PrintInfoDTO.AppreciationDTOS();
+        appreciation.setType(1); // 保价类型
+        appreciation.setAmount(10000); // 保价金额（分）
+        appreciation.setBackBillCode("BB20231025001");
+        printInfoDTO.setAppreciation(appreciation);
+
+        System.out.println(printInfoDTO);
+
+        byte[] pdf = PdfCreater.buildPdf(printInfoDTO);
+
+        Files.write(Path.of("zto_76x130.pdf"), pdf);
+        System.out.println("OK: zto_76x130.pdf");
     }
 }
