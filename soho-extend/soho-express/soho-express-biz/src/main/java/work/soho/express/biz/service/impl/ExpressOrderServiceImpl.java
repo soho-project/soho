@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
+import work.soho.common.core.util.JacksonUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.express.api.dto.SimpleExpressOrderDTO;
 import work.soho.express.api.service.ExpressOrderApiService;
@@ -35,6 +36,7 @@ public class ExpressOrderServiceImpl extends ServiceImpl<ExpressOrderMapper, Exp
     @Override
     public Boolean createExpressOrder(SimpleExpressOrderDTO simpleExpressOrderDTO) {
         ExpressOrder expressOrder = BeanUtils.copy(simpleExpressOrderDTO, ExpressOrder.class);
+        expressOrder.setOrderItems(JacksonUtils.toJson(simpleExpressOrderDTO.getOrderItems()));
 
         expressOrder.setNo(IDGeneratorUtils.snowflake().toString());
         expressOrder.setStatus(ExpressOrderEnums.Status.PENDING.getId());
@@ -146,5 +148,17 @@ public class ExpressOrderServiceImpl extends ServiceImpl<ExpressOrderMapper, Exp
     public void syncBillCode(Long id) {
         ExpressOrder expressOrder = this.getById(id);
         syncBillCode(expressOrder);
+    }
+
+    @Override
+    public byte[] createBillPdf(Long id) throws Exception {
+        ExpressOrder expressOrder = this.getById(id);
+        Assert.notNull(expressOrder);
+        Assert.isTrue(expressOrder.getStatus() == ExpressOrderEnums.Status.SENT.getId(), "订单未发送");
+        Assert.notNull(expressOrder.getBillCode(), "订单未同步快递单号");
+        Assert.notNull(expressOrder.getMark(), "订单未同步快递单号");
+        Assert.notNull(expressOrder.getBagAddr(), "订单未同步集包地");
+        AdapterInterface adapter = factoryAdapter.getAdapterByExpressInfo(expressInfoMapper.selectById(expressOrder.getExpressInfoId()));
+        return adapter.createPdfBill(expressOrder);
     }
 }

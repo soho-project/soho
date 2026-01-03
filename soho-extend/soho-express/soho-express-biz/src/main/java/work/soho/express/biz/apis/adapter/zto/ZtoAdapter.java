@@ -11,6 +11,7 @@ import com.zto.zop.request.*;
 import com.zto.zop.response.*;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
+import work.soho.express.api.dto.PrintInfoDTO;
 import work.soho.express.biz.apis.adapter.AdapterInterface;
 import work.soho.express.biz.apis.dto.CreateOrderDTO;
 import work.soho.express.biz.domain.ExpressInfo;
@@ -37,7 +38,7 @@ public class ZtoAdapter implements AdapterInterface {
         CreateOrderRequest request = new CreateOrderRequest();
 
         request.setPartnerType("2");
-        request.setOrderType("3"); // 2 预约件 返回单号  3  预约件 不反回单号
+        request.setOrderType("1"); // 1 全网件 2 预约件 返回单号  3  预约件 不反回单号
         request.setPartnerOrderCode(expressOrder.getNo());
         request.setBillCode("");
 
@@ -45,7 +46,13 @@ public class ZtoAdapter implements AdapterInterface {
         AccountInfoDTO accountInfo = new AccountInfoDTO();
         accountInfo.setAccountId(expressInfo.getBillAccount());
         accountInfo.setAccountPassword(expressInfo.getBillAccountPassword());
-        accountInfo.setType(2);
+        accountInfo.setType(1); //2
+
+//        accountInfo.setAccountId("test");
+//        accountInfo.setAccountPassword("");
+//        accountInfo.setType(1);
+//        accountInfo.setCustomerId("GPG1576724269");
+
 //        accountInfo.setCustomerId("GPG1576724269");
         request.setAccountInfo(accountInfo);
 
@@ -138,11 +145,24 @@ public class ZtoAdapter implements AdapterInterface {
 
         try {
             String result = getClient().execute(publicRequest);
+            System.out.println("================================");
+            System.out.println(result);
             Response<CreateOrderResultDTO> response = JacksonUtils.toBean(result, new TypeReference<Response<CreateOrderResultDTO>>() {});
             CreateOrderResultDTO r = response.getResult();
             CreateOrderDTO createOrderDTO = new CreateOrderDTO();
             createOrderDTO.setOrderNo(r.getOrderCode());
             createOrderDTO.setBillCode(r.getBillCode());
+
+            expressOrder.setPartnerOrderNo(r.getOrderCode());
+            if(r.getBigMarkInfo() != null) {
+                expressOrder.setBagAddr(r.getBigMarkInfo().getBagAddr());
+                expressOrder.setMark(r.getBigMarkInfo().getMark());
+            }
+
+            if(r.getSignBillInfo() != null) {
+                expressOrder.setBillCode(r.getBillCode());
+            }
+
             return createOrderDTO;
         } catch (Exception e) {
             e.printStackTrace();
@@ -250,5 +270,38 @@ public class ZtoAdapter implements AdapterInterface {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    @Override
+    public byte[] createPdfBill(ExpressOrder expressOrder) throws Exception {
+        PrintInfoDTO printInfo = new PrintInfoDTO();
+        PrintInfoDTO.Sender sender = new PrintInfoDTO.Sender();
+        sender.setName(expressOrder.getSenderName());
+        sender.setMobile(expressOrder.getSenderMobile());
+        sender.setProv(expressOrder.getSenderProvince());
+        sender.setCity(expressOrder.getSenderCity());
+        sender.setCounty(expressOrder.getSenderDistrict());
+        sender.setAddress(expressOrder.getSenderAddress());
+        printInfo.setSender(sender);
+        PrintInfoDTO.Receiver receiver = new PrintInfoDTO.Receiver();
+        receiver.setName(expressOrder.getReceiverName());
+        receiver.setMobile(expressOrder.getReceiverMobile());
+        receiver.setProv(expressOrder.getReceiverProvince());
+        receiver.setCity(expressOrder.getReceiverCity());
+        receiver.setCounty(expressOrder.getReceiverDistrict());
+        receiver.setAddress(expressOrder.getReceiverAddress());
+        printInfo.setReceiver(receiver);
+        PrintInfoDTO.PrintParam printParam = new PrintInfoDTO.PrintParam();
+        printParam.setMailNo(expressOrder.getBillCode());
+        printParam.setPrintMark(expressOrder.getMark());
+        printParam.setPrintBagaddr(expressOrder.getBagAddr());
+        printParam.setRemark(expressOrder.getRemark());
+        printInfo.setPrintParam(printParam);
+        // 配置产品信息
+        if(expressOrder.getOrderItems() != null) {
+            List<PrintInfoDTO.Goods> goods = JacksonUtils.toBean(expressOrder.getOrderItems(), new TypeReference<List<PrintInfoDTO.Goods>>() {});
+            printInfo.setGoods(goods);
+        }
+        return PdfCreater.buildPdf(printInfo);
     }
 }

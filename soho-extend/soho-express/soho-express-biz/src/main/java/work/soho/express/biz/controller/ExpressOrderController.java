@@ -21,6 +21,10 @@ import work.soho.common.security.annotation.Node;
 import work.soho.express.biz.domain.ExpressOrder;
 import work.soho.express.biz.service.ExpressOrderService;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 /**
@@ -108,6 +112,31 @@ public class ExpressOrderController {
     @Node(value = "expressOrder::interceptSuccess", name = "拦截成功")
     public R<Boolean> interceptSuccess(@PathVariable("id") Long id) {
         return R.success(expressOrderService.interceptSuccess(id));
+    }
+
+    /**
+     * 下载快递单
+     */
+    @Node(value = "expressOrder::downloadBill", name = "下载快递单")
+    @GetMapping("/downloadBill/{id}")
+    public void downloadPdf(@PathVariable("id") Long id, HttpServletResponse response) throws Exception {
+        // 获取PDF数据
+        byte[] pdfData = expressOrderService.createBillPdf(id);
+        Files.write(Path.of("zto2_76x130.pdf"), pdfData);
+        System.out.println("OK: zto_76x130.pdf");
+        System.out.println(pdfData.length);
+        // 设置响应头
+        response.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition",
+                "attachment; filename=\"bill_" + id + ".pdf\"");
+        response.setContentLength(pdfData.length);
+
+        // 将PDF数据写入响应流
+        try (OutputStream os = response.getOutputStream()) {
+            os.write(pdfData);
+            os.flush();
+        }
     }
 
     /**

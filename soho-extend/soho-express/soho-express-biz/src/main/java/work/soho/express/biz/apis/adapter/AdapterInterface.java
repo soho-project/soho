@@ -13,4 +13,5 @@ public interface AdapterInterface {
     Boolean intercept(ExpressOrder expressOrder);
     List<ScanTraceDTO> queryTrackBill(ExpressOrder expressOrder);
     List<QueryOrderInfoResultDTO> queryOrderInfo(ExpressOrder expressOrder);
+    byte[] createPdfBill(ExpressOrder expressOrder) throws Exception;
 }

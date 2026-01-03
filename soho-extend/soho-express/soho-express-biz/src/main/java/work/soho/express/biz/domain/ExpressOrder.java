@@ -205,6 +205,7 @@ public class ExpressOrder implements Serializable {
     @ExcelProperty("快递信息id")
     @ApiModelProperty(value = "快递信息id")
     @TableField(value = "express_info_id")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long expressInfoId;
 
     /**
@@ -227,4 +228,30 @@ public class ExpressOrder implements Serializable {
     @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
 
+    /**
+    * 大头笔
+    */
+    @ExcelProperty("大头笔")
+    @ApiModelProperty(value = "大头笔")
+    @TableField(value = "mark")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private String mark;
+
+    /**
+    * 集包地
+    */
+    @ExcelProperty("集包地")
+    @ApiModelProperty(value = "集包地")
+    @TableField(value = "bag_addr")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private String bagAddr;
+
+    /**
+    * 快递单号
+    */
+    @ExcelProperty("业务跟踪单号")
+    @ApiModelProperty(value = "业务跟踪单号")
+    @TableField(value = "tracking_no")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private String trackingNo;
 }

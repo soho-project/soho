@@ -119,6 +119,26 @@ public class ExpressInfoController {
     }
 
     /**
+     * 获取该快递信息 选项
+     *
+     * @return
+     */
+    @GetMapping("options")
+    @Node(value = "expressInfo::options", name = "获取 快递信息 选项")
+    public R<List<OptionVo<Integer, String>>> options() {
+        List<ExpressInfo> list = expressInfoService.list();
+        List<OptionVo<Integer, String>> options = new ArrayList<>();
+
+        for(ExpressInfo item: list) {
+            OptionVo<Integer, String> optionVo = new OptionVo<>();
+            optionVo.setValue(item.getId());
+            optionVo.setLabel(item.getName());
+            options.add(optionVo);
+        }
+        return R.success(options);
+    }
+
+    /**
      * 导出 快递信息 Excel
      */
     @GetMapping("/exportExcel")

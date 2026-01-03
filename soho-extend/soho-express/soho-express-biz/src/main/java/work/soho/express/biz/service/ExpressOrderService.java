@@ -14,4 +14,5 @@ public interface ExpressOrderService extends IService<ExpressOrder> {
     List<ScanTraceDTO> queryTrack(Long id);
     void autoSyncBillCode();
     void syncBillCode(Long id);
+    byte[] createBillPdf(Long id) throws Exception;
 }
