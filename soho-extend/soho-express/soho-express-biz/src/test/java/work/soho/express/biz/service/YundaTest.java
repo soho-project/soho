@@ -157,15 +157,23 @@ public class YundaTest {
         order.setMarkingInfos(Arrays.asList(insured, df, cod, returnMark, yxz, contact));
 
         dto.setOrders(Arrays.asList(order));
-        System.out.println(dto);
+//        System.out.println(dto);
 
         String url = "https://u-openapi.yundasys.com/openapi-api/v1/accountOrder/createBmOrder";
-        String appKey = "999999";
-        String appSecret = "04d4ad40eeec11e9bad2d962f53dda9d";
-        String partnerId = "529951202001";
-        String secret = "Y4TQ3WBar9hpnw7As8xUZEReSuDdf2";
+//        String appKey = "999999";
+//        String appSecret = "04d4ad40eeec11e9bad2d962f53dda9d";
+//        String partnerId = "529951202001";
+//        String secret = "Y4TQ3WBar9hpnw7As8xUZEReSuDdf2";
+
+        String appKey = "518553900309";
+        String appSecret = "qWkXMnTpmwhDaAcv9gJRrFxS7fKHtQ";
+        String partnerId = "518553900309";
+        String secret = "qWkXMnTpmwhDaAcv9gJRrFxS7fKHtQ";
+
+//        String partnerId = "201700101001";
+//        String secret = "123456789";
         dto.setAppid(appKey);
-        dto.setPartner_id(partnerId);
+        dto.setPartnerId(partnerId);
         dto.setSecret(secret);
 
         System.out.println(JacksonUtils.toJson(dto));

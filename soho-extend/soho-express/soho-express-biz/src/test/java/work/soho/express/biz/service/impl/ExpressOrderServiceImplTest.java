@@ -48,13 +48,13 @@ class ExpressOrderServiceImplTest {
         simpleExpressOrderDTO.setReceiverAddress("天河路");
         simpleExpressOrderDTO.setSummaryInfo("商品信息");
         // 发件人信息
-        simpleExpressOrderDTO.setSenderName("张三");
-        simpleExpressOrderDTO.setSenderPhone("13800000000");
-        simpleExpressOrderDTO.setSenderMobile("13800000000");
-        simpleExpressOrderDTO.setSenderProvince("广东省");
-        simpleExpressOrderDTO.setSenderCity("广州市");
-        simpleExpressOrderDTO.setSenderDistrict("天河区");
-        simpleExpressOrderDTO.setSenderAddress("天河路");
+        simpleExpressOrderDTO.setSenderName("李四");
+        simpleExpressOrderDTO.setSenderPhone("13800000001");
+        simpleExpressOrderDTO.setSenderMobile("13800000001");
+        simpleExpressOrderDTO.setSenderProvince("湖南省");
+        simpleExpressOrderDTO.setSenderCity("长沙市");
+        simpleExpressOrderDTO.setSenderDistrict("望城区");
+        simpleExpressOrderDTO.setSenderAddress("银星路999号");
 
         List<OrderItem> items = new ArrayList<>();
         items.add(new OrderItem()

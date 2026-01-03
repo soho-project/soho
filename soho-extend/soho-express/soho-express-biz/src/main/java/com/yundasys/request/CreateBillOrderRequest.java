@@ -1,5 +1,6 @@
 package com.yundasys.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -9,7 +10,8 @@ import java.util.List;
 @Accessors(chain = true)
 public class CreateBillOrderRequest {
     private String appid;
-    private String partner_id;
+    @JsonProperty("partner_id")
+    private String partnerId;
     private String secret;
     private List<Order> orders;
 
