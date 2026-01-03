@@ -8,14 +8,12 @@ import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.code.api.request.CodeTableTemplateRunTestRequest;
 import work.soho.code.api.vo.CodeTableVo;
-import work.soho.code.biz.domain.CodeTable;
 import work.soho.code.biz.domain.CodeTableTemplate;
 import work.soho.code.biz.service.CodeTableService;
 import work.soho.code.biz.service.CodeTableTemplateService;
 import work.soho.code.biz.service.DbService;
 import work.soho.code.biz.service.GroovyService;
 import work.soho.common.core.result.R;
-import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
@@ -151,7 +149,8 @@ public class CodeTableTemplateController {
 
             HashMap<String , String > binds = new HashMap<>();
             binds.put("baseNamespace", "work.soho.");
-            CodeTable codeTable = BeanUtils.copy(tableVo, CodeTable.class);
+            binds.put("moduleName", "example");
+            binds.put("basePath", "src/java/work/soho/");
             String result = groovyService.invoke(runTestRequest.getCode(), binds, "main", tableVo);
             if(result == null) {
                 throw new RuntimeException("run error: result is null");
