@@ -34,6 +34,9 @@
         <spring-cloud-alibaba.version>2021.0.1.0</spring-cloud-alibaba.version>
         <spring-cloud.version>2021.0.1</spring-cloud.version>
         <azure-ai-openai.version>1.0.0-beta.2</azure-ai-openai.version>
+        <pdfbox.version>2.0.31</pdfbox.version>
+        <zxing.version>3.5.3</zxing.version>
+
     </properties>
 
     <dependencyManagement>
@@ -401,6 +404,23 @@
                 <groupId>org.lionsoul</groupId>
                 <artifactId>ip2region</artifactId>
                 <version>3.1.1</version>
+            </dependency>
+            <!-- 生成 PDF -->
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>pdfbox</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
+            <!-- 条码/二维码 -->
+            <dependency>
+                <groupId>com.google.zxing</groupId>
+                <artifactId>core</artifactId>
+                <version>${zxing.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.zxing</groupId>
+                <artifactId>javase</artifactId>
+                <version>${zxing.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
