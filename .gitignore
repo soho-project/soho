@@ -8,3 +8,4 @@
 *.iml
 **/*.iml
 **/pom.xml.versionsBackup
+*.pdf
