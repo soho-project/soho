@@ -12,8 +12,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.context.WebApplicationContext;
 import work.soho.test.TestApp;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
 @SpringBootTest(classes = TestApp.class)
@@ -31,6 +29,6 @@ class ExpressOrderServiceTest {
 
     @Test
     void push() {
-        expressOrderService.push(1L, 1L);
+        expressOrderService.push(6L, 2L);
     }
 }

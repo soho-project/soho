@@ -1,14 +1,13 @@
 package work.soho.express.biz.domain;
 
-import io.swagger.annotations.ApiModelProperty;
-import com.baomidou.mybatisplus.annotation.*;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.format.DateTimeFormat;
-import java.io.Serializable;
+import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
-import java.math.BigDecimal;
-import java.time.LocalDate;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
@@ -21,7 +20,7 @@ public class ExpressInfo implements Serializable {
     @ApiModelProperty(value = "id")
     @TableId(value = "id", type = IdType.AUTO)
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Integer id;
+    private Long id;
 
     /**
     * 快递名

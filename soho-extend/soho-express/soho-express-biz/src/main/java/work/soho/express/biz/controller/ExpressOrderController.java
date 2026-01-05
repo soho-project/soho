@@ -5,7 +5,6 @@ import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
-import com.zto.zop.response.ScanTraceDTO;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -18,6 +17,7 @@ import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.excel.annotation.ExcelExport;
 import work.soho.common.security.annotation.Node;
+import work.soho.express.api.dto.TrackDTO;
 import work.soho.express.biz.domain.ExpressOrder;
 import work.soho.express.biz.service.ExpressOrderService;
 
@@ -104,7 +104,7 @@ public class ExpressOrderController {
 
     @GetMapping("/queryTrack/{id}")
     @Node(value = "expressOrder::queryTrack", name = "查询轨迹")
-    public R<List<ScanTraceDTO>> queryTrack(@PathVariable("id") Long id) {
+    public R<List<TrackDTO>> queryTrack(@PathVariable("id") Long id) {
         return R.success(expressOrderService.queryTrack(id));
     }
 

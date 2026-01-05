@@ -7,7 +7,7 @@ import lombok.Data;
 public class CancelBillOrderResultResponse {
     @JsonProperty("order_serial_no")
     private String orderSerialNo;
-    @JsonProperty("mailno")
+    @JsonProperty("mail_no")
     private String mailNo;
     private String status;
     private String msg;
