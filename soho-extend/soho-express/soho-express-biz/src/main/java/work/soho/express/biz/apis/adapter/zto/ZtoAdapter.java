@@ -12,11 +12,13 @@ import com.zto.zop.response.*;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.express.api.dto.PrintInfoDTO;
+import work.soho.express.api.dto.TrackDTO;
 import work.soho.express.biz.apis.adapter.AdapterInterface;
 import work.soho.express.biz.apis.dto.CreateOrderDTO;
 import work.soho.express.biz.domain.ExpressInfo;
 import work.soho.express.biz.domain.ExpressOrder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ZtoAdapter implements AdapterInterface {
@@ -228,7 +230,7 @@ public class ZtoAdapter implements AdapterInterface {
     }
 
     @Override
-    public List<ScanTraceDTO> queryTrackBill(ExpressOrder expressOrder) {
+    public List<TrackDTO> queryTrackBill(ExpressOrder expressOrder) {
         QueryTrackBillRequest req = new QueryTrackBillRequest();
         req.setBillCode(expressOrder.getBillCode());
 
@@ -242,7 +244,20 @@ public class ZtoAdapter implements AdapterInterface {
             String r = getClient().execute(publicRequest);
             Response<List<ScanTraceDTO>> response = JacksonUtils.toBean(r, new TypeReference<Response<List<ScanTraceDTO>>>() {});
             System.out.println(response.getResult());
-            return response.getResult();
+
+            List<TrackDTO> list = new ArrayList<>();
+            for(ScanTraceDTO t : response.getResult()) {
+                TrackDTO tdto = new TrackDTO();
+                tdto.setScanType(t.getScanType());
+                tdto.setLocation(t.getScanSite().getCity());
+                tdto.setScanSiteCity(t.getScanSite().getCity());
+                tdto.setScanDate(t.getScanDate());
+                tdto.setDescription(t.getDesc());
+//                tdto.setStatus(t.getStatus());
+                list.add(tdto);
+            }
+            return list;
+//            return response.getResult();
         } catch (Exception e) {
             // ignore
             return null;

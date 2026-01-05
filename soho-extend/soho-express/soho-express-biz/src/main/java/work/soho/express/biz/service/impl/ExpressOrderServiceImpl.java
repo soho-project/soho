@@ -3,7 +3,6 @@ package work.soho.express.biz.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zto.zop.response.QueryOrderInfoResultDTO;
-import com.zto.zop.response.ScanTraceDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -12,12 +11,14 @@ import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.express.api.dto.SimpleExpressOrderDTO;
+import work.soho.express.api.dto.TrackDTO;
 import work.soho.express.api.service.ExpressOrderApiService;
 import work.soho.express.biz.apis.adapter.AdapterInterface;
 import work.soho.express.biz.apis.adapter.FactoryAdapter;
 import work.soho.express.biz.apis.dto.CreateOrderDTO;
 import work.soho.express.biz.domain.ExpressInfo;
 import work.soho.express.biz.domain.ExpressOrder;
+import work.soho.express.biz.enums.ExpressInfoEnums;
 import work.soho.express.biz.enums.ExpressOrderEnums;
 import work.soho.express.biz.mapper.ExpressInfoMapper;
 import work.soho.express.biz.mapper.ExpressOrderMapper;
@@ -37,9 +38,16 @@ public class ExpressOrderServiceImpl extends ServiceImpl<ExpressOrderMapper, Exp
     public Boolean createExpressOrder(SimpleExpressOrderDTO simpleExpressOrderDTO) {
         ExpressOrder expressOrder = BeanUtils.copy(simpleExpressOrderDTO, ExpressOrder.class);
         expressOrder.setOrderItems(JacksonUtils.toJson(simpleExpressOrderDTO.getOrderItems()));
-
         expressOrder.setNo(IDGeneratorUtils.snowflake().toString());
         expressOrder.setStatus(ExpressOrderEnums.Status.PENDING.getId());
+        // 检查确认接单快递
+        List<ExpressInfo> expressInfos = expressInfoMapper.selectList(
+                new LambdaQueryWrapper<ExpressInfo>()
+                        .eq(ExpressInfo::getStatus, ExpressInfoEnums.Status.ACTIVE.getId())
+        );
+        if(expressInfos.size()>0) {
+            expressOrder.setExpressInfoId(expressInfos.get(0).getId());
+        }
         return save(expressOrder);
     }
 
@@ -100,7 +108,7 @@ public class ExpressOrderServiceImpl extends ServiceImpl<ExpressOrderMapper, Exp
     }
 
     @Override
-    public List<ScanTraceDTO> queryTrack(Long id) {
+    public List<TrackDTO> queryTrack(Long id) {
         ExpressOrder expressOrder = this.getById(id);
         AdapterInterface adapter = factoryAdapter.getAdapterByExpressInfo(expressInfoMapper.selectById(expressOrder.getExpressInfoId()));
         return adapter.queryTrackBill(expressOrder);

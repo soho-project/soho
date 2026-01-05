@@ -16,11 +16,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.context.WebApplicationContext;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
-import work.soho.express.biz.apis.adapter.yunda.PdfCreater;
 import work.soho.test.TestApp;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 
 @ContextConfiguration
@@ -57,9 +54,9 @@ public class YundaTest {
 
         System.out.println(label);
 
-        byte[] pdf = PdfCreater.buildPdf(label);
-        Files.write(Path.of("yunda_76x130.pdf"), pdf);
-        System.out.println("OK: yunda_76x130.pdf");
+//        byte[] pdf = PdfCreater.buildPdf(label);
+//        Files.write(Path.of("yunda_76x130.pdf"), pdf);
+//        System.out.println("OK: yunda_76x130.pdf");
     }
 
     @Test
@@ -70,7 +67,7 @@ public class YundaTest {
 //        dto.setSecret("123456789");
 
         // 创建订单
-        Long id = IDGeneratorUtils.snowflake().longValue();
+        String id = IDGeneratorUtils.snowflake().toString();
         CreateBillOrderRequest.Order order = new CreateBillOrderRequest.Order();
         order.setOrder_serial_no(id);
         order.setKhddh(id);
@@ -130,11 +127,11 @@ public class YundaTest {
         dfValue.setValue(15);
         df.setMarkingValue(dfValue);
 
-        CreateBillOrderRequest.MarkingInfo cod = new CreateBillOrderRequest.MarkingInfo();
-        cod.setType("COD");
-        CreateBillOrderRequest.MarkingValue codValue = new CreateBillOrderRequest.MarkingValue();
-        codValue.setValue(15);
-        cod.setMarkingValue(codValue);
+//        CreateBillOrderRequest.MarkingInfo cod = new CreateBillOrderRequest.MarkingInfo();
+//        cod.setType("COD");
+//        CreateBillOrderRequest.MarkingValue codValue = new CreateBillOrderRequest.MarkingValue();
+//        codValue.setValue(15);
+//        cod.setMarkingValue(codValue);
 
         CreateBillOrderRequest.MarkingInfo returnMark = new CreateBillOrderRequest.MarkingInfo();
         returnMark.setType("RETURN");
@@ -154,21 +151,21 @@ public class YundaTest {
         CreateBillOrderRequest.MarkingInfo contact = new CreateBillOrderRequest.MarkingInfo();
         contact.setType("CONTACT");
 
-        order.setMarkingInfos(Arrays.asList(insured, df, cod, returnMark, yxz, contact));
+//        order.setMarkingInfos(Arrays.asList(insured, yxz));
 
         dto.setOrders(Arrays.asList(order));
 //        System.out.println(dto);
 
         String url = "https://u-openapi.yundasys.com/openapi-api/v1/accountOrder/createBmOrder";
-//        String appKey = "999999";
-//        String appSecret = "04d4ad40eeec11e9bad2d962f53dda9d";
-//        String partnerId = "529951202001";
-//        String secret = "Y4TQ3WBar9hpnw7As8xUZEReSuDdf2";
+        String appKey = "999999";
+        String appSecret = "04d4ad40eeec11e9bad2d962f53dda9d";
+        String partnerId = "529951202001";
+        String secret = "Y4TQ3WBar9hpnw7As8xUZEReSuDdf2";
 
-        String appKey = "518553900309";
-        String appSecret = "qWkXMnTpmwhDaAcv9gJRrFxS7fKHtQ";
-        String partnerId = "518553900309";
-        String secret = "qWkXMnTpmwhDaAcv9gJRrFxS7fKHtQ";
+//        String appKey = "518553900309";
+//        String appSecret = "qWkXMnTpmwhDaAcv9gJRrFxS7fKHtQ";
+//        String partnerId = "518553900309";
+//        String secret = "qWkXMnTpmwhDaAcv9gJRrFxS7fKHtQ";
 
 //        String partnerId = "201700101001";
 //        String secret = "123456789";

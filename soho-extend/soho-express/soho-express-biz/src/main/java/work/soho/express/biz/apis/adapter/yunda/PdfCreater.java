@@ -14,6 +14,7 @@ import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.graphics.state.RenderingMode;
 import org.apache.pdfbox.util.Matrix;
+import work.soho.express.api.dto.PrintInfoDTO;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -21,7 +22,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 public class PdfCreater {
@@ -31,7 +35,7 @@ public class PdfCreater {
     // 模版内边距 (根据图纸四周留白约为 4mm)
     private static final float M = mm2pt(4.0f);
 
-    public static byte[] buildPdf(JsonNode label) throws Exception {
+    public static byte[] buildPdf(PrintInfoDTO billPrintDTO) throws Exception {
         try (PDDocument doc = new PDDocument();
              ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
@@ -45,17 +49,16 @@ public class PdfCreater {
             }
 
             // 获取数据
-            String mailno = text(label, "mailno");
-            String position = text(label, "position");      // 示例: 300A
-            String positionNo = text(label, "position_no"); // 示例: G262-00 F3
-            String rName = firstNonEmpty(text(label, "privacy_receiver_name"), text(label, "receiver_name"));
-            String rMobile = firstNonEmpty(text(label, "privacy_receiver_mobile"), text(label, "receiver_mobile"));
-            String rAddr = text(label, "receiver_area_names") + text(label, "receiver_address");
-            String packageWdjc = text(label, "package_wdjc");
-
-            // 生成高分辨率图像
-            PDImageXObject vBarX = toX(doc, code128(mailno, 800, 150));
-            PDImageXObject qrX = toX(doc, qrCode(text(label, "qrcode"), 300, 300));
+            String mailno = billPrintDTO.getPrintParam().getMailNo();
+            String position = billPrintDTO.getPrintParam().getPrintBagaddr();      // 示例: 300A
+            String positionNo = billPrintDTO.getPrintParam().getPrintMark(); // 示例: G262-00 F3
+            String rName = billPrintDTO.getReceiver().getName();
+            String rMobile = billPrintDTO.getReceiver().getMobile();
+            String rAddr = billPrintDTO.getReceiver().getProv() + " "
+                    + billPrintDTO.getReceiver().getCity() + " "
+                    + billPrintDTO.getReceiver().getCounty() + " "
+                    + billPrintDTO.getReceiver().getAddress();
+            String packageWdjc = billPrintDTO.getPrintParam().getPrintBagaddr();
 
             try (PDPageContentStream cs = new PDPageContentStream(doc, page)) {
 
@@ -95,11 +98,15 @@ public class PdfCreater {
 //                drawText(cs, font, 13f, PAGE_W - mm2pt(16), PAGE_H - mm2pt(2) - mm2pt(9), "    普快");
 //                drawText(cs, font, 13f, PAGE_W - mm2pt(16), PAGE_H - mm2pt(2) - mm2pt(7), "    普快");
 //                drawText(cs, font, 18f, PAGE_W - mm2pt(22), PAGE_H - mm2pt(2) - mm2pt(8), "    普快");
-                drawText(cs, font, 18f, PAGE_W - mm2pt(22), PAGE_H - mm2pt(2) - mm2pt(8), text(label, "innerProvinceName"));
+//                drawText(cs, font, 18f, PAGE_W - mm2pt(22), PAGE_H - mm2pt(2) - mm2pt(8), text(label, "innerProvinceName"));
+                drawText(cs, font, 18f, PAGE_W - mm2pt(22), PAGE_H - mm2pt(2) - mm2pt(8), "  标快");
                 cs.setNonStrokingColor(Color.BLACK);
 
                 // 顶部小字单号与时间
-                drawText(cs, font, 8f, M + mm2pt(1), PAGE_H - M - mm2pt(4 + 4), text(label, "time") + " 第1/1个");
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                LocalDateTime now = LocalDateTime.now();
+                String formattedDateTime = now.format(formatter);
+                drawText(cs, font, 8f, M + mm2pt(1), PAGE_H - M - mm2pt(4 + 4), formattedDateTime + " 第1/1个");
                 drawText(cs, font, 6f, M + mm2pt(1), PAGE_H - M - mm2pt(4), "*" + mailno);
                 drawText(cs, font, 6f, M + mm2pt(23), PAGE_H - M - mm2pt(4), "*" + mailno);
 
@@ -109,22 +116,35 @@ public class PdfCreater {
 
                 // Position 区域 (H:10mm 黑体 26pt 加粗)
                 float posTop = PAGE_H - mm2pt(14);
-                drawText(cs, font, 23f, M, posTop - mm2pt(8), position);
-                drawText(cs, font, 24f, M + mm2pt(22), posTop - mm2pt(8), positionNo);
+//                drawText(cs, font, 23f, M, posTop - mm2pt(8), position);
+//                drawText(cs, font, 24f, M + mm2pt(22), posTop - mm2pt(8), positionNo);
+                drawText(cs, font, 24f, M + mm2pt(1f), posTop - mm2pt(8), positionNo);
                 drawLine(cs, M, posTop - mm2pt(10), rightX, posTop - mm2pt(10), 0.5f);
 
                 // 处理中框绘制
                 drawMiddleBox(doc, cs, 4f, 48f, 68f, 58, 0.8f, mailno, font,
                         packageWdjc, rName, rMobile, rAddr,
-                        label
+                        billPrintDTO
                         );
 
 
+                // TOOD 获取商品信息 获取商品信息
+                List<PrintInfoDTO.Goods> goods = billPrintDTO.getGoods();
+                String goodsInfo = "物品信息：";
+                for (int i = 0; i < goods.size(); i++) {
+                    goodsInfo += "物品" + (i + 1) + "：" + goods.get(i).getName()
+                            + " 数量：" + goods.get(i).getQty()
+//                            + " 重量：" + goods.get(i).getWeight()
+                            +  " 备注：" + goods.get(i).getRemark()
+                            + "\n";
+                }
                 //  下面空白部分绘制
                 drawMultiline(cs, font, 8f, M, mm2pt(44 - 2),
-                        text(label, "cus_area1")
-                        + "\n" + text(label, "item")
-                        + "\n" + text(label, "remark")
+                        ""
+//                        + text(label, "cus_area1")
+//                        + "\n" + text(label, "item")
+                        + "\n" + goodsInfo
+                        + "\n" + (billPrintDTO.getPrintParam().getRemark() == null ? "" : "备注：" + billPrintDTO.getPrintParam().getRemark())
                         ,
 
                         mm2pt(58), 9);
@@ -144,7 +164,7 @@ public class PdfCreater {
                                       String rName,
                                       String rMobile,
                                       String rAddr,
-                                      JsonNode label
+                                      PrintInfoDTO billPrintDTO
                                       ) throws Exception {
         drawRect(cs,  mm2pt(x), mm2pt(y), mm2pt(54), mm2pt(58), bw);
         drawRect(cs,  mm2pt(x), mm2pt(y), mm2pt(54 + 14), mm2pt(58), bw);
@@ -153,8 +173,12 @@ public class PdfCreater {
 
         // 寄件人信息
         drawCircleIcon(cs, font, mm2pt(x + 1), mm2pt(y + bh + 3f), "寄");
-        drawText(cs, font, 8f, mm2pt(x + 8), mm2pt(y + bh + 7), text(label, "sender_name") + " " + text(label, "sender_mobile"));
-        drawMultiline(cs, font, 8f, mm2pt(x + 8), mm2pt(y + bh + 4), text(label, "sender_area_names") + " " + text(label, "sender_address"), mm2pt(43), 3);
+        drawText(cs, font, 8f, mm2pt(x + 8), mm2pt(y + bh + 7), billPrintDTO.getSender().getName() + " " + billPrintDTO.getSender().getMobile());
+        drawMultiline(cs, font, 8f, mm2pt(x + 8), mm2pt(y + bh + 4), billPrintDTO.getSender().getProv()
+                + " " + billPrintDTO.getSender().getCity()
+                + " " + billPrintDTO.getSender().getCounty()
+                + " " + billPrintDTO.getSender().getAddress()
+                , mm2pt(43), 3);
 
 
         bh += 10f;

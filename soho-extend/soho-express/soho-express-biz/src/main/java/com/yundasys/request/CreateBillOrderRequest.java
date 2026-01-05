@@ -24,9 +24,9 @@ public class CreateBillOrderRequest {
         private String cus_area2;
         private String isProtectPrivacy;
         private List<Item> items;
-        private Long khddh;
+        private String khddh;
         private String node_id;
-        private Long order_serial_no;
+        private String order_serial_no;
         private String order_type;
         private String platform_source;
         private Receiver receiver;

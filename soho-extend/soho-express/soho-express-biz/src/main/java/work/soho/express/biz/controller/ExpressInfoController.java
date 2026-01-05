@@ -1,40 +1,29 @@
 package work.soho.express.biz.controller;
 
-import java.time.LocalDateTime;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import io.swagger.annotations.Api;
-import work.soho.common.core.util.PageUtils;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
+import work.soho.admin.api.request.BetweenCreatedTimeRequest;
+import work.soho.admin.api.service.AdminDictApiService;
+import work.soho.admin.api.vo.OptionVo;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.excel.annotation.ExcelExport;
 import work.soho.common.security.annotation.Node;
-import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.express.biz.domain.ExpressInfo;
 import work.soho.express.biz.service.ExpressInfoService;
+
 import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.admin.api.vo.OptionVo;
-import work.soho.admin.api.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.admin.api.vo.TreeNodeVo;
-import work.soho.admin.api.service.AdminDictApiService;
+import java.util.Arrays;
+import java.util.List;
 /**
  * 快递信息Controller
  *
@@ -125,12 +114,12 @@ public class ExpressInfoController {
      */
     @GetMapping("options")
     @Node(value = "expressInfo::options", name = "获取 快递信息 选项")
-    public R<List<OptionVo<Integer, String>>> options() {
+    public R<List<OptionVo<Long, String>>> options() {
         List<ExpressInfo> list = expressInfoService.list();
-        List<OptionVo<Integer, String>> options = new ArrayList<>();
+        List<OptionVo<Long, String>> options = new ArrayList<>();
 
         for(ExpressInfo item: list) {
-            OptionVo<Integer, String> optionVo = new OptionVo<>();
+            OptionVo<Long, String> optionVo = new OptionVo<>();
             optionVo.setValue(item.getId());
             optionVo.setLabel(item.getName());
             options.add(optionVo);

@@ -16,6 +16,8 @@ import work.soho.express.api.dto.SimpleExpressOrderDTO;
 import work.soho.test.TestApp;
 
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,5 +69,11 @@ class ExpressOrderServiceImplTest {
 
         Boolean result = expressOrderService.createExpressOrder(simpleExpressOrderDTO);
         System.out.println( result);
+    }
+
+    @Test
+    public void printBill() throws Exception {
+        byte[] pdfData  = expressOrderService.createBillPdf(6L);
+        Files.write(Path.of("test_printbill_76x130.pdf"), pdfData);
     }
 }

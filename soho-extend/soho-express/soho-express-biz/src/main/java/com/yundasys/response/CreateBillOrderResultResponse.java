@@ -15,4 +15,6 @@ public class CreateBillOrderResultResponse {
     private String remark;
     private String msg;
     private String orderId;
+    @JsonProperty("pdf_info")
+    private String pdfInfo;
 }

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.Getter;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -16,6 +17,7 @@ public class QueryTrackBillResultResponse {
     private String mailNo;
     private String remark;
     private String status;
+    private List<Step> steps;
 
     @Data
     public static class Step {

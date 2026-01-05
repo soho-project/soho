@@ -1,8 +1,8 @@
 package work.soho.express.biz.service;
 
-import com.zto.zop.response.ScanTraceDTO;
-import work.soho.express.biz.domain.ExpressOrder;
 import com.baomidou.mybatisplus.extension.service.IService;
+import work.soho.express.api.dto.TrackDTO;
+import work.soho.express.biz.domain.ExpressOrder;
 
 import java.util.List;
 
@@ -11,7 +11,7 @@ public interface ExpressOrderService extends IService<ExpressOrder> {
     Boolean cancel(Long id);
     Boolean intercept(Long id);
     Boolean interceptSuccess(Long id);
-    List<ScanTraceDTO> queryTrack(Long id);
+    List<TrackDTO> queryTrack(Long id);
     void autoSyncBillCode();
     void syncBillCode(Long id);
     byte[] createBillPdf(Long id) throws Exception;

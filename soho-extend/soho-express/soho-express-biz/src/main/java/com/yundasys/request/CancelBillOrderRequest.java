@@ -2,6 +2,7 @@ package com.yundasys.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 import java.util.List;
 
@@ -13,6 +14,8 @@ public class CancelBillOrderRequest {
     private String secret;
     private List< Order> orders;
 
+    @Data
+    @Accessors(chain = true)
     public static class Order {
         @JsonProperty("order_serial_no")
         private String orderSerialNo;

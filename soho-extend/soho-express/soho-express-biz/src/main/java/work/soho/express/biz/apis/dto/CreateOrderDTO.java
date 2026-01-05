@@ -1,8 +1,10 @@
 package work.soho.express.biz.apis.dto;
 
 import lombok.Data;
+import lombok.ToString;
 
 @Data
+@ToString
 public class CreateOrderDTO {
     /**
      * 快递公司订单号
