@@ -88,8 +88,9 @@ ssh -f -N -L ${LOCAL_PORT}:localhost:${REMOTE_PORT} $REMOTE_HOST
 # 确保脚本退出时关闭隧道
 cleanup() {
     echo "正在关闭SSH隧道..."
-    kill $TUNNEL_PID 2>/dev/null
-    cd "$oldDir"
+    kill_port $LOCAL_PORT
+#    kill $TUNNEL_PID 2>/dev/null
+#    cd "$oldDir"
 }
 trap cleanup EXIT
 
