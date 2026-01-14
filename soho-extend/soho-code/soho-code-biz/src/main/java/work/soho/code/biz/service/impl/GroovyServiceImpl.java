@@ -68,6 +68,7 @@ public class GroovyServiceImpl implements GroovyService {
      */
     public <T> T invoke(String scriptText, Map binds, String func, Object... objs){
         try {
+            System.out.println("invoke----------------------------------1");
             Binding binding = new Binding(binds);
             binding.setVariable("context", this);
             binding.setVariable("creator", "fang.liu");

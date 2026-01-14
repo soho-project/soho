@@ -14,6 +14,7 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.condition.RequestMethodsRequestCondition;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import work.soho.open.api.annotation.OpenApi;
 
 import java.lang.reflect.*;
 import java.math.BigDecimal;
@@ -42,7 +43,7 @@ public class ControllerApiReaderServiceImpl {
      *
      * 不配则使用默认 work.soho.example.
      */
-    @Value("${soho.api-doc.base-package:work.soho.example.}")
+    @Value("${soho.api-doc.base-package:work.soho.}")
     private String basePackage;
 
     private final ParameterNameDiscoverer nameDiscoverer = new DefaultParameterNameDiscoverer();
@@ -107,6 +108,11 @@ public class ControllerApiReaderServiceImpl {
             if (controllerClass.getPackage() == null
                     || controllerClass.getPackage().getName() == null
                     || !controllerClass.getPackage().getName().startsWith(basePackage)) {
+                continue;
+            }
+
+            // 检查方法上是否有 @OpenApi 注解
+            if (!handlerMethod.getMethod().isAnnotationPresent(OpenApi.class)) {
                 continue;
             }
 
