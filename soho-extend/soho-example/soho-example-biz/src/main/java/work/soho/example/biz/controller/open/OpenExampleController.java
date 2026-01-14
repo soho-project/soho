@@ -9,8 +9,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
-import work.soho.approvalprocess.service.ApprovalProcessOrderService;
-import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
+import work.soho.approvalprocess.api.service.ApprovalProcessOrderApiService;
+import work.soho.approvalprocess.api.vo.ApprovalProcessOrderVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
@@ -39,7 +39,7 @@ public class OpenExampleController {
 
     private final ExampleService exampleService;
 
-    private final ApprovalProcessOrderService approvalProcessOrderService;
+    private final ApprovalProcessOrderApiService approvalProcessOrderService;
     /**
      * 查询自动化样例列表
      */
@@ -157,7 +157,7 @@ public class OpenExampleController {
             itemContent.setContent(example.getContent());
             vo.getContentItemList().add(itemContent);
 
-            approvalProcessOrderService.create(vo);
+            approvalProcessOrderService.push(vo);
             return R.success();
         } catch (Exception e) {
             return R.error(e.getMessage());
