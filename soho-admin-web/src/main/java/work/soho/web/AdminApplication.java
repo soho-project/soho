@@ -7,9 +7,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication(scanBasePackages = {
 		"work.soho"
 })
-@MapperScan({"work.soho.admin.mapper"
-		, "work.soho.*.mapper"
-		, "work.soho.**.mapper"
+@MapperScan({
+//		"work.soho.admin.mapper",
+//		"work.soho.*.mapper",
+		"work.soho.**.mapper"
 })
 //@EnableSwagger2()
 public class AdminApplication {
