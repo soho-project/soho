@@ -25,7 +25,7 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/user/openApi" )
+@RequestMapping("/open/user/openApi" )
 public class UserOpenApiController {
 
     private final OpenApiService openApiService;

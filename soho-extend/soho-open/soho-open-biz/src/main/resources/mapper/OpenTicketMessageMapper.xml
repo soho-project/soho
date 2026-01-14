@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.open.biz.mapper.OpenTicketMessageMapper">
+    <resultMap id="BaseResultMap" type="work.soho.open.biz.domain.OpenTicketMessage">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="ticketId" column="ticket_id" jdbcType="BIGINT"/>
+        <id property="content" column="content" jdbcType="VARCHAR"/>
+        <id property="userId" column="user_id" jdbcType="BIGINT"/>
+        <id property="type" column="type" jdbcType="TINYINT"/>
+        <id property="adminId" column="admin_id" jdbcType="BIGINT"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,ticket_id,content,user_id,type,admin_id,updated_time,created_time
+    </sql>
+</mapper>

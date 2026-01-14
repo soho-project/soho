@@ -1,14 +1,13 @@
 package work.soho.open.biz.domain;
 
-import io.swagger.annotations.ApiModelProperty;
-import com.baomidou.mybatisplus.annotation.*;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.format.DateTimeFormat;
-import java.io.Serializable;
+import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
-import java.math.BigDecimal;
-import java.time.LocalDate;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
@@ -30,7 +29,7 @@ public class OpenUser implements Serializable {
     @ApiModelProperty(value = "用户ID")
     @TableField(value = "user_id")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Integer userId;
+    private Long userId;
 
     /**
     * 用户名

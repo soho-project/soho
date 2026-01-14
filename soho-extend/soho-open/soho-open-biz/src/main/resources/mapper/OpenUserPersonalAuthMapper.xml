@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.open.biz.mapper.OpenUserPersonalAuthMapper">
+    <resultMap id="BaseResultMap" type="work.soho.open.biz.domain.OpenUserPersonalAuth">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="userId" column="user_id" jdbcType="BIGINT"/>
+        <id property="idCardType" column="id_card_type" jdbcType="TINYINT"/>
+        <id property="idCardNoEncrypt" column="id_card_no_encrypt" jdbcType="VARCHAR"/>
+        <id property="idCardFrontImg" column="id_card_front_img" jdbcType="VARCHAR"/>
+        <id property="idCardBackImg" column="id_card_back_img" jdbcType="VARCHAR"/>
+        <id property="realName" column="real_name" jdbcType="VARCHAR"/>
+        <id property="gender" column="gender" jdbcType="TINYINT"/>
+        <id property="nation" column="nation" jdbcType="VARCHAR"/>
+        <id property="birthDate" column="birth_date" jdbcType="VARCHAR"/>
+        <id property="address" column="address" jdbcType="VARCHAR"/>
+        <id property="issuedBy" column="issued_by" jdbcType="VARCHAR"/>
+        <id property="validDateStart" column="valid_date_start" jdbcType="VARCHAR"/>
+        <id property="validDateEnd" column="valid_date_end" jdbcType="VARCHAR"/>
+        <id property="faceCompareScore" column="face_compare_score" jdbcType="VARCHAR"/>
+        <id property="faceImageUrl" column="face_image_url" jdbcType="VARCHAR"/>
+        <id property="liveDetectResult" column="live_detect_result" jdbcType="VARCHAR"/>
+        <id property="authScene" column="auth_scene" jdbcType="VARCHAR"/>
+        <id property="extInfo" column="ext_info" jdbcType="VARCHAR"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,user_id,id_card_type,id_card_no_encrypt,id_card_front_img,id_card_back_img,real_name,gender,nation,birth_date,address,issued_by,valid_date_start,valid_date_end,face_compare_score,face_image_url,live_detect_result,auth_scene,ext_info,created_time
+    </sql>
+</mapper>

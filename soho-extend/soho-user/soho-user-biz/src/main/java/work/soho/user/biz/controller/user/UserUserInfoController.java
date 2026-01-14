@@ -51,11 +51,22 @@ public class UserUserInfoController {
     @PutMapping
     public R<UserInfo> updateUserInfo(@AuthenticationPrincipal SohoUserDetails sohoUserDetails, @RequestBody UserInfo info) {
         UserInfo userInfo = userInfoService.getById(sohoUserDetails.getId());
-        userInfo.setAvatar(info.getAvatar());
-        userInfo.setNickname(info.getNickname());
-        userInfo.setEmail(info.getEmail());
-        userInfo.setAge(info.getAge());
-        userInfo.setSex(info.getSex());
+        if(info.getAvatar() != null) {
+            userInfo.setAvatar(info.getAvatar());
+        }
+        if(info.getNickname()!= null) {
+            userInfo.setNickname(info.getNickname());
+        }
+        if(info.getEmail() != null) {
+            userInfo.setEmail(info.getEmail());
+        }
+        if(info.getAge() != null) {
+            userInfo.setAge(info.getAge());
+        }
+        if(info.getSex() != null) {
+            userInfo.setSex(info.getSex());
+        }
+
         userInfoService.updateById(userInfo);
         return R.success(userInfo);
     }
@@ -103,14 +114,17 @@ public class UserUserInfoController {
             return R.error("密码不一致");
         }
 
+        // 旧密码验证 可选项 不做强制校验； 由客户端控制
         BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
         if(request.getOldPassword()!= null) {
             if(!bCryptPasswordEncoder.matches(request.getOldPassword(), sohoUserDetails.getPassword())) {
                 return R.error("旧密码错误");
             }
-        } else if(!userSmsService.verifySmsCaptcha(sohoUserDetails.getId(), request.getCaptcha())) {
-            return R.error("验证码错误");
         }
+
+//        else if(!userSmsService.verifySmsCaptcha(sohoUserDetails.getId(), request.getCaptcha())) {
+//            return R.error("验证码错误");
+//        }
 
         // 获取用户
         UserInfo userInfo = userInfoService.getById(sohoUserDetails.getId());
@@ -149,7 +163,8 @@ public class UserUserInfoController {
         }
 
         // 验证新手机验证码是否正确
-        if(!userSmsService.verifySmsCaptchaByPhone(request.getNewPhone(), request.getNewPhoneCaptcha())) {
+        // 新手机号验证为可选项验证  不做强制检测
+        if(request.getNewPhone() !=null && !userSmsService.verifySmsCaptchaByPhone(request.getNewPhone(), request.getNewPhoneCaptcha())) {
             return R.error("新手机号验证码错误");
         }
 

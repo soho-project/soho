@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.Locale;
 
 @Component
 public class BodyCachingFilter implements Filter {
@@ -18,11 +19,17 @@ public class BodyCachingFilter implements Filter {
         if (request instanceof HttpServletRequest) {
             HttpServletRequest httpRequest = (HttpServletRequest) request;
 
-            // 只处理 POST / PUT / PATCH
             String method = httpRequest.getMethod();
-            if ("POST".equalsIgnoreCase(method)
-                    || "PUT".equalsIgnoreCase(method)
-                    || "PATCH".equalsIgnoreCase(method)) {
+            String contentType = httpRequest.getContentType();
+
+            boolean isMultipart = contentType != null
+                    && contentType.toLowerCase(Locale.ROOT).startsWith("multipart/");
+
+            // 只对 非 multipart 的 POST / PUT / PATCH 做 body 缓存
+            if (!isMultipart &&
+                    ("POST".equalsIgnoreCase(method)
+                            || "PUT".equalsIgnoreCase(method)
+                            || "PATCH".equalsIgnoreCase(method))) {
 
                 BodyCachingHttpServletRequestWrapper wrapper =
                         new BodyCachingHttpServletRequestWrapper(httpRequest);
