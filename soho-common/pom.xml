@@ -19,6 +19,7 @@
         <module>soho-common-security</module>
         <module>soho-common-test</module>
         <module>soho-common-ratelimiter</module>
+        <module>soho-common-contract</module>
     </modules>
 
     <properties>

@@ -41,7 +41,7 @@ public class R<T> {
 	}
 
 	public static <T> R<T> success(T data) {
-		return result(2000, Constant.SUCCESS, data);
+		return result(BaseErrorCode.SUCCESS_CODE.code(), Constant.SUCCESS, data);
 	}
 
 	public static <T> R<T> error(int code, String msg) {
@@ -53,7 +53,7 @@ public class R<T> {
 	}
 
 	public static <T> R<T> error(String msg, T data) {
-		return error(5001, msg, data);
+		return error(BaseErrorCode.ERROR_CODE.code(), msg, data);
 	}
 
 	public static <T> R<T> error(String msg) {
@@ -62,6 +62,10 @@ public class R<T> {
 
 	public static <T> R<T> error() {
 		return error(Constant.ERROR);
+	}
+
+	public static <T> R<T> error(ErrorCode errorCode) {
+		return error(errorCode.code(), errorCode.message());
 	}
 
 	public static class Constant {

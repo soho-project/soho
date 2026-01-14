@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import work.soho.common.core.result.ErrorCodeCollector;
 import work.soho.common.core.result.R;
 import work.soho.open.biz.service.impl.ControllerApiReaderServiceImpl;
 
@@ -46,5 +47,14 @@ public class GuestOpenApiDocsController {
                 return R.success(mdMap);
         }
         return R.error();
+    }
+
+    @GetMapping("getByErrorCodeInfo")
+    public R<Map<String, String>> getByErrorCodeInfo() {
+        Map<Integer, String> errorCodeMap = ErrorCodeCollector.collect("work.soho.");
+        HashMap<String, String> mdMap = new HashMap<>();
+        mdMap.put("viewType", "errorCode");
+        mdMap.put("data", errorCodeMap.toString());
+        return R.success(mdMap);
     }
 }
