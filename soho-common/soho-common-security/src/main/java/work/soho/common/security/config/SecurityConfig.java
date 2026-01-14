@@ -88,10 +88,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                         "/**/*.js",
                         "/admin/user/user"
                 ).permitAll()
-                .antMatchers("/admin/**").hasAuthority("admin") //后台接口请使用 /admin/ 前缀开头路劲
+                //TODO  注释的规则弃用， 暂时注释这里， 看能发现有什么问题不
+//                .antMatchers("/admin/**").hasAuthority("admin") //后台接口请使用 /admin/ 前缀开头路劲
                 .antMatchers("/*/admin/**").hasAuthority("admin") //后台接口请使用 /admin/ 前缀开头路劲
-                .antMatchers("/chat/**").hasAuthority("chat") //聊天模块鉴权
+                .antMatchers("/chat/**").hasAuthority("chat") //聊天模块鉴权  TODO 带调整路由信息
                 .antMatchers("/*/open/**").hasAuthority("open") // 开放接口鉴权
+                .antMatchers("/*/user/**").hasAuthority("user") // 用户角色访问路径
                 .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // 除上面外的所有请求全部需要鉴权认证
                 .anyRequest().authenticated()

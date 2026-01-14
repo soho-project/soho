@@ -3,20 +3,26 @@ package work.soho.common.security.service.impl;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import work.soho.common.core.util.StringUtils;
+import work.soho.common.security.service.SohoRoleAuthenticationService;
 import work.soho.common.security.service.SohoTokenService;
 import work.soho.common.security.userdetails.SohoUserDetails;
-import work.soho.common.core.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * 令牌管理实现
+ */
 @Service
+@RequiredArgsConstructor
 public class TokenServiceImpl implements SohoTokenService {
     private final static String HEADER = "Authorization";
 
@@ -28,6 +34,8 @@ public class TokenServiceImpl implements SohoTokenService {
     // 令牌秘钥
     @Value("${token.secret:defaultValue}")
     private String secret;
+
+    private final Map<String, SohoRoleAuthenticationService> roleAuthenticationServiceMap;
 
     /**
      * 获取用户身份信息
@@ -52,6 +60,14 @@ public class TokenServiceImpl implements SohoTokenService {
                     .collect(Collectors.toList());
             user.setAuthorities(AuthorityUtils.createAuthorityList(authoritiesList.toArray(new String[0])));
             return user;
+        } else {
+            // 角色自定义认证实现, 逐个尝试获取 SohoUserDetails
+            for (Map.Entry<String, SohoRoleAuthenticationService> entry : roleAuthenticationServiceMap.entrySet()) {
+                SohoUserDetails user = entry.getValue().getLoginUser(request);
+                if (user != null) {
+                    return user;
+                }
+            }
         }
         return null;
     }

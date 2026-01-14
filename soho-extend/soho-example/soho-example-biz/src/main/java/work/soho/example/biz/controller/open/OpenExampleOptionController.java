@@ -1,37 +1,29 @@
 package work.soho.example.biz.controller.open;
 
-import java.time.LocalDateTime;
-import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
+import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.*;
+import work.soho.admin.api.request.BetweenCreatedTimeRequest;
+import work.soho.admin.api.vo.OptionVo;
 import work.soho.common.core.result.R;
-import work.soho.common.security.annotation.Node;;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
+import work.soho.common.security.annotation.Node;
+import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.example.biz.domain.ExampleOption;
 import work.soho.example.biz.service.ExampleOptionService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.admin.api.vo.OptionVo;
-import work.soho.admin.api.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.admin.api.vo.TreeNodeVo;
-import work.soho.admin.api.service.AdminDictApiService;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import work.soho.common.security.userdetails.SohoUserDetails;
-import org.springframework.util.Assert;
 import work.soho.open.api.annotation.OpenApi;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+;
 
 /**
  * 样例选项Controller
@@ -41,7 +33,7 @@ import work.soho.open.api.annotation.OpenApi;
 @Api(value = "open 样例选项", tags = "open 样例选项")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("example/open/exampleOption" )
+@RequestMapping("/example/open/exampleOption" )
 @OpenApi(value="ExampleOption", name="样例选项", description="null")
 public class OpenExampleOptionController {
 
