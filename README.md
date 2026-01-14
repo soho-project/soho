@@ -32,13 +32,15 @@ SOHO后台管理系统
 - 用户模块：方便快速的构建自己的用户功能
 - 上传管理: 统一管理上传；使用引用计数方式可极大减少系统存储空间使用提高系统性能
 - 微服务支持：单体开发模式，可以快速构建微服务（API桥接），实现系统解耦，提高系统可维护性，提高系统开发速度
+- 开放平台模块: 系统集成开放平台功能，方便快速构建开放平台
 
 预览地址
 -------
 
 - [预览地址](https://www.soho.work/)   演示账号： admin:123456
 - [预览地址2(基于antd5)](https://adminv2.demo.soho.work/login/) 演示账号： admin:123456
-- [预览地址3（基于antd vue）](https://admin-vue.demo.soho.work/login/)  延时账号： admin:123456
+- [预览地址3（基于antd vue）](https://admin-vue.demo.soho.work/login/)  演示时账号： admin:123456
+- [开放平台预览地址](https://open.demo.soho.work/)  演示账号: P15873164076:123456
 - [文档地址](https://docs.soho.work/)
 - [前端仓库地址](https://gitee.com/fang/soho-admin-front)
 - [相关技术文档](docs/learn/main.md)
