@@ -16,6 +16,7 @@
 
     <modules>
         <module>soho-approval-process-biz</module>
+        <module>soho-approval-process-api</module>
     </modules>
 
 </project>

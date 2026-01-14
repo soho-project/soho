@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="work.soho.approvalprocess.mapper.ApprovalProcessNodeMapper">
+<mapper namespace="work.soho.approvalprocess.biz.mapper.ApprovalProcessNodeMapper">
 
-    <resultMap id="BaseResultMap" type="work.soho.approvalprocess.domain.ApprovalProcessNode">
+    <resultMap id="BaseResultMap" type="work.soho.approvalprocess.biz.domain.ApprovalProcessNode">
             <id property="id" column="id" jdbcType="INTEGER"/>
             <result property="approvalProcessId" column="approval_process_id" jdbcType="INTEGER"/>
             <result property="userId" column="user_id" jdbcType="INTEGER"/>

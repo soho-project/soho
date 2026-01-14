@@ -1,11 +1,12 @@
 package work.soho.example.biz.event;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import work.soho.approvalprocess.domain.ApprovalProcessOrder;
-import work.soho.approvalprocess.event.ApprovalEvent;
+import work.soho.approvalprocess.api.dto.ApprovalProcessOrderDto;
+import work.soho.approvalprocess.api.event.ApprovalEvent;
 import work.soho.example.biz.domain.Example;
 import work.soho.example.biz.service.ExampleService;
 
@@ -23,7 +24,7 @@ public class ExampleApprovalEventListener implements ApplicationListener<Approva
     @Override
     @Async
     public void onApplicationEvent(ApprovalEvent event) {
-        ApprovalProcessOrder order = (ApprovalProcessOrder) event.getSource();
+        ApprovalProcessOrderDto order = (ApprovalProcessOrderDto) event.getSource();
         //检查师傅为当前对应审批流
         if(!event.getApprovalProcessNo().equals(APPROVAL_NO)) {
             return;

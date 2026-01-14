@@ -14,8 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.admin.api.vo.OptionVo;
-import work.soho.approvalprocess.service.ApprovalProcessOrderService;
-import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
+import work.soho.approvalprocess.api.service.ApprovalProcessOrderApiService;
+import work.soho.approvalprocess.api.vo.ApprovalProcessOrderVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
@@ -43,7 +43,7 @@ public class ExampleController {
 
     private final ExampleService exampleService;
     private final AdminDictApiService adminDictApiService;
-    private final ApprovalProcessOrderService approvalProcessOrderService;
+    private final ApprovalProcessOrderApiService approvalProcessOrderApiService;
 
     /**
      * 查询自动化样例列表
@@ -140,7 +140,7 @@ public class ExampleController {
             itemContent.setContent(example.getContent());
             vo.getContentItemList().add(itemContent);
 
-            approvalProcessOrderService.create(vo);
+            approvalProcessOrderApiService.push(vo);
             return R.success();
         } catch (Exception e) {
             return R.error(e.getMessage());

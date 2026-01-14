@@ -44,7 +44,8 @@
         </dependency>
         <dependency>
             <groupId>work.soho</groupId>
-            <artifactId>soho-approval-process-biz</artifactId>
+            <artifactId>soho-approval-process-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -60,6 +61,10 @@
             <artifactId>soho-oepn-api</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-security</artifactId>
         </dependency>
 
         <!--        <dependency>-->
