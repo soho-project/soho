@@ -2,6 +2,8 @@ package work.soho.example.biz.controller.openapi;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
@@ -28,6 +30,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/example/openApi" )
+@Api(value = "自动化样例", tags = "自动化样例")
 public class OpenApiExampleController {
 
     private final ExampleService exampleService;
@@ -38,6 +41,7 @@ public class OpenApiExampleController {
      */
     @GetMapping("/list")
     @OpenApi(value = "open::example::list", name = "获取 自动化样例 列表")
+    @ApiOperation(value = "查询自动化样例列表", notes = "查询自动化样例列表")
     public R<PageSerializable<Example>> list(Example example, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
     {
         PageUtils.startPage();
@@ -64,6 +68,7 @@ public class OpenApiExampleController {
      */
     @GetMapping(value = "/{id}" )
     @OpenApi(value = "open::example::getInfo", name = "获取 自动化样例 详细信息")
+    @ApiOperation(value = "获取自动化样例详细信息", notes = "获取自动化样例详细信息")
     public R<Example> getInfo(@PathVariable("id" ) Long id) {
         return R.success(exampleService.getById(id));
     }
@@ -73,6 +78,7 @@ public class OpenApiExampleController {
      */
     @PostMapping
     @OpenApi(value = "open::example::add", name = "新增 自动化样例")
+    @ApiOperation(value = "新增自动化样例", notes = "新增自动化样例")
     public R<Boolean> add(@RequestBody Example example) {
         return R.success(exampleService.save(example));
     }
@@ -82,6 +88,7 @@ public class OpenApiExampleController {
      */
     @PutMapping
     @OpenApi(value = "open::example::edit", name = "修改 自动化样例")
+    @ApiOperation(value = "修改自动化样例", notes = "修改自动化样例")
     public R<Boolean> edit(@RequestBody Example example) {
         return R.success(exampleService.updateById(example));
     }
@@ -91,6 +98,7 @@ public class OpenApiExampleController {
      */
     @DeleteMapping("/{ids}" )
     @Node(value = "open::example::remove", name = "删除 自动化样例")
+    @ApiOperation(value = "删除自动化样例", notes = "删除自动化样例")
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(exampleService.removeByIds(Arrays.asList(ids)));
     }
@@ -100,6 +108,7 @@ public class OpenApiExampleController {
      */
     @PutMapping("apply")
     @Node(value = "open::example::apply", name = "申请审批 自动化样例")
+    @ApiOperation(value = "申请审批 自动化样例", notes = "申请审批 自动化样例")
     public R<Boolean> apply(@RequestBody Example example) {
         try {
             example.setUpdatedTime(LocalDateTime.now());

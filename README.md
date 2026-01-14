@@ -37,7 +37,7 @@ SOHO后台管理系统
 预览地址
 -------
 
-- [预览地址](https://www.soho.work/)   演示账号： admin:123456
+- [预览地址](https://www.soho.work/)  该版本停止升级，请使用新版本  演示账号： admin:123456
 - [预览地址2(基于antd5)](https://adminv2.demo.soho.work/login/) 演示账号： admin:123456
 - [预览地址3（基于antd vue）](https://admin-vue.demo.soho.work/login/)  演示时账号： admin:123456
 - [开放平台预览地址](https://open.demo.soho.work/)  演示账号: P15873164076:123456

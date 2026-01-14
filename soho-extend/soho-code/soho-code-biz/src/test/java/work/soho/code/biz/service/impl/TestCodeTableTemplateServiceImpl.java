@@ -31,7 +31,6 @@ public class TestCodeTableTemplateServiceImpl extends CodeTableTemplateServiceIm
 
     @Override
     public CodeTableTemplate getByName(String name) {
-//        System.out.println("------------------------------------- test get by name");
         return super.getByName(name);
     }
 
@@ -57,9 +56,6 @@ public class TestCodeTableTemplateServiceImpl extends CodeTableTemplateServiceIm
         String filePath = getFilePath(result);
         File file = new File(filePath);
         if(file.exists()) {
-            System.out.println("有本地文件。。。。。。。。。。。。。。。。。。。。。。");
-            System.out.println(result.getId());
-            System.out.println(result.getName());
             //有本地测试文件
             result.setCode(getFile(file));
         } else {

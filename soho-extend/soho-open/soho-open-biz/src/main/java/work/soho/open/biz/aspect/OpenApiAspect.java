@@ -48,7 +48,7 @@ public class OpenApiAspect {
     private final OpenApiLimitFacotory openApiLimitFacotory;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
-    @Around(value = "@annotation(work.soho.open.api.annotation.OpenApi)")
+    @Around(value = "@annotation(work.soho.open.api.annotation.OpenApi) || @within(work.soho.open.api.annotation.OpenApi)")
     public Object around(ProceedingJoinPoint invocation) throws Throwable {
         try {
             ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
