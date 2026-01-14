@@ -34,7 +34,7 @@ import java.util.List;
 @Api(value = "open 自动化样例", tags = "open 自动化样例")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("example/open/example" )
+@RequestMapping("/example/open/example" )
 public class OpenExampleController {
 
     private final ExampleService exampleService;
@@ -61,11 +61,16 @@ public class OpenExampleController {
         lqw.eq(example.getStatus() != null, Example::getStatus ,example.getStatus());
         lqw.eq(example.getApplyStatus() != null, Example::getApplyStatus ,example.getApplyStatus());
         lqw.eq(example.getUserId() != null, Example::getUserId ,example.getUserId());
-        lqw.eq(Example::getOpenId, userDetails.getId());
+//        lqw.eq(Example::getOpenId, userDetails.getId());
         lqw.eq(example.getAdminId() != null, Example::getAdminId ,example.getAdminId());
         lqw.eq(example.getDictInt() != null, Example::getDictInt ,example.getDictInt());
         lqw.like(StringUtils.isNotBlank(example.getDictString()),Example::getDictString ,example.getDictString());
         List<Example> list = exampleService.list(lqw);
+
+        System.out.println("================================");
+        System.out.println(userDetails.getId());
+        System.out.println(userDetails);
+
         return R.success(new PageSerializable<>(list));
     }
 
