@@ -101,6 +101,11 @@
             </dependency>
             <dependency>
                 <groupId>work.soho</groupId>
+                <artifactId>soho-common-contract</artifactId>
+                <version>${soho-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>work.soho</groupId>
                 <artifactId>soho-common-security</artifactId>
                 <version>${soho-common.version}</version>
             </dependency>
