@@ -19,6 +19,7 @@
     </properties>
 
     <modules>
+        <module>soho-approval-process</module>
         <module>soho-quartz</module>
         <module>soho-lot</module>
         <module>soho-pay</module>

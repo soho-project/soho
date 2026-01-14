@@ -17,7 +17,6 @@
         <module>soho-common-data</module>
         <module>soho-common-database</module>
         <module>soho-common-security</module>
-        <module>soho-approval-process</module>
         <module>soho-common-test</module>
         <module>soho-common-ratelimiter</module>
     </modules>
