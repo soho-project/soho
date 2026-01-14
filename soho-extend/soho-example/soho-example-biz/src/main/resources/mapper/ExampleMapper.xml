@@ -11,13 +11,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id property="content" column="content" jdbcType="VARCHAR"/>
         <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
         <id property="createdTime" column="created_time" jdbcType="DATE"/>
-        <id property="applyStatus" column="apply_status" jdbcType="TINYINT"/>
         <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="applyStatus" column="apply_status" jdbcType="TINYINT"/>
         <id property="userId" column="user_id" jdbcType="INTEGER"/>
         <id property="openId" column="open_id" jdbcType="INTEGER"/>
+        <id property="adminId" column="admin_id" jdbcType="INTEGER"/>
         <id property="dictInt" column="dict_int" jdbcType="INTEGER"/>
+        <id property="dictString" column="dict_string" jdbcType="VARCHAR"/>
     </resultMap>
     <sql id="Base_Column_List">
-        id,title,category_id,option_id,content,updated_time,created_time,apply_status,status,user_id,open_id,dict_int
+        id,title,category_id,option_id,content,updated_time,created_time,status,apply_status,user_id,open_id,admin_id,dict_int,dict_string
     </sql>
 </mapper>

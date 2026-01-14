@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.open.biz.mapper.OpenTicketCategoryMapper">
+    <resultMap id="BaseResultMap" type="work.soho.open.biz.domain.OpenTicketCategory">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="title" column="title" jdbcType="VARCHAR"/>
+        <id property="parentId" column="parent_id" jdbcType="VARCHAR"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,title,parent_id,updated_time,created_time
+    </sql>
+</mapper>

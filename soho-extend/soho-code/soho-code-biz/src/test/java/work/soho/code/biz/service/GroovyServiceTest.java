@@ -36,7 +36,8 @@ class GroovyServiceTest {
 //    private static final Integer TABLE_ID = 155439198;  // shop_coupon_usage_logs
 //    private static final Integer TABLE_ID = 155439202;  // shop_coupon_usage_logs
 //    private static final Integer TABLE_ID = 155439106;  // pay_info
-    private static final Integer TABLE_ID = 155439223;  // open_api
+//    private static final Integer TABLE_ID = 155439223;  // open_api
+    private static final Integer TABLE_ID = 155439162;  // open_app
 //    private static final Integer TABLE_ID = 155439180;  // 计划任务表
 //    private static final Integer TABLE_ID = 155439179; // 系统资源表， tree
 

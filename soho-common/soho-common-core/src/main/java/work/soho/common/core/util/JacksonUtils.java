@@ -1,10 +1,12 @@
 package work.soho.common.core.util;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.type.MapType;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.springframework.util.ObjectUtils;
@@ -22,7 +24,27 @@ import java.util.stream.Stream;
 @UtilityClass
 public class JacksonUtils {
 
-	private static final ObjectMapper MAPPER = new ObjectMapper();
+	// 修改 ObjectMapper 配置，添加 JavaTimeModule 支持
+	private static final ObjectMapper MAPPER = createObjectMapper();
+
+	/**
+	 * 创建并配置 ObjectMapper 实例
+	 * @return 配置好的 ObjectMapper
+	 */
+	private static ObjectMapper createObjectMapper() {
+		ObjectMapper mapper = new ObjectMapper();
+
+		// 注册 Java 8 日期时间模块
+		mapper.registerModule(new JavaTimeModule());
+
+		// 禁用将日期序列化为时间戳，使用 ISO-8601 格式
+		mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+		// 可选：处理空值，根据你的需求开启或关闭
+		// mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+		return mapper;
+	}
 
 	/**
 	 * The constant JSON_EMPTY.
@@ -165,6 +187,15 @@ public class JacksonUtils {
 			e.printStackTrace();
 			return null;
 		}
+	}
+
+	/**
+	 * 获取配置好的 ObjectMapper 实例
+	 * 如果需要自定义配置，可以使用此方法获取 mapper 进行额外配置
+	 * @return ObjectMapper 实例
+	 */
+	public static ObjectMapper getObjectMapper() {
+		return MAPPER;
 	}
 
 }

@@ -1,37 +1,40 @@
 package work.soho.example.biz.controller.user;
 
-import java.time.LocalDateTime;
-import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.security.utils.SecurityUtils;
-import work.soho.common.core.util.StringUtils;
 import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
-import work.soho.common.security.annotation.Node;
-import work.soho.example.biz.domain.Example;
-import work.soho.example.biz.service.ExampleService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.approvalprocess.service.ApprovalProcessOrderService;
 import work.soho.approvalprocess.vo.ApprovalProcessOrderVo;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
+import work.soho.common.security.annotation.Node;
+import work.soho.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.utils.SecurityUtils;
+import work.soho.example.biz.domain.Example;
+import work.soho.example.biz.service.ExampleService;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+
+;
 
 /**
  * 自动化样例Controller
  *
  * @author fang
  */
+@Api(value = "user 自动化样例", tags = "user 自动化样例")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/user/example" )
+@RequestMapping("example/user/example" )
 public class UserExampleController {
 
     private final ExampleService exampleService;
@@ -42,7 +45,8 @@ public class UserExampleController {
      */
     @GetMapping("/list")
     @Node(value = "user::example::list", name = "获取 自动化样例 列表")
-    public R<PageSerializable<Example>> list(Example example, BetweenCreatedTimeRequest betweenCreatedTimeRequest)
+    @ApiOperation(value = "user 获取 自动化样例 列表", notes = "user 获取 自动化样例 列表")
+    public R<PageSerializable<Example>> list(Example example, BetweenCreatedTimeRequest betweenCreatedTimeRequest, @AuthenticationPrincipal SohoUserDetails userDetails)
     {
         PageUtils.startPage();
         LambdaQueryWrapper<Example> lqw = new LambdaQueryWrapper<Example>();
@@ -54,11 +58,13 @@ public class UserExampleController {
         lqw.eq(example.getUpdatedTime() != null, Example::getUpdatedTime ,example.getUpdatedTime());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, Example::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, Example::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
-        lqw.eq(example.getApplyStatus() != null, Example::getApplyStatus ,example.getApplyStatus());
         lqw.eq(example.getStatus() != null, Example::getStatus ,example.getStatus());
-        lqw.eq(example.getUserId() != null, Example::getUserId ,example.getUserId());
+        lqw.eq(example.getApplyStatus() != null, Example::getApplyStatus ,example.getApplyStatus());
+        lqw.eq(Example::getUserId, userDetails.getId());
         lqw.eq(example.getOpenId() != null, Example::getOpenId ,example.getOpenId());
+        lqw.eq(example.getAdminId() != null, Example::getAdminId ,example.getAdminId());
         lqw.eq(example.getDictInt() != null, Example::getDictInt ,example.getDictInt());
+        lqw.like(StringUtils.isNotBlank(example.getDictString()),Example::getDictString ,example.getDictString());
         List<Example> list = exampleService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }
@@ -68,8 +74,13 @@ public class UserExampleController {
      */
     @GetMapping(value = "/{id}" )
     @Node(value = "user::example::getInfo", name = "获取 自动化样例 详细信息")
-    public R<Example> getInfo(@PathVariable("id" ) Long id) {
-        return R.success(exampleService.getById(id));
+    @ApiOperation(value = "user 获取 自动化样例 详细信息", notes = "user 获取 自动化样例 详细信息")
+    public R<Example> getInfo(@PathVariable("id" ) Long id, @AuthenticationPrincipal SohoUserDetails userDetails) {
+        Example example = exampleService.getById(id);
+        if (!example.getUserId().equals(userDetails.getId())) {
+            return R.error("数据不存在");
+        }
+        return R.success(example);
     }
 
     /**
@@ -77,7 +88,9 @@ public class UserExampleController {
      */
     @PostMapping
     @Node(value = "user::example::add", name = "新增 自动化样例")
-    public R<Boolean> add(@RequestBody Example example) {
+    @ApiOperation(value = "user 新增 自动化样例", notes = "user 新增 自动化样例")
+    public R<Boolean> add(@RequestBody Example example, @AuthenticationPrincipal SohoUserDetails userDetails) {
+        example.setUserId(userDetails.getId());
         return R.success(exampleService.save(example));
     }
 
@@ -86,7 +99,13 @@ public class UserExampleController {
      */
     @PutMapping
     @Node(value = "user::example::edit", name = "修改 自动化样例")
-    public R<Boolean> edit(@RequestBody Example example) {
+    @ApiOperation(value = "user 修改 自动化样例", notes = "user 修改 自动化样例")
+    public R<Boolean> edit(@RequestBody Example example, @AuthenticationPrincipal SohoUserDetails userDetails) {
+        Example oldExample = exampleService.getById(example.getId());
+        Assert.notNull(oldExample, "数据不存在");
+        if(!oldExample.getUserId().equals(userDetails.getId())) {
+            return R.error("无权限");
+        }
         return R.success(exampleService.updateById(example));
     }
 
@@ -95,7 +114,16 @@ public class UserExampleController {
      */
     @DeleteMapping("/{ids}" )
     @Node(value = "user::example::remove", name = "删除 自动化样例")
-    public R<Boolean> remove(@PathVariable Long[] ids) {
+    @ApiOperation(value = "user 删除 自动化样例", notes = "user 删除 自动化样例")
+    public R<Boolean> remove(@PathVariable Long[] ids, @AuthenticationPrincipal SohoUserDetails userDetails) {
+
+        List<Example> oldList = exampleService.listByIds(Arrays.asList(ids));
+        // 检查是否为当前登录用户的数据
+        for(Example item: oldList) {
+            if(!item.getUserId().equals(userDetails.getId())) {
+                return R.error("无权限");
+            }
+        }
         return R.success(exampleService.removeByIds(Arrays.asList(ids)));
     }
 
@@ -104,6 +132,7 @@ public class UserExampleController {
      */
     @PutMapping("apply")
     @Node(value = "user::example::apply", name = "申请审批 自动化样例")
+    @ApiOperation(value = "user 申请审批 自动化样例", notes = "user 申请审批 自动化样例")
     public R<Boolean> apply(@RequestBody Example example) {
         try {
             example.setUpdatedTime(LocalDateTime.now());

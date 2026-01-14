@@ -112,6 +112,26 @@ public class OpenAppController {
     }
 
     /**
+     * 获取该 选项
+     *
+     * @return
+     */
+    @GetMapping("options")
+    @Node(value = "openApp::options", name = "获取  选项")
+    public R<List<OptionVo<Long, String>>> options() {
+        List<OpenApp> list = openAppService.list();
+        List<OptionVo<Long, String>> options = new ArrayList<>();
+
+        for(OpenApp item: list) {
+            OptionVo<Long, String> optionVo = new OptionVo<>();
+            optionVo.setValue(item.getId());
+            optionVo.setLabel(item.getAppName());
+            options.add(optionVo);
+        }
+        return R.success(options);
+    }
+
+    /**
      * 导出  Excel
      */
     @GetMapping("/exportExcel")

@@ -1,23 +1,29 @@
 package work.soho.common.core.result;
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 
 @Getter
+@ApiModel("通用返回对象")
 public class R<T> {
 
 	/**
 	 * 返回状态码
 	 */
+	@ApiModelProperty(name = "状态码", value = "状态码", required = true, example = "2000")
 	private final int code;
 
 	/**
 	 * 返回消息
 	 */
+	@ApiModelProperty(name = "返回消息", value = "返回消息", example = "success")
 	private final String msg;
 
 	/**
 	 * 返回数据
 	 */
+	@ApiModelProperty(name = "返回数据", value = "返回数据")
 	private final T payload;
 
 	private R(int code, String msg, T data) {

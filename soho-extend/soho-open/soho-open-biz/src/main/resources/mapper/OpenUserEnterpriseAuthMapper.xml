@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.open.biz.mapper.OpenUserEnterpriseAuthMapper">
+    <resultMap id="BaseResultMap" type="work.soho.open.biz.domain.OpenUserEnterpriseAuth">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="userId" column="user_id" jdbcType="BIGINT"/>
+        <id property="companyName" column="company_name" jdbcType="VARCHAR"/>
+        <id property="companyNameEn" column="company_name_en" jdbcType="VARCHAR"/>
+        <id property="creditCode" column="credit_code" jdbcType="VARCHAR"/>
+        <id property="companyType" column="company_type" jdbcType="VARCHAR"/>
+        <id property="legalPerson" column="legal_person" jdbcType="VARCHAR"/>
+        <id property="legalPersonIdCard" column="legal_person_id_card" jdbcType="VARCHAR"/>
+        <id property="registeredCapital" column="registered_capital" jdbcType="VARCHAR"/>
+        <id property="establishDate" column="establish_date" jdbcType="VARCHAR"/>
+        <id property="businessTermStart" column="business_term_start" jdbcType="VARCHAR"/>
+        <id property="businessTermEnd" column="business_term_end" jdbcType="VARCHAR"/>
+        <id property="businessScope" column="business_scope" jdbcType="VARCHAR"/>
+        <id property="registeredAddress" column="registered_address" jdbcType="VARCHAR"/>
+        <id property="businessAddress" column="business_address" jdbcType="VARCHAR"/>
+        <id property="licenseImageUrl" column="license_image_url" jdbcType="VARCHAR"/>
+        <id property="licenseImageNo" column="license_image_no" jdbcType="VARCHAR"/>
+        <id property="taxCertificateImage" column="tax_certificate_image" jdbcType="VARCHAR"/>
+        <id property="organizationCertificateImage" column="organization_certificate_image" jdbcType="VARCHAR"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="industry" column="industry" jdbcType="VARCHAR"/>
+        <id property="companySize" column="company_size" jdbcType="VARCHAR"/>
+        <id property="authChannel" column="auth_channel" jdbcType="VARCHAR"/>
+        <id property="extInfo" column="ext_info" jdbcType="VARCHAR"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,user_id,company_name,company_name_en,credit_code,company_type,legal_person,legal_person_id_card,registered_capital,establish_date,business_term_start,business_term_end,business_scope,registered_address,business_address,license_image_url,license_image_no,tax_certificate_image,organization_certificate_image,status,industry,company_size,auth_channel,ext_info,created_time,updated_time
+    </sql>
+</mapper>

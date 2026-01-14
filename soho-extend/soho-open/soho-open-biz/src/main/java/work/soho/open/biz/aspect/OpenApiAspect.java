@@ -22,6 +22,7 @@ import work.soho.open.biz.domain.OpenApiCallLog;
 import work.soho.open.biz.domain.OpenApiStatDay;
 import work.soho.open.biz.domain.OpenApp;
 import work.soho.open.biz.domain.OpenAppIpWhitelist;
+import work.soho.open.biz.enums.OpenAppEnums;
 import work.soho.open.biz.service.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -69,6 +70,12 @@ public class OpenApiAspect {
             }
 
             OpenApp openApp = openAppService.getOpenAppByKey(appKey);
+
+            // 检查app是否已经通过审核
+            if (openApp.getStatus() != OpenAppEnums.Status.ACTIVE.getId()) {
+                throw new InvalidParameterException("app未通过审核");
+            }
+
             if (openApp == null) {
                 throw new InvalidParameterException("无效 app-key");
             }
@@ -307,4 +314,6 @@ public class OpenApiAspect {
             return null;
         }
     }
+
+
 }

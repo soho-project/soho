@@ -1,13 +1,13 @@
 package work.soho.open.biz.domain;
 
-import io.swagger.annotations.ApiModelProperty;
-import com.baomidou.mybatisplus.annotation.*;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.format.DateTimeFormat;
-import java.io.Serializable;
+import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
-import java.math.BigDecimal;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
@@ -40,6 +40,14 @@ public class OpenApp implements Serializable {
     private String appName;
 
     /**
+    * app_desc
+    */
+    @ExcelProperty("app_desc")
+    @ApiModelProperty(value = "app_desc")
+    @TableField(value = "app_desc")
+    private String appDesc;
+
+    /**
     * app_key
     */
     @ExcelProperty("app_key")
@@ -56,10 +64,10 @@ public class OpenApp implements Serializable {
     private String appSecret;
 
     /**
-    * 1=启用 0=停用
+    * 状态
     */
-    @ExcelProperty("1=启用 0=停用")
-    @ApiModelProperty(value = "1=启用 0=停用")
+    @ExcelProperty("状态")
+    @ApiModelProperty(value = "状态")
     @TableField(value = "status")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer status;

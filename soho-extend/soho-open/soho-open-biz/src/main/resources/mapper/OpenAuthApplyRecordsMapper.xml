@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.open.biz.mapper.OpenAuthApplyRecordsMapper">
+    <resultMap id="BaseResultMap" type="work.soho.open.biz.domain.OpenAuthApplyRecords">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="applyNo" column="apply_no" jdbcType="VARCHAR"/>
+        <id property="userId" column="user_id" jdbcType="BIGINT"/>
+        <id property="appId" column="app_id" jdbcType="VARCHAR"/>
+        <id property="authType" column="auth_type" jdbcType="TINYINT"/>
+        <id property="applyStatus" column="apply_status" jdbcType="TINYINT"/>
+        <id property="failReason" column="fail_reason" jdbcType="VARCHAR"/>
+        <id property="adminId" column="admin_id" jdbcType="VARCHAR"/>
+        <id property="auditTime" column="audit_time" jdbcType="DATE"/>
+        <id property="auditRemark" column="audit_remark" jdbcType="VARCHAR"/>
+        <id property="sourceIp" column="source_ip" jdbcType="VARCHAR"/>
+        <id property="userAgent" column="user_agent" jdbcType="VARCHAR"/>
+        <id property="requestData" column="request_data" jdbcType="VARCHAR"/>
+        <id property="responseData" column="response_data" jdbcType="VARCHAR"/>
+        <id property="callbackUrl" column="callback_url" jdbcType="VARCHAR"/>
+        <id property="callbackStatus" column="callback_status" jdbcType="TINYINT"/>
+        <id property="callbackTime" column="callback_time" jdbcType="DATE"/>
+        <id property="retryCount" column="retry_count" jdbcType="INTEGER"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,apply_no,user_id,app_id,auth_type,apply_status,fail_reason,admin_id,audit_time,audit_remark,source_ip,user_agent,request_data,response_data,callback_url,callback_status,callback_time,retry_count,created_time,updated_time
+    </sql>
+</mapper>
