@@ -4,6 +4,7 @@ import work.soho.common.core.annotation.ErrorCodeGroup;
 
 @ErrorCodeGroup
 public enum BaseErrorCode implements ErrorCode {
+    SC_UNAUTHORIZED(401, "Unauthorized", "Unauthorized"),
     SUCCESS_CODE(2000, "success", "success"),
     UNAUTHORIZED_ACCESS(2401,"Unauthorized access", "未授权访问，接口无权限访问"),
     ERROR_CODE(5001,"error", "error"),
