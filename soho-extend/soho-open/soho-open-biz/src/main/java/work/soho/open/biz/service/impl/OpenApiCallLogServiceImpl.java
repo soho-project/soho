@@ -7,13 +7,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import work.soho.open.biz.domain.OpenApiCallLog;
+import work.soho.open.biz.dto.HourCountDTO;
 import work.soho.open.biz.mapper.OpenApiCallLogMapper;
 import work.soho.open.biz.service.OpenApiCallLogService;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,47 +41,40 @@ public class OpenApiCallLogServiceImpl extends ServiceImpl<OpenApiCallLogMapper,
     }
 
     @Override
-    public Map<String, Long> statisticsLast24Hour(List<Long> appIds) {
-        Map<String, Long> result = new LinkedHashMap<>();
+    public List<HourCountDTO> statisticsLast24HourList(List<Long> appIds) {
+        List<HourCountDTO> result = new ArrayList<>();
+        if (CollectionUtils.isEmpty(appIds)) return result;
 
-        // 初始化24小时，全部为0
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startHour = now.truncatedTo(ChronoUnit.HOURS).minusHours(23);
+
+        // 初始化 24 桶（有序）
+        Map<String, Long> tmp = new LinkedHashMap<>();
+        DateTimeFormatter hourFmt = DateTimeFormatter.ofPattern("HH");
         for (int i = 0; i < 24; i++) {
-            result.put(String.format("%02d", i), 0L);
+            tmp.put(startHour.plusHours(i).format(hourFmt), 0L);
         }
 
-        if (CollectionUtils.isEmpty(appIds)) {
-            return result;
+        QueryWrapper<OpenApiCallLog> qw = new QueryWrapper<>();
+        qw.select("DATE_FORMAT(created_time, '%Y-%m-%d %H') AS hour", "COUNT(*) AS cnt");
+        qw.in("api_id", appIds);
+        qw.between("created_time", startHour, now);
+        qw.groupBy("hour");
+        qw.orderByAsc("hour");
+
+        List<Map<String, Object>> list = this.listMaps(qw);
+
+        for (Map<String, Object> row : list) {
+            String hourStr = (String) row.get("hour"); // yyyy-MM-dd HH
+            Long cnt = ((Number) row.get("cnt")).longValue();
+            tmp.put(hourStr.substring(11, 13), cnt);
         }
 
-        // 计算时间范围
-        long endTime = System.currentTimeMillis();
-        long startTime = endTime - 24 * 60 * 60 * 1000;
-
-        // 使用MyBatis-Plus的SQL builder构建查询
-        QueryWrapper<OpenApiCallLog> queryWrapper = new QueryWrapper<>();
-
-        // 注意：这里使用了MySQL的日期函数，如果使用其他数据库需要调整
-        queryWrapper.select(
-                "DATE_FORMAT(created_time, '%H') as hour",
-                "COUNT(*) as count"
-        );
-
-        queryWrapper.in("api_id", appIds);
-        queryWrapper.between("created_time", LocalDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneId.systemDefault()),
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(endTime), ZoneId.systemDefault()));
-        queryWrapper.groupBy("DATE_FORMAT(created_time, '%H')");
-
-        // 使用MyBatis-Plus的selectMaps方法获取结果
-        List<Map<String, Object>> list = this.listMaps(queryWrapper);
-
-        // 处理查询结果
-        for (Map<String, Object> map : list) {
-            String hour = (String) map.get("hour");
-            Long count = ((Number) map.get("count")).longValue();
-
-            result.put(hour, count);
+        // 转 list，顺序稳定
+        for (Map.Entry<String, Long> e : tmp.entrySet()) {
+            result.add(new HourCountDTO(e.getKey(), e.getValue()));
         }
-
         return result;
     }
+
 }

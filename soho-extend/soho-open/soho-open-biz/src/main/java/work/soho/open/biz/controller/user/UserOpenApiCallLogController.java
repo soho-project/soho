@@ -14,12 +14,12 @@ import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
 import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.open.biz.domain.OpenApiCallLog;
+import work.soho.open.biz.dto.HourCountDTO;
 import work.soho.open.biz.service.OpenApiCallLogService;
 import work.soho.open.biz.service.OpenAppService;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 ;
 
@@ -83,8 +83,8 @@ public class UserOpenApiCallLogController {
      * statisticsLast24Hour
      */
     @GetMapping("/statisticsLast24Hour")
-    public R<Map<String, Long>> statisticsLast24Hour(@AuthenticationPrincipal SohoUserDetails userDetails) {
+    public R<List<HourCountDTO>> statisticsLast24Hour(@AuthenticationPrincipal SohoUserDetails userDetails) {
         List<Long> appIds = openAppService.getOpenAppIdsByUserId(userDetails.getId());
-        return R.success(openApiCallLogService.statisticsLast24Hour(appIds));
+        return R.success(openApiCallLogService.statisticsLast24HourList(appIds));
     }
 }
