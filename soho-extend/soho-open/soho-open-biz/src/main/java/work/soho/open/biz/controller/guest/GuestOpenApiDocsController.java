@@ -5,12 +5,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import work.soho.common.core.result.ErrorCode;
 import work.soho.common.core.result.ErrorCodeCollector;
 import work.soho.common.core.result.R;
 import work.soho.open.biz.service.impl.ControllerApiReaderServiceImpl;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -50,11 +53,15 @@ public class GuestOpenApiDocsController {
     }
 
     @GetMapping("getByErrorCodeInfo")
-    public R<Map<String, String>> getByErrorCodeInfo() {
-        Map<Integer, String> errorCodeMap = ErrorCodeCollector.collect("work.soho.");
-        HashMap<String, String> mdMap = new HashMap<>();
-        mdMap.put("viewType", "errorCode");
-        mdMap.put("data", errorCodeMap.toString());
-        return R.success(mdMap);
+    public R<List<HashMap<String, Object>>> getByErrorCodeInfo() {
+        List<ErrorCode> errorCodeList = ErrorCodeCollector.collectErrorCodeList("work.soho.");
+        List<HashMap<String, Object> > list = errorCodeList.stream().map(errorCode -> {
+            HashMap<String, Object> map = new HashMap<>();
+            map.put("code", errorCode.code());
+            map.put("message", errorCode.message());
+            map.put("description", errorCode.description());
+            return map;
+        }).collect(Collectors.toList());
+        return R.success(list);
     }
 }

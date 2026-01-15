@@ -16,6 +16,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.IpUtils;
 import work.soho.open.api.annotation.OpenApi;
+import work.soho.open.api.result.OpenErrorCode;
 import work.soho.open.biz.component.OpenApiLimitFacotory;
 import work.soho.open.biz.domain.OpenApiCallLog;
 import work.soho.open.biz.domain.OpenApiStatDay;
@@ -25,7 +26,6 @@ import work.soho.open.biz.service.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
-import java.security.InvalidParameterException;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -59,24 +59,24 @@ public class OpenApiAspect {
             String path = request.getRequestURI();
 
             if (appKey == null) {
-                throw new InvalidParameterException("缺少必要请求头");
+                return R.error(OpenErrorCode.MISSING_THE_NECESSARY_REQUEST);
             }
 
             // 判断请求方法， 只支持 GET,POST,PUT,DELETE
             if (!method.equalsIgnoreCase("GET") && !method.equalsIgnoreCase("POST")
                     && !method.equalsIgnoreCase("PUT") && !method.equalsIgnoreCase("DELETE")) {
-                throw new InvalidParameterException("不支持的请求方法");
+                return R.error(OpenErrorCode.MISSING_THE_NECESSARY_REQUEST);
             }
 
             OpenApp openApp = openAppService.getOpenAppByKey(appKey);
 
             // 检查app是否已经通过审核
             if (openApp.getStatus() != OpenAppEnums.Status.ACTIVE.getId()) {
-                throw new InvalidParameterException("app未通过审核");
+                return R.error(OpenErrorCode.THE_APP_FAILED_THE_REVIEW);
             }
 
             if (openApp == null) {
-                throw new InvalidParameterException("无效 app-key");
+                return R.error(OpenErrorCode.APP_KEY_ERROR);
             }
 
             // 获取api信息
@@ -84,12 +84,12 @@ public class OpenApiAspect {
 
             // 检查接口是否允许访问
             if (!canAccess(openApp, method, path)) {
-                throw new InvalidParameterException("接口权限不足");
+                return R.error(OpenErrorCode.INSUFFICIENT_INTERFACE_PERMISSIONS);
             }
 
             // app限速
             if (!openApiLimitFacotory.getHandler(openApp.getId(), openApp.getQpsLimit()).tryAcquire()) {
-                return R.error(2402, "请求超过最大速率 " + openApp.getQpsLimit() + "次每秒" );
+                return R.error(OpenErrorCode.REQUESTS_EXCEED_THE_MAXIMUM_RATE_OF_THE_APP);
             }
 
             OpenApi openApi = getOpenApi(invocation);

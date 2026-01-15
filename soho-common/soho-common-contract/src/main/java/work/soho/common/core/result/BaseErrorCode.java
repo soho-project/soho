@@ -5,6 +5,7 @@ import work.soho.common.core.annotation.ErrorCodeGroup;
 @ErrorCodeGroup
 public enum BaseErrorCode implements ErrorCode {
     SUCCESS_CODE(2000, "success", "success"),
+    UNAUTHORIZED_ACCESS(2401,"Unauthorized access", "未授权访问，接口无权限访问"),
     ERROR_CODE(5001,"error", "error"),
     PARAM_ERROR_CODE(5002,"Invalid parameter", "Invalid parameter");
 
