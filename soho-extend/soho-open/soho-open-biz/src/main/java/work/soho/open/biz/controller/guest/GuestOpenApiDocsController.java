@@ -10,6 +10,7 @@ import work.soho.common.core.result.ErrorCodeCollector;
 import work.soho.common.core.result.R;
 import work.soho.open.biz.service.impl.ControllerApiReaderServiceImpl;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,13 @@ public class GuestOpenApiDocsController {
                 mdMap.put("viewType", "docs");
                 mdMap.put("data", md);
                 return R.success(mdMap);
+            case "api-errorCode":
+                List<ErrorCode> errorCodeList = ErrorCodeCollector.collectErrorCodeList("work.soho.");
+                HashMap<String, String> errorCodeMap = new HashMap<>();
+                errorCodeMap.put("viewType", "errorCode");
+                errorCodeMap.put("data", generateErrorCodeMarkdown(errorCodeList));
+
+                return R.success(errorCodeMap);
         }
         return R.error();
     }
@@ -63,5 +71,56 @@ public class GuestOpenApiDocsController {
             return map;
         }).collect(Collectors.toList());
         return R.success(list);
+    }
+
+    private static String generateErrorCodeMarkdown(List<? extends ErrorCode> errorCodes) {
+        StringBuilder md = new StringBuilder();
+
+        // 文档头
+        md.append("# 开放平台错误码说明\n\n")
+                .append("> 本文档用于说明开放平台 API 在调用过程中可能返回的错误码及其含义，便于开发者快速定位和解决问题。\n\n");
+
+        md.append("---\n");
+
+        // 添加二级标题
+        md.append("## 错误码列表\n\n");
+
+        // 表头
+        md.append("| 错误码 | 错误信息 | 详细描述 |\n")
+                .append("|--------|----------|----------|\n");
+
+        // errorCodes 根据  ErrorCode.code() 排序, 升序
+        List<ErrorCode> sortedErrorCodes = errorCodes.stream().sorted(Comparator.comparingInt(ErrorCode::code)).collect(Collectors.toList());
+
+        // 内容
+        for (ErrorCode errorCode : sortedErrorCodes) {
+            md.append("| ")
+                    .append(errorCode.code()).append(" | ")
+                    .append(escape(errorCode.message())).append(" | ")
+                    .append(escape(errorCode.description())).append(" |\n");
+        }
+
+        // 添加使用建议
+        md.append("## 使用建议\n" +
+                "\n" +
+                "- 当 `code != 2000` 时，应根据错误码进行相应的异常处理  \n" +
+                "- 建议对 **600x / 610x** 错误进行重点日志记录  \n" +
+                "- 对于 **6104** 错误，建议实现限流或重试机制  \n" +
+                "\n" +
+                "---");
+
+        // 写入文件
+        return md.toString();
+    }
+
+    /**
+     * 防止 Markdown 表格被破坏
+     */
+    private static String escape(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text.replace("|", "\\|")
+                .replace("\n", " ");
     }
 }
