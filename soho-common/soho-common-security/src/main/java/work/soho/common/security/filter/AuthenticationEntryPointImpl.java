@@ -6,7 +6,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
-import work.soho.common.core.util.StringUtils;
+import work.soho.common.core.result.BaseErrorCode;
 import work.soho.common.core.result.R;
 
 import javax.servlet.http.HttpServletRequest;
@@ -25,11 +25,10 @@ public class AuthenticationEntryPointImpl implements AuthenticationEntryPoint, S
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException e)
     {
         try {
-            String msg = StringUtils.format("请求访问：{}，认证失败，无法访问系统资源", request.getRequestURI());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding("utf8");
-            response.getWriter().write(JSONUtil.toJsonStr(R.result(HttpServletResponse.SC_UNAUTHORIZED, msg, null)));
+            response.getWriter().write(JSONUtil.toJsonStr(R.error(BaseErrorCode.SC_UNAUTHORIZED)));
         } catch (Exception exception) {
             e.printStackTrace();
         }
