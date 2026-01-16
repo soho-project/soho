@@ -2,26 +2,54 @@ package work.soho.longlink.biz;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 import work.soho.longlink.biz.websocket.WebSocketServer;
 
 @RequiredArgsConstructor
 @Component
-public class LongLinkRunner implements ApplicationRunner {
+public class LongLinkRunner implements SmartLifecycle {
     private final WebSocketServer webSocketServer;
 
     @Value("${longlink.enable:true}")
     private Boolean enable;
 
+    private volatile boolean running = false;
+
     @Override
-    public void run(ApplicationArguments args) throws Exception {
-        if(enable) {
-            System.out.println("######################################================================================================================================");
-            (new Thread(webSocketServer)).start();
-            System.out.println("runing long link");
-            System.out.println("================================================================================================");
+    public void start() {
+        if (!enable) {
+            return;
         }
+        System.out.println("######################################================================================================================================");
+        webSocketServer.start();
+        running = true;
+        System.out.println("runing long link");
+        System.out.println("================================================================================================");
+    }
+
+    @Override
+    public void stop() {
+        if (!running) {
+            return;
+        }
+        webSocketServer.stop();
+        running = false;
+    }
+
+    @Override
+    public void stop(Runnable callback) {
+        stop();
+        callback.run();
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
+
+    @Override
+    public boolean isAutoStartup() {
+        return true;
     }
 }

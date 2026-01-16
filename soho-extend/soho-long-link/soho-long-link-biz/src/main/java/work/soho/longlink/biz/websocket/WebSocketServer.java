@@ -33,16 +33,57 @@ import work.soho.longlink.biz.util.ServerUtil;
  */
 @Component
 @RequiredArgsConstructor
-public final class WebSocketServer implements Runnable {
+public final class WebSocketServer {
 
     static final boolean SSL = false;
     static final int PORT = 8080;
 
     private final WebSocketServerInitializer webSocketServerInitializer;
 
-    public void startWebsocket() throws Exception {
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+    private volatile boolean running = false;
+    private volatile EventLoopGroup bossGroup;
+    private volatile EventLoopGroup workerGroup;
+    private volatile Channel channel;
+    private volatile Thread serverThread;
+
+    public synchronized void start() {
+        if (running) {
+            return;
+        }
+        running = true;
+        serverThread = new Thread(() -> {
+            try {
+                startWebsocket();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, "longlink-websocket");
+        serverThread.start();
+    }
+
+    public synchronized void stop() {
+        if (!running) {
+            return;
+        }
+        running = false;
+        if (channel != null) {
+            channel.close();
+        }
+        if (bossGroup != null) {
+            bossGroup.shutdownGracefully();
+        }
+        if (workerGroup != null) {
+            workerGroup.shutdownGracefully();
+        }
+    }
+
+    public boolean isRunning() {
+        return running;
+    }
+
+    private void startWebsocket() throws Exception {
+        bossGroup = new NioEventLoopGroup(1);
+        workerGroup = new NioEventLoopGroup();
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -50,25 +91,19 @@ public final class WebSocketServer implements Runnable {
                     .handler(new LoggingHandler(LogLevel.INFO))
                     .childHandler(webSocketServerInitializer);
 
-            Channel ch = b.bind(PORT).sync().channel();
+            channel = b.bind(PORT).sync().channel();
 
             System.out.println("Open your web browser and navigate to " +
                     (SSL? "https" : "http") + "://127.0.0.1:" + PORT + '/');
 
-            ch.closeFuture().sync();
+            channel.closeFuture().sync();
         } finally {
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
-        }
-    }
-
-    @Override
-    public void run() {
-        try {
-            startWebsocket();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
+            if (bossGroup != null) {
+                bossGroup.shutdownGracefully();
+            }
+            if (workerGroup != null) {
+                workerGroup.shutdownGracefully();
+            }
         }
     }
 }
