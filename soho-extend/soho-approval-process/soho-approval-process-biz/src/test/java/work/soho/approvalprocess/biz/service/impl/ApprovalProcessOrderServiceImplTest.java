@@ -3,21 +3,23 @@ package work.soho.approvalprocess.biz.service.impl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
-import work.soho.biz.ApprovalprocessApplication;
+import work.soho.approvalprocess.api.vo.ApprovalProcessOrderVo;
 import work.soho.approvalprocess.biz.domain.ApprovalProcessOrderNode;
 import work.soho.approvalprocess.biz.domain.enums.ApprovalProcessOrderNodeApplyStatusEnum;
 import work.soho.approvalprocess.biz.service.ApprovalProcessOrderNodeService;
 import work.soho.approvalprocess.biz.service.ApprovalProcessOrderService;
-import work.soho.approvalprocess.api.vo.ApprovalProcessOrderVo;
 import work.soho.common.core.util.IDGeneratorUtils;
+import work.soho.test.TestApp;
 
 import java.util.LinkedList;
 
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
-@SpringBootTest(classes = ApprovalprocessApplication.class)
+@SpringBootTest(classes = TestApp.class)
+@ActiveProfiles("dev")
 class ApprovalProcessOrderServiceImplTest {
     @Autowired
     private ApprovalProcessOrderService approvalProcessOrderServer;

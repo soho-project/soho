@@ -9,7 +9,7 @@
             <result property="approvalProcessId" column="approval_process_id" jdbcType="INTEGER"/>
             <result property="outNo" column="out_no" jdbcType="VARCHAR"/>
             <result property="status" column="status" jdbcType="TINYINT"/>
-            <result property="serialNumber" column="serial_number" jdbcType="INTEGER"/>
+            <result property="no" column="serial_number" jdbcType="VARCHAR"/>
             <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
     </resultMap>
 
