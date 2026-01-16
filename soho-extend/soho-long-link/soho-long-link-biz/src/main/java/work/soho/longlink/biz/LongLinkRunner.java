@@ -1,11 +1,13 @@
 package work.soho.longlink.biz;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 import work.soho.longlink.biz.websocket.WebSocketServer;
 
+@Log4j2
 @RequiredArgsConstructor
 @Component
 public class LongLinkRunner implements SmartLifecycle {
@@ -21,11 +23,10 @@ public class LongLinkRunner implements SmartLifecycle {
         if (!enable) {
             return;
         }
-        System.out.println("######################################================================================================================================");
+        log.info("---- longlink: starting ----");
         webSocketServer.start();
         running = true;
-        System.out.println("runing long link");
-        System.out.println("================================================================================================");
+        log.info("---- longlink: started ----");
     }
 
     @Override

@@ -9,6 +9,7 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 import work.soho.longlink.biz.util.ServerUtil;
 
@@ -31,6 +32,7 @@ import work.soho.longlink.biz.util.ServerUtil;
  * <li>Firefox 11+ (RFC 6455 aka draft-ietf-hybi-thewebsocketprotocol-17)
  * </ul>
  */
+@Log4j2
 @Component
 @RequiredArgsConstructor
 public final class WebSocketServer {
@@ -93,8 +95,8 @@ public final class WebSocketServer {
 
             channel = b.bind(PORT).sync().channel();
 
-            System.out.println("Open your web browser and navigate to " +
-                    (SSL? "https" : "http") + "://127.0.0.1:" + PORT + '/');
+            log.info("longlink websocket: {}://127.0.0.1:{}/",
+                    (SSL ? "https" : "http"), PORT);
 
             channel.closeFuture().sync();
         } finally {
