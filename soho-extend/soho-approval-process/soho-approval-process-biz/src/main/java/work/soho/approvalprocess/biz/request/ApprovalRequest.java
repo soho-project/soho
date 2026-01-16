@@ -8,6 +8,10 @@ public class ApprovalRequest {
     @ApiModelProperty("审批单节点ID")
     private Integer id;
 
+    /**
+     * 执行审批的人
+     * 客户端无须传递
+     */
     @ApiModelProperty("执行审批的人")
     private Long userId;
 

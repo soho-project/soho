@@ -48,6 +48,12 @@ public class ApprovalProcessServiceImpl extends ServiceImpl<ApprovalProcessMappe
         //TODO 审批流完整性检查
         for (int i = 0; i < approvalProcessVo.getNodes().size(); i++) {
             ApprovalProcessVo.NodeVo item = approvalProcessVo.getNodes().get(i);
+
+            // 跳过源id为null的节点, 跳过源id为0的节点
+            if(item.getSourceUserId() == null || item.getUserId() == 0) {
+                continue;
+            }
+
             ApprovalProcessNode approvalProcessNode = new ApprovalProcessNode();
             approvalProcessNode.setSourceUserId(item.getSourceUserId());
             approvalProcessNode.setUserId(item.getUserId());

@@ -14,7 +14,11 @@ public class MyProvalProcessOrderVo {
     @ApiModelProperty("id")
     private Integer id;
 
+    @ApiModelProperty("审批单编号")
+    private String no;
+
     @ApiModelProperty("审批单ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer approvalProcessId;
 
     @ApiModelProperty("审批流名称")
@@ -32,12 +36,14 @@ public class MyProvalProcessOrderVo {
     @ApiModelProperty("外部单号")
     private String outNo;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     @ApiModelProperty("审批状态; 0 待审批  10 审批完成")
     private Integer status;
 
     @ApiModelProperty("审批状态名")
     private String statusName;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     @ApiModelProperty("审批处理结果： 0 失败  1 成功")
     private Integer applyStatus;
 
@@ -49,6 +55,10 @@ public class MyProvalProcessOrderVo {
 
     @ApiModelProperty("审批节点")
     private List<Node> nodes;
+
+    @ApiModelProperty("更新时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime updatedTime;
 
     @ApiModelProperty("创建时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

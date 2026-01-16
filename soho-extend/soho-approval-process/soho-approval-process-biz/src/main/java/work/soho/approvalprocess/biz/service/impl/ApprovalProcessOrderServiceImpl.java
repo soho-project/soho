@@ -25,6 +25,8 @@ import work.soho.approvalprocess.biz.service.ApprovalProcessService;
 import work.soho.approvalprocess.api.vo.ApprovalProcessOrderVo;
 import work.soho.common.core.support.SpringContextHolder;
 import work.soho.common.core.util.BeanUtils;
+import work.soho.common.core.util.IDGeneratorUtils;
+
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -75,11 +77,13 @@ public class ApprovalProcessOrderServiceImpl extends ServiceImpl<ApprovalProcess
         }
 
         ApprovalProcessOrder approvalProcessOrder = BeanUtils.copy(approvalProcessOrderVo, ApprovalProcessOrder.class);
+        approvalProcessOrder.setNo(IDGeneratorUtils.snowflake().toString());
         approvalProcessOrder.setCreatedTime(LocalDateTime.now());
         approvalProcessOrder.setContent(JSONUtil.toJsonStr(items));
         approvalProcessOrder.setStatus(ApprovalProcessOrderStatusEnum.PENDING.getStatus());
         approvalProcessOrder.setApplyStatus(ApprovalProcessOrderApplyStatusEnum.PENDING.getStatus());
         approvalProcessOrder.setApprovalProcessId(approvalProcess.getId());
+        approvalProcessOrder.setUpdatedTime(LocalDateTime.now());
         approvalProcessOrder.setCreatedTime(LocalDateTime.now());
         approvalProcessOrder.setApplyUserId(approvalProcessOrderVo.getApplyUserId());
         save(approvalProcessOrder);
@@ -163,6 +167,7 @@ public class ApprovalProcessOrderServiceImpl extends ServiceImpl<ApprovalProcess
                 } else {
                     //nothing
                 }
+                approvalProcessOrder.setUpdatedTime(LocalDateTime.now());
                 updateById(approvalProcessOrder);
 
                 ApprovalProcess approvalProcess = approvalProcessService.getById(approvalProcessOrder.getApprovalProcessId());
