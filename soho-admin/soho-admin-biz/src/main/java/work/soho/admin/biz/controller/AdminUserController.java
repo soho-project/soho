@@ -169,6 +169,7 @@ public class AdminUserController extends BaseController {
     public Object create(@RequestBody AdminUserVo adminUserVo) {
         try {
             if(adminSysConfig.getAdminUserRelationEnable()) {
+                Assert.notBlank(adminUserVo.getPhone(), "手机号不能为空");
                 if(userApiService.get() == null) {
                     throw new RuntimeException("系统依赖用户服务， 缺失用户服务， 请实现");
                 }
@@ -181,6 +182,7 @@ public class AdminUserController extends BaseController {
 
                 adminUserVo.setId(userInfo.getId());
             }
+            Assert.notBlank(adminUserVo.getPassword(), "创建用户密码必填");
             adminUserService.saveOrUpdate(adminUserVo);
             return R.success("保存成功");
         } catch (IllegalArgumentException e) {
