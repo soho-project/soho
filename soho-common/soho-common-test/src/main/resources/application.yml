@@ -12,12 +12,22 @@
       strict: false
       datasource:
         master:
-          url: jdbc:mysql://${MYSQL_HOST:mysql.dev.soho.work}:${MYSQL_PORT:3306}/dev?useUnicode=true&characterEncoding=utf-8
+          url: jdbc:mysql://${MYSQL_HOST:mysql.dev.soho.work}:${MYSQL_PORT:3306}/soho_admin?useUnicode=true&characterEncoding=utf-8
           username: ${MYSQL_USERNAME:dev}
           password: ${MYSQL_PASSWORD:Dev@123456789}
           driver-class-name: com.mysql.cj.jdbc.Driver
         game:
           url: jdbc:mysql://${MYSQL_HOST:mysql.dev.soho.work}:${MYSQL_PORT:3306}/soho_game?useUnicode=true&characterEncoding=utf-8
+          username: ${MYSQL_USERNAME:dev}
+          password: ${MYSQL_PASSWORD:Dev@123456789}
+          driver-class-name: com.mysql.cj.jdbc.Driver
+        shop:
+          url: jdbc:mysql://${MYSQL_HOST:mysql.dev.soho.work}:${MYSQL_PORT:3306}/soho_shop?useUnicode=true&characterEncoding=utf-8
+          username: ${MYSQL_USERNAME:dev}
+          password: ${MYSQL_PASSWORD:Dev@123456789}
+          driver-class-name: com.mysql.cj.jdbc.Driver
+        wallet:
+          url: jdbc:mysql://${MYSQL_HOST:mysql.dev.soho.work}:${MYSQL_PORT:3306}/soho_wallet?useUnicode=true&characterEncoding=utf-8
           username: ${MYSQL_USERNAME:dev}
           password: ${MYSQL_PASSWORD:Dev@123456789}
           driver-class-name: com.mysql.cj.jdbc.Driver

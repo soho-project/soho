@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class DbServiceImpl implements DbService {
+
     @Autowired
     JdbcTemplate jdbcTemplate;
 
@@ -27,9 +28,37 @@ public class DbServiceImpl implements DbService {
 
     private static final String DEFAULT_DB = "master";
 
-    private static Pattern PK_PATTERN = Pattern.compile("PRIMARY KEY \\((.*)\\)"); // 主键
-    private static Pattern COLUMN_TYPE_PATTERN = Pattern.compile("(.*)\\((\\d+)\\)"); // 字段类型，长度
-    private static Pattern COLUMN_TYPE_POINT_LENGTH_PATTERN = Pattern.compile("(.*)\\((\\d+),(\\d+)\\)");
+    // 表级 COMMENT='xxx'
+    private static final Pattern TABLE_COMMENT_PATTERN = Pattern.compile("\\bCOMMENT\\s*=\\s*'((?:\\\\'|[^'])*)'");
+
+    // 列定义行：`col` varchar(128) NOT NULL DEFAULT 'x' COMMENT '...'
+    private static final Pattern COLUMN_LINE_PATTERN =
+            Pattern.compile("^\\s*`([^`]+)`\\s+([^\\s]+)\\s*(.*)$");
+
+    // COMMENT '...'
+    private static final Pattern COLUMN_COMMENT_PATTERN =
+            Pattern.compile("\\bCOMMENT\\b\\s+'((?:\\\\'|[^'])*)'");
+
+    // DEFAULT xxx / DEFAULT 'xxx' / DEFAULT CURRENT_TIMESTAMP(3)
+    private static final Pattern COLUMN_DEFAULT_PATTERN =
+            Pattern.compile("\\bDEFAULT\\b\\s+((?:'(?:\\\\'|[^'])*')|(?:\\([^)]*\\))|(?:[^\\s,]+))");
+
+    // PRIMARY KEY (`a`,`b`)
+    private static final Pattern PRIMARY_KEY_PATTERN =
+            Pattern.compile("\\bPRIMARY\\s+KEY\\b\\s*\\(([^)]*)\\)");
+
+    // UNIQUE KEY xxx (`a`,`b`) / UNIQUE INDEX xxx (`a`)
+    private static final Pattern UNIQUE_KEY_PATTERN =
+            Pattern.compile("\\bUNIQUE\\s+(?:KEY|INDEX)\\b\\s+`?[^`(\\s]+`?\\s*\\(([^)]*)\\)");
+
+    // 普通索引 KEY xxx (`a`) —— 这里暂不标记到 Column，仅保留扩展点
+    // private static final Pattern KEY_PATTERN =
+    //         Pattern.compile("\\bKEY\\b\\s+`?[^`(\\s]+`?\\s*\\(([^)]*)\\)");
+
+    // 解析类型：int(11) / decimal(9,2) / varchar(128)
+    private static final Pattern TYPE_NUMERIC_LEN_SCALE_PATTERN =
+            Pattern.compile("^([a-zA-Z]+)(?:\\((\\d+)(?:,(\\d+))?\\))?.*$");
+
     @Override
     public List<Object> getTableNames() {
         return getTableNames(DEFAULT_DB);
@@ -38,12 +67,15 @@ public class DbServiceImpl implements DbService {
     @Override
     public List<Object> getTableNames(String dbName) {
         try {
-            if(StringUtils.isEmpty(dbName)) {
+            if (StringUtils.isEmpty(dbName)) {
                 dbName = DEFAULT_DB;
             }
             DynamicDataSourceContextHolder.push(dbName);
             List<Map<String, Object>> list = jdbcTemplate.queryForList("show tables;");
-            return list.stream().map(item->item.values().stream().findFirst().get()).collect(Collectors.toList());
+            return list.stream()
+                    .map(item -> item.values().stream().findFirst().orElse(null))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -51,7 +83,6 @@ public class DbServiceImpl implements DbService {
         }
         return new ArrayList<>();
     }
-
 
     @Override
     public CodeTableVo getTableByName(String name) {
@@ -61,39 +92,27 @@ public class DbServiceImpl implements DbService {
     @Override
     public CodeTableVo getTableByName(String name, String dbName) {
         try {
-            if(StringUtils.isEmpty(dbName)) {
+            if (StringUtils.isEmpty(dbName)) {
                 dbName = DEFAULT_DB;
             }
             DynamicDataSourceContextHolder.push(dbName);
-            List<Map<String, Object>> list = jdbcTemplate.queryForList("show create table `"+name+"`");
-            String sql = "CREATE TABLE `pay_order` (\n" +
-                    "  `id` int(11) NOT NULL AUTO_INCREMENT,\n" +
-                    "  `pay_id` int(11) NOT NULL COMMENT '支付方式ID;;frontType:select,foreign:pay_info.id~title',\n" +
-                    "  `order_no` varchar(128) NOT NULL COMMENT '支付单号',\n" +
-                    "  `tracking_no` varchar(128) NOT NULL COMMENT '外部跟踪单号',\n" +
-                    "  `transaction_id` varchar(128) DEFAULT NULL COMMENT '支付供应商跟踪ID；例如微信，支付宝支付单号',\n" +
-                    "  `amount` decimal(9,2) NOT NULL COMMENT '支付金额',\n" +
-                    "  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '支付单状态;1:待支付,10:已扫码,20:支付成功,30:支付失败;frontType:select',\n" +
-                    "  `payed_time` datetime DEFAULT NULL COMMENT '支付时间;;frontType:datetime',\n" +
-                    "  `notify_url` varchar(500) DEFAULT NULL COMMENT '通知地址',\n" +
-                    "  `created_time` datetime NOT NULL COMMENT '创建时间',\n" +
-                    "  `updated_time` datetime NOT NULL COMMENT '更新时间',\n" +
-                    "  PRIMARY KEY (`id`)\n" +
-                    ") ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8 COMMENT='支付单;option:id~title'";
-            sql = (String)list.get(0).get("Create Table");
 
-            String tableComment = "";
-            String tableTitle = "";
-            //正则获取表备注
-            String tableCommentPatternStr = "\n\\).*'(.*)'";
-            Pattern tableCommentPattern = Pattern.compile(tableCommentPatternStr);
-            Matcher tableCommentMatch = tableCommentPattern.matcher(sql);
-            if(tableCommentMatch.find()) {
-                tableComment = tableCommentMatch.group(1);
+            List<Map<String, Object>> list = jdbcTemplate.queryForList("show create table `" + name + "`");
+            if (list == null || list.isEmpty()) {
+                return null;
             }
-            if(!"".equals(tableComment)) {
+            Object createObj = list.get(0).get("Create Table");
+            if (!(createObj instanceof String) || StringUtils.isEmpty((String) createObj)) {
+                return null;
+            }
+            String sql = (String) createObj;
+
+            // 1) 表注释/标题
+            String tableComment = extractTableComment(sql);
+            String tableTitle = "";
+            if (!StringUtils.isEmpty(tableComment)) {
                 String[] parts = tableComment.split(";");
-                if(parts.length>=1) {
+                if (parts.length >= 1) {
                     tableTitle = parts[0];
                 }
             }
@@ -104,28 +123,44 @@ public class DbServiceImpl implements DbService {
             codeTableVo.setTitle(tableTitle);
             codeTableVo.setComment(tableComment);
 
-            String pattern = "  (.*)[,\n]";
-            Pattern p = Pattern.compile(pattern);
-            Matcher matcher = p.matcher(sql);
-            while(matcher.find()) {
-//            System.out.println(matcher.group(1));
-                CodeTableVo.Column column = paseColumn(matcher.group(1));
-                if(column != null) {
-                    codeTableVo.getColumnList().add(column);
+            // 2) 先按行处理：字段、主键、唯一键
+            String[] lines = sql.split("\n");
+
+            // 2.1 解析字段行
+            for (String line : lines) {
+                CodeTableVo.Column col = parseColumnLine(line);
+                if (col != null) {
+                    codeTableVo.getColumnList().add(col);
                 }
             }
 
-            //处理匹配主键信息
-            matcher = PK_PATTERN.matcher(sql);
-            while(matcher.find()) {
-                String[] parts = matcher.group(1).replace("`", "").split(",");
-                for (int i = 0; i < parts.length; i++) {
-                    int finalI = i;
-                    codeTableVo.getColumnList().stream().forEach(item -> {
-                        if(item.getName().equals(parts[finalI])) {
-                            item.setIsPk(1);
-                        }
-                    });
+            // 2.2 解析主键/唯一键（表级）
+            Set<String> pkCols = new LinkedHashSet<>();
+            Set<String> uniqueCols = new LinkedHashSet<>();
+
+            for (String line : lines) {
+                String t = line.trim();
+
+                // 表级 PRIMARY KEY (...)
+                Matcher pkM = PRIMARY_KEY_PATTERN.matcher(t);
+                if (pkM.find()) {
+                    pkCols.addAll(extractColumnNamesInParens(pkM.group(1)));
+                }
+
+                // 表级 UNIQUE KEY / UNIQUE INDEX (...)
+                Matcher ukM = UNIQUE_KEY_PATTERN.matcher(t);
+                if (ukM.find()) {
+                    uniqueCols.addAll(extractColumnNamesInParens(ukM.group(1)));
+                }
+            }
+
+            // 2.3 标记到字段
+            for (CodeTableVo.Column c : codeTableVo.getColumnList()) {
+                if (pkCols.contains(c.getName())) {
+                    c.setIsPk(1);
+                }
+                if (uniqueCols.contains(c.getName())) {
+                    c.setIsUnique(1);
                 }
             }
 
@@ -139,133 +174,174 @@ public class DbServiceImpl implements DbService {
     }
 
     /**
-     * 解析字段信息
-     *
-     * @param str
-     * @return
+     * 解析单行列定义。只处理以反引号列名开头的行（字段行）。
+     * 兼容：NOT NULL / DEFAULT xxx / AUTO_INCREMENT / COMMENT '带空格,逗号' / unsigned / zerofill
      */
-    private CodeTableVo.Column paseColumn(String str) {
-        CodeTableVo.Column column = new CodeTableVo.Column();
-        str = str.trim();
-        //排除非字段识别
-        if(!str.startsWith("`")) {
-            return null;
+    private CodeTableVo.Column parseColumnLine(String line) {
+        if (line == null) return null;
+
+        Matcher m = COLUMN_LINE_PATTERN.matcher(line);
+        if (!m.find()) {
+            return null; // 不是字段行（可能是 PRIMARY KEY/KEY/ENGINE 行等）
         }
 
-        int i = 2;
-        String[] parts = str.split(" ");
-        column.setName(parts[0].substring(1, parts[0].length() -1));
-        column.setDataType(parts[1]);
+        String colName = m.group(1);
+        String typeToken = m.group(2);
+        String rest = m.group(3) == null ? "" : m.group(3);
+
+        CodeTableVo.Column column = new CodeTableVo.Column();
+        column.setName(colName);
+        column.setDataType(typeToken);
         column.setIsPk(0);
         column.setIsUnique(0);
         column.setIsZeroFill(0);
         column.setIsAutoIncrement(0);
+        column.setIsNotNull(0);
 
-        while(i<parts.length) {
-            if(parts[i].equals("unsigned")) {
-                column.setIsUnique(1);
-                i++;
-                continue;
-            }
-            //检查是否填充
-            if(parts[i].equals("zerofill")) {
-                column.setIsZeroFill(1);
-                i++;
-                continue;
-            }
-
-            if(parts[i].equals("NOT")) {
-                //NOT NULL
-                i += 2;
-                column.setIsNotNull(1);
-                continue;
-            }
-
-            //处理自增涨
-            if(parts[i].startsWith("AUTO_INCREMENT")) {
-                //自增张
-                column.setIsAutoIncrement(1);
-                i++;
-                continue;
-            }
-
-            //处理默认值
-            if(parts[i].equals("DEFAULT")) {
-                //获取默认值
-                i++;
-                if(parts[i].startsWith("'")) {
-                    column.setDefaultValue(parts[i].substring(1, parts[i].length()-1));
-                } else {
-                    column.setDefaultValue(parts[i]);
-                }
-                i++;
-                continue;
-            }
-
-            //检查注解
-            if("COMMENT".equals(parts[i])) {
-                i++;
-                if(parts.length>i) {
-                    // fixed 注释里面可能包含空格， 检查拼接完成注解内容
-                    String commentStr = "";
-                    while(i<parts.length && !parts[i].endsWith("'")) {
-                        if(commentStr.length()>0) {
-                            commentStr += " ";
-                            commentStr += parts[i];
-                        } else {
-                            commentStr += parts[i];
-                        }
-                        i++;
-                    }
-                    column.setComment(commentStr.substring(1, commentStr.length()-2));
-//                    column.setComment(parts[i].substring(1, parts[i].length()-2));
-                    // 匹配标题；注释中第一个 ; 前面的内容即标题
-                    if(column.getComment() != null) {
-                        String commentParts[] = column.getComment().split(";");
-                        if(commentParts.length>=1) {
-                            column.setTitle(commentParts[0]);
-                        }
-                    }
-                }
-                i++;
-                continue;
-            }
-//            System.out.println("居然没有匹配到： " +  parts[i]);
-            i++;
+        // unsigned / zerofill
+        if (containsWord(rest, "unsigned")) {
+            // 你原来把 unsigned 当 unique，这是 bug。
+            column.setIsUnique(1);
+        }
+        if (containsWord(rest, "zerofill")) {
+            column.setIsZeroFill(1);
         }
 
-        //解析长度
-        parseLength(column.getDataType(), column);
+        // NOT NULL / NULL
+        if (rest.toUpperCase(Locale.ROOT).contains("NOT NULL")) {
+            column.setIsNotNull(1);
+        }
+
+        // AUTO_INCREMENT
+        if (rest.toUpperCase(Locale.ROOT).contains("AUTO_INCREMENT")) {
+            column.setIsAutoIncrement(1);
+        }
+
+        // inline PRIMARY KEY（少数写法：`id` int NOT NULL PRIMARY KEY）
+        if (rest.toUpperCase(Locale.ROOT).contains("PRIMARY KEY")) {
+            column.setIsPk(1);
+        }
+
+        // DEFAULT
+        Matcher defM = COLUMN_DEFAULT_PATTERN.matcher(rest);
+        if (defM.find()) {
+            String raw = defM.group(1);
+            if (raw != null) {
+                raw = raw.trim();
+                // 去掉末尾逗号（极少数格式）
+                if (raw.endsWith(",")) raw = raw.substring(0, raw.length() - 1).trim();
+
+                if (raw.startsWith("'") && raw.endsWith("'") && raw.length() >= 2) {
+                    String v = raw.substring(1, raw.length() - 1);
+                    column.setDefaultValue(unescapeMysqlString(v));
+                } else {
+                    column.setDefaultValue(raw);
+                }
+            }
+        }
+
+        // COMMENT
+        Matcher cmtM = COLUMN_COMMENT_PATTERN.matcher(rest);
+        if (cmtM.find()) {
+            String comment = cmtM.group(1);
+            comment = unescapeMysqlString(comment);
+            column.setComment(comment);
+
+            if (comment != null) {
+                String[] commentParts = comment.split(";");
+                if (commentParts.length >= 1) {
+                    column.setTitle(commentParts[0]);
+                }
+            }
+        }
+
+        // 解析 length/scale（只对形如 varchar(128) / decimal(9,2) / int(11) 生效；enum/set 会跳过）
+        parseLengthAndScale(typeToken, column);
+
         return column;
     }
 
-    /**
-     * 解析字段类型
-     *
-     * @param str
-     * @param column
-     */
-    private void parseLength(String str, CodeTableVo.Column column) {
-        Matcher matcher = COLUMN_TYPE_PATTERN.matcher(str);
-        if(matcher.find()) {
-            column.setDataType(matcher.group(1));
-            //解析小数点
-            column.setLength(Integer.parseInt(matcher.group(2)));
+    private void parseLengthAndScale(String typeToken, CodeTableVo.Column column) {
+        if (StringUtils.isEmpty(typeToken) || column == null) return;
+
+        // enum('a','b') / set(...) 这种不解析数字长度
+        String lower = typeToken.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("enum(") || lower.startsWith("set(")) {
+            // dataType 就保持原样或只取 enum/set
+            column.setDataType(lower.startsWith("enum(") ? "enum" : "set");
+            return;
         }
 
-        //正则小数点位长度
-        matcher = COLUMN_TYPE_POINT_LENGTH_PATTERN.matcher(str);
-        if(matcher.find()) {
-            column.setDataType(matcher.group(1));
-            column.setLength(Integer.parseInt(matcher.group(2)));
-            column.setScale(Integer.parseInt(matcher.group(3)));
+        Matcher m = TYPE_NUMERIC_LEN_SCALE_PATTERN.matcher(typeToken);
+        if (m.find()) {
+            String baseType = m.group(1);
+            String len = m.group(2);
+            String scale = m.group(3);
+
+            if (!StringUtils.isEmpty(baseType)) {
+                column.setDataType(baseType);
+            }
+            if (!StringUtils.isEmpty(len)) {
+                try {
+                    column.setLength(Integer.parseInt(len));
+                } catch (Exception ignore) {
+                }
+            }
+            if (!StringUtils.isEmpty(scale)) {
+                try {
+                    column.setScale(Integer.parseInt(scale));
+                } catch (Exception ignore) {
+                }
+            }
         }
+    }
+
+    private String extractTableComment(String createTableSql) {
+        if (StringUtils.isEmpty(createTableSql)) return "";
+        Matcher m = TABLE_COMMENT_PATTERN.matcher(createTableSql);
+        if (m.find()) {
+            return unescapeMysqlString(m.group(1));
+        }
+        return "";
+    }
+
+    private Set<String> extractColumnNamesInParens(String insideParens) {
+        if (insideParens == null) return Collections.emptySet();
+        // insideParens 形如：`id`,`user_id`(或带长度 `col`(10) 在索引里也可能出现)
+        String[] parts = insideParens.split(",");
+        Set<String> cols = new LinkedHashSet<>();
+        for (String p : parts) {
+            String t = p.trim();
+            // 去掉索引前缀长度：`col`(10)
+            int parenIdx = t.indexOf('(');
+            if (parenIdx > 0) {
+                t = t.substring(0, parenIdx).trim();
+            }
+            t = t.replace("`", "").trim();
+            if (!t.isEmpty()) cols.add(t);
+        }
+        return cols;
+    }
+
+    private boolean containsWord(String text, String word) {
+        if (text == null || word == null) return false;
+        // 简单词边界匹配，避免匹配到其它单词片段
+        Pattern p = Pattern.compile("\\b" + Pattern.quote(word) + "\\b", Pattern.CASE_INSENSITIVE);
+        return p.matcher(text).find();
+    }
+
+    private String unescapeMysqlString(String s) {
+        if (s == null) return null;
+        // MySQL SHOW CREATE TABLE 里常见转义：\'  \\  \n \r \t
+        return s.replace("\\'", "'")
+                .replace("\\\\", "\\")
+                .replace("\\n", "\n")
+                .replace("\\r", "\r")
+                .replace("\\t", "\t");
     }
 
     /**
      * 创建sql
-     *
-     * @param sql
      */
     public void execute(String sql) {
         execute(sql, DEFAULT_DB);
@@ -274,7 +350,7 @@ public class DbServiceImpl implements DbService {
     @Override
     public void execute(String sql, String dbName) {
         try {
-            if(StringUtils.isEmpty(dbName)) {
+            if (StringUtils.isEmpty(dbName)) {
                 dbName = DEFAULT_DB;
             }
             DynamicDataSourceContextHolder.push(dbName);
@@ -288,8 +364,6 @@ public class DbServiceImpl implements DbService {
 
     /**
      * 删除指定表
-     *
-     * @param tableName
      */
     public void dropTable(String tableName) {
         dropTable(tableName, DEFAULT_DB);
@@ -298,7 +372,7 @@ public class DbServiceImpl implements DbService {
     @Override
     public void dropTable(String tableName, String dbName) {
         try {
-            if(StringUtils.isEmpty(dbName)) {
+            if (StringUtils.isEmpty(dbName)) {
                 dbName = DEFAULT_DB;
             }
             DynamicDataSourceContextHolder.push(dbName);
@@ -319,13 +393,13 @@ public class DbServiceImpl implements DbService {
     public Boolean isExistsTable(String tableName, String dbName) {
         boolean isExistsTable = false;
         try {
-            if(StringUtils.isEmpty(dbName)) {
+            if (StringUtils.isEmpty(dbName)) {
                 dbName = DEFAULT_DB;
             }
             DynamicDataSourceContextHolder.push(dbName);
-            String sql = "SHOW TABLES LIKE '"+tableName+"';";
+            String sql = "SHOW TABLES LIKE '" + tableName + "';";
             List<Map<String, Object>> list = jdbcTemplate.queryForList(sql);
-            isExistsTable =  list.size() > 0;
+            isExistsTable = list.size() > 0;
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -336,11 +410,11 @@ public class DbServiceImpl implements DbService {
 
     @Override
     public Set<String> getDbList() {
-        // 属性前缀
         String prefix = "spring.datasource.dynamic.datasource.";
         try {
-            // 获取Environment中所有以prefix开头的属性名
-            // 注意：此方法依赖于Spring Boot的具体实现和环境，在某些环境下可能无法获取到所有属性名
+            if (!(env instanceof ConfigurableEnvironment)) {
+                return Collections.emptySet();
+            }
             String[] propertyNames = ((ConfigurableEnvironment) env).getPropertySources()
                     .stream()
                     .filter(propertySource -> propertySource instanceof EnumerablePropertySource)
@@ -353,17 +427,14 @@ public class DbServiceImpl implements DbService {
                 return Collections.emptySet();
             }
 
-            // 提取子数据源的key
-            // 例如：将 "spring.datasource.dynamic.datasource.master.url" 中的 "master" 提取出来
             return Arrays.stream(propertyNames)
-                    .map(propertyName -> propertyName.substring(prefix.length())) // 去掉前缀
+                    .map(propertyName -> propertyName.substring(prefix.length()))
                     .map(subProperty -> {
                         int firstDotIndex = subProperty.indexOf('.');
                         return (firstDotIndex != -1) ? subProperty.substring(0, firstDotIndex) : subProperty;
-                    }) // 取第一个点号之前的部分
+                    })
                     .collect(Collectors.toSet());
         } catch (Exception e) {
-            // 处理异常或记录日志
             return Collections.emptySet();
         }
     }
