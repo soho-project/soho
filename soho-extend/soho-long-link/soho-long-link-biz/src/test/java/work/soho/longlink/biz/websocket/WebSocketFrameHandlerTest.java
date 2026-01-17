@@ -18,7 +18,6 @@ public class WebSocketFrameHandlerTest extends TestCase {
     public void testPingPong() {
         CapturingMessageChannel messageChanel = new CapturingMessageChannel();
         WebSocketFrameHandler handler = new WebSocketFrameHandler(
-                new DummyAuthentication(),
                 messageChanel,
                 new NoopConnectManager()
         );
@@ -35,7 +34,6 @@ public class WebSocketFrameHandlerTest extends TestCase {
     public void testTextMessageDispatch() throws Exception {
         CapturingMessageChannel messageChanel = new CapturingMessageChannel();
         WebSocketFrameHandler handler = new WebSocketFrameHandler(
-                new DummyAuthentication(),
                 messageChanel,
                 new NoopConnectManager()
         );

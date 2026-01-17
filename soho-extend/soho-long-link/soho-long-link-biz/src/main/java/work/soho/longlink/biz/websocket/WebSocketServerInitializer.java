@@ -75,7 +75,7 @@ public class WebSocketServerInitializer  extends ChannelInitializer<SocketChanne
         pipeline.addLast("wsAuthFirstFrame", AuthHandshakeHandler.firstFrame(authenticator, options));
 
         // 业务处理句柄
-        pipeline.addLast(new WebSocketFrameHandler(authentication, messageChanel, connectManager));
+        pipeline.addLast(new WebSocketFrameHandler(messageChanel, connectManager));
 
     }
 }
