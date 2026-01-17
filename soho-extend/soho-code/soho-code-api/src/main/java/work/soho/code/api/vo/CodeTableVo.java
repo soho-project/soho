@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Data
@@ -124,25 +125,64 @@ public class CodeTableVo {
                 return true;
             }
             if (obj == null || getClass() != obj.getClass()) {
+                System.out.println("[equalsExcludingId] class not equal or null");
                 return false;
             }
 
-            CodeTableVo.Column column = (CodeTableVo.Column) obj;
-            System.out.println(this);
-            System.out.println(column);
-            System.out.println("===============================");
-            return this.name.equals(column.name)
-//                    && (this.title != null && this.title.equals(column.title))
-                    && (this.dataType != null && this.dataType.equals(column.dataType))
-                    && (this.isPk != null && this.isPk.equals(column.isPk) || (this.isPk == null && column.isPk == null))
-                    && (this.isNotNull != null && this.isNotNull.equals(column.isNotNull) || (this.isNotNull == null && column.isNotNull == null))
-                    && (this.isUnique != null && this.isUnique.equals(column.isUnique) || (this.isUnique == null && column.isUnique == null))
-                    && (this.isAutoIncrement != null && this.isAutoIncrement.equals(column.isAutoIncrement) || (this.isAutoIncrement == null && column.isAutoIncrement == null))
-                    && (this.isZeroFill != null && this.isZeroFill.equals(column.isZeroFill) || (this.isZeroFill == null && column.isZeroFill == null))
-                    && (this.defaultValue != null && this.defaultValue.equals(column.defaultValue) || ((this.defaultValue == null || this.defaultValue.equals("NULL")) && column.defaultValue == null))
-                    && (this.length != null && this.length.equals(column.length) || (this.length ==null && column.length == null))
-                    && (this.scale != null && this.scale.equals(column.scale) || (this.scale == null && column.scale == null))
-                    && (this.comment != null && this.comment.equals(column.comment) || (this.comment == null && column.comment == null));
+            CodeTableVo.Column other = (CodeTableVo.Column) obj;
+
+            boolean equal = true;
+
+            equal &= compare("name", this.name, other.name);
+            equal &= compare("dataType", this.dataType, other.dataType);
+            equal &= compare("isPk", this.isPk, other.isPk);
+            equal &= compare("isNotNull", this.isNotNull, other.isNotNull);
+            equal &= compare("isUnique", this.isUnique, other.isUnique);
+            equal &= compare("isAutoIncrement", this.isAutoIncrement, other.isAutoIncrement);
+            equal &= compare("isZeroFill", this.isZeroFill, other.isZeroFill);
+            equal &= compareDefaultValue("defaultValue", this.defaultValue, other.defaultValue);
+            equal &= compare("length", this.length, other.length);
+            equal &= compare("scale", this.scale, other.scale);
+            equal &= compare("comment", this.comment, other.comment);
+
+            if (!equal) {
+                System.out.println("[equalsExcludingId] NOT EQUAL");
+                System.out.println("this   = " + this);
+                System.out.println("other  = " + other);
+            }
+
+            return equal;
+        }
+
+        private static boolean compare(String field, Object a, Object b) {
+            if (Objects.equals(a, b)) {
+                return true;
+            }
+            System.out.println(
+                    "[equalsExcludingId] field NOT equal -> " + field +
+                            ", this=" + a +
+                            ", other=" + b
+            );
+            return false;
+        }
+
+        private static boolean compareDefaultValue(String field, String a, String b) {
+            if (Objects.equals(a, b)) {
+                return true;
+            }
+
+            String aValue = (a == null ||"null".equalsIgnoreCase(a)) ? "NULL" : a;
+            String bValue = (b == null || "null".equalsIgnoreCase(b)) ? "NULL" : b;
+            if(aValue.equals(bValue)) {
+                return true;
+            }
+
+            System.out.println(
+                    "[equalsExcludingId] field NOT equal -> " + field +
+                            ", this=" + a +
+                            ", other=" + b
+            );
+            return false;
         }
 
         //转换成sql定义
