@@ -12,7 +12,6 @@ import work.soho.longlink.biz.connect.ConnectManager;
 import work.soho.longlink.biz.util.ServerUtil;
 
 import java.net.InetSocketAddress;
-import java.util.Locale;
 
 /**
  * Echoes uppercase content of text frames.
@@ -30,11 +29,6 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
     private final static String PONG = "pong";
 
     private String connectId = null;
-
-    /**
-     * 认证通过的UID
-     */
-    private String uid = null;
 
     /**
      * 根据ctx获取连接ID
@@ -57,23 +51,13 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
         if (frame instanceof TextWebSocketFrame) {
             // Send the uppercase string back.
             String request = ((TextWebSocketFrame) frame).text();
-            //判断是否已经鉴权
-            if(uid == null) {
-                uid = authentication.getUidWithToken(request);
-                if(uid == null) {
-                    ctx.channel().writeAndFlush(new TextWebSocketFrame(ERR));
-                } else {
-                    connectManager.addConnect(ctx);
-                    connectManager.bindUid(getConnectId(ctx), uid);
-                    ctx.channel().writeAndFlush(new TextWebSocketFrame(OK));
-                }
-            } else if("ping".equals(request)) {
+            if("ping".equals(request)) {
                 ctx.channel().writeAndFlush(new TextWebSocketFrame(PONG));
             } else if ("pong".equals(request)) {
                 //ignore
             } else {
-//                ctx.channel().writeAndFlush(new TextWebSocketFrame(request.toUpperCase(Locale.US)));
-                messageChanel.onMessage(request, getConnectId(ctx), uid);
+                String userId = ctx.channel().attr(AuthHandshakeHandler.ATTR_USER_ID).get();
+                messageChanel.onMessage(request, getConnectId(ctx), userId);
             }
         } else {
             String message = "unsupported frame type: " + frame.getClass().getName();
@@ -94,8 +78,10 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
         System.out.println("通道卸载");
-        connectManager.removeConnect(getConnectId(ctx));
-        connectManager.removeConnectIdFromUid(getConnectId(ctx), uid);
+        String cid = getConnectId(ctx);
+        String userId = ctx.channel().attr(AuthHandshakeHandler.ATTR_USER_ID).get();
+        connectManager.removeConnect(cid);
+        connectManager.removeConnectIdFromUid(cid, userId);
         super.channelUnregistered(ctx);
     }
 }
