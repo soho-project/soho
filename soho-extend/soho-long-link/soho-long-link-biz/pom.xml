@@ -26,6 +26,10 @@
             <groupId>work.soho</groupId>
             <artifactId>soho-long-link-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-core</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

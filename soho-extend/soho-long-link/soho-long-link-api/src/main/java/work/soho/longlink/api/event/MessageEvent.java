@@ -2,6 +2,7 @@ package work.soho.longlink.api.event;
 
 
 import lombok.Data;
+import work.soho.longlink.api.message.LongLinkMessage;
 
 @Data
 public class MessageEvent {
@@ -20,4 +21,9 @@ public class MessageEvent {
      * 原始消息报
      */
     private String payload;
+
+    /**
+     * 结构化消息
+     */
+    private LongLinkMessage message;
 }

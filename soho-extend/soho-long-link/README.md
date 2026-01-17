@@ -57,6 +57,28 @@ void sendToAllConnect(String msg);
 void bindUid(String connectId, String uid);
 ```
 
+通用消息协议
+-----------
+支持结构化消息封装（推荐），兼容纯文本旧协议。结构化消息示例:
+
+```
+{
+  "namespace": "chat",
+  "topic": "message",
+  "type": "text",
+  "traceId": "t-123",
+  "payload": {
+    "content": "hello"
+  },
+  "headers": {
+    "client": "web"
+  }
+}
+```
+
+当收到纯文本或未包含 `namespace/topic/type` 的 JSON 时，会自动降级为:
+`namespace=default`、`topic=default`、`type=message`，payload 为原始文本。
+
 监控接口
 --------
 仅返回当前服务实例内的连接信息:
