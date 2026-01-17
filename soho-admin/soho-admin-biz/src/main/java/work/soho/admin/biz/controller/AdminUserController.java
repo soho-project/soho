@@ -10,13 +10,17 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import work.soho.common.security.userdetails.SohoUserDetails;
-import work.soho.common.security.utils.SecurityUtils;
+import work.soho.admin.api.vo.AdminUserOptionVo;
+import work.soho.admin.api.vo.AdminUserVo;
+import work.soho.admin.api.vo.CurrentAdminUserVo;
+import work.soho.admin.api.vo.OptionVo;
+import work.soho.admin.biz.config.AdminSysConfig;
 import work.soho.admin.biz.domain.AdminRole;
 import work.soho.admin.biz.domain.AdminRoleResource;
 import work.soho.admin.biz.domain.AdminRoleUser;
@@ -26,18 +30,19 @@ import work.soho.admin.biz.service.AdminRoleService;
 import work.soho.admin.biz.service.AdminRoleUserService;
 import work.soho.admin.biz.service.AdminUserService;
 import work.soho.admin.biz.service.impl.UserDetailsServiceImpl;
-import work.soho.common.security.annotation.Node;
-import work.soho.admin.api.vo.AdminUserOptionVo;
-import work.soho.admin.api.vo.AdminUserVo;
-import work.soho.admin.api.vo.CurrentAdminUserVo;
-import work.soho.admin.api.vo.OptionVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
+import work.soho.common.security.annotation.Node;
+import work.soho.common.security.userdetails.SohoUserDetails;
+import work.soho.common.security.utils.SecurityUtils;
+import work.soho.user.api.dto.UserInfoDto;
+import work.soho.user.api.service.UserApiService;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -50,7 +55,11 @@ public class AdminUserController extends BaseController {
     private final AdminRoleService adminRoleService;
     private final AdminRoleUserService adminRoleUserService;
     private final AdminRoleResourceService adminRoleResourceService;
+    private final AdminSysConfig adminSysConfig;
     private static final Logger logger = LoggerFactory.getLogger(AdminUserController.class);
+
+    @Autowired
+    private Optional<UserApiService> userApiService;
 
     @ApiOperation("当前登录用户信息")
     @GetMapping("/user")
@@ -159,6 +168,19 @@ public class AdminUserController extends BaseController {
     @PostMapping()
     public Object create(@RequestBody AdminUserVo adminUserVo) {
         try {
+            if(adminSysConfig.getAdminUserRelationEnable()) {
+                if(userApiService.get() == null) {
+                    throw new RuntimeException("系统依赖用户服务， 缺失用户服务， 请实现");
+                }
+                UserInfoDto userInfo = userApiService.get().getUserInfoByPhone(adminUserVo.getPhone());
+                Assert.notNull(userInfo, "用户不存在");
+
+                // 检查该id的管理员是否存在
+                AdminUser adminUser = adminUserService.getById(userInfo.getId());
+                Assert.isNull(adminUser, "该手机号对应的用户管理员已经存在");
+
+                adminUserVo.setId(userInfo.getId());
+            }
             adminUserService.saveOrUpdate(adminUserVo);
             return R.success("保存成功");
         } catch (IllegalArgumentException e) {

@@ -28,6 +28,8 @@ public class AdminSysConfig implements InitializingBean {
     private final String ADMIN_LOGIN_CAPTCHA_ENABLE_KEY = "login_use_captcha";
     //后台通知方式
     private final String ADMIN_NOTICE_ADAPTER_KEY = "admin-notice-adapter";
+    // 后台用户是否关联普通用户
+    private final String ADMIN_USER_RELATION_ENABLE_KEY = "admin_user_relation_enable";
 
     /**
      * 获取是否开启操作的日志
@@ -58,6 +60,20 @@ public class AdminSysConfig implements InitializingBean {
         return adminConfigApiService.getByKey(ADMIN_LOGIN_CAPTCHA_ENABLE_KEY, Boolean.class, false);
     }
 
+    /**
+     * 获取后台通知方式
+     *
+     * @return
+     */
+    public String getAdminNoticeAdapter() {
+        return adminConfigApiService.getByKey(ADMIN_NOTICE_ADAPTER_KEY, String.class, "none");
+    }
+
+    // 获取管理员是否关联普通用户
+    public Boolean getAdminUserRelationEnable() {
+        return adminConfigApiService.getByKey(ADMIN_USER_RELATION_ENABLE_KEY, Boolean.class, false);
+    }
+
     @Override
     public void afterPropertiesSet() throws Exception {
         //构建组
@@ -82,6 +98,11 @@ public class AdminSysConfig implements InitializingBean {
         items.add(AdminConfigInitRequest.Item.builder().groupKey(DEFAULT_GROUP_KEY)
                         .explain("操作日志记录的请求方法；例如: POST(创建);PUT(更新);DELETE(删除)")
                 .type(AdminConfigInitRequest.ItemType.TEXT.getType()).key(ADMIN_OPERATION_LOG_METHODS_KEY).value(ADMIN_OPERATION_LOG_METHODS).build());
+
+        // 后台用户是否关联普通用户
+        items.add(AdminConfigInitRequest.Item.builder().groupKey(DEFAULT_GROUP_KEY)
+                .explain("后台用户是否关联普通用户")
+                .type(AdminConfigInitRequest.ItemType.BOOL.getType()).key(ADMIN_USER_RELATION_ENABLE_KEY).value("false").build());
 
         //注册配置信息
         adminConfigApiService.initItems(AdminConfigInitRequest.builder().items(items).groupList(groups).build());
