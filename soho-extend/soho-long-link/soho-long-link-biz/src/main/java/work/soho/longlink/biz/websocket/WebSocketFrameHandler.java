@@ -6,7 +6,7 @@ import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import lombok.RequiredArgsConstructor;
-import work.soho.longlink.api.authentication.Authentication;
+import lombok.extern.log4j.Log4j2;
 import work.soho.longlink.api.chanel.MessageChanel;
 import work.soho.longlink.biz.connect.ConnectManager;
 import work.soho.longlink.biz.util.ServerUtil;
@@ -17,8 +17,8 @@ import java.net.InetSocketAddress;
  * Echoes uppercase content of text frames.
  */
 @RequiredArgsConstructor
+@Log4j2
 public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
-    private final Authentication authentication;
     private final MessageChanel messageChanel;
 
     private final ConnectManager connectManager;
@@ -40,6 +40,9 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
         if(connectId == null) {
             InetSocketAddress ipSocket = (InetSocketAddress) ctx.channel().remoteAddress();
             InetSocketAddress localIpSocket = (InetSocketAddress) ctx.channel().localAddress();
+            if (ipSocket == null || localIpSocket == null) {
+                return null;
+            }
             connectId = ServerUtil.getConnectId(ipSocket, localIpSocket);
         }
         return connectId;
@@ -77,11 +80,15 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
-        System.out.println("通道卸载");
+        log.info("channel unregistered");
         String cid = getConnectId(ctx);
         String userId = ctx.channel().attr(AuthHandshakeHandler.ATTR_USER_ID).get();
-        connectManager.removeConnect(cid);
-        connectManager.removeConnectIdFromUid(cid, userId);
+        if (cid != null) {
+            connectManager.removeConnect(cid);
+        }
+        if (cid != null && userId != null) {
+            connectManager.removeConnectIdFromUid(cid, userId);
+        }
         super.channelUnregistered(ctx);
     }
 }
