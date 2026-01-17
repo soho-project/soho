@@ -10,6 +10,7 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import work.soho.longlink.biz.util.ServerUtil;
 
@@ -38,9 +39,11 @@ import work.soho.longlink.biz.util.ServerUtil;
 public final class WebSocketServer {
 
     static final boolean SSL = false;
-    static final int PORT = 8080;
 
     private final WebSocketServerInitializer webSocketServerInitializer;
+
+    @Value("${longlink.port:8080}")
+    private int port;
 
     private volatile boolean running = false;
     private volatile EventLoopGroup bossGroup;
@@ -93,10 +96,10 @@ public final class WebSocketServer {
                     .handler(new LoggingHandler(LogLevel.INFO))
                     .childHandler(webSocketServerInitializer);
 
-            channel = b.bind(PORT).sync().channel();
+            channel = b.bind(port).sync().channel();
 
             log.info("longlink websocket: {}://127.0.0.1:{}/",
-                    (SSL ? "https" : "http"), PORT);
+                    (SSL ? "https" : "http"), port);
 
             channel.closeFuture().sync();
         } finally {

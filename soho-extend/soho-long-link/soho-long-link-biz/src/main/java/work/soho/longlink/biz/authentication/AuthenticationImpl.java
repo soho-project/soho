@@ -15,9 +15,12 @@ public class AuthenticationImpl implements Authentication {
 
     @Override
     public String getUidWithToken(String token) {
+        if (secret == null || secret.trim().isEmpty() || "defaultValue".equals(secret)) {
+            log.error("longlink auth secret is not configured");
+            return null;
+        }
         try {
             Claims claims = parseToken(token);
-            log.info("auth claims: {}", claims);
             return claims.get("uid", Integer.class).toString();
         } catch (Exception e) {
             e.printStackTrace();
@@ -27,7 +30,6 @@ public class AuthenticationImpl implements Authentication {
 
     private Claims parseToken(String token)
     {
-        log.info("auth secret: {}， token: {}", secret, token);
         return Jwts.parser()
                 .setSigningKey(secret)
                 .parseClaimsJws(token)

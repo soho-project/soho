@@ -24,7 +24,7 @@ public class SenderImpl implements Sender, QueryLongLink {
         if(uidSet == null) {
             return;
         }
-        uidSet.stream().forEach(connectId -> {
+        uidSet.forEach(connectId -> {
             log.info("send message to uid:{}， cliendId:{} message:{}", uid, connectId, msg);
             sendToConnectId(connectId, msg);
         });
@@ -40,7 +40,7 @@ public class SenderImpl implements Sender, QueryLongLink {
 
     @Override
     public void sendToAllUid(String msg) {
-        connectManager.getAllUid().stream().forEach(uid -> {
+        connectManager.getAllUid().forEach(uid -> {
             sendToUid(uid, msg);
         });
     }
