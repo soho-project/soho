@@ -41,9 +41,6 @@ public final class ServerUtil {
     public static String getConnectId(InetSocketAddress clientAddress, InetSocketAddress localAddress) {
 //        log.info("local address info: {}", localAddress);
 //        log.info("client address info：{}", clientAddress);
-//        System.out.println(clientAddress.getAddress().getHostAddress());
-//        System.out.println(clientAddress.getAddress().getCanonicalHostName());
-//        System.out.println(clientAddress.getPort());
         return clientAddress.getAddress().getHostAddress() + "/" + clientAddress.getPort() +"/"+ localAddress.getAddress().getHostAddress() + "/" + localAddress.getPort();
     }
 

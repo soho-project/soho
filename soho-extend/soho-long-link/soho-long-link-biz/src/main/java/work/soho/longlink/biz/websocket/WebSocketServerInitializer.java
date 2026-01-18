@@ -6,6 +6,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolConfig;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketServerCompressionHandler;
 import io.netty.handler.ssl.SslContext;
@@ -69,7 +70,13 @@ public class WebSocketServerInitializer  extends ChannelInitializer<SocketChanne
 
 
         pipeline.addLast(new WebSocketServerCompressionHandler());
-        pipeline.addLast(new WebSocketServerProtocolHandler(websocketPath, null, true));
+        WebSocketServerProtocolConfig protocolConfig = WebSocketServerProtocolConfig.newBuilder()
+                .websocketPath(websocketPath)
+                .allowExtensions(true)
+                // Accept /ws?token=... by matching the prefix only.
+                .checkStartsWith(true)
+                .build();
+        pipeline.addLast(new WebSocketServerProtocolHandler(protocolConfig));
 
         // 2) 第一帧鉴权（必须在 protocol 之后，业务 handler 之前）
         pipeline.addLast("wsAuthFirstFrame", AuthHandshakeHandler.firstFrame(authenticator, options));
