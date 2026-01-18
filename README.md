@@ -92,10 +92,14 @@ mvn clean install
 
 ## 👀 在线预览 (Live Demos)
 
--   [React (Ant Design 5)](https://adminv2.demo.soho.work/login/) - (账号: admin / 123456)
--   [Vue (Ant Design Vue)](https://admin-vue.demo.soho.work/login/) - (账号: admin / 123456)
--   [开放平台](https://open.demo.soho.work/) - (账号: P15873164076 / 123456)
--   [旧版预览](https://www.soho.work/) - (已停止更新) (账号: admin / 123456)
+-   [React (Ant Design 5)](https://adminv2.demo.soho.work/login/)
+    -   账号: `admin` / `123456`
+-   [Vue (Ant Design Vue)](https://admin-vue.demo.soho.work/login/)
+    -   账号: `admin` / `123456`
+-   [开放平台](https://open.demo.soho.work/)
+    -   账号: `P15873164076` / `123456`
+-   [旧版预览](https://www.soho.work/) - (已停止更新)
+    -   账号: `admin` / `123456`
 
 ---
 
@@ -118,4 +122,5 @@ mvn clean install
 ## 💬 联系我们 (Contact Us)
 
 -   **QQ群**: 569407926
+-   **邮箱**: i@liufang.org.cn
 -   <img src="docs/images/qq.jpg" alt="QQ群" width="200">
