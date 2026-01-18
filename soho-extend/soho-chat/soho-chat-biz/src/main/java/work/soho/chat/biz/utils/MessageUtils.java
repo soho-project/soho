@@ -23,6 +23,7 @@ public class MessageUtils {
      */
     public ChatMessage fromString(String jsonString) {
         Map<Object, Object> map = JacksonUtils.toBean(jsonString, Map.class);
+        System.out.println( map);
         ChatMessage upMessage = null;
         switch ((String) ((Map)map.get("message")).get("type")) {
             case "text":

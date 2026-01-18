@@ -173,7 +173,6 @@ public final class AuthHandshakeHandler {
             }
 
             String token = extractTokenFromHttp(req, options);
-
             if (token != null && !token.isBlank()) {
                 String userId = safeAuth(authenticator, token);
                 if (userId != null) {
