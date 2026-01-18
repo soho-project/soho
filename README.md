@@ -121,6 +121,6 @@ mvn clean install
 
 ## 💬 联系我们 (Contact Us)
 
--   **QQ群**: 569407926
+-   **QQ群**: ![加入QQ群](https://img.shields.io/badge/QQ-569407926-blue.svg)
 -   **邮箱**: i@liufang.org.cn
 -   <img src="docs/images/qq.jpg" alt="QQ群" width="200">
