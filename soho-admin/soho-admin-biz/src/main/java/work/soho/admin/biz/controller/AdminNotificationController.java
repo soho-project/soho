@@ -6,8 +6,10 @@ import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import work.soho.admin.api.event.NewNotificationEvent;
 import work.soho.admin.api.request.AdminNotificationCreateRequest;
 import work.soho.admin.api.vo.AdminNotificationVo;
 import work.soho.admin.biz.domain.AdminNotification;
@@ -42,6 +44,7 @@ public class AdminNotificationController extends BaseController {
 
     private final AdminNotificationService adminNotificationService;
     private final AdminUserService adminUserService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     /**
      * 查询管理员通知列表
@@ -160,6 +163,11 @@ public class AdminNotificationController extends BaseController {
             adminNotification.setAdminUserId(adminUserId);
             adminNotification.setCreatedTime(LocalDateTime.now());
             adminNotificationService.save(adminNotification);
+
+            // 发布新消息事件
+            NewNotificationEvent newNotificationEvent = new NewNotificationEvent();
+            newNotificationEvent.setNotification(BeanUtils.copy(adminNotification, AdminNotificationVo.class));
+            applicationEventPublisher.publishEvent(newNotificationEvent);
         }
         return R.success(true);
     }

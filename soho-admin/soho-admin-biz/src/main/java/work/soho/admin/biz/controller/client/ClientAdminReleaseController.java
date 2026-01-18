@@ -6,9 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.admin.biz.domain.AdminRelease;
 import work.soho.admin.biz.service.AdminReleaseService;
-import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.common.core.result.R;
 
 import java.util.Optional;
