@@ -31,6 +31,7 @@ import work.soho.admin.biz.service.AdminRoleUserService;
 import work.soho.admin.biz.service.AdminUserService;
 import work.soho.admin.biz.service.impl.UserDetailsServiceImpl;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
 import work.soho.common.security.annotation.Node;
@@ -107,8 +108,14 @@ public class AdminUserController extends BaseController {
     @ApiOperation("用户选项接口")
     @Node("adminUser:options")
     @GetMapping("options")
-    public R<List<OptionVo<Long, String>>> options() {
-        List<AdminUser> adminUserList = adminUserService.list();
+    public R<List<OptionVo<Long, String>>> options(String searchText) {
+        LambdaQueryWrapper<AdminUser> lqw = new LambdaQueryWrapper<>();
+        if(!StringUtils.isEmpty(searchText)) {
+            lqw.like(AdminUser::getUsername, searchText);
+            lqw.or().eq(AdminUser::getId, searchText);
+        }
+        PageUtils.startPage();
+        List<AdminUser> adminUserList = adminUserService.list(lqw);
         List<OptionVo<Long,String>> list = new ArrayList<>();
         adminUserList.forEach(item->{
             OptionVo<Long, String> optionVo = new OptionVo<>();

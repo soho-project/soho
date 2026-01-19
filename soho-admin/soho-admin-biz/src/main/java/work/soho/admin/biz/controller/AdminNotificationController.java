@@ -111,6 +111,7 @@ public class AdminNotificationController extends BaseController {
         LambdaQueryWrapper<AdminNotification> lqw = new LambdaQueryWrapper<AdminNotification>();
         lqw.eq(AdminNotification::getAdminUserId, userDetails.getId());
         lqw.eq(AdminNotification::getIsRead, 0);
+        lqw.orderByDesc(AdminNotification::getId);
         List<AdminNotification> list = adminNotificationService.list(lqw);
         PageSerializable pageSerializable = new PageSerializable<>();
         if(!list.isEmpty()) {
