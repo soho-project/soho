@@ -29,6 +29,28 @@ public interface ConnectManager {
     ChannelHandlerContext getConnect(String connectId);
 
     /**
+     * 获取连接信息
+     *
+     * @param connectId
+     * @return
+     */
+    ConnectInfo getConnectInfo(String connectId);
+
+    /**
+     * 记录连接收到消息数
+     *
+     * @param connectId
+     */
+    void recordReceivedMessage(String connectId);
+
+    /**
+     * 记录连接发送消息数
+     *
+     * @param connectId
+     */
+    void recordSentMessage(String connectId);
+
+    /**
      * 获取所有的链接ID
      *
      * @return
