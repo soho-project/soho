@@ -94,6 +94,7 @@ mvn clean install
 
 -   [React (Ant Design 5)](https://adminv2.demo.soho.work/login/)
     -   账号: `admin` / `123456`
+    -  [源码下载地址](https://gitee.com/work-soho/soho-admin-h5-v2)
 -   [Vue (Ant Design Vue)](https://admin-vue.demo.soho.work/login/)
     -   账号: `admin` / `123456`
 -   [开放平台](https://open.demo.soho.work/)
