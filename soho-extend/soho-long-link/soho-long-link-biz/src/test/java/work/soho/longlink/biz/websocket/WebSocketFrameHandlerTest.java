@@ -94,6 +94,11 @@ public class WebSocketFrameHandlerTest extends TestCase {
         }
 
         @Override
+        public work.soho.longlink.biz.connect.ConnectInfo getConnectInfo(String connectId) {
+            return null;
+        }
+
+        @Override
         public Set<String> getAllConnectId() {
             return Collections.emptySet();
         }
@@ -114,6 +119,14 @@ public class WebSocketFrameHandlerTest extends TestCase {
         @Override
         public Set<String> getAllUid() {
             return Collections.emptySet();
+        }
+
+        @Override
+        public void recordReceivedMessage(String connectId) {
+        }
+
+        @Override
+        public void recordSentMessage(String connectId) {
         }
     }
 }

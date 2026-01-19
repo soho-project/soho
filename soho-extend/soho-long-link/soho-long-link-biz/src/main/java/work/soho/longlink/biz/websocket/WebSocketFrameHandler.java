@@ -60,7 +60,9 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
                 //ignore
             } else {
                 String userId = ctx.channel().attr(AuthHandshakeHandler.ATTR_USER_ID).get();
-                messageChanel.onMessage(request, getConnectId(ctx), userId);
+                String currentConnectId = getConnectId(ctx);
+                connectManager.recordReceivedMessage(currentConnectId);
+                messageChanel.onMessage(request, currentConnectId, userId);
             }
         } else {
             String message = "unsupported frame type: " + frame.getClass().getName();

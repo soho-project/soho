@@ -54,6 +54,11 @@ public class SenderImplTest extends TestCase {
         }
 
         @Override
+        public work.soho.longlink.biz.connect.ConnectInfo getConnectInfo(String connectId) {
+            return null;
+        }
+
+        @Override
         public Set<String> getAllConnectId() {
             return Collections.emptySet();
         }
@@ -76,6 +81,14 @@ public class SenderImplTest extends TestCase {
         @Override
         public Set<String> getAllUid() {
             return uidMap.keySet();
+        }
+
+        @Override
+        public void recordReceivedMessage(String connectId) {
+        }
+
+        @Override
+        public void recordSentMessage(String connectId) {
         }
     }
 }

@@ -35,6 +35,7 @@ public class SenderImpl implements Sender, QueryLongLink {
         ChannelHandlerContext context = connectManager.getConnect(connectId);
         if(context != null) {
             context.writeAndFlush(new TextWebSocketFrame(msg));
+            connectManager.recordSentMessage(connectId);
         }
     }
 
