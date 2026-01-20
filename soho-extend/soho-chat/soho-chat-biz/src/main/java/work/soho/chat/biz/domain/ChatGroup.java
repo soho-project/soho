@@ -68,6 +68,7 @@ public class ChatGroup implements Serializable {
      */
     @ApiModelProperty(value = "加群认证类型")
     @TableField(value = "auth_join_type")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer authJoinType;
 
     /**

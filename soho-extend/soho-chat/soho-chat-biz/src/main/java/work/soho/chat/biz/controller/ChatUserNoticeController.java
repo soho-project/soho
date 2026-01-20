@@ -22,7 +22,7 @@ import java.util.List;
 @Api(tags = "聊天通知")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/chatUserNotice" )
+@RequestMapping("/chat/admin/chatUserNotice" )
 public class ChatUserNoticeController {
 
     private final ChatUserNoticeService chatUserNoticeService;

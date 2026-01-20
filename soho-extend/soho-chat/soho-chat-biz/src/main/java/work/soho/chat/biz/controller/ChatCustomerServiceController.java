@@ -23,7 +23,7 @@ import java.util.List;
 @Api(tags = "聊天客服")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/chatCustomerService" )
+@RequestMapping("/chat/admin/chatCustomerService" )
 public class ChatCustomerServiceController {
 
     private final ChatCustomerServiceService chatCustomerServiceService;

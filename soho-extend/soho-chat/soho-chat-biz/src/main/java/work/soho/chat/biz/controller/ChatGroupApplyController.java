@@ -23,7 +23,7 @@ import java.util.List;
 @Api(tags = "群组申请管理")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/chatGroupApply" )
+@RequestMapping("/chat/admin/chatGroupApply" )
 public class ChatGroupApplyController {
 
     private final ChatGroupApplyService chatGroupApplyService;
