@@ -15,9 +15,9 @@
     <modules>
         <module>soho-long-link-biz</module>
         <module>soho-long-link-api</module>
-        <module>soho-long-link-coud-biz</module>
-        <module>soho-long-link-coud-bridge</module>
-        <module>soho-long-link-coud-api</module>
+        <module>soho-long-link-cloud-biz</module>
+        <module>soho-long-link-cloud-bridge</module>
+        <module>soho-long-link-cloud-api</module>
     </modules>
 
     <dependencies>
