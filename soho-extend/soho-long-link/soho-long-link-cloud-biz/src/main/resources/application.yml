@@ -12,6 +12,7 @@
             - /longLink/**
           routeOrder: 1
           moduleName: upload
+          longlinkPort: ${longlink.port:8080}
       config:
         server-addr: ${spring.cloud.nacos.discovery.server-addr}
   config:
