@@ -21,7 +21,7 @@ import java.util.List;
 @Api(tags = "聊天好友")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/chatUserFriend" )
+@RequestMapping("/chat/admin/chatUserFriend" )
 public class ChatUserFriendController {
 
     private final ChatUserFriendService chatUserFriendService;

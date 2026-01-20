@@ -23,7 +23,7 @@ import java.util.List;
 @Api(tags = "好友申请管理")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/chatUserFriendApply" )
+@RequestMapping("/chat/admin/chatUserFriendApply" )
 public class ChatUserFriendApplyController {
 
     private final ChatUserFriendApplyService chatUserFriendApplyService;

@@ -29,7 +29,7 @@ import java.util.List;
 @Api(tags = "聊天会话")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/chatSession" )
+@RequestMapping("/chat/admin/chatSession" )
 public class ChatSessionController {
 
     private final ChatSessionService chatSessionService;

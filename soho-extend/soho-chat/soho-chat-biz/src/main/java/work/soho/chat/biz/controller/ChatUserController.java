@@ -27,7 +27,7 @@ import java.util.Map;
 @Api(tags = "聊天用户")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/chatUser" )
+@RequestMapping("/chat/admin/chatUser" )
 public class ChatUserController {
 
     private final ChatUserService chatUserService;

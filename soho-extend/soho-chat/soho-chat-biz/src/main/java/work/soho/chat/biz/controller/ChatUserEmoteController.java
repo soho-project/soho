@@ -23,7 +23,7 @@ import java.util.List;
 @Api(tags = "聊天用户表情")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/admin/chatUserEmote" )
+@RequestMapping("/chat/admin/chatUserEmote" )
 public class ChatUserEmoteController {
 
     private final ChatUserEmoteService chatUserEmoteService;
