@@ -87,6 +87,9 @@ public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, Admin
      * @return
      */
     public Boolean initItems(AdminConfigInitRequest adminConfigInitRequest) {
+        if (adminConfigInitRequest == null) {
+            return Boolean.FALSE;
+        }
         if(adminConfigInitRequest.getGroupList() != null) {
             adminConfigInitRequest.getGroupList().stream().forEach(group -> {
                 LambdaQueryWrapper<AdminConfigGroup> adminConfigGroupLambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -101,6 +104,9 @@ public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, Admin
         }
 
         ArrayList<AdminConfigInitRequest.Item> items = adminConfigInitRequest.getItems();
+        if (items == null || items.isEmpty()) {
+            return Boolean.TRUE;
+        }
         ArrayList<AdminConfig> saveDataList = (ArrayList<AdminConfig>) items.stream().filter(item -> {
             LambdaQueryWrapper<AdminConfig> adminConfigLambdaQueryWrapper = new LambdaQueryWrapper<>();
             adminConfigLambdaQueryWrapper.eq(AdminConfig::getKey, item.getKey());
@@ -116,7 +122,6 @@ public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, Admin
         return saveBatch(saveDataList);
     }
 }
-
 
 
 

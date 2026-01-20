@@ -3,6 +3,7 @@ package work.soho.admin.cloud.bridge.feign;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import work.soho.admin.api.request.AdminConfigInitRequest;
 
@@ -24,5 +25,5 @@ public interface AdminConfigApiServiceFeign {
      * @return
      */
     @PostMapping("/cloud/admin/adminConfig/initItems")
-    Boolean initItems(AdminConfigInitRequest adminConfigInitRequest);
+    Boolean initItems(@RequestBody AdminConfigInitRequest adminConfigInitRequest);
 }
