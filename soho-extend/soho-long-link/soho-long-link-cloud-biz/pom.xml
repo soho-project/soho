@@ -9,7 +9,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>soho-long-link-coud-biz</artifactId>
+    <artifactId>soho-long-link-cloud-biz</artifactId>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -88,7 +88,7 @@
         </dependency>
         <dependency>
             <groupId>work.soho</groupId>
-            <artifactId>soho-long-link-coud-api</artifactId>
+            <artifactId>soho-long-link-cloud-api</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
