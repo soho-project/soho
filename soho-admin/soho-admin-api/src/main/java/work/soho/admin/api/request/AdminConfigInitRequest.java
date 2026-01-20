@@ -2,16 +2,19 @@ package work.soho.admin.api.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AdminConfigInitRequest {
     private ArrayList<Group> groupList;
     private ArrayList<Item> items;
@@ -22,6 +25,8 @@ public class AdminConfigInitRequest {
      */
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Group {
         /**
          * group key
@@ -41,6 +46,8 @@ public class AdminConfigInitRequest {
      */
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Item {
         /**
          * 配置文件分组名

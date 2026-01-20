@@ -30,7 +30,7 @@ public class CloudAdminConfigController {
      * @return
      */
     @PostMapping("initItems")
-    public Boolean initItems(AdminConfigInitRequest adminConfigInitRequest) {
+    public Boolean initItems(@RequestBody AdminConfigInitRequest adminConfigInitRequest) {
         return adminConfigApiService.initItems(adminConfigInitRequest);
     }
 }
