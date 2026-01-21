@@ -18,6 +18,20 @@
     </properties>
     <dependencies>
         <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-long-link-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-security</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
@@ -50,6 +64,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId> <!-- 需要AOP支持 -->
+        </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-common-security</artifactId>
         </dependency>
     </dependencies>
 
