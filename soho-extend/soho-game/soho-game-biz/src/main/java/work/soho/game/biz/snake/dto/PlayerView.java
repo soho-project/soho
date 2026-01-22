@@ -13,4 +13,5 @@ public class PlayerView {
     private boolean alive;
     private int score;
     private int length;
+    private int reviveCards;
 }

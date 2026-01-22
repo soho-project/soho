@@ -1,41 +1,21 @@
 package work.soho.game.biz.snake;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import work.soho.common.core.util.JacksonUtils;
-import work.soho.game.biz.snake.dto.PlayerView;
-import work.soho.game.biz.snake.dto.RoomSnapshot;
-import work.soho.game.biz.snake.dto.RoundState;
-import work.soho.game.biz.snake.dto.SnakeView;
-import work.soho.game.biz.snake.dto.RoundResult;
-import work.soho.game.biz.snake.model.Direction;
-import work.soho.game.biz.snake.model.FoodItem;
-import work.soho.game.biz.snake.model.FoodType;
-import work.soho.game.biz.snake.model.GameRoom;
-import work.soho.game.biz.snake.model.GameRoomMode;
-import work.soho.game.biz.snake.model.GameRound;
-import work.soho.game.biz.snake.model.PlayerState;
-import work.soho.game.biz.snake.model.Point;
-import work.soho.game.biz.snake.model.SnakeState;
+import work.soho.game.biz.domain.GameSnakePlayerProfile;
+import work.soho.game.biz.service.GameSnakePlayerProfileService;
+import work.soho.game.biz.snake.dto.*;
+import work.soho.game.biz.snake.model.*;
 import work.soho.longlink.api.message.LongLinkMessage;
 import work.soho.longlink.api.sender.Sender;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
 @Service
 @RequiredArgsConstructor
@@ -72,7 +52,14 @@ public class SnakeGameService {
     @Value("${soho.game.snake.battleMaxPlayers:20}")
     private int battleMaxPlayers;
 
+    @Value("${soho.game.snake.magnetDurationMillis:60000}")
+    private long magnetDurationMillis;
+
+    @Value("${soho.game.snake.reviveCardCost:500}")
+    private int reviveCardCost;
+
     private final Map<String, GameRoom> rooms = new ConcurrentHashMap<>();
+    private final GameSnakePlayerProfileService snakePlayerProfileService;
     private final Map<String, String> playerRoomIndex = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread thread = new Thread(r, "snake-game-ticker");
@@ -182,6 +169,7 @@ public class SnakeGameService {
             player.setUid(uid);
             player.setConnectId(connectId);
             player.setName(safeString(payload.getOrDefault("name", playerId)));
+            player.setReviveCards(loadReviveCards(playerId));
             room.setLastActiveAt(System.currentTimeMillis());
             playerRoomIndex.put(playerId, roomId);
         }
@@ -302,12 +290,14 @@ public class SnakeGameService {
             return;
         }
         boolean startedNewRound = false;
+        boolean createdPlayer = false;
         synchronized (room.getLock()) {
             if (!room.getPlayers().containsKey(playerId)) {
                 PlayerState player = new PlayerState();
                 player.setPlayerId(playerId);
                 player.setName(playerId);
                 room.getPlayers().put(playerId, player);
+                createdPlayer = true;
             }
             GameRound round = room.getRound();
             if (round == null || round.getStatus() != GameRound.Status.RUNNING) {
@@ -329,16 +319,31 @@ public class SnakeGameService {
                 return;
             }
             if (!startedNewRound) {
-                SnakeState snake = createSafeSnake(round);
+                if (room.getMode() == GameRoomMode.ENDLESS && !createdPlayer && player != null && !player.isAlive()) {
+                    if (parseUserId(player.getPlayerId()) == null) {
+                        return;
+                    }
+                    if (player.getReviveCards() <= 0) {
+                        return;
+                    }
+                    player.setReviveCards(player.getReviveCards() - 1);
+                    persistReviveCards(player.getPlayerId(), player.getReviveCards());
+                }
+                int targetLength = player == null ? INITIAL_LENGTH : targetLengthForScore(player);
+                SnakeState snake = createSafeSnake(round, targetLength);
                 if (snake == null) {
                     return;
                 }
                 round.getSnakes().put(playerId, snake);
                 if (player != null) {
+                    if (createdPlayer) {
+                        player.setReviveCards(loadReviveCards(playerId));
+                        player.setScore(0);
+                    }
                     player.setAlive(true);
-                    player.setScore(0);
                     player.setBoosting(false);
-                    player.setLength(INITIAL_LENGTH);
+                    player.setLength(snake.getBody().size());
+                    player.setMagnetActiveUntil(0L);
                 }
             }
         }
@@ -422,6 +427,7 @@ public class SnakeGameService {
             player.setScore(0);
             player.setBoosting(false);
             player.setLength(INITIAL_LENGTH);
+            player.setMagnetActiveUntil(0L);
         }
         spawnFoods(round, INITIAL_FOODS + players.size());
     }
@@ -492,6 +498,11 @@ public class SnakeGameService {
     }
 
     private SnakeState createSafeSnake(GameRound round) {
+        return createSafeSnake(round, INITIAL_LENGTH);
+    }
+
+    private SnakeState createSafeSnake(GameRound round, int targetLength) {
+        int length = Math.max(INITIAL_LENGTH, targetLength);
         Set<Point> occupied = new HashSet<>();
         for (FoodItem food : round.getFoods()) {
             occupied.add(new Point(food.getX(), food.getY()));
@@ -505,7 +516,7 @@ public class SnakeGameService {
             int y = ThreadLocalRandom.current().nextInt(2, round.getHeight() - 2);
             boolean ok = true;
             Deque<Point> body = new ArrayDeque<>();
-            for (int j = 0; j < INITIAL_LENGTH; j++) {
+            for (int j = 0; j < length; j++) {
                 int px = x - direction.getDx() * j;
                 int py = y - direction.getDy() * j;
                 Point point = new Point(px, py);
@@ -598,7 +609,6 @@ public class SnakeGameService {
 
     private void stepMove(GameRoom room, GameRound round, Set<String> movingPlayers) {
         Map<String, Point> nextHeads = new HashMap<>();
-        Map<String, Boolean> willEat = new HashMap<>();
         Map<Point, String> occupiedOwner = new HashMap<>();
         Set<Point> sharedCells = new HashSet<>();
 
@@ -639,7 +649,6 @@ public class SnakeGameService {
             Point next = new Point(head.getX() + snake.getDirection().getDx(),
                     head.getY() + snake.getDirection().getDy());
             nextHeads.put(playerId, next);
-            willEat.put(playerId, findFoodAt(round, next) != null);
         }
 
         Set<String> deadPlayers = new HashSet<>();
@@ -685,7 +694,7 @@ public class SnakeGameService {
                 player.setAlive(false);
                 if (room.getMode() == GameRoomMode.ENDLESS) {
                     sendPlayerResult(room, player);
-                    removeFromRoom(room, playerId);
+                    handlePlayerDeath(round, playerId);
                 } else {
                     handlePlayerDeath(round, playerId);
                 }
@@ -696,17 +705,20 @@ public class SnakeGameService {
                 continue;
             }
             snake.getBody().addFirst(next);
-            if (Boolean.TRUE.equals(willEat.get(playerId))) {
-                int maxFoods = maxFoodCount(round);
-                boolean overMaxBeforeEat = round.getFoods().size() > maxFoods;
-                FoodItem food = findFoodAt(round, next);
-                if (food != null) {
-                    round.getFoods().remove(food);
-                    player.setScore(player.getScore() + food.getScore());
-                    if (!overMaxBeforeEat) {
-                        spawnFoods(round, 1);
-                    }
-                }
+            int maxFoods = maxFoodCount(round);
+            boolean overMaxBeforeEat = round.getFoods().size() > maxFoods;
+            long now = System.currentTimeMillis();
+            int consumed = 0;
+            FoodItem food = consumeFoodAt(round, next);
+            if (food != null) {
+                applyFoodEffect(player, food, now);
+                consumed++;
+            }
+            if (hasActiveMagnet(player, now)) {
+                consumed += absorbAdjacentFoods(round, player, next, now);
+            }
+            if (consumed > 0 && !overMaxBeforeEat) {
+                spawnFoods(round, consumed);
             }
             trimSnakeToScore(player, snake);
         }
@@ -820,6 +832,7 @@ public class SnakeGameService {
             view.setAlive(player.isAlive());
             view.setScore(player.getScore());
             view.setLength(player.getLength());
+            view.setReviveCards(player.getReviveCards());
             players.add(view);
         }
         snapshot.setPlayers(players);
@@ -843,6 +856,7 @@ public class SnakeGameService {
             PlayerState player = room.getPlayers().get(entry.getKey());
             view.setAlive(player != null && player.isAlive());
             view.setBoosting(player != null && player.isBoosting());
+            view.setMagnetUntil(player == null ? null : player.getMagnetActiveUntil());
             view.setBody(new ArrayList<>(entry.getValue().getBody()));
             snakes.add(view);
         }
@@ -920,6 +934,125 @@ public class SnakeGameService {
         } else if (player.getConnectId() != null && !player.getConnectId().isBlank()) {
             sender.sendToConnectId(player.getConnectId(), json);
         }
+    }
+
+    public boolean revivePlayer(String roomId, String playerId) {
+        GameRoom room = rooms.get(roomId);
+        if (room == null) {
+            return false;
+        }
+        if (parseUserId(playerId) == null) {
+            return false;
+        }
+        boolean revived = false;
+        synchronized (room.getLock()) {
+            if (room.getMode() != GameRoomMode.ENDLESS) {
+                return false;
+            }
+            if (room.getRound() == null || room.getRound().getStatus() != GameRound.Status.RUNNING) {
+                ensureEndlessRound(room);
+            }
+            GameRound round = room.getRound();
+            if (round == null || round.getStatus() != GameRound.Status.RUNNING) {
+                return false;
+            }
+            PlayerState player = room.getPlayers().get(playerId);
+            if (player == null || player.isAlive()) {
+                return false;
+            }
+            if (player.getReviveCards() <= 0) {
+                return false;
+            }
+            int targetLength = targetLengthForScore(player);
+            SnakeState snake = createSafeSnake(round, targetLength);
+            if (snake == null) {
+                return false;
+            }
+            round.getSnakes().put(playerId, snake);
+            player.setReviveCards(player.getReviveCards() - 1);
+            player.setAlive(true);
+            player.setBoosting(false);
+            player.setLength(snake.getBody().size());
+            player.setMagnetActiveUntil(0L);
+            persistReviveCards(player.getPlayerId(), player.getReviveCards());
+            revived = true;
+        }
+        if (revived) {
+            broadcastRoomSnapshot(room);
+            sendRoundState(room);
+        }
+        return revived;
+    }
+
+    public Integer exchangeReviveCards(String roomId, String playerId, int count) {
+        if (count <= 0) {
+            return null;
+        }
+        if (reviveCardCost <= 0) {
+            return null;
+        }
+        GameRoom room = rooms.get(roomId);
+        if (room == null) {
+            return null;
+        }
+        if (parseUserId(playerId) == null) {
+            return null;
+        }
+        Integer cards = null;
+        synchronized (room.getLock()) {
+            if (room.getMode() != GameRoomMode.ENDLESS) {
+                return null;
+            }
+            PlayerState player = room.getPlayers().get(playerId);
+            if (player == null) {
+                return null;
+            }
+            long cost = (long) reviveCardCost * count;
+            if (player.getScore() < cost) {
+                return null;
+            }
+            player.setScore((int) (player.getScore() - cost));
+            player.setReviveCards(player.getReviveCards() + count);
+            persistReviveCards(player.getPlayerId(), player.getReviveCards());
+            GameRound round = room.getRound();
+            if (round != null) {
+                SnakeState snake = round.getSnakes().get(playerId);
+                if (snake != null) {
+                    trimSnakeToScore(player, snake);
+                }
+            }
+            cards = player.getReviveCards();
+        }
+        if (cards != null) {
+            broadcastRoomSnapshot(room);
+            sendRoundState(room);
+        }
+        return cards;
+    }
+
+    public Integer grantReviveCards(String roomId, String playerId, int count) {
+        if (count <= 0) {
+            return null;
+        }
+        GameRoom room = rooms.get(roomId);
+        if (room == null) {
+            return null;
+        }
+        Integer cards = null;
+        synchronized (room.getLock()) {
+            PlayerState player = room.getPlayers().get(playerId);
+            if (player == null) {
+                return null;
+            }
+            player.setReviveCards(player.getReviveCards() + count);
+            persistReviveCards(player.getPlayerId(), player.getReviveCards());
+            cards = player.getReviveCards();
+        }
+        if (cards != null) {
+            broadcastRoomSnapshot(room);
+            sendRoundState(room);
+        }
+        return cards;
     }
 
     public List<work.soho.game.biz.snake.dto.AdminRoomSummary> listRoomSummaries() {
@@ -1137,22 +1270,65 @@ public class SnakeGameService {
     }
 
     private void trimSnakeToScore(PlayerState player, SnakeState snake) {
-        int targetLength = INITIAL_LENGTH;
-        if (pointsPerSegment > 0) {
-            targetLength += player.getScore() / pointsPerSegment;
-        } else {
-            targetLength += player.getScore() / DEFAULT_POINTS_PER_SEGMENT;
-        }
+        int targetLength = targetLengthForScore(player);
         while (snake.getBody().size() > targetLength) {
             snake.getBody().pollLast();
         }
         player.setLength(snake.getBody().size());
     }
 
+    private int targetLengthForScore(PlayerState player) {
+        int targetLength = INITIAL_LENGTH;
+        if (player == null) {
+            return targetLength;
+        }
+        if (pointsPerSegment > 0) {
+            targetLength += player.getScore() / pointsPerSegment;
+        } else {
+            targetLength += player.getScore() / DEFAULT_POINTS_PER_SEGMENT;
+        }
+        return Math.max(INITIAL_LENGTH, targetLength);
+    }
+
     private FoodItem createFood(Point point) {
         FoodType[] types = FoodType.values();
         FoodType type = types[ThreadLocalRandom.current().nextInt(types.length)];
         return new FoodItem(point.getX(), point.getY(), type, type.getScore());
+    }
+
+    private FoodItem consumeFoodAt(GameRound round, Point point) {
+        FoodItem food = findFoodAt(round, point);
+        if (food != null) {
+            round.getFoods().remove(food);
+        }
+        return food;
+    }
+
+    private void applyFoodEffect(PlayerState player, FoodItem food, long now) {
+        if (player == null || food == null) {
+            return;
+        }
+        player.setScore(player.getScore() + food.getScore());
+        if (food.getType() == FoodType.MAGNET) {
+            player.setMagnetActiveUntil(now + magnetDurationMillis);
+        }
+    }
+
+    private boolean hasActiveMagnet(PlayerState player, long now) {
+        return player != null && player.getMagnetActiveUntil() > now;
+    }
+
+    private int absorbAdjacentFoods(GameRound round, PlayerState player, Point head, long now) {
+        int absorbed = 0;
+        for (Direction direction : Direction.values()) {
+            Point point = new Point(head.getX() + direction.getDx(), head.getY() + direction.getDy());
+            FoodItem food = consumeFoodAt(round, point);
+            if (food != null) {
+                applyFoodEffect(player, food, now);
+                absorbed++;
+            }
+        }
+        return absorbed;
     }
 
     private FoodItem findFoodAt(GameRound round, Point point) {
@@ -1162,6 +1338,53 @@ public class SnakeGameService {
             }
         }
         return null;
+    }
+
+    private int loadReviveCards(String playerId) {
+        Long userId = parseUserId(playerId);
+        if (userId == null) {
+            return 0;
+        }
+        GameSnakePlayerProfile profile = snakePlayerProfileService.getOne(
+                new LambdaQueryWrapper<GameSnakePlayerProfile>().eq(GameSnakePlayerProfile::getUserId, userId));
+        if (profile == null) {
+            profile = new GameSnakePlayerProfile();
+            profile.setUserId(userId);
+            profile.setReviveCards(0);
+            snakePlayerProfileService.save(profile);
+            return 0;
+        }
+        Integer cards = profile.getReviveCards();
+        return cards == null ? 0 : cards;
+    }
+
+    private void persistReviveCards(String playerId, int reviveCards) {
+        Long userId = parseUserId(playerId);
+        if (userId == null) {
+            return;
+        }
+        GameSnakePlayerProfile profile = snakePlayerProfileService.getOne(
+                new LambdaQueryWrapper<GameSnakePlayerProfile>().eq(GameSnakePlayerProfile::getUserId, userId));
+        if (profile == null) {
+            profile = new GameSnakePlayerProfile();
+            profile.setUserId(userId);
+            profile.setReviveCards(reviveCards);
+            snakePlayerProfileService.save(profile);
+            return;
+        }
+        profile.setReviveCards(reviveCards);
+        snakePlayerProfileService.updateById(profile);
+    }
+
+    private Long parseUserId(String playerId) {
+        if (playerId == null || playerId.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.valueOf(playerId);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private GameRoomMode parseMode(Object value) {

@@ -85,7 +85,7 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
     "roundNo": 1,
     "status": "WAITING|RUNNING|FINISHED",
     "players": [
-      { "playerId": "uid1", "name": "Alice", "ready": true, "alive": true, "score": 200, "length": 5 }
+      { "playerId": "uid1", "name": "Alice", "ready": true, "alive": true, "score": 200, "length": 5, "reviveCards": 1 }
     ]
   }
 }
@@ -106,7 +106,7 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
     "status": "RUNNING",
     "foods": [ { "x": 3, "y": 8, "type": "APPLE", "score": 50 } ],
     "snakes": [
-      { "playerId": "uid1", "alive": true, "boosting": true, "body": [ { "x": 5, "y": 6 } ] }
+      { "playerId": "uid1", "alive": true, "boosting": true, "magnetUntil": 0, "body": [ { "x": 5, "y": 6 } ] }
     ]
   }
 }
@@ -141,16 +141,20 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
 ```
 
 ## 规则说明
-- 食物类型: APPLE/BANANA/PIZZA/GRAPE，各自有积分值
+- 食物类型: APPLE/BANANA/PIZZA/GRAPE/MAGNET，其中 MAGNET 积分为 0
+- 吃到 MAGNET 后，在持续时间内可以吸收上下左右相邻格子的食物
 - 积分决定蛇长度: 每 100 积分增加 1 节 (可配置)
 - `start` 创建新一局并重置蛇与食物
 - `restart` 允许新加入或已死亡玩家重新生成蛇
 - 蛇死亡会把身体坐标转成食物
 - 可通过 `soho.game.snake.boostMultiplier` 配置加速倍数 (默认 2)
 - 可通过 `soho.game.snake.foodMaxRatio` 配置食物占比上限 (默认 0.25)
+- 可通过 `soho.game.snake.magnetDurationMillis` 配置磁铁持续时间 (默认 60000)
+- 可通过 `soho.game.snake.reviveCardCost` 配置复活卡兑换积分成本 (默认 500)
 - 撞墙/撞其它蛇/同时撞头判定死亡
 - 对战模式下存活数 <= 1 时结束
-- 无尽模式下死亡会向个人下发结算消息 (round/result)
+- 无尽模式下死亡会向个人下发结算消息 (round/result)，可使用复活卡复活
+- 无尽模式复活会保留积分与蛇长度
 
 ## 后台管理 API
 - `GET /game/admin/snake/rooms` 房间列表
@@ -159,6 +163,11 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
 - `POST /game/admin/snake/rooms/{roomId}/kick/{playerId}` 踢出玩家
 - `GET /game/admin/snake/config` 获取配置
 - `PUT /game/admin/snake/config` 更新配置
+- `POST /game/admin/snake/reviveCards/grant` 发放复活卡
 
 ## 自动进入房间 API
 - `GET /game/guest/snake/autoJoin?mode=ENDLESS|BATTLE&name=xxx&playerId=xxx`
+
+## 复活与复活卡 API
+- `POST /game/guest/snake/revive` (需登录)
+- `POST /game/guest/snake/reviveCard/exchange` (需登录)

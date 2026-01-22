@@ -3,20 +3,24 @@ package work.soho.game.biz.snake.controller;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.common.core.result.R;
 import work.soho.common.security.utils.SecurityUtils;
 import work.soho.game.biz.snake.SnakeGameService;
+import work.soho.game.biz.snake.dto.ExchangeReviveCardRequest;
+import work.soho.game.biz.snake.dto.ReviveRequest;
 import work.soho.game.biz.snake.dto.RoomSnapshot;
 import work.soho.game.biz.snake.model.GameRoomMode;
 
 @Api(tags = "贪吃蛇游客接口")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/game/guest/snake")
-public class SnakeGuestController {
+@RequestMapping("/game/user/snake")
+public class SnakeUserController {
     private final SnakeGameService snakeGameService;
 
     /**
@@ -47,5 +51,49 @@ public class SnakeGuestController {
             return R.error("room is full");
         }
         return R.success(snapshot);
+    }
+
+    /**
+     * 无尽模式复活。
+     */
+    @PostMapping("/revive")
+    public R<Boolean> revive(@RequestBody ReviveRequest request) {
+        if (request == null || request.getRoomId() == null || request.getRoomId().isBlank()) {
+            return R.error("roomId required");
+        }
+        String userId = requireLoginUserId();
+        if (userId == null) {
+            return R.error("login required");
+        }
+        boolean revived = snakeGameService.revivePlayer(request.getRoomId(), userId);
+        return revived ? R.success(true) : R.error("revive failed");
+    }
+
+    /**
+     * 用积分兑换复活卡。
+     */
+    @PostMapping("/reviveCard/exchange")
+    public R<Integer> exchangeReviveCard(@RequestBody ExchangeReviveCardRequest request) {
+        if (request == null || request.getRoomId() == null || request.getRoomId().isBlank()) {
+            return R.error("roomId required");
+        }
+        String userId = requireLoginUserId();
+        if (userId == null) {
+            return R.error("login required");
+        }
+        int count = request.getCount() == null ? 1 : request.getCount();
+        Integer cards = snakeGameService.exchangeReviveCards(request.getRoomId(), userId, count);
+        if (cards == null) {
+            return R.error("exchange failed");
+        }
+        return R.success(cards);
+    }
+
+    private String requireLoginUserId() {
+        Long uid = SecurityUtils.getLoginUserId();
+        if (uid != null) {
+            return uid.toString();
+        }
+        return null;
     }
 }
