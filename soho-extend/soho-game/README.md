@@ -155,6 +155,7 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
 - 对战模式下存活数 <= 1 时结束
 - 无尽模式下死亡会向个人下发结算消息 (round/result)，可使用复活卡复活
 - 无尽模式复活会保留积分与蛇长度
+- 无尽模式未选择复活时，再次加入会重置积分并正常开局
 
 ## 后台管理 API
 - `GET /game/admin/snake/rooms` 房间列表
