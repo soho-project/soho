@@ -54,7 +54,8 @@ public class LongLinkListen {
 //
 //            sender.sendToUid(messageEvent.getUid(), JacksonUtils.toJson(chatMessage));
         } catch (Exception e) {
-            e.printStackTrace();
+            // TODO 待统一消息格式
+//            e.printStackTrace();
         }
 
     }
