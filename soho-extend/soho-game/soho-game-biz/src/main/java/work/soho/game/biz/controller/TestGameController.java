@@ -19,6 +19,7 @@ public class TestGameController {
 
     @GetMapping("/list" )
     public List<GameInfo> list() {
-        return gameInfoService.testList();
+//        return gameInfoService.testList();
+        return null;
     }
 }

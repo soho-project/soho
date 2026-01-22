@@ -1,56 +1,69 @@
 package work.soho.game.biz.domain;
 
-import com.alibaba.excel.annotation.ExcelProperty;
-import com.alibaba.excel.annotation.format.DateTimeFormat;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import io.swagger.annotations.ApiModelProperty;
+import com.alibaba.excel.annotation.ExcelProperty;
+import com.alibaba.excel.annotation.format.DateTimeFormat;
+import java.io.Serializable;
 import lombok.Data;
-
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@TableName(value ="game_info")
 @Data
-public class GameInfo {
+@TableName(value ="game_info")
+@ApiModel("")
+public class GameInfo implements Serializable {
     /**
-     * ID
-     */
-    @ExcelProperty("ID")
-    @ApiModelProperty(value = "ID")
+    * id
+    */
+    @ExcelProperty("id")
+    @ApiModelProperty(value = "id")
     @TableId(value = "id", type = IdType.AUTO)
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer id;
 
     /**
-     * 标题
-     */
-    @ExcelProperty("标题")
-    @ApiModelProperty(value = "标题")
-    @TableField(value = "title")
-    private String title;
-
-    /**
-     * 名称
-     */
-    @ExcelProperty("名称")
-    @ApiModelProperty(value = "名称")
+    * name
+    */
+    @ExcelProperty("name")
+    @ApiModelProperty(value = "name")
     @TableField(value = "name")
     private String name;
 
     /**
-     * 更新时间
-     */
-    @ExcelProperty("更新时间")
-    @ApiModelProperty(value = "更新时间")
+    * title
+    */
+    @ExcelProperty("title")
+    @ApiModelProperty(value = "title")
+    @TableField(value = "title")
+    private String title;
+
+    /**
+    * logo
+    */
+    @ExcelProperty("logo")
+    @ApiModelProperty(value = "logo")
+    @TableField(value = "logo")
+    private String logo;
+
+    /**
+    * updated_time
+    */
+    @ExcelProperty("updated_time")
+    @ApiModelProperty(value = "updated_time")
     @TableField(value = "updated_time", fill = FieldFill.INSERT_UPDATE)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedTime;
 
     /**
-     * 创建时间
-     */
-    @ExcelProperty("创建时间")
-    @ApiModelProperty(value = "创建时间")
+    * created_time
+    */
+    @ExcelProperty("created_time")
+    @ApiModelProperty(value = "created_time")
     @TableField(value = "created_time", fill = FieldFill.INSERT)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
