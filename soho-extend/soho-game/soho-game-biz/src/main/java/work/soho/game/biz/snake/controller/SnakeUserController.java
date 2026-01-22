@@ -2,6 +2,7 @@ package work.soho.game.biz.snake.controller;
 
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.common.core.result.R;
+import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.common.security.utils.SecurityUtils;
 import work.soho.game.biz.snake.SnakeGameService;
 import work.soho.game.biz.snake.dto.ExchangeReviveCardRequest;
@@ -29,8 +31,8 @@ public class SnakeUserController {
     @GetMapping("/autoJoin")
     public R<RoomSnapshot> autoJoin(@RequestParam(defaultValue = "ENDLESS") String mode,
                                     @RequestParam(required = false) String name,
-                                    @RequestParam(required = false) String playerId) {
-        String resolvedPlayerId = playerId;
+                                    @RequestParam(required = false) String playerId, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        String resolvedPlayerId = sohoUserDetails.getId().toString();
         if (resolvedPlayerId == null || resolvedPlayerId.isBlank()) {
             Long uid = SecurityUtils.getLoginUserId();
             if (uid != null) {
@@ -57,11 +59,11 @@ public class SnakeUserController {
      * 无尽模式复活。
      */
     @PostMapping("/revive")
-    public R<Boolean> revive(@RequestBody ReviveRequest request) {
+    public R<Boolean> revive(@RequestBody ReviveRequest request, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         if (request == null || request.getRoomId() == null || request.getRoomId().isBlank()) {
             return R.error("roomId required");
         }
-        String userId = requireLoginUserId();
+        String userId = sohoUserDetails.getId().toString();
         if (userId == null) {
             return R.error("login required");
         }
@@ -73,11 +75,11 @@ public class SnakeUserController {
      * 用积分兑换复活卡。
      */
     @PostMapping("/reviveCard/exchange")
-    public R<Integer> exchangeReviveCard(@RequestBody ExchangeReviveCardRequest request) {
+    public R<Integer> exchangeReviveCard(@RequestBody ExchangeReviveCardRequest request, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         if (request == null || request.getRoomId() == null || request.getRoomId().isBlank()) {
             return R.error("roomId required");
         }
-        String userId = requireLoginUserId();
+        String userId = sohoUserDetails.getId().toString();
         if (userId == null) {
             return R.error("login required");
         }

@@ -40,7 +40,7 @@ public class SnakeGameService {
     @Value("${soho.game.snake.battleDurationMillis:600000}")
     private long battleDurationMillis;
 
-    @Value("${soho.game.snake.endlessRooms:10}")
+    @Value("${soho.game.snake.endlessRooms:1}")
     private int endlessRooms;
 
     @Value("${soho.game.snake.battleRooms:10}")
@@ -319,15 +319,9 @@ public class SnakeGameService {
                 return;
             }
             if (!startedNewRound) {
-                if (room.getMode() == GameRoomMode.ENDLESS && !createdPlayer && player != null && !player.isAlive()) {
-                    if (parseUserId(player.getPlayerId()) == null) {
-                        return;
-                    }
-                    if (player.getReviveCards() <= 0) {
-                        return;
-                    }
-                    player.setReviveCards(player.getReviveCards() - 1);
-                    persistReviveCards(player.getPlayerId(), player.getReviveCards());
+                boolean isDead = player != null && !player.isAlive();
+                if (room.getMode() == GameRoomMode.ENDLESS && isDead) {
+                    player.setScore(0);
                 }
                 int targetLength = player == null ? INITIAL_LENGTH : targetLengthForScore(player);
                 SnakeState snake = createSafeSnake(round, targetLength);

@@ -169,6 +169,7 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
 - 撞墙/撞其它蛇/同时撞头判定死亡
 - 对战模式下存活数 <= 1 时结束 (status=FINISHED)
 - 无尽模式下死亡会向个人下发结算消息 (round/result)，可使用复活卡复活
+- 无尽模式未选择复活时，再次加入会重置积分并正常开局
 
 ## 7. 加速配置
 - 属性: `soho.game.snake.boostMultiplier`
