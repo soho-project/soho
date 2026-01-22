@@ -102,8 +102,8 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
     "roundNo": 1,
     "status": "WAITING|RUNNING|FINISHED",
     "players": [
-      { "playerId": "uid1", "name": "Alice", "ready": true, "alive": true, "score": 200, "length": 5 },
-      { "playerId": "uid2", "name": "Bob", "ready": false, "alive": true, "score": 100, "length": 4 }
+      { "playerId": "uid1", "name": "Alice", "ready": true, "alive": true, "score": 200, "length": 5, "reviveCards": 1 },
+      { "playerId": "uid2", "name": "Bob", "ready": false, "alive": true, "score": 100, "length": 4, "reviveCards": 0 }
     ]
   }
 }
@@ -124,8 +124,8 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
     "status": "RUNNING",
     "foods": [ { "x": 3, "y": 8, "type": "APPLE", "score": 50 }, { "x": 12, "y": 9, "type": "PIZZA", "score": 150 } ],
     "snakes": [
-      { "playerId": "uid1", "alive": true, "boosting": true, "body": [ { "x": 5, "y": 6 }, { "x": 4, "y": 6 } ] },
-      { "playerId": "uid2", "alive": false, "boosting": false, "body": [] }
+      { "playerId": "uid1", "alive": true, "boosting": true, "magnetUntil": 1730000060000, "body": [ { "x": 5, "y": 6 }, { "x": 4, "y": 6 } ] },
+      { "playerId": "uid2", "alive": false, "boosting": false, "magnetUntil": 0, "body": [] }
     ]
   }
 }
@@ -160,14 +160,15 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
 ```
 
 ## 5. 规则说明
-- 食物类型: APPLE/BANANA/PIZZA/GRAPE，各自有积分值
+- 食物类型: APPLE/BANANA/PIZZA/GRAPE/MAGNET，其中 MAGNET 积分为 0
+- 吃到 MAGNET 后，在持续时间内可以吸收上下左右相邻格子的食物
 - 积分决定蛇长度: 每 100 积分增加 1 节 (可配置)
 - `start` 创建新一局并重置蛇
 - `restart` 允许新加入或已死亡玩家重新生成蛇
 - 蛇死亡会把身体坐标转成食物
 - 撞墙/撞其它蛇/同时撞头判定死亡
 - 对战模式下存活数 <= 1 时结束 (status=FINISHED)
-- 无尽模式下死亡会向个人下发结算消息 (round/result)
+- 无尽模式下死亡会向个人下发结算消息 (round/result)，可使用复活卡复活
 
 ## 7. 加速配置
 - 属性: `soho.game.snake.boostMultiplier`
@@ -178,6 +179,10 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
 - 说明: 每节所需积分，默认 100
 - 属性: `soho.game.snake.battleDurationMillis`
 - 说明: 对战模式单局时长，默认 600000 (10分钟)
+- 属性: `soho.game.snake.magnetDurationMillis`
+- 说明: 磁铁持续时间，默认 60000 (1分钟)
+- 属性: `soho.game.snake.reviveCardCost`
+- 说明: 复活卡兑换积分成本，默认 500
 - 属性: `soho.game.snake.endlessMaxPlayers`
 - 说明: 无尽模式房间人数上限，默认 100
 - 属性: `soho.game.snake.battleMaxPlayers`
@@ -231,7 +236,7 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
       "roundNo": 1,
       "status": "RUNNING",
       "players": [
-        { "playerId": "uid1", "name": "Alice", "ready": true, "alive": true, "score": 200, "length": 5 }
+        { "playerId": "uid1", "name": "Alice", "ready": true, "alive": true, "score": 200, "length": 5, "reviveCards": 1 }
       ]
     },
     "round": {
@@ -243,7 +248,7 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
       "status": "RUNNING",
       "foods": [ { "x": 3, "y": 8, "type": "APPLE", "score": 50 } ],
       "snakes": [
-        { "playerId": "uid1", "alive": true, "boosting": true, "body": [ { "x": 5, "y": 6 } ] }
+        { "playerId": "uid1", "alive": true, "boosting": true, "magnetUntil": 0, "body": [ { "x": 5, "y": 6 } ] }
       ]
     }
   },
@@ -293,6 +298,17 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
 }
 ```
 
+### 8.7 发放复活卡
+- `POST /game/admin/snake/reviveCards/grant`
+- Body:
+```json
+{ "roomId": "endless-1", "playerId": "uid1", "count": 1 }
+```
+- 返回:
+```json
+{ "code": 0, "data": 2, "msg": "success" }
+```
+
 ## 9. 自动进入指定模式房间
 - `GET /game/guest/snake/autoJoin`
 - Query:
@@ -309,9 +325,34 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
     "roundNo": 1,
     "status": "RUNNING",
     "players": [
-      { "playerId": "uid1", "name": "Alice", "ready": false, "alive": true, "score": 0, "length": 3 }
+      { "playerId": "uid1", "name": "Alice", "ready": false, "alive": true, "score": 0, "length": 3, "reviveCards": 0 }
     ]
   },
   "msg": "success"
 }
 ```
+
+## 10. 复活与复活卡
+### 10.1 复活
+- `POST /game/guest/snake/revive`
+- Body:
+```json
+{ "roomId": "endless-1", "playerId": "uid1" }
+```
+- 返回:
+```json
+{ "code": 0, "data": true, "msg": "success" }
+```
+- 说明: 复活后保留积分与蛇长度，需登录用户
+
+### 10.2 兑换复活卡
+- `POST /game/guest/snake/reviveCard/exchange`
+- Body:
+```json
+{ "roomId": "endless-1", "playerId": "uid1", "count": 1 }
+```
+- 返回:
+```json
+{ "code": 0, "data": 1, "msg": "success" }
+```
+- 说明: 需登录用户

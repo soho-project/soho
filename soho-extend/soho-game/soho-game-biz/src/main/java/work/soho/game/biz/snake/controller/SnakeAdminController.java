@@ -9,6 +9,7 @@ import work.soho.game.biz.snake.SnakeGameService;
 import work.soho.game.biz.snake.dto.AdminRoomDetail;
 import work.soho.game.biz.snake.dto.AdminRoomSummary;
 import work.soho.game.biz.snake.dto.AdminSnakeConfig;
+import work.soho.game.biz.snake.dto.GrantReviveCardRequest;
 
 import java.util.List;
 
@@ -72,5 +73,23 @@ public class SnakeAdminController {
     public R<AdminSnakeConfig> updateConfig(@RequestBody AdminSnakeConfig config) {
         snakeGameService.updateConfig(config.getBoostMultiplier(), config.getFoodMaxRatio());
         return R.success(snakeGameService.getConfig());
+    }
+
+    /**
+     * 发放复活卡
+     */
+    @PostMapping("/reviveCards/grant")
+    @Node(value = "snakeGame::reviveCardGrant", name = "发放贪吃蛇复活卡")
+    public R<Integer> grantReviveCards(@RequestBody GrantReviveCardRequest request) {
+        if (request == null || request.getRoomId() == null || request.getRoomId().isBlank()
+                || request.getPlayerId() == null || request.getPlayerId().isBlank()) {
+            return R.error("roomId/playerId required");
+        }
+        int count = request.getCount() == null ? 1 : request.getCount();
+        Integer cards = snakeGameService.grantReviveCards(request.getRoomId(), request.getPlayerId(), count);
+        if (cards == null) {
+            return R.error("grant failed");
+        }
+        return R.success(cards);
     }
 }

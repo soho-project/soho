@@ -7,7 +7,8 @@ public enum FoodType {
     APPLE(50),
     BANANA(80),
     PIZZA(150),
-    GRAPE(30);
+    GRAPE(30),
+    MAGNET(0);
 
     private final int score;
 

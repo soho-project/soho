@@ -16,4 +16,6 @@ public class PlayerState {
     private int score;
     private boolean boosting;
     private int length;
+    private long magnetActiveUntil;
+    private int reviveCards;
 }

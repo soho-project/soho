@@ -35,6 +35,24 @@ CREATE TABLE `game_info` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `game_snake_player_profile`
+--
+
+DROP TABLE IF EXISTS `game_snake_player_profile`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `game_snake_player_profile` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `revive_cards` int(11) NOT NULL DEFAULT 0 COMMENT '复活卡数量',
+  `updated_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `created_time` datetime DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_game_snake_player_profile_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Dumping data for table `game_info`
 --
 
