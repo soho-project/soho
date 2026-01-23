@@ -10,8 +10,10 @@ import work.soho.longlink.api.message.LongLinkMessage;
 @Component
 @RequiredArgsConstructor
 public class SnakeGameMessageHandler implements LongLinkMessageHandler {
+    /** 消息命名空间 */
     private static final String NAMESPACE = "soho-game";
 
+    /** 游戏服务 */
     private final SnakeGameService snakeGameService;
 
     /**

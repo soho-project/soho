@@ -9,7 +9,9 @@ public enum Direction {
     LEFT(-1, 0),
     RIGHT(1, 0);
 
+    /** X 方向位移 */
     private final int dx;
+    /** Y 方向位移 */
     private final int dy;
 
     Direction(int dx, int dy) {

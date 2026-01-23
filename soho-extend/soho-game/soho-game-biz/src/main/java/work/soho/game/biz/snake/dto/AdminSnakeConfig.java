@@ -7,6 +7,8 @@ import lombok.Data;
  */
 @Data
 public class AdminSnakeConfig {
+    /** 加速倍数 */
     private Integer boostMultiplier;
+    /** 食物占比上限 */
     private Double foodMaxRatio;
 }

@@ -7,6 +7,8 @@ import lombok.Data;
  */
 @Data
 public class ReviveRequest {
+    /** 房间 ID */
     private String roomId;
+    /** 玩家 ID */
     private String playerId;
 }

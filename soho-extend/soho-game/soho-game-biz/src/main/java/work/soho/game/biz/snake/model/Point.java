@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Point {
+    /** X 坐标 */
     private int x;
+    /** Y 坐标 */
     private int y;
 }

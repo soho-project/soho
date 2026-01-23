@@ -7,6 +7,8 @@ import lombok.Data;
  */
 @Data
 public class AdminRoomDetail {
+    /** 房间快照 */
     private RoomSnapshot snapshot;
+    /** 当前局状态 */
     private RoundState round;
 }

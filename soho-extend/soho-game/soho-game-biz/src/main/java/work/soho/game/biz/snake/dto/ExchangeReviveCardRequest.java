@@ -7,7 +7,10 @@ import lombok.Data;
  */
 @Data
 public class ExchangeReviveCardRequest {
+    /** 房间 ID */
     private String roomId;
+    /** 玩家 ID */
     private String playerId;
+    /** 兑换数量 */
     private Integer count;
 }

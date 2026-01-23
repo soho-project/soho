@@ -10,6 +10,7 @@ public enum FoodType {
     GRAPE(30),
     MAGNET(0);
 
+    /** 食物积分 */
     private final int score;
 
     FoodType(int score) {

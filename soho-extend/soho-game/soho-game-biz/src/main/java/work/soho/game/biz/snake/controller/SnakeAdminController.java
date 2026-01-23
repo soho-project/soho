@@ -18,6 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/game/admin/snake")
 public class SnakeAdminController {
+    /** 贪吃蛇服务 */
     private final SnakeGameService snakeGameService;
 
     /**

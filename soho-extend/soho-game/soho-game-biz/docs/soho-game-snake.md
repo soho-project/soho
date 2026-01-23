@@ -335,7 +335,7 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
 
 ## 10. 复活与复活卡
 ### 10.1 复活
-- `POST /game/guest/snake/revive`
+- `POST /game/user/snake/revive`
 - Body:
 ```json
 { "roomId": "endless-1", "playerId": "uid1" }
@@ -347,7 +347,7 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
 - 说明: 复活后保留积分与蛇长度，需登录用户
 
 ### 10.2 兑换复活卡
-- `POST /game/guest/snake/reviveCard/exchange`
+- `POST /game/user/snake/reviveCard/exchange`
 - Body:
 ```json
 { "roomId": "endless-1", "playerId": "uid1", "count": 1 }

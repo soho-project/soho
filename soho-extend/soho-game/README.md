@@ -167,8 +167,8 @@ direction 可选: `UP|DOWN|LEFT|RIGHT`
 - `POST /game/admin/snake/reviveCards/grant` 发放复活卡
 
 ## 自动进入房间 API
-- `GET /game/guest/snake/autoJoin?mode=ENDLESS|BATTLE&name=xxx&playerId=xxx`
+- `GET /game/user/snake/autoJoin?mode=ENDLESS|BATTLE&name=xxx&playerId=xxx`
 
 ## 复活与复活卡 API
-- `POST /game/guest/snake/revive` (需登录)
-- `POST /game/guest/snake/reviveCard/exchange` (需登录)
+- `POST /game/user/snake/revive` (需登录)
+- `POST /game/user/snake/reviveCard/exchange` (需登录)
