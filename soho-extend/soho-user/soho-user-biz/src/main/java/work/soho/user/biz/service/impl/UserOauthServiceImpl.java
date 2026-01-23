@@ -1,5 +1,7 @@
 package work.soho.user.biz.service.impl;
 
+import cn.hutool.core.lang.Assert;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -8,6 +10,7 @@ import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.security.service.SohoUserDetailsService;
 import work.soho.common.security.service.impl.TokenServiceImpl;
 import work.soho.common.security.userdetails.SohoUserDetails;
+import work.soho.user.api.dto.ThridOauthDto;
 import work.soho.user.biz.config.UserSysConfig;
 import work.soho.user.biz.domain.UserInfo;
 import work.soho.user.biz.domain.UserOauth;
@@ -66,6 +69,50 @@ public class UserOauthServiceImpl extends ServiceImpl<UserOauthMapper, UserOauth
         } else {
             userInfo = userInfoMapper.selectById(userOauth.getUid());
         }
+        return commonLogin(userInfo);
+    }
+
+    @Override
+    public Map<String, String> loginWithThridOauth(ThridOauthDto thridOauthDto) {
+        // 查询用户是否已经存在
+        LambdaQueryWrapper<UserOauth> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(UserOauth::getOpenId, thridOauthDto.getOpenId());
+        queryWrapper.eq(UserOauth::getType, thridOauthDto.getPlatformId());
+        UserOauth userOauth = getOne(queryWrapper, false);
+        UserInfo userInfo = null;
+        if(userOauth == null) {
+            // 根据用户手机号合并用户
+            if(thridOauthDto.getPhone()!=null) {
+                userInfo = userInfoMapper.selectOne(new LambdaQueryWrapper<UserInfo>().eq(UserInfo::getPhone, thridOauthDto.getPhone()));
+            }
+
+            if(userInfo == null) {
+                // 创建用户
+                userInfo = new UserInfo();
+                userInfo.setCode(IDGeneratorUtils.snowflake().toString());
+                userInfo.setUsername(thridOauthDto.getUsername());
+                userInfo.setNickname(thridOauthDto.getNickname());
+                userInfo.setNickname("三方"+System.currentTimeMillis());
+                userInfo.setAvatar(userSysConfig.getDefaultAvatar());
+                userInfo.setStatus(UserInfoEnums.Status.NORMAL.getId());
+                userInfo.setSex(thridOauthDto.getGender());
+                userInfo.setPhone(thridOauthDto.getPhone());
+                userInfoMapper.insert(userInfo);
+            }
+
+            Assert.notNull(userInfo, "创建用户失败");
+
+            userOauth = new UserOauth();
+            userOauth.setOpenId(thridOauthDto.getOpenId());
+            userOauth.setUnionId(thridOauthDto.getUnionId());
+            userOauth.setType(thridOauthDto.getPlatformId());
+            userOauth.setUid(userInfo.getId());
+            save(userOauth);
+        } else {
+            userInfo = userInfoMapper.selectById(userOauth.getUid());
+        }
+
+        Assert.notNull(userInfo, "用户不存在，登录失败");
         return commonLogin(userInfo);
     }
 
