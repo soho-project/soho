@@ -29,6 +29,11 @@ public class UserSysConfig implements InitializingBean {
      */
     private final String ROOT_USER_ID = "performance_root_user_id";
 
+    /**
+     * 是否开放三方登录
+     */
+    private final String SYS_USER_OPEN_THIRD_LOGIN = "user_open_third_login";
+
     private final AdminConfigApiService adminConfigApiService;
 
     @Override
@@ -45,6 +50,8 @@ public class UserSysConfig implements InitializingBean {
         items.add(AdminConfigInitRequest.Item.builder().groupKey(SYS_USER_CONFIG_GROUP).key(ROOT_USER_ID).value("1").type(AdminConfigInitRequest.ItemType.TEXT.getType()).explain("推荐层级用户根用户ID").build());
 
         items.add(AdminConfigInitRequest.Item.builder().groupKey(SYS_USER_CONFIG_GROUP).key(SYS_USER_LOGIN_DEV).value("false").type(AdminConfigInitRequest.ItemType.BOOL.getType()).explain("是否开启登录开发模式").build());
+
+        items.add(AdminConfigInitRequest.Item.builder().groupKey(SYS_USER_CONFIG_GROUP).key(SYS_USER_OPEN_THIRD_LOGIN).value("true").type(AdminConfigInitRequest.ItemType.BOOL.getType()).explain("是否开放三方登录").build());
 
         adminConfigApiService.initItems(AdminConfigInitRequest.builder().items(items).groupList(groups).build());
     }
@@ -83,5 +90,14 @@ public class UserSysConfig implements InitializingBean {
      */
     public Boolean getLoginDev() {
         return adminConfigApiService.getByKey(SYS_USER_LOGIN_DEV, Boolean.class, false);
+    }
+
+    /**
+     * 是否开放三方登录
+     *
+     * @return
+     */
+    public Boolean getOpenThirdLogin() {
+        return adminConfigApiService.getByKey(SYS_USER_OPEN_THIRD_LOGIN, Boolean.class, false);
     }
 }

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.user.biz.mapper.UserOauthMapper">
+    <resultMap id="BaseResultMap" type="work.soho.user.biz.domain.UserOauth">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="openId" column="open_id" jdbcType="VARCHAR"/>
+        <id property="unionId" column="union_id" jdbcType="VARCHAR"/>
+        <id property="uid" column="uid" jdbcType="INTEGER"/>
+        <id property="type" column="type" jdbcType="TINYINT"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,open_id,union_id,uid,type,updated_time,created_time
+    </sql>
+</mapper>
