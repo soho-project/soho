@@ -1,16 +1,17 @@
-package work.soho.user.biz.domain;
+package work.soho.user.biz.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-public class UserCertificationEnums {
-
+public class UserInfoEnums {
+    /**
+     * 状态
+     */
     @RequiredArgsConstructor
     @Getter
     public enum Status {
-        TO_BE_CERTIFIED(0,"待认证"),
-        PENDING(10, "待系统确认"),
-        CERTIFIED(20,"已认证");
+        NORMAL(1,"正常"),
+        DISABLED(0,"禁用");
         private final int id;
         private final String name;
     }
