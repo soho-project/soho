@@ -10,18 +10,28 @@ import java.util.List;
  */
 @Data
 public class RoundResult {
+    /** 房间 ID */
     private String roomId;
+    /** 局号 */
     private int roundNo;
+    /** 房间模式 */
     private GameRoomMode mode;
+    /** 排名列表 */
     private List<ResultItem> rankings;
 
     @Data
     public static class ResultItem {
+        /** 玩家 ID */
         private String playerId;
+        /** 昵称 */
         private String name;
+        /** 积分 */
         private int score;
+        /** 长度 */
         private int length;
+        /** 是否存活 */
         private boolean alive;
+        /** 名次 */
         private int rank;
     }
 }

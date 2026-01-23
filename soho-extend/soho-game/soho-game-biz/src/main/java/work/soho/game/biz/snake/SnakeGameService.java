@@ -20,47 +20,68 @@ import java.util.concurrent.*;
 @Service
 @RequiredArgsConstructor
 public class SnakeGameService {
+    /** 默认地图宽度 */
     private static final int DEFAULT_WIDTH = 80;
+    /** 默认地图高度 */
     private static final int DEFAULT_HEIGHT = 60;
+    /** 初始蛇长度 */
     private static final int INITIAL_LENGTH = 3;
+    /** 初始食物数量 */
     private static final int INITIAL_FOODS = 3;
+    /** 默认每节所需积分 */
     private static final int DEFAULT_POINTS_PER_SEGMENT = 100;
+    /** 逻辑帧间隔 */
     private static final long TICK_MILLIS = 200L;
+    /** 消息发送器 */
     private final Sender sender;
 
     @Value("${soho.game.snake.boostMultiplier:2}")
+    /** 加速倍数 */
     private int boostMultiplier;
 
     @Value("${soho.game.snake.foodMaxRatio:0.25}")
+    /** 食物占比上限 */
     private double foodMaxRatio;
 
     @Value("${soho.game.snake.pointsPerSegment:100}")
+    /** 每节所需积分 */
     private int pointsPerSegment;
 
     @Value("${soho.game.snake.battleDurationMillis:600000}")
+    /** 对战模式单局时长 */
     private long battleDurationMillis;
 
     @Value("${soho.game.snake.endlessRooms:1}")
+    /** 无尽模式房间数量 */
     private int endlessRooms;
 
     @Value("${soho.game.snake.battleRooms:10}")
+    /** 对战模式房间数量 */
     private int battleRooms;
 
     @Value("${soho.game.snake.endlessMaxPlayers:100}")
+    /** 无尽模式最大人数 */
     private int endlessMaxPlayers;
 
     @Value("${soho.game.snake.battleMaxPlayers:20}")
+    /** 对战模式最大人数 */
     private int battleMaxPlayers;
 
     @Value("${soho.game.snake.magnetDurationMillis:60000}")
+    /** 磁铁持续时间 */
     private long magnetDurationMillis;
 
     @Value("${soho.game.snake.reviveCardCost:500}")
+    /** 复活卡积分成本 */
     private int reviveCardCost;
 
+    /** 房间列表 */
     private final Map<String, GameRoom> rooms = new ConcurrentHashMap<>();
+    /** 复活卡持久化服务 */
     private final GameSnakePlayerProfileService snakePlayerProfileService;
+    /** 玩家-房间索引 */
     private final Map<String, String> playerRoomIndex = new ConcurrentHashMap<>();
+    /** 游戏心跳线程 */
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread thread = new Thread(r, "snake-game-ticker");
         thread.setDaemon(true);

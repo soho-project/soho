@@ -23,6 +23,7 @@ import work.soho.game.biz.snake.model.GameRoomMode;
 @RequiredArgsConstructor
 @RequestMapping("/game/user/snake")
 public class SnakeUserController {
+    /** 贪吃蛇服务 */
     private final SnakeGameService snakeGameService;
 
     /**

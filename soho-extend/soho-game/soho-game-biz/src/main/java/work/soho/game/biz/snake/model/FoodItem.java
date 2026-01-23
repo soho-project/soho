@@ -13,8 +13,12 @@ import lombok.EqualsAndHashCode;
 @AllArgsConstructor
 @EqualsAndHashCode(of = {"x", "y"})
 public class FoodItem {
+    /** X 坐标 */
     private int x;
+    /** Y 坐标 */
     private int y;
+    /** 食物类型 */
     private FoodType type;
+    /** 食物积分 */
     private int score;
 }

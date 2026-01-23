@@ -11,12 +11,20 @@ import java.util.List;
  */
 @Data
 public class RoundState {
+    /** 房间 ID */
     private String roomId;
+    /** 局号 */
     private int roundNo;
+    /** 当前 tick */
     private long tick;
+    /** 地图宽度 */
     private int width;
+    /** 地图高度 */
     private int height;
+    /** 局状态 */
     private GameRound.Status status;
+    /** 食物列表 */
     private List<FoodItem> foods;
+    /** 蛇列表 */
     private List<SnakeView> snakes;
 }
