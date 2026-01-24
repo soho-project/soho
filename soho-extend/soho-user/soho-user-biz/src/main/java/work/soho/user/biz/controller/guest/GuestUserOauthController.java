@@ -70,23 +70,32 @@ public class GuestUserOauthController {
 
     @RequestMapping("/render/{type}")
     public void renderAuth(HttpServletResponse response, @PathVariable("type") Integer type) throws IOException {
-        AuthRequest authRequest = getAuthRequest(type);
+        AuthRequest authRequest = getAuthRequest(type, null);
         response.sendRedirect(authRequest.authorize(AuthStateUtils.createState()));
+    }
+
+    @RequestMapping("/resolveOauth/{type}")
+    public R<String> resolveOauth(HttpServletResponse response, @PathVariable("type") Integer type, String callbackUrl) throws IOException {
+        AuthRequest authRequest = getAuthRequest(type, callbackUrl);
+        return R.success(authRequest.authorize(AuthStateUtils.createState()));
     }
 
     /**
      * 三方登录回调
      *
      * 参考三方文档： https://www.justauth.cn/
+     * 平台对应的Logo: https://cdn.jsdelivr.net/gh/justauth/justauth-oauth-logo@1.11/
      *
      * @param callback
      * @param type
      * @return
      */
     @RequestMapping("/callback/{type}")
-    public Object login(AuthCallback callback, @PathVariable("type") Integer type) {
-        AuthRequest authRequest = getAuthRequest(type);
+    public R<Object> login(AuthCallback callback, @PathVariable("type") Integer type, String callbackUrl) {
+        AuthRequest authRequest = getAuthRequest(type, callbackUrl);
         AuthResponse<AuthUser> authResponse = authRequest.login(callback);
+        System.out.println("authResponse");
+        System.out.println(authResponse);
         if (authResponse.ok()) {
             ThridOauthDto thridOauthDto = new ThridOauthDto();
             thridOauthDto.setOpenId(authResponse.getData().getUuid());
@@ -113,19 +122,19 @@ public class GuestUserOauthController {
 
             thridOauthDto.setPlatformId(type);
 
-            return userOauthService.loginWithThridOauth(thridOauthDto);
+            return R.success(userOauthService.loginWithThridOauth(thridOauthDto));
         }
-        return authRequest.login(callback);
+        return R.error("登录失败");
     }
 
-    private AuthRequest getAuthRequest(Integer type) {
+    private AuthRequest getAuthRequest(Integer type, String callbackUrl) {
         UserOauthType userOauthType = userOauthTypeService.getById( type);
         Assert.notNull(userOauthType, "未找到三方认证类型");
 
         UserOauthTypeEnums.Adapter adapter = UserOauthTypeEnums.Adapter.getById(userOauthType.getAdapter());
         Assert.notNull(adapter, "未找到三方认证适配器");
 
-        AuthConfig authConfig = buildAuthConfig(userOauthType, type);
+        AuthConfig authConfig = buildAuthConfig(userOauthType, type, callbackUrl);
         switch (adapter) {
             case GITHUB:
                 return new AuthGithubRequest(authConfig);
@@ -218,11 +227,11 @@ public class GuestUserOauthController {
         throw new RuntimeException("未定义的三方平台");
     }
 
-    private AuthConfig buildAuthConfig(UserOauthType userOauthType, Integer type) {
+    private AuthConfig buildAuthConfig(UserOauthType userOauthType, Integer type, String callbackUrl) {
         AuthConfig authConfig = AuthConfig.builder()
                 .clientId(userOauthType.getClientId())
                 .clientSecret(userOauthType.getClientSecret())
-                .redirectUri("https://api.dev.soho.work/user/guest/userOauth/callback/" + type)
+                .redirectUri(callbackUrl==null ? "https://api.dev.soho.work/user/guest/userOauth/callback/" + type : callbackUrl)
                 .build();
         return authConfig;
     }
