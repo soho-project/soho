@@ -1,41 +1,28 @@
 package work.soho.user.biz.controller;
 
-import java.time.LocalDateTime;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.PageSerializable;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import work.soho.common.core.util.PageUtils;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
+import work.soho.admin.api.request.BetweenCreatedTimeRequest;
+import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.excel.annotation.ExcelExport;
 import work.soho.common.security.annotation.Node;
-import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.user.biz.domain.UserOauthType;
 import work.soho.user.biz.service.UserOauthTypeService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.admin.api.vo.OptionVo;
-import work.soho.admin.api.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.admin.api.vo.TreeNodeVo;
-import work.soho.admin.api.service.AdminDictApiService;
+
+import java.util.Arrays;
+import java.util.List;
 /**
  * 三方认证类型Controller
  *
@@ -67,8 +54,6 @@ public class UserOauthTypeController {
         lqw.like(StringUtils.isNotBlank(userOauthType.getLogo()),UserOauthType::getLogo ,userOauthType.getLogo());
         lqw.like(StringUtils.isNotBlank(userOauthType.getClientId()),UserOauthType::getClientId ,userOauthType.getClientId());
         lqw.like(StringUtils.isNotBlank(userOauthType.getClientSecret()),UserOauthType::getClientSecret ,userOauthType.getClientSecret());
-        lqw.like(StringUtils.isNotBlank(userOauthType.getKid()),UserOauthType::getKid ,userOauthType.getKid());
-        lqw.like(StringUtils.isNotBlank(userOauthType.getTeamId()),UserOauthType::getTeamId ,userOauthType.getTeamId());
         lqw.eq(userOauthType.getStatus() != null, UserOauthType::getStatus ,userOauthType.getStatus());
         lqw.eq(userOauthType.getAdapter() != null, UserOauthType::getAdapter ,userOauthType.getAdapter());
         lqw.eq(userOauthType.getUpdatedTime() != null, UserOauthType::getUpdatedTime ,userOauthType.getUpdatedTime());
@@ -135,8 +120,6 @@ public class UserOauthTypeController {
         lqw.like(StringUtils.isNotBlank(userOauthType.getLogo()),UserOauthType::getLogo ,userOauthType.getLogo());
         lqw.like(StringUtils.isNotBlank(userOauthType.getClientId()),UserOauthType::getClientId ,userOauthType.getClientId());
         lqw.like(StringUtils.isNotBlank(userOauthType.getClientSecret()),UserOauthType::getClientSecret ,userOauthType.getClientSecret());
-        lqw.like(StringUtils.isNotBlank(userOauthType.getKid()),UserOauthType::getKid ,userOauthType.getKid());
-        lqw.like(StringUtils.isNotBlank(userOauthType.getTeamId()),UserOauthType::getTeamId ,userOauthType.getTeamId());
         lqw.eq(userOauthType.getStatus() != null, UserOauthType::getStatus ,userOauthType.getStatus());
         lqw.eq(userOauthType.getAdapter() != null, UserOauthType::getAdapter ,userOauthType.getAdapter());
         lqw.eq(userOauthType.getUpdatedTime() != null, UserOauthType::getUpdatedTime ,userOauthType.getUpdatedTime());

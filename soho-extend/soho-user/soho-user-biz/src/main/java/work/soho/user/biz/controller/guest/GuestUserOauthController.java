@@ -213,7 +213,7 @@ public class GuestUserOauthController {
         AuthConfig authConfig = AuthConfig.builder()
                 .clientId(userOauthType.getClientId())
                 .clientSecret(userOauthType.getClientSecret())
-                .redirectUri("/user/guest/userOauth/callback/" + type)
+                .redirectUri("http://soho.dev.soho.work/user/guest/userOauth/callback/" + type)
                 .build();
         return authConfig;
     }
