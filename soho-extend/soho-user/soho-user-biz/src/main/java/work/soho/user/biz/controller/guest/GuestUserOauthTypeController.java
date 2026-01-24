@@ -1,36 +1,28 @@
 package work.soho.user.biz.controller.guest;
 
-import java.time.LocalDateTime;
-import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
-import lombok.RequiredArgsConstructor;
+import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
-import work.soho.common.security.annotation.Node;;
-import work.soho.user.biz.domain.UserOauthType;
-import work.soho.user.biz.service.UserOauthTypeService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.admin.api.vo.OptionVo;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.admin.api.vo.TreeNodeVo;
-import work.soho.admin.api.service.AdminDictApiService;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
+import work.soho.common.security.annotation.Node;
 import work.soho.common.security.userdetails.SohoUserDetails;
-import org.springframework.util.Assert;
+import work.soho.user.biz.domain.UserOauthType;
+import work.soho.user.biz.enums.UserOauthTypeEnums;
+import work.soho.user.biz.service.UserOauthTypeService;
+
+import java.util.List;
+
+;
 
 /**
  * 三方认证类型Controller
@@ -66,6 +58,8 @@ public class GuestUserOauthTypeController {
         lqw.eq(userOauthType.getUpdatedTime() != null, UserOauthType::getUpdatedTime ,userOauthType.getUpdatedTime());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, UserOauthType::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, UserOauthType::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
+        lqw.eq(UserOauthType::getStatus, UserOauthTypeEnums.Status.ACTIVE.getId());
+
         List<UserOauthType> list = userOauthTypeService.list(lqw);
         return R.success(new PageSerializable<>(list));
     }
