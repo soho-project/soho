@@ -12,15 +12,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
 import work.soho.common.security.userdetails.SohoUserDetails;
+import work.soho.user.api.vo.UserOauthTypeVo;
 import work.soho.user.biz.domain.UserOauthType;
 import work.soho.user.biz.enums.UserOauthTypeEnums;
 import work.soho.user.biz.service.UserOauthTypeService;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 ;
 
@@ -43,7 +46,7 @@ public class GuestUserOauthTypeController {
     @GetMapping("/list")
     @Node(value = "guest::userOauthType::list", name = "获取 三方认证类型 列表")
     @ApiOperation(value = "guest 获取 三方认证类型 列表", notes = "guest 获取 三方认证类型 列表")
-    public R<PageSerializable<UserOauthType>> list(UserOauthType userOauthType, BetweenCreatedTimeRequest betweenCreatedTimeRequest, @AuthenticationPrincipal SohoUserDetails userDetails)
+    public R<PageSerializable<UserOauthTypeVo>> list(UserOauthType userOauthType, BetweenCreatedTimeRequest betweenCreatedTimeRequest, @AuthenticationPrincipal SohoUserDetails userDetails)
     {
         PageUtils.startPage();
         LambdaQueryWrapper<UserOauthType> lqw = new LambdaQueryWrapper<UserOauthType>();
@@ -59,9 +62,20 @@ public class GuestUserOauthTypeController {
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, UserOauthType::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, UserOauthType::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
         lqw.eq(UserOauthType::getStatus, UserOauthTypeEnums.Status.ACTIVE.getId());
-
         List<UserOauthType> list = userOauthTypeService.list(lqw);
-        return R.success(new PageSerializable<>(list));
+
+        // 从 PageHelper 的结果中取 total（不要再手动 count）
+        com.github.pagehelper.PageInfo<UserOauthType> pageInfo =
+                new com.github.pagehelper.PageInfo<>(list);
+
+        List<UserOauthTypeVo> listVo = list.stream()
+                .map(i -> BeanUtils.copy(i, UserOauthTypeVo.class))
+                .collect(Collectors.toList());
+
+        PageSerializable<UserOauthTypeVo> pageSerializable = new PageSerializable<>(listVo);
+        pageSerializable.setTotal(pageInfo.getTotal());
+
+        return R.success(pageSerializable);
     }
 
     /**
