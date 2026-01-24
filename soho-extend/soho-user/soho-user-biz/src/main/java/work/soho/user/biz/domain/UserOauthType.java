@@ -65,22 +65,6 @@ public class UserOauthType implements Serializable {
     private String clientSecret;
 
     /**
-    * Apple Key ID
-    */
-    @ExcelProperty("Apple Key ID")
-    @ApiModelProperty(value = "Apple Key ID")
-    @TableField(value = "kid")
-    private String kid;
-
-    /**
-    * Apple Team ID
-    */
-    @ExcelProperty("Apple Team ID")
-    @ApiModelProperty(value = "Apple Team ID")
-    @TableField(value = "team_id")
-    private String teamId;
-
-    /**
     * 状态
     */
     @ExcelProperty("状态")
