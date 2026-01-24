@@ -90,7 +90,8 @@ public class UserOauthServiceImpl extends ServiceImpl<UserOauthMapper, UserOauth
                 // 创建用户
                 userInfo = new UserInfo();
                 userInfo.setCode(IDGeneratorUtils.snowflake().toString());
-                userInfo.setUsername(thridOauthDto.getUsername());
+                // 各个平台的用户名可能一样， 所以用户名添加个前缀
+                userInfo.setUsername("o"+thridOauthDto.getPlatformId() + "_" + thridOauthDto.getUsername());
                 userInfo.setNickname(thridOauthDto.getNickname());
                 userInfo.setNickname("三方"+System.currentTimeMillis());
                 userInfo.setAvatar(userSysConfig.getDefaultAvatar());

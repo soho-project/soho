@@ -74,7 +74,16 @@ public class GuestUserOauthController {
         response.sendRedirect(authRequest.authorize(AuthStateUtils.createState()));
     }
 
-    @RequestMapping("/callback/{key}")
+    /**
+     * 三方登录回调
+     *
+     * 参考三方文档： https://www.justauth.cn/
+     *
+     * @param callback
+     * @param type
+     * @return
+     */
+    @RequestMapping("/callback/{type}")
     public Object login(AuthCallback callback, @PathVariable("type") Integer type) {
         AuthRequest authRequest = getAuthRequest(type);
         AuthResponse<AuthUser> authResponse = authRequest.login(callback);
@@ -213,7 +222,7 @@ public class GuestUserOauthController {
         AuthConfig authConfig = AuthConfig.builder()
                 .clientId(userOauthType.getClientId())
                 .clientSecret(userOauthType.getClientSecret())
-                .redirectUri("http://soho.dev.soho.work/user/guest/userOauth/callback/" + type)
+                .redirectUri("https://api.dev.soho.work/user/guest/userOauth/callback/" + type)
                 .build();
         return authConfig;
     }
