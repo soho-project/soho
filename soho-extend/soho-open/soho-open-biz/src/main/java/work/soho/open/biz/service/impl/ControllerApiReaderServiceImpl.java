@@ -112,8 +112,8 @@ public class ControllerApiReaderServiceImpl {
                 continue;
             }
 
-            // 检查方法上是否有 @OpenApiDoc（支持 OpenApi 元注解）
-            if (AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(), OpenApiDoc.class) == null) {
+            // 检查方法/类上是否有 @OpenApiDoc（支持 OpenApi 元注解）
+            if (!hasOpenApiDoc(handlerMethod, controllerClass)) {
                 continue;
             }
 
@@ -123,6 +123,17 @@ public class ControllerApiReaderServiceImpl {
             result.computeIfAbsent(controllerName, k -> new ArrayList<>()).add(apiDetail);
         }
         return result;
+    }
+
+    private boolean hasOpenApiDoc(HandlerMethod handlerMethod, Class<?> controllerClass) {
+        if (handlerMethod != null) {
+            OpenApiDoc methodAnno = AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(), OpenApiDoc.class);
+            if (methodAnno != null) {
+                return true;
+            }
+        }
+        return controllerClass != null
+                && AnnotatedElementUtils.findMergedAnnotation(controllerClass, OpenApiDoc.class) != null;
     }
 
     // ===========================
