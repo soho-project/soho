@@ -90,6 +90,14 @@ public class OpenApp implements Serializable {
     private String remark;
 
     /**
+    * redirect_uri_list
+    */
+    @ExcelProperty("redirect_uri_list")
+    @ApiModelProperty(value = "redirect_uri_list")
+    @TableField(value = "redirect_uri_list")
+    private String redirectUriList;
+
+    /**
     * created_time
     */
     @ExcelProperty("created_time")

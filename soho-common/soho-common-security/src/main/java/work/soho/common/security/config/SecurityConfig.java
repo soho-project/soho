@@ -91,7 +91,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
 //                .antMatchers("/admin/**").hasAuthority("admin") //后台接口请使用 /admin/ 前缀开头路劲
                 .antMatchers("/*/admin/**").hasAuthority("admin") //后台接口请使用 /admin/ 前缀开头路劲
                 .antMatchers("/chat/**").hasAuthority("chat") //聊天模块鉴权  TODO 带调整路由信息
-                .antMatchers("/*/open/**").hasAuthority("open") // 开放接口鉴权
+                .antMatchers("/*/open/user/**").hasAuthority("openUser") // 开放平台用户级别接口
+                .antMatchers("/*/open/app/**").hasAuthority("openApp") // 开放平台应用级别接口
+                .antMatchers("/*/open/**").hasAuthority("open") // 开放平台模块接口鉴权
                 .antMatchers("/*/user/**").hasAuthority("user") // 用户角色访问路径
                 .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // 除上面外的所有请求全部需要鉴权认证

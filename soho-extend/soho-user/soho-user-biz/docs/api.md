@@ -335,6 +335,176 @@ file=@/path/user_oauth.xlsx
 
 ---
 
+## 管理端：三方认证类型
+基础路径：`/user/admin/userOauthType`
+
+### GET /list
+三方认证类型列表（分页）
+
+请求示例：
+```http
+GET /user/admin/userOauthType/list?name=GitHub&status=1
+```
+
+返回示例：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "payload": {
+    "total": 1,
+    "list": [
+      {
+        "id": 1,
+        "name": "github",
+        "title": "GitHub",
+        "logo": "https://.../github.png",
+        "clientId": "xxx",
+        "clientSecret": "yyy",
+        "status": 1,
+        "adapter": 9,
+        "createdTime": "2024-01-01 10:00:00",
+        "updatedTime": "2024-01-01 10:00:00"
+      }
+    ]
+  }
+}
+```
+
+### GET /{id}
+三方认证类型详情
+
+请求示例：
+```http
+GET /user/admin/userOauthType/1
+```
+
+返回示例：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "payload": {
+    "id": 1,
+    "name": "github",
+    "title": "GitHub",
+    "status": 1,
+    "adapter": 9
+  }
+}
+```
+
+### POST /
+新增三方认证类型
+
+请求示例：
+```http
+POST /user/admin/userOauthType
+Content-Type: application/json
+
+{
+  "name": "github",
+  "title": "GitHub",
+  "logo": "https://.../github.png",
+  "clientId": "xxx",
+  "clientSecret": "yyy",
+  "status": 1,
+  "adapter": 9
+}
+```
+
+返回示例：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "payload": true
+}
+```
+
+### PUT /
+修改三方认证类型
+
+请求示例：
+```http
+PUT /user/admin/userOauthType
+Content-Type: application/json
+
+{
+  "id": 1,
+  "title": "GitHub (new)"
+}
+```
+
+返回示例：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "payload": true
+}
+```
+
+### DELETE /{ids}
+删除三方认证类型
+
+请求示例：
+```http
+DELETE /user/admin/userOauthType/1,2,3
+```
+
+返回示例：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "payload": true
+}
+```
+
+### GET /exportExcel
+导出 Excel
+
+请求示例：
+```http
+GET /user/admin/userOauthType/exportExcel?status=1
+```
+
+返回示例：
+```json
+[
+  {
+    "id": 1,
+    "name": "github",
+    "title": "GitHub",
+    "status": 1,
+    "adapter": 9
+  }
+]
+```
+
+### POST /importExcel
+导入 Excel
+
+请求示例：
+```http
+POST /user/admin/userOauthType/importExcel
+Content-Type: multipart/form-data
+
+file=@/path/user_oauth_type.xlsx
+```
+
+返回示例：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "payload": null
+}
+```
+
+---
+
 ## 游客态：会员鉴权
 基础路径：`/guest/user/auth`
 
@@ -487,6 +657,136 @@ Content-Type: application/json
     "token": "xxx",
     "iat": "1700000000000",
     "exp": "1731536000000"
+  }
+}
+```
+
+### GET /login
+三方认证登录（code 作为 query 参数）
+
+请求示例：
+```http
+GET /user/guest/userOauth/login?code=wx-code-xxx
+```
+
+返回示例：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "payload": {
+    "token": "xxx",
+    "iat": "1700000000000",
+    "exp": "1731536000000"
+  }
+}
+```
+
+### GET /render/{type}
+跳转到第三方授权页
+
+请求示例：
+```http
+GET /user/guest/userOauth/render/9
+```
+
+返回示例：
+```
+302 Redirect -> 第三方授权地址
+```
+
+### GET /resolveOauth/{type}
+返回第三方授权地址（可携带 `callbackUrl`）
+
+请求示例：
+```http
+GET /user/guest/userOauth/resolveOauth/9?callbackUrl=https://example.com/callback
+```
+
+返回示例：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "payload": "https://third-party/authorize?..."
+}
+```
+
+### GET /callback/{type}
+第三方回调
+
+请求示例：
+```http
+GET /user/guest/userOauth/callback/9?code=xxx&state=yyy
+```
+
+返回示例：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "payload": {
+    "token": "xxx",
+    "iat": "1700000000000",
+    "exp": "1731536000000"
+  }
+}
+```
+
+---
+
+## 游客态：三方认证类型
+基础路径：`/user/guest/userOauthType`
+
+### GET /list
+可用三方认证类型列表（仅 `ACTIVE`）
+
+请求示例：
+```http
+GET /user/guest/userOauthType/list
+```
+
+返回示例：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "payload": {
+    "total": 1,
+    "list": [
+      {
+        "id": 1,
+        "name": "github",
+        "title": "GitHub",
+        "logo": "https://.../github.png",
+        "status": 1,
+        "adapter": 9
+      }
+    ]
+  }
+}
+```
+
+### GET /{id}
+三方认证类型详情
+
+请求示例：
+```http
+GET /user/guest/userOauthType/1
+```
+
+返回示例：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "payload": {
+    "id": 1,
+    "name": "github",
+    "title": "GitHub",
+    "logo": "https://.../github.png",
+    "status": 1,
+    "adapter": 9
   }
 }
 ```

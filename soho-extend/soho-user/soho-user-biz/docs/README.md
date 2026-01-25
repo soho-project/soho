@@ -6,17 +6,20 @@
 - `controller`
   - `UserInfoController`：后台管理端用户信息 CRUD。
   - `UserOauthController`：后台管理端用户三方认证 CRUD + Excel 导入/导出。
+  - `UserOauthTypeController`：后台管理端三方认证类型 CRUD + Excel 导入/导出。
   - `guest/UserAuthController`：游客态登录/注册/短信/验证码。
   - `guest/GuestUserOauthController`：游客态三方认证登录。
+  - `guest/GuestUserOauthTypeController`：游客态可用三方认证类型列表与详情。
   - `user/UserUserInfoController`：用户态资料、头像、密码、手机号修改。
   - `user/UserUserOauthController`：用户态三方认证详情。
 - `service`
   - `UserInfoService`：用户信息基础服务。
   - `UserOauthService`：三方认证登录服务。
+  - `UserOauthTypeService`：三方认证类型配置服务。
   - `UserCertificationService`：实名认证相关服务（当前模块无控制器入口）。
   - `UserSmsService`：短信验证码发送与校验。
-- `domain`：`user_info` / `user_oauth` / `user_certification` 实体。
-- `enums`：用户状态、三方类型、认证状态。
+- `domain`：`user_info` / `user_oauth` / `user_oauth_type` / `user_certification` 实体。
+- `enums`：用户状态、三方类型、三方认证类型、认证状态。
 - `config`：用户模块配置项初始化与读取。
 
 ## 配置项（UserSysConfig）
@@ -26,6 +29,7 @@
 - `user_auto_realname`：是否自动实名认证（默认 `false`）
 - `performance_root_user_id`：推荐层级根用户 ID（默认 `1`）
 - `user_login_dev`：是否开启登录开发模式（默认 `false`）
+- `user_open_third_login`：是否开放三方登录（默认 `true`）
 
 ## 领域模型
 
@@ -57,10 +61,20 @@
 - `issuingLocation` / `cardAddress` / `periodOfValidity`
 - `createdTime` / `updatedTime`
 
+### UserOauthType（`user_oauth_type`）
+- `id`
+- `name` / `title` / `logo`
+- `clientId` / `clientSecret`
+- `status`（见 `UserOauthTypeEnums.Status`）
+- `adapter`（见 `UserOauthTypeEnums.Adapter`）
+- `createdTime` / `updatedTime`
+
 ## 枚举
 - `UserInfoEnums.Status`：`NORMAL(1)` / `DISABLED(0)`
 - `UserOauthEnums.Type`：`GITEE(1)` / `WECHAT_MINI_PROGRAM(2)` / `WECHAT_OFFICIAL_ACCOUNT(3)`
 - `UserCertificationEnums.Status`：`TO_BE_CERTIFIED(0)` / `PENDING(10)` / `CERTIFIED(20)`
+- `UserOauthTypeEnums.Status`：`DISABLED(0)` / `ACTIVE(1)`
+- `UserOauthTypeEnums.Adapter`：三方平台枚举（如 `GITHUB` / `GITEE` / `WECHAT_MINI_PROGRAM` / `WECHAT_MP` / `QQ` / `ALIPAY_PUBLIC_KEY` 等，详见枚举）
 
 ## API 概览
 返回结果统一为 `R<T>`。
@@ -91,6 +105,17 @@
 - `GET /exportExcel`：导出 Excel
 - `POST /importExcel`：导入 Excel（`file` 表单上传）
 
+### 管理端：三方认证类型
+基础路径：`/user/admin/userOauthType`
+
+- `GET /list`：列表（分页）
+- `GET /{id}`：详情
+- `POST /`：新增
+- `PUT /`：修改
+- `DELETE /{ids}`：批量删除
+- `GET /exportExcel`：导出 Excel
+- `POST /importExcel`：导入 Excel（`file` 表单上传）
+
 ### 游客态：会员鉴权
 基础路径：`/guest/user/auth`
 
@@ -114,7 +139,18 @@
 
 - `POST /login`：三方认证登录
   - 请求体：`UserOauthLoginRequest`（code）
-  - 当前实现：`loginWithCode` 内部使用随机 `openId/unionId` 和默认 `WECHAT_MINI_PROGRAM` 类型（存在 TODO）
+- `GET /login`：三方认证登录（code 作为 query 参数）
+- `GET /render/{type}`：跳转到第三方授权页
+- `GET /resolveOauth/{type}`：返回第三方授权地址（可指定 `callbackUrl`）
+- `GET /callback/{type}`：三方回调（`AuthCallback` 参数）
+  - 当前 `loginWithCode` 为占位实现，内部使用随机 `openId/unionId` 与默认 `WECHAT_MINI_PROGRAM` 类型
+  - 是否开放三方登录由配置 `user_open_third_login` 控制
+
+### 游客态：三方认证类型
+基础路径：`/user/guest/userOauthType`
+
+- `GET /list`：可用三方认证类型（仅 `ACTIVE`）
+- `GET /{id}`：详情
 
 ### 用户态：用户信息
 基础路径：`/user/user/userInfo`
@@ -148,10 +184,10 @@
 - 登录允许固定字符串 `dfa54f$#%@!$dfa55` 作为万能密码（请确认是否需要保留）。
 - `UserOauthServiceImpl.loginWithCode` 为临时实现，未对接真实三方平台。
 - 用户注册时验证码校验不可跳过（即便开启登录开发模式）。
+- 三方登录功能是否开放由配置 `user_open_third_login` 控制。
 
 ## 依赖与外部服务
 - `AdminConfigApiService` / `AdminDictApiService`：系统配置与字典。
 - `SmsApiService`：短信发送。
 - `TokenServiceImpl`：登录 token 生成。
 - `UploadUtils`：头像上传。
-
