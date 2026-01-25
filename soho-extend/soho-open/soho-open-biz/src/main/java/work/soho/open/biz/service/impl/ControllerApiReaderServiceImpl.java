@@ -136,6 +136,14 @@ public class ControllerApiReaderServiceImpl {
                 && AnnotatedElementUtils.findMergedAnnotation(controllerClass, OpenApiDoc.class) != null;
     }
 
+    private OpenApiDoc resolveOpenApiDoc(Method method, Class<?> controllerClass) {
+        OpenApiDoc methodAnno = AnnotatedElementUtils.findMergedAnnotation(method, OpenApiDoc.class);
+        if (methodAnno != null) {
+            return methodAnno;
+        }
+        return controllerClass == null ? null : AnnotatedElementUtils.findMergedAnnotation(controllerClass, OpenApiDoc.class);
+    }
+
     // ===========================
     // ✅ Spring5/6 兼容的 Paths 提取
     // ===========================
@@ -166,6 +174,8 @@ public class ControllerApiReaderServiceImpl {
         Method method = handlerMethod.getMethod();
         Class<?> controllerClass = handlerMethod.getBeanType();
 
+        OpenApiDoc openApiDoc = resolveOpenApiDoc(method, controllerClass);
+
         // ✅ Controller 的 @Api 信息（类级别）
         putControllerApiInfo(detail, controllerClass);
 
@@ -189,6 +199,11 @@ public class ControllerApiReaderServiceImpl {
         if (apiOperation != null) {
             detail.put("summary", safe(apiOperation.value()));
             detail.put("notes", safe(apiOperation.notes()));
+        }
+
+        if (openApiDoc != null) {
+            detail.put("authRole", safe(openApiDoc.authRole()));
+            detail.put("needAuth", openApiDoc.needAuth());
         }
 
         // 参数（按位置分组）
@@ -948,6 +963,15 @@ public class ControllerApiReaderServiceImpl {
 
                 md.append("- 方法: `").append(methods.isEmpty() ? "-" : String.join(", ", methods)).append("`\n");
                 md.append("- 路径: `").append(paths.isEmpty() ? "-" : String.join(", ", paths)).append("`\n");
+
+                String authRole = safe(api.get("authRole"));
+                if (!authRole.isEmpty()) {
+                    md.append("- 鉴权角色: `").append(authRole).append("`\n");
+                }
+                Object needAuth = api.get("needAuth");
+                if (needAuth != null) {
+                    md.append("- 是否需要鉴权: ").append(String.valueOf(needAuth)).append("\n");
+                }
 
                 if (api.get("notes") != null && !api.get("notes").toString().isEmpty()) {
                     md.append("- 说明: ").append(api.get("notes")).append("\n");

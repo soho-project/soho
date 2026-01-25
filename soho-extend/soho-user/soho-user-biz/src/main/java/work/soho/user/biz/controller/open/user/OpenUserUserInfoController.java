@@ -31,7 +31,7 @@ public class OpenUserUserInfoController {
      */
     @GetMapping
     @ApiOperation("获取用户信息")
-    @OpenApiDoc(value = "获取用户信息", name = "获取用户信息", description = "获取用户信息")
+    @OpenApiDoc(value = "获取用户信息", name = "获取用户信息", description = "获取用户信息", authRole = "openUser")
     public R<OpenUserInfoVo> getUserInfo(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         OpenUserInfoVo openUserInfoVo = BeanUtils.copy(userInfoService.getById(sohoUserDetails.getId()), OpenUserInfoVo.class);
         return R.success(openUserInfoVo);
