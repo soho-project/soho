@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import work.soho.common.core.util.IDGeneratorUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.service.SohoUserDetailsService;
 import work.soho.common.security.service.impl.TokenServiceImpl;
 import work.soho.common.security.userdetails.SohoUserDetails;
@@ -94,7 +95,7 @@ public class UserOauthServiceImpl extends ServiceImpl<UserOauthMapper, UserOauth
                 userInfo.setUsername("o"+thridOauthDto.getPlatformId() + "_" + thridOauthDto.getUsername());
                 userInfo.setNickname(thridOauthDto.getNickname());
                 userInfo.setNickname("三方"+System.currentTimeMillis());
-                userInfo.setAvatar(userSysConfig.getDefaultAvatar());
+                userInfo.setAvatar(StringUtils.isBlank(thridOauthDto.getAvatar()) ? userSysConfig.getDefaultAvatar() : thridOauthDto.getAvatar());
                 userInfo.setStatus(UserInfoEnums.Status.NORMAL.getId());
                 userInfo.setSex(thridOauthDto.getGender());
                 userInfo.setPhone(thridOauthDto.getPhone());
