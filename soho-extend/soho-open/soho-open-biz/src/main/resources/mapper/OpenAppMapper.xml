@@ -12,10 +12,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id property="status" column="status" jdbcType="TINYINT"/>
         <id property="qpsLimit" column="qps_limit" jdbcType="INTEGER"/>
         <id property="remark" column="remark" jdbcType="VARCHAR"/>
+        <id property="redirectUriList" column="redirect_uri_list" jdbcType="VARCHAR"/>
         <id property="createdTime" column="created_time" jdbcType="DATE"/>
         <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
     </resultMap>
     <sql id="Base_Column_List">
-        id,user_id,app_name,app_key,app_secret,status,qps_limit,remark,created_time,updated_time
+        id,user_id,app_name,app_key,app_secret,status,qps_limit,remark,redirect_uri_list,created_time,updated_time
     </sql>
 </mapper>

@@ -5,6 +5,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 public class SohoUserDetails implements UserDetails {
@@ -12,6 +14,7 @@ public class SohoUserDetails implements UserDetails {
     private String password;
     private String username;
     private Collection<GrantedAuthority> authorities;
+    private Map<String, Object> claims = new HashMap<>();
 
 
     @Override
@@ -51,5 +54,13 @@ public class SohoUserDetails implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    public void setClaims(Map<String, Object> claims) {
+        this.claims = claims;
+    }
+
+    public Map<String, Object> getClaims() {
+        return claims;
     }
 }

@@ -13,6 +13,15 @@ public interface SohoTokenService {
      */
     SohoUserDetails getLoginUser();
 
+
+    /**
+     * 通过JWT获取用户信息
+     *
+     * @param token
+     * @return
+     */
+    SohoUserDetails getUserDetailsByJwtToken(String token);
+
     /**
      * 创建token
      *

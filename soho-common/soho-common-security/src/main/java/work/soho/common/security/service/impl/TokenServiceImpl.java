@@ -15,8 +15,10 @@ import work.soho.common.security.service.SohoTokenService;
 import work.soho.common.security.userdetails.SohoUserDetails;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 令牌管理实现
@@ -48,18 +50,7 @@ public class TokenServiceImpl implements SohoTokenService {
         String token = getToken(request);
         if (StringUtils.isNotEmpty(token))
         {
-            Claims claims = parseToken(token);
-            SohoUserDetails user = new SohoUserDetails();
-            user.setId(Long.valueOf(claims.get("uid").toString()));
-            user.setUsername((String) claims.get("uname"));
-            //从token还原认证角色信息
-            List<String> authoritiesList = ((ArrayList<?>) claims.get("authorities"))
-                    .stream()
-                    .flatMap(item -> ((Map<?, ?>) item).values().stream())
-                    .map(Object::toString)
-                    .collect(Collectors.toList());
-            user.setAuthorities(AuthorityUtils.createAuthorityList(authoritiesList.toArray(new String[0])));
-            return user;
+            return getUserDetailsByJwtToken(token);
         } else {
             // 角色自定义认证实现, 逐个尝试获取 SohoUserDetails
             for (Map.Entry<String, SohoRoleAuthenticationService> entry : roleAuthenticationServiceMap.entrySet()) {
@@ -70,6 +61,26 @@ public class TokenServiceImpl implements SohoTokenService {
             }
         }
         return null;
+    }
+
+    /**
+     * 根据jwtToken获取用户身份信息
+     *
+     * @return 用户信息
+     */
+    @Override
+    public SohoUserDetails getUserDetailsByJwtToken(String token) {
+        Claims claims = parseToken(token);
+        SohoUserDetails user = new SohoUserDetails();
+        user.setId(Long.valueOf(claims.get("uid").toString()));
+        user.setUsername((String) claims.get("uname"));
+        user.setClaims( claims);
+        //从token还原认证角色信息
+        user.setAuthorities(AuthorityUtils.createAuthorityList(((ArrayList<?>) claims.get("authorities"))
+                .stream()
+                .flatMap(item -> ((Map<?, ?>) item).values().stream())
+                .map(Object::toString).toArray(String[]::new)));
+        return user;
     }
 
     /**
