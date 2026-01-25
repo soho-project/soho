@@ -7,10 +7,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>soho-oepn-api</artifactId>
+    <artifactId>soho-open-api</artifactId>
     <packaging>jar</packaging>
 
-    <name>soho-oepn-api</name>
+    <name>soho-open-api</name>
     <url>http://maven.apache.org</url>
 
     <properties>
@@ -37,6 +37,7 @@
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
+            <version>4.0.1</version>
         </dependency>
         <dependency>
             <groupId>work.soho</groupId>

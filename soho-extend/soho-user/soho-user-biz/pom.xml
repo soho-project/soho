@@ -75,6 +75,11 @@
             <artifactId>JustAuth</artifactId>
             <version>1.16.7</version>
         </dependency>
+        <dependency>
+            <groupId>work.soho</groupId>
+            <artifactId>soho-open-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
 
         <dependency>
             <groupId>work.soho</groupId>

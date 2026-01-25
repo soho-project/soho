@@ -1,6 +1,7 @@
 package work.soho.user.biz.controller.open.user;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,9 +13,11 @@ import work.soho.common.core.util.BeanUtils;
 import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.user.api.vo.OpenUserInfoVo;
 import work.soho.user.biz.service.UserInfoService;
+import work.soho.open.api.annotation.OpenApiDoc;
 
 @Log4j2
-@Api(tags = "开放平台用户用户信息")
+@Api(tags = "开放平台用户用户信息", value = "开放平台用户用户信息")
+@OpenApiDoc(value = "用户信息", name = "用户信息", description = "用户信息")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/user/open/user/userInfo" )
@@ -27,6 +30,8 @@ public class OpenUserUserInfoController {
      * @return
      */
     @GetMapping
+    @ApiOperation("获取用户信息")
+    @OpenApiDoc(value = "获取用户信息", name = "获取用户信息", description = "获取用户信息")
     public R<OpenUserInfoVo> getUserInfo(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         OpenUserInfoVo openUserInfoVo = BeanUtils.copy(userInfoService.getById(sohoUserDetails.getId()), OpenUserInfoVo.class);
         return R.success(openUserInfoVo);

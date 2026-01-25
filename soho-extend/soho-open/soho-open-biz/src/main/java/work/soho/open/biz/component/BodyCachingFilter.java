@@ -1,13 +1,10 @@
 package work.soho.open.biz.component;
 
-import org.springframework.stereotype.Component;
-
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Locale;
 
-@Component
 public class BodyCachingFilter implements Filter {
 
     @Override
