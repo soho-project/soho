@@ -15,7 +15,7 @@ public class UserSysConfig implements InitializingBean {
 
     // 默认头像
     private final String SYS_USER_DEFAULT_AVATAR_KEY = "user_default_avatar";
-    private final String SYS_USER_DEFAULT_AVATAR = "https://soho-oss.oss-cn-shenzhen.aliyuncs.com/avatar/default.png";
+    private final String SYS_USER_DEFAULT_AVATAR = "https://igogo-test.oss-cn-shenzhen.aliyuncs.com/upload/6e/d7/6d6ed76d7a1ea252d6e2616bc923299b66.png";
 
     // 是否开启自动实名认证
     private final String SYS_USER_AUTO_REALNAME_KEY = "user_auto_realname";
