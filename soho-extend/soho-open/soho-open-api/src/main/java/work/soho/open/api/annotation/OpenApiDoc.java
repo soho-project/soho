@@ -14,5 +14,9 @@ public @interface OpenApiDoc {
     String name() default "";
     String version() default "1.0.0";
     boolean needAuth() default true;
+    /**
+     * 接口鉴权角色（openUser/openApp）
+     */
+    String authRole() default "openApp";
     String description() default "";
 }

@@ -1,4 +1,4 @@
-package work.soho.example.biz.controller.open;
+package work.soho.example.biz.controller.open.app;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
@@ -33,7 +33,7 @@ import java.util.List;
 @Api(value = "open 样例选项", tags = "open 样例选项")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/example/open/exampleOption" )
+@RequestMapping("/example/open/app/exampleOption" )
 @OpenApi(value="ExampleOption", name="样例选项", description="null")
 public class OpenExampleOptionController {
 

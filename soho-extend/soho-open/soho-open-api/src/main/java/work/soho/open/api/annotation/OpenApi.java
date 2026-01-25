@@ -23,6 +23,9 @@ public @interface OpenApi {
     @AliasFor(annotation = OpenApiDoc.class, attribute = "needAuth")
     boolean needAuth() default true;
 
+    @AliasFor(annotation = OpenApiDoc.class, attribute = "authRole")
+    String authRole() default "";
+
     @AliasFor(annotation = OpenApiDoc.class, attribute = "description")
     String description() default "";
 }
