@@ -1,13 +1,15 @@
 #!/bin/bash
+set -euo pipefail
 
-script_dir=$(dirname "$(readlink -f "$0")")
-cd $script_dir
+script_dir="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+cd "$script_dir"
 
 # 替换以下内容为你的实际数据库信息和路径
-DB_HOST=192.168.0.101
-DB_USER=dev
-DB_PASSWORD=Dev@123456789
-BACKUP_DIR="$script_dir/../databases"
+DB_HOST="${DB_HOST:-192.168.0.101}"
+DB_USER="${DB_USER:-dev}"
+DB_PASSWORD="${DB_PASSWORD:-Dev@123456789}"
+BACKUP_DIR="${BACKUP_DIR:-$script_dir/../databases}"
+KEEP_COUNT="${KEEP_COUNT:-5}"
 
 # 从配置文件读取数据库列表
 CONFIG_FILE="$script_dir/databases.conf"
@@ -41,7 +43,7 @@ do
 
     BACKUP_FILE="${BACKUP_DIR}/${DB_NAME}-${CURRENT_DATE}.sql"
 
-    if mysqldump -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME > $BACKUP_FILE; then
+    if mysqldump -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" > "$BACKUP_FILE"; then
         echo "✓ 数据库 $DB_NAME 备份成功"
         echo "  文件: $BACKUP_FILE"
         echo "  大小: $(($(wc -c < "$BACKUP_FILE")/1024)) KB"
@@ -49,11 +51,27 @@ do
         echo "✗ 错误: 数据库 $DB_NAME 备份失败!"
         # 检查数据库是否存在
         echo "  正在检查数据库是否存在..."
-        if mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "USE $DB_NAME" 2>/dev/null; then
+        if mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "USE $DB_NAME" 2>/dev/null; then
             echo "  数据库存在，但备份失败，请检查权限或磁盘空间"
         else
             echo "  数据库不存在或无法连接"
         fi
+    fi
+
+    # 保留每个数据库最近 KEEP_COUNT 份备份（按修改时间倒序）
+    cleanup_prefix() {
+        local prefix="$1"
+        mapfile -t old_backups < <(find "$BACKUP_DIR" -maxdepth 1 -type f -name "${prefix}-*.sql" -printf '%T@ %p\n' \
+            | sort -nr | tail -n +$((KEEP_COUNT + 1)) | awk '{print $2}')
+        if [ "${#old_backups[@]}" -gt 0 ]; then
+            rm -f "${old_backups[@]}"
+        fi
+    }
+
+    cleanup_prefix "$DB_NAME"
+    legacy_prefix="${DB_NAME//_/-}"
+    if [ "$legacy_prefix" != "$DB_NAME" ]; then
+        cleanup_prefix "$legacy_prefix"
     fi
 
     echo ""

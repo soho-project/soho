@@ -8,7 +8,9 @@ import org.apache.iotdb.tsfile.read.common.Field;
 import org.apache.iotdb.tsfile.read.common.RowRecord;
 import org.springframework.stereotype.Service;
 import work.soho.common.core.util.StringUtils;
-import work.soho.temporal.db.api.dto.*;
+import work.soho.temporal.db.api.dto.Binary;
+import work.soho.temporal.db.api.dto.ColumnTimeOrder;
+import work.soho.temporal.db.api.dto.Row;
 import work.soho.temporal.db.api.service.TemporalDbApi;
 import work.soho.temporal.db.biz.config.TemporalDbConfig;
 import work.soho.temporal.db.biz.domain.TemporalCategory;
@@ -50,11 +52,11 @@ public class TemporalTableColServiceImpl extends ServiceImpl<TemporalTableColMap
         String dbName = "root." + category.getName();
 
         //切分换行
-        ArrayList<Record> list = new ArrayList<Record>();
+        ArrayList<work.soho.temporal.db.api.dto.Record> list = new ArrayList<work.soho.temporal.db.api.dto.Record>();
         String[] lines = str.split("\n");
         for (int i = 0; i < lines.length; i++) {
             String[] parts = lines[i].split(",");
-            Record record = new Record();
+            work.soho.temporal.db.api.dto.Record record = new work.soho.temporal.db.api.dto.Record();
             if(parts.length>1) {
                 record.setValue(getValByType(parts[1], col.getType()));
             } else {
@@ -86,7 +88,7 @@ public class TemporalTableColServiceImpl extends ServiceImpl<TemporalTableColMap
         Assert.notNull(category);
 
         String dbName = temporalDbConfig.getDefaultDbName() + "." + category.getName();
-        Record record = new Record();
+        work.soho.temporal.db.api.dto.Record record = new work.soho.temporal.db.api.dto.Record();
         record.setValue(getValByType(str, col.getType()));
         record.setName(col.getName());
         record.setType(getTsDataType(col.getType()));
@@ -163,26 +165,26 @@ public class TemporalTableColServiceImpl extends ServiceImpl<TemporalTableColMap
      * @param type
      * @return
      */
-    private Record.DataType getTsDataType(Integer type) {
+    private work.soho.temporal.db.api.dto.Record.DataType getTsDataType(Integer type) {
         switch (type) {
             case 0:
-                return Record.DataType.BOOLEAN;
+                return work.soho.temporal.db.api.dto.Record.DataType.BOOLEAN;
             case 1:
-                return Record.DataType.INT32;
+                return work.soho.temporal.db.api.dto.Record.DataType.INT32;
             case 2:
-                return Record.DataType.INT64;
+                return work.soho.temporal.db.api.dto.Record.DataType.INT64;
             case 3:
-                return Record.DataType.FLOAT;
+                return work.soho.temporal.db.api.dto.Record.DataType.FLOAT;
             case 4:
-                return Record.DataType.DOUBLE;
+                return work.soho.temporal.db.api.dto.Record.DataType.DOUBLE;
             case 5:
-                return Record.DataType.TEXT;
+                return work.soho.temporal.db.api.dto.Record.DataType.TEXT;
             case 6:
-                return Record.DataType.VECTOR;
+                return work.soho.temporal.db.api.dto.Record.DataType.VECTOR;
             case 7:
-                return Record.DataType.UNKNOWN;
+                return work.soho.temporal.db.api.dto.Record.DataType.UNKNOWN;
         }
-        return Record.DataType.UNKNOWN;
+        return work.soho.temporal.db.api.dto.Record.DataType.UNKNOWN;
     }
 
     /**
@@ -221,7 +223,7 @@ public class TemporalTableColServiceImpl extends ServiceImpl<TemporalTableColMap
     }
 
     @Override
-    public void addRecord(Integer tableId, Long time, Record record) {
+    public void addRecord(Integer tableId, Long time, work.soho.temporal.db.api.dto.Record record) {
         TemporalTable table = temporalTableMapper.selectById(tableId);
         try {
             System.out.println("............");
@@ -234,8 +236,8 @@ public class TemporalTableColServiceImpl extends ServiceImpl<TemporalTableColMap
     }
 
     @Override
-    public void addRecords(Integer tableId, Long time, List<Record> list) {
-        for(Record record: list) {
+    public void addRecords(Integer tableId, Long time, List<work.soho.temporal.db.api.dto.Record> list) {
+        for(work.soho.temporal.db.api.dto.Record record: list) {
             addRecord(tableId, time, record);
         }
     }
