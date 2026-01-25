@@ -1,0 +1,323 @@
+/*!999999\- enable the sandbox mode */ 
+-- MariaDB dump 10.19  Distrib 10.6.18-MariaDB, for debian-linux-gnu (x86_64)
+--
+-- Host: 192.168.0.101    Database: soho_wallet
+-- ------------------------------------------------------
+-- Server version	10.3.32-MariaDB
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `wallet_bank_card`
+--
+
+DROP TABLE IF EXISTS `wallet_bank_card`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `wallet_bank_card` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `user_id` int(11) DEFAULT NULL COMMENT '用户ID',
+  `name` varchar(45) DEFAULT NULL COMMENT '姓名',
+  `id_code` varchar(45) DEFAULT NULL COMMENT '身份证号',
+  `card_code` varchar(45) DEFAULT NULL COMMENT '银行卡号',
+  `phone` varchar(45) DEFAULT NULL COMMENT '手机号',
+  `updated_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `created_time` datetime DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=93 DEFAULT CHARSET=utf8 COMMENT='用户钱包银行卡信息表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `wallet_bank_card`
+--
+
+LOCK TABLES `wallet_bank_card` WRITE;
+/*!40000 ALTER TABLE `wallet_bank_card` DISABLE KEYS */;
+INSERT INTO `wallet_bank_card` VALUES (1,1,'提现','24521542541525','24521542541525','15873166666','2025-01-01 00:00:00','2025-01-01 00:00:00'),(2,1,'提现','24521542541525','24521542541525','15873166666','2025-01-01 00:00:00','2025-01-01 00:00:00'),(3,1,'提现','24521542541525','24521542541525','15873166666','2025-01-01 00:00:00','2025-01-01 00:00:00');
+/*!40000 ALTER TABLE `wallet_bank_card` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `wallet_info`
+--
+
+DROP TABLE IF EXISTS `wallet_info`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `wallet_info` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL COMMENT ';;isFilter:true',
+  `type` int(11) DEFAULT NULL COMMENT ';;frontType:select,foreign:wallet_type.id~title',
+  `amount` decimal(8,2) DEFAULT NULL COMMENT '钱包金额',
+  `status` tinyint(4) DEFAULT NULL COMMENT ';0:禁用,1:活跃;frontType:select,isFilter:true',
+  `updated_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `created_time` datetime DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=521 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `wallet_info`
+--
+
+LOCK TABLES `wallet_info` WRITE;
+/*!40000 ALTER TABLE `wallet_info` DISABLE KEYS */;
+INSERT INTO `wallet_info` VALUES (517,1,1,9790.00,1,'2025-11-22 21:42:13','2025-11-04 16:30:10'),(518,1,2,10000.00,1,'2025-11-04 16:33:49','2025-11-04 16:33:49'),(519,2,1,0.00,1,'2025-11-14 20:39:59','2025-11-14 20:39:59'),(520,2,2,0.00,1,'2025-11-14 20:39:59','2025-11-14 20:39:59');
+/*!40000 ALTER TABLE `wallet_info` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `wallet_log`
+--
+
+DROP TABLE IF EXISTS `wallet_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `wallet_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `wallet_id` int(11) DEFAULT NULL COMMENT ';;isFilter:true',
+  `amount` decimal(8,2) DEFAULT NULL COMMENT '金额',
+  `before_amount` decimal(8,2) DEFAULT NULL COMMENT '变更前',
+  `after_amount` decimal(8,2) DEFAULT NULL COMMENT '变更后',
+  `notes` varchar(200) DEFAULT NULL COMMENT ';;isFilter:true',
+  `created_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `biz_id` int(11) DEFAULT NULL COMMENT ';;isFilter:true',
+  `out_track_id` varchar(128) DEFAULT NULL COMMENT '外部跟踪号',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `index2` (`biz_id`,`out_track_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=79692 DEFAULT CHARSET=utf8 COMMENT='钱包变更日志';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `wallet_log`
+--
+
+LOCK TABLES `wallet_log` WRITE;
+/*!40000 ALTER TABLE `wallet_log` DISABLE KEYS */;
+INSERT INTO `wallet_log` VALUES (79624,517,8.00,10000.00,9992.00,'订单： 502153807308787712','2025-11-15 22:03:18',NULL,'502153807308787712'),(79625,517,-8.00,9992.00,9984.00,'订单： 502153807308787712','2025-11-15 22:08:57',6,'502153807308787712'),(79654,517,-8.00,9984.00,9976.00,'订单： 502220427125329920','2025-11-15 22:23:04',6,'502220427125329920'),(79655,517,-8.00,9976.00,9968.00,'订单： 502225708928471040','2025-11-15 22:44:04',6,'502225708928471040'),(79656,517,-8.00,9968.00,9960.00,'订单： 502226391169765376','2025-11-15 22:46:47',6,'502226391169765376'),(79657,517,-8.00,9960.00,9952.00,'订单： 502229252880470016','2025-11-15 22:58:08',6,'502229252880470016'),(79658,517,-8.00,9952.00,9944.00,'订单： 502229334241579008','2025-11-15 22:58:31',6,'502229334241579008'),(79663,517,-8.00,9944.00,9936.00,'订单： 502230901204193280','2025-11-15 23:04:41',6,'502230901204193280'),(79664,517,-8.00,9936.00,9928.00,'订单： 502231280054702080','2025-11-15 23:06:15',6,'502231280054702080'),(79665,517,-8.00,9928.00,9920.00,'订单： 502231917333057536','2025-11-15 23:08:44',6,'502231917333057536'),(79666,517,-8.00,9920.00,9912.00,'订单： 502232815169966080','2025-11-15 23:12:17',6,'502232815169966080'),(79667,517,-8.00,9912.00,9904.00,'订单： 502235047143673856','2025-11-15 23:21:10',6,'502235047143673856'),(79668,517,-8.00,9904.00,9896.00,'订单： 502235719893258240','2025-11-15 23:23:50',6,'502235719893258240'),(79669,517,-8.00,9896.00,9888.00,'订单： 502236113021177856','2025-11-15 23:25:24',6,'502236113021177856'),(79670,517,-3.00,9888.00,9885.00,'订单： 502462357331513344','2025-11-16 14:24:25',6,'502462357331513344'),(79671,517,-14.00,9885.00,9871.00,'订单： 502490190560890880','2025-11-16 16:15:05',6,'502490190560890880'),(79672,517,-8.00,9871.00,9863.00,'订单： 502782492843970560','2025-11-17 13:16:28',6,'502782492843970560'),(79673,517,-8.00,9863.00,9855.00,'订单： 502807861886193664','2025-11-17 13:17:19',6,'502807861886193664'),(79674,517,-8.00,9855.00,9847.00,'订单： 502845041241231360','2025-11-17 15:45:12',6,'502845041241231360'),(79675,517,-8.00,9847.00,9839.00,'订单： 502850017480937472','2025-11-17 16:04:49',6,'502850017480937472'),(79676,517,-8.00,9839.00,9831.00,'订单： 502850820795011072','2025-11-17 16:08:02',6,'502850820795011072'),(79677,517,-8.00,9831.00,9823.00,'订单： 502861584641560576','2025-11-17 16:50:47',6,'502861584641560576'),(79678,517,-8.00,9823.00,9815.00,'订单： 502895367877038080','2025-11-17 19:05:02',6,'502895367877038080'),(79679,517,3.00,9815.00,9812.00,'订单： 503562737322823680','2025-11-19 15:16:56',6,'503562737322823680'),(79680,517,-100.00,9812.00,9712.00,'订单： 504653025722241024','2025-11-22 15:29:25',6,'504653025722241024'),(79681,517,100.00,9712.00,9812.00,'钱包充值','2025-11-22 15:29:25',NULL,NULL),(79682,517,-20.00,9812.00,9792.00,'订单： 504653249215729664','2025-11-22 15:30:15',6,'504653249215729664'),(79683,517,20.00,9792.00,9812.00,'钱包充值','2025-11-22 15:30:15',NULL,NULL),(79684,517,-11.00,9812.00,9801.00,'用户:1 转账出账','2025-11-22 20:38:54',5,NULL),(79685,517,11.00,9801.00,9812.00,'用户:1 转账入账','2025-11-22 20:38:55',5,NULL),(79686,517,-11.00,9812.00,9801.00,'用户:1 转账出账','2025-11-22 21:38:33',5,'504745958727225344'),(79688,517,-11.00,9801.00,9790.00,'用户:1 转账出账','2025-11-22 21:39:00',5,'504746071814049792'),(79690,517,-11.00,9790.00,9779.00,'用户:1 转账出账','2025-11-22 21:42:13',5,'504746879641194496'),(79691,517,11.00,9779.00,9790.00,'用户:1 转账入账','2025-11-22 21:42:13',6,'504746879641194496');
+/*!40000 ALTER TABLE `wallet_log` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `wallet_recharge`
+--
+
+DROP TABLE IF EXISTS `wallet_recharge`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `wallet_recharge` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `code` varchar(128) DEFAULT NULL COMMENT '充值编号',
+  `amount` decimal(8,2) DEFAULT NULL COMMENT '充值金额',
+  `user_id` int(11) DEFAULT NULL COMMENT '用户ID',
+  `wallet_id` int(11) DEFAULT NULL COMMENT '钱包ID',
+  `status` tinyint(4) DEFAULT NULL COMMENT '充值状态;0:待充值,10:已充值',
+  `pay_id` int(11) DEFAULT NULL COMMENT '支付通道ID',
+  `updated_time` datetime DEFAULT NULL,
+  `created_time` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=223 DEFAULT CHARSET=utf8 COMMENT='钱包充值';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `wallet_recharge`
+--
+
+LOCK TABLES `wallet_recharge` WRITE;
+/*!40000 ALTER TABLE `wallet_recharge` DISABLE KEYS */;
+INSERT INTO `wallet_recharge` VALUES (207,'504649704575864832',100.00,1,517,0,NULL,'2025-11-22 15:16:04','2025-11-22 15:16:04'),(208,'504652329782349824',100.00,1,517,0,NULL,'2025-11-22 15:26:30','2025-11-22 15:26:30'),(209,'504653012472434688',100.00,1,517,10,NULL,'2025-11-22 15:29:25','2025-11-22 15:29:13'),(210,'504653237723336704',20.00,1,517,10,NULL,'2025-11-22 15:30:15','2025-11-22 15:30:06'),(211,'504674882710147072',111.00,1,517,0,NULL,'2025-11-22 16:56:07','2025-11-22 16:56:07'),(212,'504675006693773312',11.00,1,517,0,NULL,'2025-11-22 16:56:37','2025-11-22 16:56:37'),(213,'504675517241233408',11.00,1,517,0,NULL,'2025-11-22 16:58:38','2025-11-22 16:58:38'),(214,'504676072361562112',11.00,1,517,0,NULL,'2025-11-22 17:00:51','2025-11-22 17:00:51'),(215,'504676617029685248',11.00,1,517,0,NULL,'2025-11-22 17:03:00','2025-11-22 17:03:00'),(216,'504676731676790784',11.00,1,517,0,NULL,'2025-11-22 17:03:28','2025-11-22 17:03:28'),(217,'504677412819177472',11.00,1,517,0,NULL,'2025-11-22 17:06:10','2025-11-22 17:06:10'),(218,'504677647733755904',11.00,1,517,0,NULL,'2025-11-22 17:07:06','2025-11-22 17:07:06'),(219,'504711380834717696',NULL,1,517,0,NULL,'2025-11-22 19:21:09','2025-11-22 19:21:09'),(220,'504712310544142336',NULL,1,517,0,NULL,'2025-11-22 19:24:50','2025-11-22 19:24:50'),(221,'504712939459055616',11.00,1,517,0,NULL,'2025-11-22 19:27:20','2025-11-22 19:27:20'),(222,'504713862214324224',11.00,1,517,0,NULL,'2025-11-22 19:31:00','2025-11-22 19:31:00');
+/*!40000 ALTER TABLE `wallet_recharge` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `wallet_transfer`
+--
+
+DROP TABLE IF EXISTS `wallet_transfer`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `wallet_transfer` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `code` varchar(45) DEFAULT NULL COMMENT '编号',
+  `from_user_id` int(11) DEFAULT NULL COMMENT '转账用户',
+  `from_wallet_id` int(11) DEFAULT NULL COMMENT ';;isFilter:true',
+  `from_wallet_type` int(11) DEFAULT NULL COMMENT ';;frontType:select,foreign:wallet_type.id~title,isFilter:true',
+  `from_amount` decimal(8,2) DEFAULT NULL COMMENT '来源钱包金额',
+  `to_wallet_id` int(11) DEFAULT NULL COMMENT ';;isFilter:true',
+  `to_wallet_type` int(11) DEFAULT NULL COMMENT ';;frontType:select,foreign:wallet_type.id~title,isFilter:true',
+  `to_user_id` varchar(45) DEFAULT NULL,
+  `to_amount` decimal(8,2) DEFAULT NULL COMMENT '目标钱包金额',
+  `remark` varchar(255) DEFAULT NULL COMMENT '备注',
+  `updated_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `created_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `from_pay_amount` decimal(8,2) DEFAULT NULL COMMENT '实际转账金额',
+  `from_commission_amount` decimal(8,2) DEFAULT NULL COMMENT '服务费金额',
+  PRIMARY KEY (`id`),
+  KEY `index2` (`from_user_id`,`from_wallet_type`)
+) ENGINE=InnoDB AUTO_INCREMENT=533 DEFAULT CHARSET=utf8 COMMENT='钱包转账';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `wallet_transfer`
+--
+
+LOCK TABLES `wallet_transfer` WRITE;
+/*!40000 ALTER TABLE `wallet_transfer` DISABLE KEYS */;
+INSERT INTO `wallet_transfer` VALUES (529,NULL,1,517,1,11.00,517,1,'1',11.00,'1111','2025-11-22 20:38:54','2025-11-22 20:38:54',11.00,0.00),(530,'504745958727225344',1,517,1,11.00,517,1,'1',11.00,'1111','2025-11-22 21:38:33','2025-11-22 21:38:33',11.00,0.00),(531,'504746071814049792',1,517,1,11.00,517,1,'1',11.00,'1111','2025-11-22 21:39:00','2025-11-22 21:39:00',11.00,0.00),(532,'504746879641194496',1,517,1,11.00,517,1,'1',11.00,'1111','2025-11-22 21:42:12','2025-11-22 21:42:12',11.00,0.00);
+/*!40000 ALTER TABLE `wallet_transfer` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `wallet_type`
+--
+
+DROP TABLE IF EXISTS `wallet_type`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `wallet_type` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `status` tinyint(4) DEFAULT NULL COMMENT '钱包状态;0:禁用,1:活跃;frontType:select,',
+  `name` varchar(45) DEFAULT NULL COMMENT '钱包名',
+  `title` varchar(45) DEFAULT NULL COMMENT '钱包标题',
+  `notes` varchar(255) DEFAULT NULL COMMENT '钱包类型描述',
+  `updated_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `created_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `withdrawal_min_amount` decimal(8,2) DEFAULT NULL COMMENT '提现最低金额',
+  `withdrawal_commission_rate` decimal(8,2) DEFAULT NULL COMMENT '手续费',
+  `withdrawal_min_commission` decimal(8,2) DEFAULT NULL COMMENT '最低手续费',
+  `can_withdrawal` tinyint(4) DEFAULT 0 COMMENT ';0:不能,1:能;frontType:select',
+  `can_recharge` tinyint(4) DEFAULT NULL COMMENT '能否充值;0:否,1:能;frontType:select',
+  `can_transfer_out` tinyint(4) DEFAULT NULL COMMENT ';0:否,1:是;frontType:select',
+  `can_transfer_in_types` varchar(128) DEFAULT NULL COMMENT ';;frontType:select,foreign:wallet_type.id~title',
+  `img_url` varchar(255) DEFAULT NULL COMMENT ';;frontType:avatar,uploadCount:undefined',
+  `rate` decimal(8,2) DEFAULT NULL COMMENT '汇率',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COMMENT=';;option:id~title';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `wallet_type`
+--
+
+LOCK TABLES `wallet_type` WRITE;
+/*!40000 ALTER TABLE `wallet_type` DISABLE KEYS */;
+INSERT INTO `wallet_type` VALUES (1,1,'rmb','钱包','钱包','2025-11-22 22:02:31','2025-01-01 00:00:00',0.00,0.00,0.00,1,1,1,'1,2','https://igogo-test.oss-cn-shenzhen.aliyuncs.com/admin/avatar/2025_11_22_504744196775612416.png',1.00),(2,1,'point','积分','积分','2025-11-22 22:02:46','2025-01-01 00:00:00',0.00,0.00,0.00,0,0,0,'1,2','https://igogo-test.oss-cn-shenzhen.aliyuncs.com/admin/avatar/2025_11_22_504744325528162304.png',0.50);
+/*!40000 ALTER TABLE `wallet_type` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `wallet_user`
+--
+
+DROP TABLE IF EXISTS `wallet_user`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `wallet_user` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL COMMENT '用户ID',
+  `pay_password` varchar(500) DEFAULT NULL COMMENT '支付密码',
+  `updated_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `created_time` datetime DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_id_UNIQUE` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='钱包用户;;apis:user/user_id.create/update';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `wallet_user`
+--
+
+LOCK TABLES `wallet_user` WRITE;
+/*!40000 ALTER TABLE `wallet_user` DISABLE KEYS */;
+INSERT INTO `wallet_user` VALUES (1,1,'$2a$10$AksjLQiSgrEuzm1VWOX74.wy7iRzVXTrG462BnoGL7IXYRfaTeCVS','2025-11-19 22:38:40','2025-11-19 22:38:40');
+/*!40000 ALTER TABLE `wallet_user` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `wallet_user_order`
+--
+
+DROP TABLE IF EXISTS `wallet_user_order`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `wallet_user_order` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT ';;',
+  `wallet_type` int(11) DEFAULT NULL COMMENT '钱包类型',
+  `wallet_id` int(11) DEFAULT NULL COMMENT '钱包ID',
+  `no` varchar(45) DEFAULT NULL COMMENT '支付单号',
+  `amount` decimal(8,2) DEFAULT NULL COMMENT '支付金额',
+  `out_tracking_number` varchar(45) DEFAULT NULL COMMENT '外部跟踪单号',
+  `status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '状态;0:待支付,10:支付中,20:支付成功,30:已取消,40:支付失败',
+  `notes` varchar(200) DEFAULT NULL COMMENT '备注',
+  `updated_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `created_time` datetime DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8 COMMENT='用户支付单';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `wallet_user_order`
+--
+
+LOCK TABLES `wallet_user_order` WRITE;
+/*!40000 ALTER TABLE `wallet_user_order` DISABLE KEYS */;
+INSERT INTO `wallet_user_order` VALUES (1,NULL,NULL,'502147143956434944',100.00,'502147143956434944',0,'订单： 502147143956434944','2025-11-15 17:31:47','2025-11-15 17:31:47'),(2,1,NULL,'502153807308787712',8.00,'502153807308787712',0,'订单： 502153807308787712','2025-11-15 17:58:16','2025-11-15 17:58:16'),(3,1,NULL,'502219376104050688',8.00,'502219376104050688',0,'订单： 502219376104050688','2025-11-15 22:18:49','2025-11-15 22:18:49'),(4,1,NULL,'502219451622494208',8.00,'502219451622494208',0,'订单： 502219451622494208','2025-11-15 22:19:07','2025-11-15 22:19:07'),(5,1,NULL,'502220427125329920',8.00,'502220427125329920',0,'订单： 502220427125329920','2025-11-15 22:22:59','2025-11-15 22:22:59'),(6,1,NULL,'502225708928471040',8.00,'502225708928471040',20,'订单： 502225708928471040','2025-11-15 22:43:59','2025-11-15 22:43:59'),(7,1,NULL,'502226391169765376',8.00,'502226391169765376',20,'订单： 502226391169765376','2025-11-15 22:46:41','2025-11-15 22:46:41'),(8,1,NULL,'502229252880470016',8.00,'502229252880470016',20,'订单： 502229252880470016','2025-11-15 22:58:04','2025-11-15 22:58:04'),(9,1,NULL,'502229334241579008',8.00,'502229334241579008',20,'订单： 502229334241579008','2025-11-15 22:58:23','2025-11-15 22:58:23'),(10,1,NULL,'502230901204193280',8.00,'502230901204193280',20,'订单： 502230901204193280','2025-11-15 23:04:36','2025-11-15 23:04:36'),(11,1,NULL,'502231280054702080',8.00,'502231280054702080',20,'订单： 502231280054702080','2025-11-15 23:06:07','2025-11-15 23:06:07'),(12,1,NULL,'502231917333057536',8.00,'502231917333057536',20,'订单： 502231917333057536','2025-11-15 23:08:39','2025-11-15 23:08:39'),(13,1,NULL,'502232815169966080',8.00,'502232815169966080',20,'订单： 502232815169966080','2025-11-15 23:12:13','2025-11-15 23:12:13'),(14,1,NULL,'502235047143673856',8.00,'502235047143673856',20,'订单： 502235047143673856','2025-11-15 23:21:05','2025-11-15 23:21:05'),(15,1,NULL,'502235719893258240',8.00,'502235719893258240',20,'订单： 502235719893258240','2025-11-15 23:23:45','2025-11-15 23:23:45'),(16,1,NULL,'502236113021177856',8.00,'502236113021177856',20,'订单： 502236113021177856','2025-11-15 23:25:19','2025-11-15 23:25:19'),(17,1,NULL,'502462357331513344',3.00,'502462357331513344',20,'订单： 502462357331513344','2025-11-16 14:24:20','2025-11-16 14:24:20'),(18,1,NULL,'502490190560890880',14.00,'502490190560890880',20,'订单： 502490190560890880','2025-11-16 16:14:56','2025-11-16 16:14:56'),(19,1,NULL,'502782492843970560',8.00,'502782492843970560',20,'订单： 502782492843970560','2025-11-17 11:36:26','2025-11-17 11:36:26'),(20,1,NULL,'502807861886193664',8.00,'502807861886193664',20,'订单： 502807861886193664','2025-11-17 13:17:15','2025-11-17 13:17:15'),(21,1,NULL,'502845041241231360',8.00,'502845041241231360',20,'订单： 502845041241231360','2025-11-17 15:45:00','2025-11-17 15:45:00'),(22,1,NULL,'502850017480937472',8.00,'502850017480937472',20,'订单： 502850017480937472','2025-11-17 16:04:45','2025-11-17 16:04:45'),(23,1,NULL,'502850820795011072',8.00,'502850820795011072',20,'订单： 502850820795011072','2025-11-17 16:07:57','2025-11-17 16:07:57'),(24,1,NULL,'502861162698772480',8.00,'502861162698772480',0,'订单： 502861162698772480','2025-11-17 16:49:03','2025-11-17 16:49:03'),(25,1,NULL,'502861584641560576',8.00,'502861584641560576',20,'订单： 502861584641560576','2025-11-17 16:50:43','2025-11-17 16:50:43'),(26,1,NULL,'502895367877038080',8.00,'502895367877038080',20,'订单： 502895367877038080','2025-11-17 19:04:59','2025-11-17 19:04:59'),(27,1,NULL,'503562737322823680',3.00,'503562737322823680',20,'订单： 503562737322823680','2025-11-19 15:16:51','2025-11-19 15:16:51'),(28,1,NULL,'504639621485826048',38.00,'504639621485826048',0,'订单： 504639621485826048','2025-11-22 14:36:01','2025-11-22 14:36:01'),(29,1,NULL,'504651969806209024',100.00,'504651969806209024',0,'订单： 504651969806209024','2025-11-22 15:25:04','2025-11-22 15:25:04'),(30,1,NULL,'504652341195051008',100.00,'504652341195051008',0,'订单： 504652341195051008','2025-11-22 15:26:33','2025-11-22 15:26:33'),(31,1,NULL,'504653025722241024',100.00,'504653025722241024',20,'订单： 504653025722241024','2025-11-22 15:29:16','2025-11-22 15:29:16'),(32,1,NULL,'504653249215729664',20.00,'504653249215729664',20,'订单： 504653249215729664','2025-11-22 15:30:09','2025-11-22 15:30:09');
+/*!40000 ALTER TABLE `wallet_user_order` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `wallet_withdrawal_order`
+--
+
+DROP TABLE IF EXISTS `wallet_withdrawal_order`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `wallet_withdrawal_order` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `code` varchar(45) DEFAULT NULL COMMENT '编号',
+  `user_id` int(11) DEFAULT NULL COMMENT ';;isFilter:true',
+  `wallet_id` int(11) DEFAULT NULL COMMENT '钱包ID',
+  `amount` decimal(8,2) DEFAULT NULL COMMENT '提现金额',
+  `pay_amount` decimal(8,2) DEFAULT NULL COMMENT '支付金额',
+  `commission_amount` decimal(8,2) DEFAULT NULL COMMENT '服务金额',
+  `notes` varchar(255) DEFAULT NULL COMMENT '备注',
+  `status` tinyint(4) DEFAULT NULL COMMENT '提现银行卡',
+  `admin_id` int(11) DEFAULT NULL COMMENT '管理员ID',
+  `admin_notes` varchar(255) DEFAULT NULL,
+  `card_code` varchar(45) DEFAULT NULL COMMENT '卡号',
+  `card_name` varchar(45) DEFAULT NULL COMMENT '持卡人名',
+  `card_phone` varchar(45) DEFAULT NULL COMMENT '持卡人手机号',
+  `updated_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `created_time` datetime DEFAULT NULL COMMENT '平台备注',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=532 DEFAULT CHARSET=utf8 COMMENT='提现单';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `wallet_withdrawal_order`
+--
+
+LOCK TABLES `wallet_withdrawal_order` WRITE;
+/*!40000 ALTER TABLE `wallet_withdrawal_order` DISABLE KEYS */;
+/*!40000 ALTER TABLE `wallet_withdrawal_order` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-01-26  1:41:10
