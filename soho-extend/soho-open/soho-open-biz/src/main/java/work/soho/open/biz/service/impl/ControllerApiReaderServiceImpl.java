@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +15,7 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.condition.RequestMethodsRequestCondition;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
-import work.soho.open.api.annotation.OpenApi;
+import work.soho.open.api.annotation.OpenApiDoc;
 
 import java.lang.reflect.*;
 import java.math.BigDecimal;
@@ -111,8 +112,8 @@ public class ControllerApiReaderServiceImpl {
                 continue;
             }
 
-            // 检查方法上是否有 @OpenApi 注解
-            if (!handlerMethod.getMethod().isAnnotationPresent(OpenApi.class)) {
+            // 检查方法上是否有 @OpenApiDoc（支持 OpenApi 元注解）
+            if (AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(), OpenApiDoc.class) == null) {
                 continue;
             }
 

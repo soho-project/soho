@@ -9,12 +9,15 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.IpUtils;
+import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.open.api.annotation.OpenApi;
 import work.soho.open.api.result.OpenErrorCode;
 import work.soho.open.biz.component.OpenApiLimitFacotory;
@@ -28,6 +31,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.util.List;
+
 
 /**
  * 这里不做验签，
@@ -57,6 +61,19 @@ public class OpenApiAspect {
             String reqTime = request.getHeader("req-time");
             String method = request.getMethod();
             String path = request.getRequestURI();
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            SohoUserDetails user = (auth != null && auth.getPrincipal() instanceof SohoUserDetails)
+                    ? (SohoUserDetails) auth.getPrincipal()
+                    : null;
+
+            log.info("当前登录用户" + user);
+            if (user == null) {
+                return R.error(OpenErrorCode.USER_NOT_LOGGED_IN);
+            }
+
+            appKey = (String) user.getClaims().get("appKey");
+
 
             if (appKey == null) {
                 return R.error(OpenErrorCode.MISSING_THE_NECESSARY_REQUEST);

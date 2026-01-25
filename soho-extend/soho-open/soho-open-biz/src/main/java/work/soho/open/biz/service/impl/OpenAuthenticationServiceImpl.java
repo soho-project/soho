@@ -5,6 +5,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.web.util.ContentCachingRequestWrapper;
 import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.open.biz.component.BodyCachingHttpServletRequestWrapper;
 import work.soho.open.biz.domain.OpenApp;
@@ -14,6 +15,8 @@ import work.soho.open.biz.service.OpenAuthenticationService;
 import work.soho.open.biz.service.OpenUserService;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidParameterException;
 import java.util.*;
 
@@ -76,9 +79,16 @@ public class OpenAuthenticationServiceImpl implements OpenAuthenticationService 
 
             // 组装用户信息
             SohoUserDetails user = new SohoUserDetails();
-            user.setId(openApp.getUserId());
+            user.setId(openApp.getId());
             user.setUsername(openApp.getAppName());
-            user.setAuthorities(AuthorityUtils.createAuthorityList("open"));
+
+            // 扩展参数
+            HashMap<String, Object> params = new HashMap<>();
+            params.put("appId", openApp.getId());
+            params.put("appKey", openApp.getAppKey());
+            user.setClaims( params);
+
+            user.setAuthorities(AuthorityUtils.createAuthorityList("openApp"));
             return user;
         } catch (Exception e) {
             return null;
@@ -107,6 +117,7 @@ public class OpenAuthenticationServiceImpl implements OpenAuthenticationService 
             return true;
         } catch (Exception e) {
             log.error(e);
+            e.printStackTrace();
             return false;
         }
     }
@@ -145,12 +156,32 @@ public class OpenAuthenticationServiceImpl implements OpenAuthenticationService 
             }
             body = buildQueryString(linkedHashMap);
         } else {
-            body = ((BodyCachingHttpServletRequestWrapper)request).getBody();
+            BodyCachingHttpServletRequestWrapper bodyWrapper = unwrapBodyCachingWrapper(request);
+            if (bodyWrapper != null) {
+                body = bodyWrapper.getBody();
+            } else if (request instanceof ContentCachingRequestWrapper) {
+                byte[] cached = ((ContentCachingRequestWrapper) request).getContentAsByteArray();
+                body = new String(cached, StandardCharsets.UTF_8);
+            } else {
+                // No cached body available; keep empty to avoid ClassCastException
+                body = "";
+            }
         }
 
         log.info("sign body:" + body + "_" + appSecret);
         String sign = md5(body + "_" + appSecret);
         return sign;
+    }
+
+    private BodyCachingHttpServletRequestWrapper unwrapBodyCachingWrapper(HttpServletRequest request) {
+        HttpServletRequest current = request;
+        while (current instanceof HttpServletRequestWrapper) {
+            if (current instanceof BodyCachingHttpServletRequestWrapper) {
+                return (BodyCachingHttpServletRequestWrapper) current;
+            }
+            current = (HttpServletRequest) ((HttpServletRequestWrapper) current).getRequest();
+        }
+        return null;
     }
 
     private static String buildQueryString(Object obj) throws Exception {

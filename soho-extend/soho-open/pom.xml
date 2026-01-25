@@ -10,7 +10,7 @@
     <packaging>pom</packaging>
     <name>soho-open</name>
     <modules>
-        <module>soho-oepn-api</module>
+        <module>soho-open-api</module>
         <module>soho-open-biz</module>
     </modules>
 
