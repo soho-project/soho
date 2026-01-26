@@ -1,5 +1,7 @@
 package work.soho.content.biz.controller.guest;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,12 +15,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+@Api(tags = "前台内容分类管理")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/content/guest/adminContentCategory" )
-public class GuestAdminContentCategoryController {
+@RequestMapping("/content/guest/contentCategory" )
+public class GuestContentCategoryController {
     private final AdminContentCategoryService adminContentCategoryService;
 
+    @ApiOperation("内容分类树")
     @GetMapping("/tree")
     public R<List<TreeContentCategoryVo>> tree() {
         List<ContentCategory> originList = adminContentCategoryService.list();
