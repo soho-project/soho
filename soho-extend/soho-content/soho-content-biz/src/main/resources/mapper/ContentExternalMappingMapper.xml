@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.content.biz.mapper.ContentExternalMappingMapper">
+
+    <resultMap id="BaseResultMap" type="work.soho.content.biz.domain.ContentExternalMapping">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="contentId" column="content_id" jdbcType="INTEGER"/>
+        <result property="externalObjectId" column="external_object_id" jdbcType="INTEGER"/>
+        <result property="externalType" column="external_type" jdbcType="VARCHAR"/>
+        <result property="externalSlug" column="external_slug" jdbcType="VARCHAR"/>
+        <result property="externalStatus" column="external_status" jdbcType="VARCHAR"/>
+        <result property="externalPassword" column="external_password" jdbcType="VARCHAR"/>
+        <result property="externalCommentStatus" column="external_comment_status" jdbcType="VARCHAR"/>
+        <result property="externalPingStatus" column="external_ping_status" jdbcType="VARCHAR"/>
+        <result property="externalMenuOrder" column="external_menu_order" jdbcType="INTEGER"/>
+        <result property="externalParentId" column="external_parent_id" jdbcType="INTEGER"/>
+        <result property="externalFeaturedMediaId" column="external_featured_media_id" jdbcType="INTEGER"/>
+        <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
+        <result property="updatedTime" column="updated_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,content_id,external_object_id,external_type,external_slug,external_status,external_password,external_comment_status,
+        external_ping_status,external_menu_order,external_parent_id,external_featured_media_id,created_time,updated_time
+    </sql>
+</mapper>
