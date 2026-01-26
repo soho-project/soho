@@ -1,4 +1,4 @@
-package work.soho.content.biz.controller;
+package work.soho.content.biz.controller.guest;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.annotations.Api;
@@ -23,9 +23,9 @@ import java.util.stream.Collectors;
 
 @Api(tags = "客户端内容接口")
 @RestController
-@RequestMapping("/content/client/api/content")
+@RequestMapping("/content/guest/api/content")
 @RequiredArgsConstructor
-public class ClientContentController {
+public class GuestContentController {
     private final AdminContentService adminContentService;
     private final UserApiService userApiService ;
     private final AdminContentCategoryService adminContentCategoryService;

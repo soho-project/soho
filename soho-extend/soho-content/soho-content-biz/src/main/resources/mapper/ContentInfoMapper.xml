@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.content.biz.mapper.ContentInfoMapper">
+    <resultMap id="BaseResultMap" type="work.soho.content.biz.domain.ContentInfo">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="title" column="title" jdbcType="VARCHAR"/>
+        <id property="description" column="description" jdbcType="VARCHAR"/>
+        <id property="keywords" column="keywords" jdbcType="VARCHAR"/>
+        <id property="thumbnail" column="thumbnail" jdbcType="VARCHAR"/>
+        <id property="body" column="body" jdbcType="VARCHAR"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="categoryId" column="category_id" jdbcType="BIGINT"/>
+        <id property="userId" column="user_id" jdbcType="BIGINT"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="isTop" column="is_top" jdbcType="TINYINT"/>
+        <id property="star" column="star" jdbcType="INTEGER"/>
+        <id property="likes" column="likes" jdbcType="INTEGER"/>
+        <id property="disLikes" column="dis_likes" jdbcType="INTEGER"/>
+        <id property="commentsCount" column="comments_count" jdbcType="INTEGER"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,title,description,keywords,thumbnail,body,updated_time,created_time,category_id,user_id,status,is_top,star,likes,dis_likes,comments_count
+    </sql>
+</mapper>

@@ -1,94 +1,107 @@
 package work.soho.content.biz.domain;
 
-import com.alibaba.excel.annotation.ExcelProperty;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
-
+import com.alibaba.excel.annotation.ExcelProperty;
+import com.alibaba.excel.annotation.format.DateTimeFormat;
 import java.io.Serializable;
+import lombok.Data;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * 内容分类
- * @TableName admin_content_category
- */
-@TableName(value ="content_category")
 @Data
+@TableName(value ="content_category")
+@ApiModel("内容分类")
 public class ContentCategory implements Serializable {
     /**
-     * 分类ID
-     */
+    * id
+    */
+    @ExcelProperty("id")
+    @ApiModelProperty(value = "id")
     @TableId(value = "id", type = IdType.AUTO)
-    @ExcelProperty(value = "id")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     /**
-     * 分类名称
-     */
+    * name
+    */
+    @ExcelProperty("name")
+    @ApiModelProperty(value = "name")
     @TableField(value = "name")
-    @ExcelProperty(value = "名称")
     private String name;
 
     /**
-     * 父分类ID
-     */
+    * parent_id
+    */
+    @ExcelProperty("parent_id")
+    @ApiModelProperty(value = "parent_id")
     @TableField(value = "parent_id")
-    @ExcelProperty(value = "父分类ID")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long parentId;
 
     /**
-     * 分类描述
-     */
+    * description
+    */
+    @ExcelProperty("description")
+    @ApiModelProperty(value = "description")
     @TableField(value = "description")
-    @ExcelProperty(value = "描述")
     private String description;
 
     /**
-     * 分类关键字
-     */
+    * keyword
+    */
+    @ExcelProperty("keyword")
+    @ApiModelProperty(value = "keyword")
     @TableField(value = "keyword")
-    @ExcelProperty(value = "关键字")
     private String keyword;
 
     /**
-     * 分类内容
-     */
+    * content
+    */
+    @ExcelProperty("content")
+    @ApiModelProperty(value = "content")
     @TableField(value = "content")
-    @ExcelProperty(value = "内容")
     private String content;
 
     /**
-     * 排序
-     */
+    * order
+    */
+    @ExcelProperty("order")
+    @ApiModelProperty(value = "order")
     @TableField(value = "`order`")
-    @ExcelProperty(value = "排序")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer order;
 
     /**
-     * 分类是否显示 0 不显示  1 显示
-     */
+    * is_display
+    */
+    @ExcelProperty("is_display")
+    @ApiModelProperty(value = "is_display")
     @TableField(value = "is_display")
-    @ExcelProperty(value = "是否显示")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer isDisplay;
 
     /**
-     * 更新时间
-     */
+    * update_time
+    */
+    @ExcelProperty("update_time")
+    @ApiModelProperty(value = "update_time")
     @TableField(value = "update_time")
-    @ExcelProperty(value = "更新时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateTime;
 
     /**
-     * 创建时间
-     */
-    @TableField(value = "created_time")
-    @ExcelProperty(value = "创建时间")
+    * created_time
+    */
+    @ExcelProperty("created_time")
+    @ApiModelProperty(value = "created_time")
+    @TableField(value = "created_time", fill = FieldFill.INSERT)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
 
-    @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
 }
