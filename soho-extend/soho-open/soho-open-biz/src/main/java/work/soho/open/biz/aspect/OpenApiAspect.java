@@ -7,7 +7,6 @@ import lombok.extern.log4j.Log4j2;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,19 +17,22 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.IpUtils;
 import work.soho.common.security.userdetails.SohoUserDetails;
-import work.soho.open.api.annotation.OpenApi;
 import work.soho.open.api.result.OpenErrorCode;
 import work.soho.open.biz.component.OpenApiLimitFacotory;
 import work.soho.open.biz.domain.OpenApiCallLog;
 import work.soho.open.biz.domain.OpenApiStatDay;
 import work.soho.open.biz.domain.OpenApp;
 import work.soho.open.biz.enums.OpenAppEnums;
-import work.soho.open.biz.service.*;
+import work.soho.open.biz.service.OpenApiCallLogService;
+import work.soho.open.biz.service.OpenApiService;
+import work.soho.open.biz.service.OpenApiStatDayService;
+import work.soho.open.biz.service.OpenAppApiService;
+import work.soho.open.biz.service.OpenAppService;
 
 import javax.servlet.http.HttpServletRequest;
-import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -46,19 +48,21 @@ public class OpenApiAspect {
     private final OpenApiService openApiService;
     private final OpenAppService openAppService;
     private final OpenAppApiService openAppApiService;
-    private final OpenAppIpWhitelistService openAppIpWhitelistService;
     private final OpenApiCallLogService openApiCallLogService;
     private final OpenApiStatDayService openApiStatDayService;
     private final OpenApiLimitFacotory openApiLimitFacotory;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
+    private static final String API_VERSION = "1.0.0";
+    private static final Set<String> ALLOWED_METHODS = Set.of("GET", "POST", "PUT", "DELETE");
 
     @Around(value = "@annotation(work.soho.open.api.annotation.OpenApi) || @within(work.soho.open.api.annotation.OpenApi)")
     public Object around(ProceedingJoinPoint invocation) throws Throwable {
         try {
             ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attrs == null) {
+                return R.error(OpenErrorCode.MISSING_THE_NECESSARY_REQUEST);
+            }
             HttpServletRequest request = attrs.getRequest();
-            String appKey = request.getHeader("app-key");
-            String reqTime = request.getHeader("req-time");
             String method = request.getMethod();
             String path = request.getRequestURI();
 
@@ -67,12 +71,11 @@ public class OpenApiAspect {
                     ? (SohoUserDetails) auth.getPrincipal()
                     : null;
 
-            log.info("当前登录用户" + user);
             if (user == null) {
                 return R.error(OpenErrorCode.USER_NOT_LOGGED_IN);
             }
 
-            appKey = (String) user.getClaims().get("appKey");
+            String appKey = (String) user.getClaims().get("appKey");
 
 
             if (appKey == null) {
@@ -80,27 +83,25 @@ public class OpenApiAspect {
             }
 
             // 判断请求方法， 只支持 GET,POST,PUT,DELETE
-            if (!method.equalsIgnoreCase("GET") && !method.equalsIgnoreCase("POST")
-                    && !method.equalsIgnoreCase("PUT") && !method.equalsIgnoreCase("DELETE")) {
+            if (!isAllowedMethod(method)) {
                 return R.error(OpenErrorCode.MISSING_THE_NECESSARY_REQUEST);
             }
 
             OpenApp openApp = openAppService.getOpenAppByKey(appKey);
+            if (openApp == null) {
+                return R.error(OpenErrorCode.APP_KEY_ERROR);
+            }
 
             // 检查app是否已经通过审核
             if (openApp.getStatus() != OpenAppEnums.Status.ACTIVE.getId()) {
                 return R.error(OpenErrorCode.THE_APP_FAILED_THE_REVIEW);
             }
 
-            if (openApp == null) {
-                return R.error(OpenErrorCode.APP_KEY_ERROR);
-            }
-
             // 获取api信息
-            work.soho.open.biz.domain.OpenApi api = openApiService.getByMethodAndPathAndVersion(method, path, "1.0.0");
+            work.soho.open.biz.domain.OpenApi api = resolveOpenApi(method, path);
 
             // 检查接口是否允许访问
-            if (!canAccess(openApp, method, path)) {
+            if (!canAccess(openApp, api)) {
                 return R.error(OpenErrorCode.INSUFFICIENT_INTERFACE_PERMISSIONS);
             }
 
@@ -109,8 +110,6 @@ public class OpenApiAspect {
                 return R.error(OpenErrorCode.REQUESTS_EXCEED_THE_MAXIMUM_RATE_OF_THE_APP);
             }
 
-            OpenApi openApi = getOpenApi(invocation);
-            log.info("openApi: " + openApi);
             // 检查接口是否有权限
             Long startTs = System.currentTimeMillis();
             Object result = invocation.proceed();
@@ -127,7 +126,9 @@ public class OpenApiAspect {
                 openApiCallLogService.save(openApiCallLog);
 
                 // 日调用统计
-                LocalDate statDate = openApiCallLog.getCreatedTime().toLocalDate();
+                LocalDate statDate = openApiCallLog.getCreatedTime() != null
+                        ? openApiCallLog.getCreatedTime().toLocalDate()
+                        : LocalDate.now();
                 // 1. 先尝试 update
                 boolean updated = openApiStatDayService.update(
                         new UpdateWrapper<OpenApiStatDay>()
@@ -172,31 +173,13 @@ public class OpenApiAspect {
     }
 
     private boolean canAccess(OpenApp openApp, String method, String path) {
-        if (openApp == null) {
+        return canAccess(openApp, resolveOpenApi(method, path));
+    }
+
+    private boolean canAccess(OpenApp openApp, work.soho.open.biz.domain.OpenApi openApi) {
+        if (openApp == null || openApi == null) {
             return false;
         }
-        // 精准匹配
-        work.soho.open.biz.domain.OpenApi openApi = openApiService.getByMethodAndPathAndVersion(method, path, "1.0.0");
-        if(openApi == null) {
-            // 模糊spring风格路径匹配
-            List<work.soho.open.biz.domain.OpenApi> openApis = openApiService.list(new LambdaQueryWrapper<work.soho.open.biz.domain.OpenApi>()
-                    .eq(work.soho.open.biz.domain.OpenApi::getMethod, method)
-                    .eq(work.soho.open.biz.domain.OpenApi::getVersion, "1.0.0")
-            );
-
-            for (work.soho.open.biz.domain.OpenApi api : openApis) {
-                // 尝试ant风格匹配
-                if(pathMatcher.match(api.getPath(), path)) {
-                    openApi = api;
-                    break;
-                }
-            }
-        }
-
-        if(openApi == null) {
-            return false;
-        }
-
         // 检查当前访问的appKey 是否有权限访问该接口
         if(!openAppApiService.canAccess(openApp.getId(), openApi.getId())) {
             return false;
@@ -204,15 +187,30 @@ public class OpenApiAspect {
         return true;
     }
 
-    private OpenApi getOpenApi(ProceedingJoinPoint invocation) {
-        String methodName=invocation.getSignature().getName();
-        Class<?> classTarget=invocation.getTarget().getClass();
-        Class<?>[] par=((MethodSignature) invocation.getSignature()).getParameterTypes();
-        try {
-            Method objMethod=classTarget.getMethod(methodName, par);
-            return objMethod.getAnnotation(OpenApi.class);
-        } catch (Exception e) {
-            return null;
+    private work.soho.open.biz.domain.OpenApi resolveOpenApi(String method, String path) {
+        // 精准匹配
+        work.soho.open.biz.domain.OpenApi openApi =
+                openApiService.getByMethodAndPathAndVersion(method, path, API_VERSION);
+        if (openApi != null) {
+            return openApi;
         }
+        // 模糊spring风格路径匹配
+        List<work.soho.open.biz.domain.OpenApi> openApis =
+                openApiService.list(new LambdaQueryWrapper<work.soho.open.biz.domain.OpenApi>()
+                        .eq(work.soho.open.biz.domain.OpenApi::getMethod, method)
+                        .eq(work.soho.open.biz.domain.OpenApi::getVersion, API_VERSION)
+                );
+
+        for (work.soho.open.biz.domain.OpenApi api : openApis) {
+            // 尝试ant风格匹配
+            if (pathMatcher.match(api.getPath(), path)) {
+                return api;
+            }
+        }
+        return null;
+    }
+
+    private boolean isAllowedMethod(String method) {
+        return method != null && ALLOWED_METHODS.contains(method.toUpperCase());
     }
 }

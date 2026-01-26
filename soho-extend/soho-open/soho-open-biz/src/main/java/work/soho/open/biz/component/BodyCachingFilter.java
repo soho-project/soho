@@ -22,10 +22,11 @@ public class BodyCachingFilter implements Filter {
             boolean isMultipart = contentType != null
                     && contentType.toLowerCase(Locale.ROOT).startsWith("multipart/");
 
-            // 只对 非 multipart 的 POST / PUT / PATCH 做 body 缓存
+            // 只对 非 multipart 的 POST / PUT / PATCH / DELETE 做 body 缓存
             if (!isMultipart &&
                     ("POST".equalsIgnoreCase(method)
                             || "PUT".equalsIgnoreCase(method)
+                            || "DELETE".equalsIgnoreCase(method)
                             || "PATCH".equalsIgnoreCase(method))) {
 
                 BodyCachingHttpServletRequestWrapper wrapper =

@@ -140,10 +140,13 @@ public class OpenAuthenticationServiceImpl implements OpenAuthenticationService 
     private String getSignByRequest(HttpServletRequest request, String appSecret) throws Exception {
         String method = request.getMethod();
         String body = "";
+        String path = request.getRequestURI();
 
         if(method.equalsIgnoreCase("GET")) {
             LinkedHashMap<String, String> linkedHashMap = new LinkedHashMap<>();
             Map<String, String[]> parameterMap = request.getParameterMap();
+            System.out.println("获取GET参数");
+            System.out.println(parameterMap);
             for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
                 String key = entry.getKey();
                 String[] values = entry.getValue();
@@ -164,12 +167,14 @@ public class OpenAuthenticationServiceImpl implements OpenAuthenticationService 
                 body = new String(cached, StandardCharsets.UTF_8);
             } else {
                 // No cached body available; keep empty to avoid ClassCastException
+                System.out.println("No cached body available; keep empty to avoid ClassCastException");
                 body = "";
             }
+            System.out.println("sign body body:" + body);
         }
 
-        log.info("sign body:" + body + "_" + appSecret);
-        String sign = md5(body + "_" + appSecret);
+        log.info("sign body:" + path+ "_" +body + "_" + appSecret);
+        String sign = md5(path + "_" + body + "_" + appSecret);
         return sign;
     }
 
