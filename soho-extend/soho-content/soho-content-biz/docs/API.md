@@ -107,9 +107,19 @@ Body：`WordPressSyncRequest`
   "comments": true,
   "page": 1,
   "perPage": 50,
-  "upsert": true
+  "upsert": true,
+  "wordpress": {
+    "baseUrl": "https://your-wp-site.com",
+    "username": "admin",
+    "appPassword": "xxxx xxxx xxxx xxxx"
+  }
 }
 ```
+
+说明（`wordpress` 为可选，用于前端临时指定 WP 连接配置，覆盖服务端默认配置）：
+- `wordpress.baseUrl`：WordPress 站点根地址（必填才会覆盖默认配置）
+- `wordpress.username`：用户名（可选，Basic Auth）
+- `wordpress.appPassword`：应用密码（可选，Basic Auth）
 
 响应：`WordPressSyncResult`
 

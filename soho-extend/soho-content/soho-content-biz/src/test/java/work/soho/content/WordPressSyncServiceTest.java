@@ -53,7 +53,7 @@ public class WordPressSyncServiceTest extends TestCase {
 
         FakeWordPressClient client = new FakeWordPressClient();
         WordPressSyncService syncService = new WordPressSyncService(
-                client, contentService, categoryService, tagService,
+                client, new WordPressProperties(), contentService, categoryService, tagService,
                 tagRelationService, mediaService, commentService, mappingService
         );
 

@@ -2,6 +2,7 @@ package work.soho.content.biz.controller.guest;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.vo.AdminContentCategoryListVo;
@@ -10,24 +11,24 @@ import work.soho.admin.api.vo.NavVo;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.PageUtils;
-import work.soho.content.biz.domain.ContentInfo;
 import work.soho.content.biz.domain.ContentCategory;
+import work.soho.content.biz.domain.ContentInfo;
 import work.soho.content.biz.service.AdminContentCategoryService;
 import work.soho.content.biz.service.AdminContentService;
 import work.soho.user.api.dto.UserInfoDto;
 import work.soho.user.api.service.UserApiService;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Api(tags = "客户端内容接口")
 @RestController
-@RequestMapping("/content/guest/contentInfo")
+@RequestMapping("/content/guest/contentInfo2")
 @RequiredArgsConstructor
 public class GuestContentController {
     private final AdminContentService adminContentService;
