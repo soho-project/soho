@@ -3,6 +3,7 @@ package work.soho.content.biz.wordpress;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import work.soho.content.biz.domain.ContentCategory;
 import work.soho.content.biz.domain.ContentComment;
 import work.soho.content.biz.domain.ContentInfo;
@@ -20,14 +21,17 @@ import work.soho.content.biz.service.ContentExternalMappingService;
 import work.soho.content.biz.wordpress.dto.WordPressCommentDto;
 import work.soho.content.biz.wordpress.dto.WordPressMediaDto;
 import work.soho.content.biz.wordpress.dto.WordPressPostDto;
+import work.soho.content.biz.wordpress.dto.WordPressPropertiesRequest;
 import work.soho.content.biz.wordpress.dto.WordPressSyncRequest;
 import work.soho.content.biz.wordpress.dto.WordPressSyncResult;
 import work.soho.content.biz.wordpress.dto.WordPressTermDto;
+import work.soho.content.biz.wordpress.dto.WordPressUserDto;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.function.IntFunction;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +40,8 @@ import java.util.Map;
  */
 @Service
 public class WordPressSyncService {
-    private final WordPressClient client;
+    private final WordPressClient defaultClient;
+    private final WordPressProperties defaultProperties;
     private final AdminContentService contentService;
     private final AdminContentCategoryService categoryService;
     private final ContentTagService tagService;
@@ -45,15 +50,17 @@ public class WordPressSyncService {
     private final ContentCommentService commentService;
     private final ContentExternalMappingService mappingService;
 
-    public WordPressSyncService(WordPressClient client,
-                               AdminContentService contentService,
-                               AdminContentCategoryService categoryService,
-                               ContentTagService tagService,
-                               ContentTagRelationService tagRelationService,
-                               ContentMediaService mediaService,
-                               ContentCommentService commentService,
-                               ContentExternalMappingService mappingService) {
-        this.client = client;
+    public WordPressSyncService(WordPressClient defaultClient,
+                                WordPressProperties defaultProperties,
+                                AdminContentService contentService,
+                                AdminContentCategoryService categoryService,
+                                ContentTagService tagService,
+                                ContentTagRelationService tagRelationService,
+                                ContentMediaService mediaService,
+                                ContentCommentService commentService,
+                                ContentExternalMappingService mappingService) {
+        this.defaultClient = defaultClient;
+        this.defaultProperties = defaultProperties;
         this.contentService = contentService;
         this.categoryService = categoryService;
         this.tagService = tagService;
@@ -65,44 +72,50 @@ public class WordPressSyncService {
 
     public WordPressSyncResult importFromWordPress(WordPressSyncRequest request) {
         WordPressSyncResult result = new WordPressSyncResult();
+        int startPage = Math.max(1, request.getPage());
+        int perPage = request.getPerPage() > 0 ? request.getPerPage() : 50;
+        WordPressClient client = resolveClient(request);
+        Map<Long, Long> categoryMap = new HashMap<>();
+        Map<Long, Long> tagMap = new HashMap<>();
         if (request.isCategories()) {
-            result.setCategoriesImported(importCategories(request.getPage(), request.getPerPage()));
+            result.setCategoriesImported(importCategories(client, startPage, perPage, categoryMap));
         }
         if (request.isTags()) {
-            result.setTagsImported(importTags(request.getPage(), request.getPerPage()));
+            result.setTagsImported(importTags(client, startPage, perPage, tagMap));
         }
         if (request.isUsers()) {
-            result.setUsersImported(0);
+            result.setUsersImported(importUsers(client, startPage, perPage));
         }
         if (request.isMedia()) {
-            result.setMediaImported(importMedia(request.getPage(), request.getPerPage()));
+            result.setMediaImported(importMedia(client, startPage, perPage));
         }
         if (request.isPosts()) {
-            result.setPostsImported(importPosts("post", request.getPage(), request.getPerPage(), request.isUpsert()));
+            result.setPostsImported(importPosts(client, "post", startPage, perPage, request.isUpsert(), categoryMap, tagMap));
         }
         if (request.isPages()) {
-            result.setPagesImported(importPosts("page", request.getPage(), request.getPerPage(), request.isUpsert()));
+            result.setPagesImported(importPosts(client, "page", startPage, perPage, request.isUpsert(), categoryMap, tagMap));
         }
         if (request.isComments()) {
-            result.setCommentsImported(importComments(request.getPage(), request.getPerPage(), request.isUpsert()));
+            result.setCommentsImported(importComments(client, startPage, perPage, request.isUpsert()));
         }
         return result;
     }
 
-    private int importCategories(int page, int perPage) {
-        List<WordPressTermDto> categories = client.getCategories(page, perPage);
+    private int importCategories(WordPressClient client, int startPage, int perPage, Map<Long, Long> categoryMap) {
+        List<WordPressTermDto> categories = fetchAllPages(page -> client.getCategories(page, perPage), startPage, perPage);
         if (CollectionUtils.isEmpty(categories)) {
             return 0;
         }
-        Map<Long, Long> wpToLocal = new HashMap<>();
         for (WordPressTermDto term : categories) {
             ContentCategory category = upsertCategory(term, 0L);
-            wpToLocal.put(term.getId(), category.getId());
+            if (term.getId() != null && category.getId() != null) {
+                categoryMap.put(term.getId(), category.getId());
+            }
         }
         for (WordPressTermDto term : categories) {
             if (term.getParent() != null && term.getParent() > 0) {
-                Long localId = wpToLocal.get(term.getId());
-                Long parentId = wpToLocal.get(term.getParent());
+                Long localId = categoryMap.get(term.getId());
+                Long parentId = categoryMap.get(term.getParent());
                 if (localId != null && parentId != null) {
                     ContentCategory category = categoryService.getById(localId);
                     category.setParentId(parentId);
@@ -132,15 +145,27 @@ public class WordPressSyncService {
         return category;
     }
 
-    private int importTags(int page, int perPage) {
-        List<WordPressTermDto> tags = client.getTags(page, perPage);
+    private int importTags(WordPressClient client, int startPage, int perPage, Map<Long, Long> tagMap) {
+        List<WordPressTermDto> tags = fetchAllPages(page -> client.getTags(page, perPage), startPage, perPage);
         if (CollectionUtils.isEmpty(tags)) {
             return 0;
         }
         for (WordPressTermDto term : tags) {
-            upsertTag(term);
+            ContentTag tag = upsertTag(term);
+            if (term.getId() != null && tag.getId() != null) {
+                tagMap.put(term.getId(), tag.getId());
+            }
         }
         return tags.size();
+    }
+
+    private int importUsers(WordPressClient client, int startPage, int perPage) {
+        List<WordPressUserDto> users = fetchAllPages(page -> client.getUsers(page, perPage), startPage, perPage);
+        if (CollectionUtils.isEmpty(users)) {
+            return 0;
+        }
+        // 当前模块没有用户创建/写入能力，这里至少确认接口可用并返回数量。
+        return users.size();
     }
 
     private ContentTag upsertTag(WordPressTermDto term) {
@@ -161,14 +186,15 @@ public class WordPressSyncService {
         return tag;
     }
 
-    private int importMedia(int page, int perPage) {
-        List<WordPressMediaDto> mediaList = client.getMedia(page, perPage);
+    private int importMedia(WordPressClient client, int startPage, int perPage) {
+        List<WordPressMediaDto> mediaList = fetchAllPages(page -> client.getMedia(page, perPage), startPage, perPage);
         if (CollectionUtils.isEmpty(mediaList)) {
             return 0;
         }
         for (WordPressMediaDto mediaDto : mediaList) {
             ContentMedia media = mediaService.getOne(new LambdaQueryWrapper<ContentMedia>()
-                    .eq(ContentMedia::getExternalMediaId, mediaDto.getId()));
+                    .eq(ContentMedia::getExternalMediaId, mediaDto.getId())
+                    .orderByDesc(ContentMedia::getId), false);
             if (media == null) {
                 media = new ContentMedia();
                 media.setExternalMediaId(mediaDto.getId());
@@ -190,15 +216,17 @@ public class WordPressSyncService {
         return mediaList.size();
     }
 
-    private int importPosts(String type, int page, int perPage, boolean upsert) {
-        List<WordPressPostDto> posts = client.getPosts(type, page, perPage);
+    private int importPosts(WordPressClient client, String type, int startPage, int perPage, boolean upsert,
+                            Map<Long, Long> categoryMap, Map<Long, Long> tagMap) {
+        List<WordPressPostDto> posts = fetchAllPages(page -> client.getPosts(type, page, perPage), startPage, perPage);
         if (CollectionUtils.isEmpty(posts)) {
             return 0;
         }
         for (WordPressPostDto post : posts) {
             ContentExternalMapping mapping = mappingService.getOne(new LambdaQueryWrapper<ContentExternalMapping>()
                     .eq(ContentExternalMapping::getExternalObjectId, post.getId())
-                    .eq(ContentExternalMapping::getExternalType, type));
+                    .eq(ContentExternalMapping::getExternalType, type)
+                    .orderByDesc(ContentExternalMapping::getId), false);
             ContentInfo content = null;
             if (mapping != null) {
                 content = contentService.getById(mapping.getContentId());
@@ -217,7 +245,7 @@ public class WordPressSyncService {
             content.setIsTop(post.isSticky() ? 1 : 0);
             content.setUpdatedTime(parseDate(post.getModified()));
             content.setUserId(null);
-            content.setCategoryId(resolveCategoryId(post.getCategories()));
+            content.setCategoryId(resolveCategoryId(client, post.getCategories(), categoryMap));
             if (content.getId() == null) {
                 contentService.save(content);
             } else {
@@ -241,19 +269,20 @@ public class WordPressSyncService {
             } else {
                 mappingService.updateById(mapping);
             }
-            updateTags(content.getId(), post.getTags());
+            updateTags(client, content.getId(), post.getTags(), tagMap);
         }
         return posts.size();
     }
 
-    private int importComments(int page, int perPage, boolean upsert) {
-        List<WordPressCommentDto> comments = client.getComments(page, perPage);
+    private int importComments(WordPressClient client, int startPage, int perPage, boolean upsert) {
+        List<WordPressCommentDto> comments = fetchAllPages(page -> client.getComments(page, perPage), startPage, perPage);
         if (CollectionUtils.isEmpty(comments)) {
             return 0;
         }
         for (WordPressCommentDto commentDto : comments) {
             ContentComment comment = commentService.getOne(new LambdaQueryWrapper<ContentComment>()
-                    .eq(ContentComment::getExternalCommentId, commentDto.getId()));
+                    .eq(ContentComment::getExternalCommentId, commentDto.getId())
+                    .orderByDesc(ContentComment::getId), false);
             if (comment == null && !upsert) {
                 continue;
             }
@@ -280,7 +309,7 @@ public class WordPressSyncService {
         return comments.size();
     }
 
-    private void updateTags(Long contentId, List<Long> wpTagIds) {
+    private void updateTags(WordPressClient client, Long contentId, List<Long> wpTagIds, Map<Long, Long> tagMap) {
         tagRelationService.remove(new LambdaQueryWrapper<ContentTagRelation>()
                 .eq(ContentTagRelation::getContentId, contentId));
         if (CollectionUtils.isEmpty(wpTagIds)) {
@@ -288,7 +317,7 @@ public class WordPressSyncService {
         }
         List<ContentTagRelation> relations = new ArrayList<>();
         for (Long wpTagId : wpTagIds) {
-            ContentTag tag = resolveTagByExternalId(wpTagId);
+            ContentTag tag = resolveTagByExternalId(client, wpTagId, tagMap);
             if (tag != null && tag.getId() != null) {
                 ContentTagRelation relation = new ContentTagRelation();
                 relation.setContentId(contentId);
@@ -301,19 +330,24 @@ public class WordPressSyncService {
         }
     }
 
-    private Long resolveCategoryId(List<Long> externalCategoryIds) {
+    private Long resolveCategoryId(WordPressClient client, List<Long> externalCategoryIds, Map<Long, Long> categoryMap) {
         if (CollectionUtils.isEmpty(externalCategoryIds)) {
             return null;
         }
-        ContentCategory category = resolveCategoryByExternalId(externalCategoryIds.get(0));
+        Long externalId = externalCategoryIds.get(0);
+        if (externalId != null && categoryMap != null && categoryMap.containsKey(externalId)) {
+            return categoryMap.get(externalId);
+        }
+        ContentCategory category = resolveCategoryByExternalId(client, externalId);
         return category != null ? category.getId() : null;
     }
 
-    private ContentCategory resolveCategoryByExternalId(Long externalCategoryId) {
+    private ContentCategory resolveCategoryByExternalId(WordPressClient client, Long externalCategoryId) {
         if (externalCategoryId == null) {
             return null;
         }
-        for (WordPressTermDto term : client.getCategories(1, 100)) {
+        List<WordPressTermDto> terms = fetchAllPages(page -> client.getCategories(page, 100), 1, 100);
+        for (WordPressTermDto term : terms) {
             if (externalCategoryId.equals(term.getId())) {
                 return matchCategory(term);
             }
@@ -321,11 +355,15 @@ public class WordPressSyncService {
         return null;
     }
 
-    private ContentTag resolveTagByExternalId(Long externalTagId) {
+    private ContentTag resolveTagByExternalId(WordPressClient client, Long externalTagId, Map<Long, Long> tagMap) {
         if (externalTagId == null) {
             return null;
         }
-        for (WordPressTermDto term : client.getTags(1, 100)) {
+        if (tagMap != null && tagMap.containsKey(externalTagId)) {
+            return tagService.getById(tagMap.get(externalTagId));
+        }
+        List<WordPressTermDto> terms = fetchAllPages(page -> client.getTags(page, 100), 1, 100);
+        for (WordPressTermDto term : terms) {
             if (externalTagId.equals(term.getId())) {
                 return matchTag(term);
             }
@@ -338,10 +376,12 @@ public class WordPressSyncService {
             return null;
         }
         ContentCategory category = categoryService.getOne(new LambdaQueryWrapper<ContentCategory>()
-                .eq(ContentCategory::getName, term.getName()));
+                .eq(ContentCategory::getName, term.getName())
+                .orderByDesc(ContentCategory::getId), false);
         if (category == null && term.getSlug() != null) {
             category = categoryService.getOne(new LambdaQueryWrapper<ContentCategory>()
-                    .eq(ContentCategory::getKeyword, term.getSlug()));
+                    .eq(ContentCategory::getKeyword, term.getSlug())
+                    .orderByDesc(ContentCategory::getId), false);
         }
         return category;
     }
@@ -351,10 +391,12 @@ public class WordPressSyncService {
             return null;
         }
         ContentTag tag = tagService.getOne(new LambdaQueryWrapper<ContentTag>()
-                .eq(ContentTag::getName, term.getName()));
+                .eq(ContentTag::getName, term.getName())
+                .orderByDesc(ContentTag::getId), false);
         if (tag == null && term.getSlug() != null) {
             tag = tagService.getOne(new LambdaQueryWrapper<ContentTag>()
-                    .eq(ContentTag::getSlug, term.getSlug()));
+                    .eq(ContentTag::getSlug, term.getSlug())
+                    .orderByDesc(ContentTag::getId), false);
         }
         return tag;
     }
@@ -365,14 +407,37 @@ public class WordPressSyncService {
         }
         ContentExternalMapping mapping = mappingService.getOne(new LambdaQueryWrapper<ContentExternalMapping>()
                 .eq(ContentExternalMapping::getExternalObjectId, externalObjectId)
-                .eq(ContentExternalMapping::getExternalType, "post"));
+                .eq(ContentExternalMapping::getExternalType, "post")
+                .orderByDesc(ContentExternalMapping::getId), false);
         if (mapping != null) {
             return mapping.getContentId();
         }
         mapping = mappingService.getOne(new LambdaQueryWrapper<ContentExternalMapping>()
                 .eq(ContentExternalMapping::getExternalObjectId, externalObjectId)
-                .eq(ContentExternalMapping::getExternalType, "page"));
+                .eq(ContentExternalMapping::getExternalType, "page")
+                .orderByDesc(ContentExternalMapping::getId), false);
         return mapping != null ? mapping.getContentId() : null;
+    }
+
+    private WordPressClient resolveClient(WordPressSyncRequest request) {
+        WordPressPropertiesRequest override = request.getWordpress();
+        if (override == null || !StringUtils.hasText(override.getBaseUrl())) {
+            return defaultClient;
+        }
+        WordPressProperties props = new WordPressProperties();
+        props.setBaseUrl(override.getBaseUrl());
+        if (StringUtils.hasText(override.getUsername())) {
+            props.setUsername(override.getUsername());
+        } else if (defaultProperties != null) {
+            props.setUsername(defaultProperties.getUsername());
+        }
+        if (StringUtils.hasText(override.getAppPassword())) {
+            props.setAppPassword(override.getAppPassword());
+        } else if (defaultProperties != null) {
+            props.setAppPassword(defaultProperties.getAppPassword());
+        }
+        props.setEnabled(true);
+        return new WordPressClient(props);
     }
 
     private LocalDateTime parseDate(String dateStr) {
@@ -384,5 +449,23 @@ public class WordPressSyncService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private <T> List<T> fetchAllPages(IntFunction<List<T>> fetcher, int startPage, int perPage) {
+        List<T> all = new ArrayList<>();
+        int page = Math.max(1, startPage);
+        int safeMaxPages = 1000;
+        for (int i = 0; i < safeMaxPages; i++) {
+            List<T> items = fetcher.apply(page);
+            if (CollectionUtils.isEmpty(items)) {
+                break;
+            }
+            all.addAll(items);
+            if (items.size() < perPage) {
+                break;
+            }
+            page++;
+        }
+        return all;
     }
 }

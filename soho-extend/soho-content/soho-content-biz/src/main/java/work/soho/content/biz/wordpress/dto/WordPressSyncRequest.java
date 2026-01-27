@@ -17,4 +17,8 @@ public class WordPressSyncRequest {
     private int page = 1;
     private int perPage = 50;
     private boolean upsert = true;
+    /**
+     * 前端可选传入的 WordPress 配置信息（覆盖服务端默认配置）
+     */
+    private WordPressPropertiesRequest wordpress;
 }
