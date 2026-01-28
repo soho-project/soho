@@ -1,16 +1,25 @@
 # soho-content-biz API 对接文档
 
-本文件汇总 `soho-content-biz` 模块对外提供的主要 REST 接口，按访问角色分组。  
-若接口返回为 `R<T>`，代表统一响应包装（`code/message/data`），具体字段以公共模块定义为准。
+本文档基于当前控制器源码整理，包含接口路径与请求/响应示例。
 
 ## 通用约定
 
-- **分页参数**：使用 `PageUtils.startPage()`，通常由 PageHelper 读取 `pageNum` / `pageSize`（如需兼容前端请按实际约定传递）。
-- **时间区间**：`BetweenCreatedTimeRequest` 支持 `startTime` / `endTime`（Query 参数）。
-- **权限**：
-  - `/content/admin/**`：需要管理员权限（有 `@Node` 标记）。
-  - `/content/user/**`：需要登录用户权限。
-  - `/content/guest/**` 与 `/wp-json/wp/v2/**`：公开或弱鉴权接口。
+- 统一响应：多数接口返回 `R<T>`，结构通常如下：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {}
+}
+```
+
+- 分页参数：PageHelper 读取 `pageNum` / `pageSize`。
+- 时间区间：`startTime` / `endTime`（Query 参数）。
+- 权限范围：
+- `/content/admin/**`：管理员权限。
+- `/content/user/**`：登录用户权限。
+- `/content/guest/**` 与 `/wp-json/wp/v2/**`：公开或弱鉴权接口。
 
 ---
 
@@ -20,36 +29,73 @@
 
 Base Path: `/content/admin/contentInfo`
 
-- `GET /list`：分页列表  
-  Query：ContentInfo 字段 + `startTime/endTime`
-- `GET /{id}`：详情  
-- `POST /`：新增  
-  Body：`ContentInfo`
-- `PUT /`：更新  
-  Body：`ContentInfo`
-- `DELETE /{ids}`：删除（批量）  
-  Path：逗号分隔 ID
-- `GET /options`：下拉选项（value=id,label=title）
-- `GET /exportExcel`：导出 Excel（同列表过滤条件）
-- `POST /importExcel`：导入 Excel  
-  Form：`file`
+- `GET /list`
+- `GET /{id}`
+- `POST /`
+- `PUT /`
+- `DELETE /{ids}`
+- `GET /options`
+- `GET /exportExcel`
+- `POST /importExcel`
+
+请求示例：
+
+```http
+GET /content/admin/contentInfo/list?pageNum=1&pageSize=10&title=Spring
+```
+
+响应示例（示意）：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 1,
+    "rows": [
+      { "id": 101, "title": "Spring 入门" }
+    ]
+  }
+}
+```
+
+新增示例：
+
+```http
+POST /content/admin/contentInfo/
+Content-Type: application/json
+
+{
+  "title": "新的文章",
+  "body": "<p>正文</p>",
+  "description": "摘要",
+  "categoryId": 10,
+  "status": 1
+}
+```
+
+---
 
 ### 2. 内容分类（ContentCategory）
 
 Base Path: `/content/admin/contentCategory`
 
-- `GET /list`：分页列表  
-  Query：ContentCategory 字段 + `startTime/endTime`
-- `GET /{id}`：详情  
-- `POST /`：新增  
-  Body：`ContentCategory`
-- `PUT /`：更新  
-  Body：`ContentCategory`
-- `DELETE /{ids}`：删除（批量，带子节点检查）
-- `GET /tree`：分类树（TreeNodeVo）
-- `GET /exportExcel`：导出 Excel
-- `POST /importExcel`：导入 Excel  
-  Form：`file`
+- `GET /list`
+- `GET /{id}`
+- `POST /`
+- `PUT /`
+- `DELETE /{ids}`
+- `GET /tree`
+- `GET /exportExcel`
+- `POST /importExcel`
+
+树形示例：
+
+```http
+GET /content/admin/contentCategory/tree
+```
+
+---
 
 ### 3. 内容标签（ContentTag）
 
@@ -61,7 +107,30 @@ Base Path: `/content/admin/contentTag`
 - `PUT /`
 - `DELETE /{ids}`
 - `GET /exportExcel`
-- `POST /importExcel`（Form：`file`）
+- `POST /importExcel`
+
+请求示例：
+
+```http
+GET /content/admin/contentTag/list?pageNum=1&pageSize=10&name=Spring
+```
+
+响应示例（示意）：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 1,
+    "rows": [
+      { "id": 1, "name": "Spring", "slug": "spring" }
+    ]
+  }
+}
+```
+
+---
 
 ### 4. 媒体资源（ContentMedia）
 
@@ -73,7 +142,30 @@ Base Path: `/content/admin/contentMedia`
 - `PUT /`
 - `DELETE /{ids}`
 - `GET /exportExcel`
-- `POST /importExcel`（Form：`file`）
+- `POST /importExcel`
+
+请求示例：
+
+```http
+GET /content/admin/contentMedia/list?pageNum=1&pageSize=10
+```
+
+响应示例（示意）：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 1,
+    "rows": [
+      { "id": 1, "title": "封面图", "url": "https://cdn.example.com/a.png" }
+    ]
+  }
+}
+```
+
+---
 
 ### 5. 评论（ContentComment）
 
@@ -85,25 +177,53 @@ Base Path: `/content/admin/contentComment`
 - `PUT /`
 - `DELETE /{ids}`
 - `GET /exportExcel`
-- `POST /importExcel`（Form：`file`）
+- `POST /importExcel`
+
+请求示例：
+
+```http
+GET /content/admin/contentComment/list?pageNum=1&pageSize=10&contentId=101
+```
+
+响应示例（示意）：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 1,
+    "rows": [
+      { "id": 1, "contentId": 101, "authorName": "Alice", "content": "写得很好" }
+    ]
+  }
+}
+```
+
+---
 
 ### 6. WordPress 导入导出（管理）
 
 Base Path: `/content/admin/wordpress`
 
-#### 6.1 导入（对接 WordPress REST API）
+- `POST /import`
+- `POST /import-wxr`
+- `GET /export`
+- `GET /export-wxr`
 
-`POST /import`  
-Body：`WordPressSyncRequest`
+导入示例：
 
-```json
+```http
+POST /content/admin/wordpress/import
+Content-Type: application/json
+
 {
   "posts": true,
   "pages": true,
   "categories": true,
   "tags": true,
   "media": true,
-  "users": true,
+  "users": false,
   "comments": true,
   "page": 1,
   "perPage": 50,
@@ -116,35 +236,11 @@ Body：`WordPressSyncRequest`
 }
 ```
 
-说明（`wordpress` 为可选，用于前端临时指定 WP 连接配置，覆盖服务端默认配置）：
-- `wordpress.baseUrl`：WordPress 站点根地址（必填才会覆盖默认配置）
-- `wordpress.username`：用户名（可选，Basic Auth）
-- `wordpress.appPassword`：应用密码（可选，Basic Auth）
-
-响应：`WordPressSyncResult`
-
-#### 6.2 导入（WXR 文件）
-
-`POST /import-wxr`  
-Form：`file`（WordPress 导出 XML）
-
-响应：`WordPressWxrImportResult`
-
-#### 6.3 导出
-
-`GET /export`  
-响应：`WordPressExportResult`
-
-#### 6.4 导出（WXR XML）
-
-`GET /export-wxr`  
-返回：`application/xml`，用于 WordPress 后台“工具 -> 导入 -> WordPress”直接导入
-
 ---
 
 ## 二、用户接口（/content/user）
 
-### 1. 内容
+### 1. 内容（ContentInfo）
 
 Base Path: `/content/user/contentInfo`
 
@@ -155,7 +251,7 @@ Base Path: `/content/user/contentInfo`
 - `DELETE /{ids}`
 - `GET /options`
 
-### 2. 标签
+### 2. 标签（ContentTag）
 
 Base Path: `/content/user/contentTag`
 
@@ -165,7 +261,28 @@ Base Path: `/content/user/contentTag`
 - `PUT /`
 - `DELETE /{ids}`
 
-### 3. 媒体
+请求示例：
+
+```http
+GET /content/user/contentTag/list?pageNum=1&pageSize=10
+```
+
+响应示例（示意）：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 1,
+    "rows": [
+      { "id": 1, "name": "Spring", "slug": "spring" }
+    ]
+  }
+}
+```
+
+### 3. 媒体（ContentMedia）
 
 Base Path: `/content/user/contentMedia`
 
@@ -175,7 +292,28 @@ Base Path: `/content/user/contentMedia`
 - `PUT /`
 - `DELETE /{ids}`
 
-### 4. 评论
+请求示例：
+
+```http
+GET /content/user/contentMedia/list?pageNum=1&pageSize=10
+```
+
+响应示例（示意）：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 1,
+    "rows": [
+      { "id": 1, "title": "封面图", "url": "https://cdn.example.com/a.png" }
+    ]
+  }
+}
+```
+
+### 4. 评论（ContentComment）
 
 Base Path: `/content/user/contentComment`
 
@@ -185,49 +323,210 @@ Base Path: `/content/user/contentComment`
 - `PUT /`
 - `DELETE /{ids}`
 
+请求示例：
+
+```http
+GET /content/user/contentComment/list?pageNum=1&pageSize=10&contentId=101
+```
+
+响应示例（示意）：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 1,
+    "rows": [
+      { "id": 1, "contentId": 101, "authorName": "Alice", "content": "写得很好" }
+    ]
+  }
+}
+```
+
 ---
 
 ## 三、游客接口（/content/guest）
 
-### 1. 站点内容接口
+### 1. 内容（ContentInfo）
 
-Base Path: `/content/guest/api/content`
+Base Path: `/content/guest/contentInfo`
 
-- `GET /hello`：健康检查
-- `GET /list`：已发布内容列表
-- `GET /category?id=...`：分类及导航
-- `GET /nav`：全量导航树
-- `GET /content?id=...`：内容详情
-- `POST /like`：点赞  
-  Body：`{ "id": 123 }`
-- `POST /disLike`：点踩  
-  Body：`{ "id": 123 }`
+- `GET /list`
+- `GET /{id}`
+- `GET /content`
+- `POST /like`
+- `POST /disLike`
 
-### 2. 游客-管理员内容
+内容详情示例：
+
+```http
+GET /content/guest/contentInfo/content?id=101
+```
+
+点赞示例：
+
+```http
+POST /content/guest/contentInfo/like
+Content-Type: application/json
+
+{ "id": 101 }
+```
+
+### 2. 分类（ContentCategory）
+
+Base Path: `/content/guest/contentCategory`
+
+- `GET /tree`
+- `GET /category`
+- `GET /nav`
+
+### 3. 标签（ContentTag）
+
+Base Path: `/content/guest/contentTag`
+
+- `GET /list`
+- `GET /{id}`
+
+请求示例：
+
+```http
+GET /content/guest/contentTag/list?pageNum=1&pageSize=10
+```
+
+响应示例（示意）：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 1,
+    "rows": [
+      { "id": 1, "name": "Spring", "slug": "spring" }
+    ]
+  }
+}
+```
+
+### 4. 媒体（ContentMedia）
+
+Base Path: `/content/guest/contentMedia`
+
+- `GET /list`
+- `GET /{id}`
+
+请求示例：
+
+```http
+GET /content/guest/contentMedia/list?pageNum=1&pageSize=10
+```
+
+响应示例（示意）：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 1,
+    "rows": [
+      { "id": 1, "title": "封面图", "url": "https://cdn.example.com/a.png" }
+    ]
+  }
+}
+```
+
+### 5. 评论（ContentComment）
+
+Base Path: `/content/guest/contentComment`
+
+- `GET /list`
+- `GET /{id}`
+- `POST /`
+
+请求示例：
+
+```http
+GET /content/guest/contentComment/list?pageNum=1&pageSize=10&contentId=101
+```
+
+响应示例（示意）：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 1,
+    "rows": [
+      { "id": 1, "contentId": 101, "authorName": "Alice", "content": "写得很好" }
+    ]
+  }
+}
+```
+
+新增评论示例：
+
+```http
+POST /content/guest/contentComment/
+Content-Type: application/json
+
+{
+  "contentId": 101,
+  "parentId": 0,
+  "authorName": "Alice",
+  "authorEmail": "alice@example.com",
+  "content": "写得很好",
+  "status": "approved"
+}
+```
+
+### 6. 游客-管理员内容（AdminContent）
 
 Base Path: `/content/guest/adminContent`
 
 - `GET /list`
 - `GET /{id}`
 
-### 3. 游客-管理员分类树
+请求示例：
 
-Base Path: `/content/guest/adminContentCategory`
+```http
+GET /content/guest/adminContent/list?pageNum=1&pageSize=10
+```
 
-- `GET /tree`
+响应示例（示意）：
 
-### 4. 游客-内容/标签/媒体/评论
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 1,
+    "rows": [
+      { "id": 101, "title": "Spring 入门" }
+    ]
+  }
+}
+```
 
-- `/content/guest/contentInfo`：`GET /list`、`GET /{id}`
-- `/content/guest/contentTag`：`GET /list`、`GET /{id}`
-- `/content/guest/contentMedia`：`GET /list`、`GET /{id}`
-- `/content/guest/contentComment`：`GET /list`、`GET /{id}`
+### 7. RSS Feed
+
+Base Path: `/content/guest/feed`
+
+- `GET /rss`（`application/rss+xml`）
+
+请求示例：
+
+```http
+GET /content/guest/feed/rss
+```
 
 ---
 
 ## 四、WordPress 兼容 REST（/wp-json/wp/v2）
 
-用于兼容 WordPress REST API 的只读接口（分页参数：`page`、`per_page`）：
+用于兼容 WordPress REST API 的只读接口（分页参数：`page`、`per_page`）。
 
 - `GET /posts`
 - `GET /pages`
@@ -237,25 +536,8 @@ Base Path: `/content/guest/adminContentCategory`
 - `GET /users`
 - `GET /comments`
 
----
+请求示例：
 
-## 五、文件上传示例（WXR 导入）
-
-```bash
-curl -X POST \\
-  -H "Authorization: Bearer <token>" \\
-  -F "file=@/path/WordPress.xml" \\
-  http://<host>/content/admin/wordpress/import-wxr
+```http
+GET /wp-json/wp/v2/posts?page=1&per_page=10
 ```
-
-## 六、导出 WXR 示例
-
-```bash
-curl -L -o wordpress-export.xml \\
-  -H "Authorization: Bearer <token>" \\
-  http://<host>/content/admin/wordpress/export-wxr
-```
-
----
-
-如需补充字段说明、示例响应或错误码，请告知具体接口。  
