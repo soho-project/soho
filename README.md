@@ -92,14 +92,14 @@ mvn clean install
 
 ## 👀 在线预览 (Live Demos)
 
--   [React (Ant Design 5)](https://adminv2.demo.soho.work/login/)
+-   [React (Ant Design 5)](https://www.soho.work/login/)
     -   账号: `admin` / `123456`
     -  [源码下载地址](https://gitee.com/work-soho/soho-admin-h5-v2)
 -   [Vue (Ant Design Vue)](https://admin-vue.demo.soho.work/login/)
     -   账号: `admin` / `123456`
 -   [开放平台](https://open.demo.soho.work/)
     -   账号: `P15873164076` / `123456`
--   [旧版预览](https://www.soho.work/) - (已停止更新)
+-   [旧版预览](https://v1.soho.work/) - (已停止更新)
     -   账号: `admin` / `123456`
 
 ---
