@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.game.biz.mapper.WordMatchBattleEventMapper">
+    <resultMap id="BaseResultMap" type="work.soho.game.biz.wordmatch.domain.WordMatchBattleEvent">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="battleId" column="battle_id" jdbcType="BIGINT"/>
+        <id property="roomId" column="room_id" jdbcType="VARCHAR"/>
+        <id property="seq" column="seq" jdbcType="BIGINT"/>
+        <id property="type" column="type" jdbcType="VARCHAR"/>
+        <id property="payloadJson" column="payload_json" jdbcType="LONGVARCHAR"/>
+        <id property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,battle_id,room_id,seq,type,payload_json,created_time
+    </sql>
+</mapper>
