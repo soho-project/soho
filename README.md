@@ -99,6 +99,8 @@ mvn clean install
     -   账号: `admin` / `123456`
 -   [开放平台](https://open.demo.soho.work/)
     -   账号: `P15873164076` / `123456`
+-   [游戏平台](https://game.demo.soho.work)
+    -   账号: `P15873164074` / `123456`
 -   [旧版预览](https://v1.soho.work/) - (已停止更新)
     -   账号: `admin` / `123456`
 
@@ -106,12 +108,14 @@ mvn clean install
 
 ## 🖼️ 演示图 (Screenshots)
 
-![登录页](docs/images/img.png)
-![工作台](docs/images/img_1.png)
+![后台用户管理](docs/images/img.png)
+![后台登录页面](docs/images/img_1.png)
 ![菜单管理](docs/images/img_2.png)
 ![角色管理](docs/images/img_3.png)
 ![用户管理](docs/images/img_4.png)
-
+![开放平台](docs/images/img_5.png)
+![游戏平台](docs/images/img_6.png)
+![内容系统](docs/images/img_7.png)
 ---
 
 ## 🤝 贡献 (Contributing)
