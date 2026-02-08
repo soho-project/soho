@@ -27,4 +27,13 @@ public class AiProviderConfigEnums {
         private final String id;
         private final String name;
     }
+
+    @RequiredArgsConstructor
+    @Getter
+    public enum Status {
+        DISABLED(0,"禁用"),
+        ENABLE(1,"启用");
+        private final int id;
+        private final String name;
+    }
 }
