@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.ai.biz.mapper.AiAppMapper">
+    <resultMap id="BaseResultMap" type="work.soho.ai.biz.domain.AiApp">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="code" column="code" jdbcType="VARCHAR"/>
+        <id property="title" column="title" jdbcType="VARCHAR"/>
+        <id property="description" column="description" jdbcType="VARCHAR"/>
+        <id property="systemPrompt" column="system_prompt" jdbcType="VARCHAR"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="providerId" column="provider_id" jdbcType="BIGINT"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,code,title,description,system_prompt,status,provider_id,updated_time,created_time
+    </sql>
+</mapper>
