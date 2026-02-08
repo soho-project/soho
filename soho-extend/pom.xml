@@ -39,5 +39,6 @@
         <module>soho-shop</module>
         <module>soho-wallet</module>
         <module>soho-express</module>
+        <module>soho-ai</module>
     </modules>
 </project>

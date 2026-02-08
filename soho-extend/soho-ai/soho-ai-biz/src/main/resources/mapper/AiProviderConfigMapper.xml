@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.ai.biz.mapper.AiProviderConfigMapper">
+    <resultMap id="BaseResultMap" type="work.soho.ai.biz.domain.AiProviderConfig">
+        <id property="apiKeyRef" column="api_key_ref" jdbcType="VARCHAR"/>
+        <id property="baseUrl" column="base_url" jdbcType="VARCHAR"/>
+        <id property="code" column="code" jdbcType="VARCHAR"/>
+        <id property="configJson" column="config_json" jdbcType="VARCHAR"/>
+        <id property="createdTime" column="created_time" jdbcType="DATE"/>
+        <id property="defaultModel" column="default_model" jdbcType="VARCHAR"/>
+        <id property="env" column="env" jdbcType="VARCHAR"/>
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <id property="provider" column="provider" jdbcType="VARCHAR"/>
+        <id property="rateLimit" column="rate_limit" jdbcType="INTEGER"/>
+        <id property="remark" column="remark" jdbcType="VARCHAR"/>
+        <id property="status" column="status" jdbcType="TINYINT"/>
+        <id property="timeoutMs" column="timeout_ms" jdbcType="INTEGER"/>
+        <id property="updatedTime" column="updated_time" jdbcType="DATE"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        api_key_ref,base_url,code,config_json,created_time,default_model,env,id,provider,rate_limit,remark,status,timeout_ms,updated_time
+    </sql>
+</mapper>
