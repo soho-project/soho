@@ -5,6 +5,8 @@ import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import work.soho.admin.api.request.SendEmailRequest;
+import work.soho.admin.api.service.EmailApiService;
 import work.soho.admin.biz.domain.AdminEmailTemplate;
 import work.soho.admin.biz.service.AdminEmailTemplateService;
 import work.soho.common.security.annotation.Node;
@@ -27,6 +29,8 @@ import java.util.List;
 public class AdminEmailTemplateController {
 
     private final AdminEmailTemplateService adminEmailTemplateService;
+
+    private final EmailApiService emailApiService;
 
     /**
      * 查询邮件模板列表
@@ -83,5 +87,18 @@ public class AdminEmailTemplateController {
     @Node(value = "adminEmailTemplate::remove", name = "邮件模板;;删除")
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(adminEmailTemplateService.removeByIds(Arrays.asList(ids)));
+    }
+
+    /**
+     * 发送测试邮件
+     *
+     * @param sendEmailRequest
+     * @return
+     */
+    @PostMapping("testSend")
+    @Node(value = "adminEmailTemplate::testSend")
+    public R<Boolean> testSend(@RequestBody SendEmailRequest sendEmailRequest) {
+        emailApiService.sendEmail(sendEmailRequest.getTo(), sendEmailRequest.getName(), sendEmailRequest.getParams());
+        return R.success(Boolean.TRUE);
     }
 }
