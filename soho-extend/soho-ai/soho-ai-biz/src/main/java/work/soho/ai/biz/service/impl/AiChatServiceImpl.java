@@ -231,12 +231,12 @@ public class AiChatServiceImpl implements AiChatService {
         }
         if (aiApp != null && StringUtils.isNotBlank(aiApp.getSystemPrompt())) {
             boolean hasSystem = messages.stream().anyMatch(m -> "system".equalsIgnoreCase(m.getRole()));
-            if (!hasSystem) {
+//            if (!hasSystem) {
                 AiChatRequest.Message system = new AiChatRequest.Message();
                 system.setRole("system");
                 system.setContent(aiApp.getSystemPrompt());
                 messages.add(0, system);
-            }
+//            }
         }
         return messages;
     }
