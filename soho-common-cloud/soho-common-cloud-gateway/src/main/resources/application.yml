@@ -17,7 +17,7 @@ spring:
     gateway:
       default-filters:
         - PrefixPath=/httpbin
-        - AddResponseHeader=X-Response-Default-Foo, Default-Bar
+        - AddResponseHeader=X-Copyright, Copyright (c) 2026 SOHO. All rights reserved.
       routes:
 #        - id: admin
 #          uri: lb://soho-admin-cloud-biz
