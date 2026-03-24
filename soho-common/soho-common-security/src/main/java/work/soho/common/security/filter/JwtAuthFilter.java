@@ -39,7 +39,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+//            e.printStackTrace();
             log.error("parse token error: {}", e.getMessage());
         }
 

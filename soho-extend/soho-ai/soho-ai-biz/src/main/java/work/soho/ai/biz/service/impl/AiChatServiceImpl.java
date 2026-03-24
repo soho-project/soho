@@ -5,103 +5,133 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
-import work.soho.ai.biz.domain.AiApp;
+import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.transport.ProxyProvider;
 import work.soho.ai.biz.domain.AiProviderConfig;
 import work.soho.ai.biz.dto.AiChatResponse;
+import work.soho.ai.biz.dto.AiUsageSummary;
 import work.soho.ai.biz.request.AiChatRequest;
-import work.soho.ai.biz.service.AiAppService;
 import work.soho.ai.biz.service.AiChatService;
+import work.soho.ai.biz.service.AiFileService;
 import work.soho.ai.biz.service.AiProviderConfigService;
+import work.soho.ai.biz.service.AiProviderModelRelService;
+import work.soho.ai.biz.utils.AiProviderModelUtils;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.common.core.util.StringUtils;
 
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 @Log4j2
 @Service
 @RequiredArgsConstructor
 public class AiChatServiceImpl implements AiChatService {
     private static final int DEFAULT_TIMEOUT_MS = 60000;
-    private final AiAppService aiAppService;
+    private static final String DEFAULT_CODEX_INSTRUCTIONS = "You are a helpful coding assistant.";
+
     private final AiProviderConfigService aiProviderConfigService;
+    private final AiProviderModelRelService aiProviderModelRelService;
+    private final AiFileService aiFileService;
 
     @Override
     public AiChatResponse chat(AiChatRequest request) {
-        AiApp aiApp = resolveApp(request.getAppCode());
-        AiProviderConfig providerConfig = resolveProviderConfig(aiApp, request.getProviderCode());
+        return chat(resolveProviderConfig(request.getProviderCode(), request.getModel()), request);
+    }
 
+    @Override
+    public Flux<String> streamChat(AiChatRequest request) {
+        return streamChat(resolveProviderConfig(request.getProviderCode(), request.getModel()), request);
+    }
+
+    @Override
+    public AiChatResponse chat(AiProviderConfig providerConfig, AiChatRequest request) {
         Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
         String provider = pickProvider(providerConfig, config);
         String apiKey = pickApiKey(providerConfig, config);
         String baseUrl = pickBaseUrl(providerConfig, config);
-        String model = normalizeModel(provider, pickModel(request, aiApp, providerConfig, config));
+        String model = normalizeModel(provider, pickModel(request, providerConfig, config));
         Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
-
-        List<AiChatRequest.Message> messages = buildMessages(request, aiApp);
+        List<AiChatRequest.Message> messages = enrichMessagesWithFiles(buildMessages(request));
         if (messages.isEmpty()) {
             throw new IllegalArgumentException("messages is empty");
         }
-        validateRequired(provider, apiKey, baseUrl, model);
+        validateRequired(provider, apiKey, baseUrl, model, config);
+        validateSupportedModel(providerConfig, model);
+
+        if (isCodexResponsesAdapter(config)) {
+            return callCodexResponses(provider, baseUrl, apiKey, model, messages, request, config, timeoutMs);
+        }
 
         switch (provider.toLowerCase(Locale.ROOT)) {
             case "anthropic":
-                return callAnthropic(provider, baseUrl, apiKey, model, messages, request, aiApp, config, timeoutMs);
+                return callAnthropic(provider, baseUrl, apiKey, model, messages, request, config, timeoutMs);
             case "gemini":
-                return callGemini(provider, baseUrl, apiKey, model, messages, request, aiApp, config, timeoutMs);
+                return callGemini(provider, baseUrl, apiKey, model, messages, request, config, timeoutMs);
             case "ollama":
                 return callOllama(provider, baseUrl, model, messages, request, config, timeoutMs);
             case "openai":
             case "deepseek":
             case "qwen":
             default:
-                return callOpenAiCompatible(provider, baseUrl, apiKey, model, messages, request, aiApp, config, timeoutMs);
+                return callOpenAiCompatible(provider, baseUrl, apiKey, model, messages, request, config, timeoutMs);
         }
     }
 
     @Override
-    public Flux<String> streamChat(AiChatRequest request) {
-        AiApp aiApp = resolveApp(request.getAppCode());
-        AiProviderConfig providerConfig = resolveProviderConfig(aiApp, request.getProviderCode());
-
+    public Flux<String> streamChat(AiProviderConfig providerConfig, AiChatRequest request) {
         Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
         String provider = pickProvider(providerConfig, config);
         String apiKey = pickApiKey(providerConfig, config);
         String baseUrl = pickBaseUrl(providerConfig, config);
-        String model = normalizeModel(provider, pickModel(request, aiApp, providerConfig, config));
+        String model = normalizeModel(provider, pickModel(request, providerConfig, config));
         Boolean streamSupported = pickBoolean(config, "streamSupported", true);
-
-        List<AiChatRequest.Message> messages = buildMessages(request, aiApp);
+        List<AiChatRequest.Message> messages = enrichMessagesWithFiles(buildMessages(request));
         if (messages.isEmpty()) {
             return Flux.error(new IllegalArgumentException("messages is empty"));
         }
         try {
-            validateRequired(provider, apiKey, baseUrl, model);
+            validateRequired(provider, apiKey, baseUrl, model, config);
+            validateSupportedModel(providerConfig, model);
         } catch (IllegalArgumentException ex) {
             return Flux.error(ex);
         }
+
+        if (isCodexResponsesAdapter(config)) {
+            return streamCodexResponses(baseUrl, apiKey, model, messages, request, config);
+        }
+
         if (Boolean.FALSE.equals(streamSupported)) {
-            AiChatResponse resp = chat(request);
+            AiChatResponse resp = chat(providerConfig, request);
             return toOpenAiStream(resp.getContent());
         }
 
         switch (provider.toLowerCase(Locale.ROOT)) {
             case "anthropic":
-                return streamAnthropic(baseUrl, apiKey, model, messages, request, aiApp, config);
+                return streamAnthropic(baseUrl, apiKey, model, messages, request, config);
             case "gemini":
-                return streamGemini(baseUrl, apiKey, model, messages, request, aiApp, config);
+                return streamGemini(baseUrl, apiKey, model, messages, request, config);
             case "ollama":
                 return streamOllama(baseUrl, model, messages, request, config);
             case "openai":
@@ -112,33 +142,58 @@ public class AiChatServiceImpl implements AiChatService {
         }
     }
 
-    private AiApp resolveApp(String appCode) {
-        if (StringUtils.isBlank(appCode)) {
-            return null;
+    @Override
+    public AiUsageSummary estimateUsage(AiChatRequest request, String content) {
+        AiUsageSummary usageSummary = new AiUsageSummary();
+        int promptChars = 0;
+        if (StringUtils.isNotBlank(request.getInstructions())) {
+            promptChars += request.getInstructions().length();
         }
-        return aiAppService.getOne(new LambdaQueryWrapper<AiApp>()
-                .eq(AiApp::getCode, appCode)
-                .eq(AiApp::getStatus, 1)
-                .last("limit 1"));
-    }
-
-    private AiProviderConfig resolveProviderConfig(AiApp aiApp, String providerCode) {
-        if (aiApp != null && aiApp.getProviderId() != null) {
-            AiProviderConfig config = aiProviderConfigService.getById(aiApp.getProviderId());
-            if (config != null && Objects.equals(config.getStatus(), 1)) {
-                return config;
+        if (request.getMessages() != null) {
+            for (AiChatRequest.Message message : request.getMessages()) {
+                if (message != null) {
+                    promptChars += buildTextOnlyMessageContent(message).length();
+                }
             }
         }
+        if (StringUtils.isNotBlank(request.getInput())) {
+            promptChars += request.getInput().length();
+        }
+        int completionChars = StringUtils.isBlank(content) ? 0 : content.length();
+        usageSummary.setPromptTokens(estimateTokensByChars(promptChars));
+        usageSummary.setCompletionTokens(estimateTokensByChars(completionChars));
+        usageSummary.setTotalTokens(usageSummary.getPromptTokens() + usageSummary.getCompletionTokens());
+        return usageSummary;
+    }
+
+    @Override
+    public AiProviderConfig resolveProviderConfig(String providerCode, String model) {
         if (StringUtils.isNotBlank(providerCode)) {
             AiProviderConfig config = aiProviderConfigService.getOne(new LambdaQueryWrapper<AiProviderConfig>()
                     .eq(AiProviderConfig::getCode, providerCode)
                     .eq(AiProviderConfig::getStatus, 1)
                     .last("limit 1"));
-            if (config != null) {
-                return config;
+            if (config == null) {
+                throw new IllegalArgumentException("provider config not found");
             }
+            return config;
         }
-        throw new IllegalArgumentException("provider config not found");
+
+        if (StringUtils.isNotBlank(model)) {
+            Long providerConfigId = aiProviderModelRelService.findFirstEnabledProviderConfigIdByModelName(model);
+            if (providerConfigId != null) {
+                AiProviderConfig config = aiProviderConfigService.getOne(new LambdaQueryWrapper<AiProviderConfig>()
+                        .eq(AiProviderConfig::getId, providerConfigId)
+                        .eq(AiProviderConfig::getStatus, 1)
+                        .last("limit 1"));
+                if (config != null) {
+                    return config;
+                }
+            }
+            throw new IllegalArgumentException("provider config not found for model: " + model);
+        }
+
+        throw new IllegalArgumentException("providerCode or model is required");
     }
 
     private Map<String, Object> parseConfig(String configJson) {
@@ -167,7 +222,7 @@ public class AiChatServiceImpl implements AiChatService {
         return baseUrl == null ? "" : baseUrl;
     }
 
-    private String pickModel(AiChatRequest request, AiApp aiApp, AiProviderConfig providerConfig, Map<String, Object> config) {
+    private String pickModel(AiChatRequest request, AiProviderConfig providerConfig, Map<String, Object> config) {
         if (StringUtils.isNotBlank(request.getModel())) {
             return request.getModel();
         }
@@ -192,7 +247,7 @@ public class AiChatServiceImpl implements AiChatService {
         }
     }
 
-    private void validateRequired(String provider, String apiKey, String baseUrl, String model) {
+    private void validateRequired(String provider, String apiKey, String baseUrl, String model, Map<String, Object> config) {
         if (StringUtils.isBlank(baseUrl)) {
             throw new IllegalArgumentException("baseUrl is blank");
         }
@@ -200,6 +255,12 @@ public class AiChatServiceImpl implements AiChatService {
             throw new IllegalArgumentException("model is blank");
         }
         if (provider == null) {
+            return;
+        }
+        if (isCodexResponsesAdapter(config)) {
+            if (StringUtils.isBlank(apiKey)) {
+                throw new IllegalArgumentException("apiKey is blank");
+            }
             return;
         }
         switch (provider.toLowerCase(Locale.ROOT)) {
@@ -218,35 +279,104 @@ public class AiChatServiceImpl implements AiChatService {
         }
     }
 
-    private List<AiChatRequest.Message> buildMessages(AiChatRequest request, AiApp aiApp) {
+    private void validateSupportedModel(AiProviderConfig providerConfig, String model) {
+        List<String> supportedModels = new ArrayList<>();
+        for (work.soho.ai.biz.domain.AiModelInfo item : aiProviderModelRelService.listEnabledModelsByProviderConfigId(providerConfig.getId())) {
+            if (StringUtils.isNotBlank(item.getModelName())) {
+                supportedModels.add(item.getModelName());
+            }
+        }
+        if (supportedModels.isEmpty()) {
+            supportedModels = AiProviderModelUtils.extractModels(providerConfig);
+        }
+        if (supportedModels.isEmpty() || StringUtils.isBlank(model)) {
+            return;
+        }
+        if (!supportedModels.contains(model)) {
+            throw new IllegalArgumentException("model not supported: " + model);
+        }
+    }
+
+    private List<AiChatRequest.Message> buildMessages(AiChatRequest request) {
         List<AiChatRequest.Message> messages = new ArrayList<>();
+        if (StringUtils.isNotBlank(request.getInstructions())) {
+            AiChatRequest.Message system = new AiChatRequest.Message();
+            system.setRole("system");
+            system.setContent(request.getInstructions());
+            messages.add(system);
+        }
         if (request.getMessages() != null) {
             messages.addAll(request.getMessages());
         }
-        if (messages.isEmpty() && StringUtils.isNotBlank(request.getInput())) {
-            AiChatRequest.Message msg = new AiChatRequest.Message();
-            msg.setRole("user");
-            msg.setContent(request.getInput());
-            messages.add(msg);
-        }
-        if (aiApp != null && StringUtils.isNotBlank(aiApp.getSystemPrompt())) {
-            boolean hasSystem = messages.stream().anyMatch(m -> "system".equalsIgnoreCase(m.getRole()));
-//            if (!hasSystem) {
-                AiChatRequest.Message system = new AiChatRequest.Message();
-                system.setRole("system");
-                system.setContent(aiApp.getSystemPrompt());
-                messages.add(0, system);
-//            }
+        if (messages.stream().noneMatch(item -> !"system".equalsIgnoreCase(item.getRole()))
+                && StringUtils.isNotBlank(request.getInput())) {
+            AiChatRequest.Message user = new AiChatRequest.Message();
+            user.setRole("user");
+            user.setContent(request.getInput());
+            messages.add(user);
         }
         return messages;
     }
 
+    private List<AiChatRequest.Message> enrichMessagesWithFiles(List<AiChatRequest.Message> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return messages;
+        }
+        List<AiChatRequest.Message> result = new ArrayList<>();
+        for (AiChatRequest.Message message : messages) {
+            if (message == null) {
+                continue;
+            }
+            result.add(enrichMessageWithFiles(message));
+        }
+        return result;
+    }
+
+    private AiChatRequest.Message enrichMessageWithFiles(AiChatRequest.Message message) {
+        List<String> fileUrls = normalizeFileUrls(message.getFileUrls());
+        if (fileUrls.isEmpty()) {
+            return message;
+        }
+
+        AiChatRequest.Message enriched = new AiChatRequest.Message();
+        enriched.setRole(message.getRole());
+        enriched.setImageUrls(message.getImageUrls());
+        enriched.setFileUrls(fileUrls);
+        enriched.setContent(appendFileContents(message.getContent(), fileUrls));
+        return enriched;
+    }
+
+    private String appendFileContents(String content, List<String> fileUrls) {
+        StringBuilder builder = new StringBuilder();
+        if (StringUtils.isNotBlank(content)) {
+            builder.append(content.trim());
+        }
+        for (String fileUrl : fileUrls) {
+            String extractedText = aiFileService.extractTextFromUrl(fileUrl);
+            if (StringUtils.isBlank(extractedText)) {
+                continue;
+            }
+            if (builder.length() > 0) {
+                builder.append("\n\n");
+            }
+            builder.append("[File Content]\n");
+            builder.append("Source: ").append(fileUrl).append("\n");
+            builder.append(extractedText);
+        }
+        return builder.toString();
+    }
+
+    private boolean isCodexResponsesAdapter(Map<String, Object> config) {
+        String adapter = pickString(config, "adapter", "");
+        return "codexResponses".equalsIgnoreCase(adapter)
+                || "chatgptCodexResponses".equalsIgnoreCase(adapter);
+    }
+
     private AiChatResponse callOpenAiCompatible(String provider, String baseUrl, String apiKey, String model,
                                                 List<AiChatRequest.Message> messages, AiChatRequest request,
-                                                AiApp aiApp, Map<String, Object> config, Integer timeoutMs) {
+                                                Map<String, Object> config, Integer timeoutMs) {
         String path = pickString(config, "openaiPath", "/v1/chat/completions");
         String url = joinUrl(baseUrl, path);
-
         Map<String, Object> body = new HashMap<>();
         body.put("model", model);
         body.put("messages", toOpenAiMessages(messages));
@@ -259,14 +389,18 @@ public class AiChatServiceImpl implements AiChatService {
         if (StringUtils.isNotBlank(apiKey)) {
             headers.put("Authorization", "Bearer " + apiKey);
         }
-        String raw = postJson(url, headers, body, timeoutMs);
+        String raw = postJson(url, headers, body, timeoutMs, config);
         String content = extractOpenAiContent(raw);
-        return buildResponse(provider, model, content, raw);
+        AiUsageSummary usage = extractUsage(provider, raw);
+        if (usage.getTotalTokens() == 0) {
+            usage = estimateUsage(request, content);
+        }
+        return buildResponse(provider, model, content, raw, usage);
     }
 
     private AiChatResponse callAnthropic(String provider, String baseUrl, String apiKey, String model,
                                          List<AiChatRequest.Message> messages, AiChatRequest request,
-                                         AiApp aiApp, Map<String, Object> config, Integer timeoutMs) {
+                                         Map<String, Object> config, Integer timeoutMs) {
         String path = pickString(config, "anthropicPath", "/v1/messages");
         String url = joinUrl(baseUrl, path);
         String version = pickString(config, "anthropicVersion", "2023-06-01");
@@ -277,7 +411,7 @@ public class AiChatServiceImpl implements AiChatService {
         putIfNotNull(body, "max_tokens", pickInteger(config, "maxTokens", request.getMaxTokens(), 1024));
         putIfNotNull(body, "temperature", pickDouble(config, "temperature", request.getTemperature()));
         putIfNotNull(body, "top_p", pickDouble(config, "topP", request.getTopP()));
-        String system = pickSystemPrompt(messages, aiApp);
+        String system = pickSystemPrompt(messages);
         if (StringUtils.isNotBlank(system)) {
             body.put("system", system);
         }
@@ -285,18 +419,19 @@ public class AiChatServiceImpl implements AiChatService {
         Map<String, String> headers = new HashMap<>();
         headers.put("x-api-key", apiKey);
         headers.put("anthropic-version", version);
-        String raw = postJson(url, headers, body, timeoutMs);
+        String raw = postJson(url, headers, body, timeoutMs, config);
         String content = extractAnthropicContent(raw);
-        return buildResponse(provider, model, content, raw);
+        AiUsageSummary usage = extractUsage(provider, raw);
+        if (usage.getTotalTokens() == 0) {
+            usage = estimateUsage(request, content);
+        }
+        return buildResponse(provider, model, content, raw, usage);
     }
 
     private AiChatResponse callGemini(String provider, String baseUrl, String apiKey, String model,
                                       List<AiChatRequest.Message> messages, AiChatRequest request,
-                                      AiApp aiApp, Map<String, Object> config, Integer timeoutMs) {
+                                      Map<String, Object> config, Integer timeoutMs) {
         String apiVersion = pickString(config, "geminiApiVersion", "v1beta");
-        if (StringUtils.isBlank(model)) {
-            model = "gemini-pro";
-        }
         String path = "/" + apiVersion + "/models/" + model + ":generateContent";
         String url = joinUrl(baseUrl, path);
         if (StringUtils.isNotBlank(apiKey)) {
@@ -312,16 +447,18 @@ public class AiChatServiceImpl implements AiChatService {
         if (!generationConfig.isEmpty()) {
             body.put("generationConfig", generationConfig);
         }
-        String system = pickSystemPrompt(messages, aiApp);
+        String system = pickSystemPrompt(messages);
         if (StringUtils.isNotBlank(system)) {
-            Map<String, Object> systemInstruction = new HashMap<>();
-            systemInstruction.put("parts", List.of(Map.of("text", system)));
-            body.put("systemInstruction", systemInstruction);
+            body.put("systemInstruction", Map.of("parts", List.of(Map.of("text", system))));
         }
 
-        String raw = postJson(url, Collections.emptyMap(), body, timeoutMs);
+        String raw = postJson(url, Collections.emptyMap(), body, timeoutMs, config);
         String content = extractGeminiContent(raw);
-        return buildResponse(provider, model, content, raw);
+        AiUsageSummary usage = extractUsage(provider, raw);
+        if (usage.getTotalTokens() == 0) {
+            usage = estimateUsage(request, content);
+        }
+        return buildResponse(provider, model, content, raw, usage);
     }
 
     private AiChatResponse callOllama(String provider, String baseUrl, String model,
@@ -329,23 +466,73 @@ public class AiChatServiceImpl implements AiChatService {
                                       Map<String, Object> config, Integer timeoutMs) {
         String path = pickString(config, "ollamaPath", "/api/chat");
         String url = joinUrl(baseUrl, path);
-
         Map<String, Object> body = new HashMap<>();
         body.put("model", model);
         body.put("messages", toOpenAiMessages(messages));
         putIfNotNull(body, "stream", request.getStream() != null ? request.getStream() : Boolean.FALSE);
 
-        String raw = postJson(url, Collections.emptyMap(), body, timeoutMs);
+        String raw = postJson(url, Collections.emptyMap(), body, timeoutMs, config);
         String content = extractOllamaContent(raw);
-        return buildResponse(provider, model, content, raw);
+        AiUsageSummary usage = extractUsage(provider, raw);
+        if (usage.getTotalTokens() == 0) {
+            usage = estimateUsage(request, content);
+        }
+        return buildResponse(provider, model, content, raw, usage);
+    }
+
+    private AiChatResponse callCodexResponses(String provider, String baseUrl, String apiKey, String model,
+                                              List<AiChatRequest.Message> messages, AiChatRequest request,
+                                              Map<String, Object> config, Integer timeoutMs) {
+        String path = pickString(config, "codexResponsesPath", "/backend-api/codex/responses");
+        String url = joinUrl(baseUrl, path);
+        Map<String, Object> body = buildCodexRequestBody(model, messages, request, config, true);
+
+        List<String> payloads = buildWebClient(config)
+                .post()
+                .uri(url)
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + apiKey)
+                .bodyValue(body)
+                .retrieve()
+                .onStatus(HttpStatus::isError, response -> response.bodyToMono(String.class)
+                        .defaultIfEmpty("")
+                        .flatMap(errorBody -> {
+                            log.error("codex responses request failed status={}, body={}, requestBody={}",
+                                    response.statusCode().value(), errorBody, JacksonUtils.toJson(body));
+                            return Mono.error(new IllegalArgumentException("codex responses request failed: " + errorBody));
+                        }))
+                .bodyToFlux(DataBuffer.class)
+                .map(this::bufferToString)
+                .transform(this::sseToPayloadFlux)
+                .collectList()
+                .block();
+
+        StringBuilder contentBuilder = new StringBuilder();
+        String completedPayload = "";
+        if (payloads != null) {
+            for (String payload : payloads) {
+                if (StringUtils.isBlank(payload) || "[DONE]".equals(payload)) {
+                    continue;
+                }
+                completedPayload = payload;
+                appendCodexTextDelta(payload, contentBuilder);
+            }
+        }
+        String raw = StringUtils.isBlank(completedPayload) ? "{}" : completedPayload;
+        String content = contentBuilder.toString();
+        AiUsageSummary usage = extractUsage("codexResponses", raw);
+        if (usage.getTotalTokens() == 0) {
+            usage = estimateUsage(request, content);
+        }
+        return buildResponse(provider, model, content, raw, usage);
     }
 
     private Flux<String> streamOpenAiCompatible(String baseUrl, String apiKey, String model,
                                                 List<AiChatRequest.Message> messages, AiChatRequest request,
                                                 Map<String, Object> config) {
-        String path = pickString(config, "openaiPath", "/chat/completions");
+        String path = pickString(config, "openaiPath", "/v1/chat/completions");
         String url = joinUrl(baseUrl, path);
-
         Map<String, Object> body = new HashMap<>();
         body.put("model", model);
         body.put("messages", toOpenAiMessages(messages));
@@ -354,16 +541,14 @@ public class AiChatServiceImpl implements AiChatService {
         putIfNotNull(body, "top_p", pickDouble(config, "topP", request.getTopP()));
         putIfNotNull(body, "max_tokens", pickInteger(config, "maxTokens", request.getMaxTokens()));
 
-        WebClient.RequestBodySpec req = buildWebClient()
+        WebClient.RequestBodySpec req = buildWebClient(config)
                 .post()
                 .uri(url)
                 .accept(MediaType.TEXT_EVENT_STREAM)
                 .contentType(MediaType.APPLICATION_JSON);
-
         if (StringUtils.isNotBlank(apiKey)) {
             req.header("Authorization", "Bearer " + apiKey);
         }
-
         return req.bodyValue(body)
                 .retrieve()
                 .bodyToFlux(DataBuffer.class)
@@ -373,7 +558,7 @@ public class AiChatServiceImpl implements AiChatService {
 
     private Flux<String> streamAnthropic(String baseUrl, String apiKey, String model,
                                          List<AiChatRequest.Message> messages, AiChatRequest request,
-                                         AiApp aiApp, Map<String, Object> config) {
+                                         Map<String, Object> config) {
         String path = pickString(config, "anthropicPath", "/v1/messages");
         String url = joinUrl(baseUrl, path);
         String version = pickString(config, "anthropicVersion", "2023-06-01");
@@ -385,12 +570,12 @@ public class AiChatServiceImpl implements AiChatService {
         putIfNotNull(body, "max_tokens", pickInteger(config, "maxTokens", request.getMaxTokens(), 1024));
         putIfNotNull(body, "temperature", pickDouble(config, "temperature", request.getTemperature()));
         putIfNotNull(body, "top_p", pickDouble(config, "topP", request.getTopP()));
-        String system = pickSystemPrompt(messages, aiApp);
+        String system = pickSystemPrompt(messages);
         if (StringUtils.isNotBlank(system)) {
             body.put("system", system);
         }
 
-        return buildWebClient()
+        return buildWebClient(config)
                 .post()
                 .uri(url)
                 .accept(MediaType.TEXT_EVENT_STREAM)
@@ -406,11 +591,8 @@ public class AiChatServiceImpl implements AiChatService {
 
     private Flux<String> streamGemini(String baseUrl, String apiKey, String model,
                                       List<AiChatRequest.Message> messages, AiChatRequest request,
-                                      AiApp aiApp, Map<String, Object> config) {
+                                      Map<String, Object> config) {
         String apiVersion = pickString(config, "geminiApiVersion", "v1beta");
-        if (StringUtils.isBlank(model)) {
-            model = "gemini-pro";
-        }
         String path = "/" + apiVersion + "/models/" + model + ":streamGenerateContent";
         String url = joinUrl(baseUrl, path);
         if (StringUtils.isNotBlank(apiKey)) {
@@ -426,14 +608,12 @@ public class AiChatServiceImpl implements AiChatService {
         if (!generationConfig.isEmpty()) {
             body.put("generationConfig", generationConfig);
         }
-        String system = pickSystemPrompt(messages, aiApp);
+        String system = pickSystemPrompt(messages);
         if (StringUtils.isNotBlank(system)) {
-            Map<String, Object> systemInstruction = new HashMap<>();
-            systemInstruction.put("parts", List.of(Map.of("text", system)));
-            body.put("systemInstruction", systemInstruction);
+            body.put("systemInstruction", Map.of("parts", List.of(Map.of("text", system))));
         }
 
-        return buildWebClient()
+        return buildWebClient(config)
                 .post()
                 .uri(url)
                 .accept(MediaType.TEXT_EVENT_STREAM)
@@ -450,13 +630,12 @@ public class AiChatServiceImpl implements AiChatService {
                                       Map<String, Object> config) {
         String path = pickString(config, "ollamaPath", "/api/chat");
         String url = joinUrl(baseUrl, path);
-
         Map<String, Object> body = new HashMap<>();
         body.put("model", model);
         body.put("messages", toOpenAiMessages(messages));
         body.put("stream", true);
 
-        return buildWebClient()
+        return buildWebClient(config)
                 .post()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -467,8 +646,37 @@ public class AiChatServiceImpl implements AiChatService {
                 .transform(this::linesToFlux);
     }
 
-    private String postJson(String url, Map<String, String> headers, Map<String, Object> body, Integer timeoutMs) {
-        RestTemplate restTemplate = buildRestTemplate(timeoutMs);
+    private Flux<String> streamCodexResponses(String baseUrl, String apiKey, String model,
+                                              List<AiChatRequest.Message> messages, AiChatRequest request,
+                                              Map<String, Object> config) {
+        String path = pickString(config, "codexResponsesPath", "/backend-api/codex/responses");
+        String url = joinUrl(baseUrl, path);
+        Map<String, Object> body = buildCodexRequestBody(model, messages, request, config, true);
+
+        return buildWebClient(config)
+                .post()
+                .uri(url)
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + apiKey)
+                .bodyValue(body)
+                .retrieve()
+                .onStatus(HttpStatus::isError, response -> response.bodyToMono(String.class)
+                        .defaultIfEmpty("")
+                        .flatMap(errorBody -> {
+                            log.error("codex responses stream request failed status={}, body={}, requestBody={}",
+                                    response.statusCode().value(), errorBody, JacksonUtils.toJson(body));
+                            return Mono.error(new IllegalArgumentException("codex responses stream request failed: " + errorBody));
+                        }))
+                .bodyToFlux(DataBuffer.class)
+                .map(this::bufferToString)
+                .transform(this::sseToPayloadFlux)
+                .flatMap(payload -> codexPayloadToOpenAiPayload(payload, model));
+    }
+
+    private String postJson(String url, Map<String, String> headers, Map<String, Object> body, Integer timeoutMs,
+                            Map<String, Object> config) {
+        RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
         if (headers != null) {
@@ -479,11 +687,14 @@ public class AiChatServiceImpl implements AiChatService {
         return response.getBody();
     }
 
-    private RestTemplate buildRestTemplate(Integer timeoutMs) {
+    private RestTemplate buildRestTemplate(Integer timeoutMs, Proxy proxy) {
         int timeout = timeoutMs == null || timeoutMs <= 0 ? DEFAULT_TIMEOUT_MS : timeoutMs;
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(timeout);
         factory.setReadTimeout(timeout);
+        if (proxy != null) {
+            factory.setProxy(proxy);
+        }
         return new RestTemplate(factory);
     }
 
@@ -491,16 +702,59 @@ public class AiChatServiceImpl implements AiChatService {
         return WebClient.builder().build();
     }
 
+    WebClient buildWebClient(Map<String, Object> config) {
+        Proxy proxy = buildProxy(config);
+        if (proxy == null) {
+            return buildWebClient();
+        }
+        InetSocketAddress address = (InetSocketAddress) proxy.address();
+        HttpClient httpClient = HttpClient.create().proxy(spec -> {
+            if (proxy.type() == Proxy.Type.SOCKS) {
+                spec.type(ProxyProvider.Proxy.SOCKS5)
+                        .host(address.getHostString())
+                        .port(address.getPort());
+            } else {
+                spec.type(ProxyProvider.Proxy.HTTP)
+                        .host(address.getHostString())
+                        .port(address.getPort());
+            }
+        });
+        return WebClient.builder()
+                .clientConnector(new org.springframework.http.client.reactive.ReactorClientHttpConnector(httpClient))
+                .build();
+    }
+
+    private Proxy buildProxy(Map<String, Object> config) {
+        String proxyType = pickString(config, "proxyType", "");
+        String proxyHost = pickString(config, "proxyHost", "");
+        Integer proxyPort = pickInteger(config, "proxyPort", null);
+        if (StringUtils.isBlank(proxyType) || StringUtils.isBlank(proxyHost) || proxyPort == null || proxyPort <= 0) {
+            return null;
+        }
+        Proxy.Type type;
+        switch (proxyType.toLowerCase(Locale.ROOT)) {
+            case "http":
+            case "https":
+                type = Proxy.Type.HTTP;
+                break;
+            case "socks":
+            case "socks5":
+                type = Proxy.Type.SOCKS;
+                break;
+            default:
+                throw new IllegalArgumentException("unsupported proxyType: " + proxyType);
+        }
+        return new Proxy(type, new InetSocketAddress(proxyHost, proxyPort));
+    }
+
     private List<Map<String, Object>> toOpenAiMessages(List<AiChatRequest.Message> messages) {
         List<Map<String, Object>> list = new ArrayList<>();
         for (AiChatRequest.Message message : messages) {
-            if (StringUtils.isBlank(message.getContent())) {
+            Object content = toOpenAiContent(message);
+            if (content == null) {
                 continue;
             }
-            Map<String, Object> item = new HashMap<>();
-            item.put("role", message.getRole());
-            item.put("content", message.getContent());
-            list.add(item);
+            list.add(Map.of("role", message.getRole(), "content", content));
         }
         return list;
     }
@@ -508,16 +762,11 @@ public class AiChatServiceImpl implements AiChatService {
     private List<Map<String, Object>> toAnthropicMessages(List<AiChatRequest.Message> messages) {
         List<Map<String, Object>> list = new ArrayList<>();
         for (AiChatRequest.Message message : messages) {
-            if ("system".equalsIgnoreCase(message.getRole())) {
+            String content = buildTextOnlyMessageContent(message);
+            if ("system".equalsIgnoreCase(message.getRole()) || StringUtils.isBlank(content)) {
                 continue;
             }
-            if (StringUtils.isBlank(message.getContent())) {
-                continue;
-            }
-            Map<String, Object> item = new HashMap<>();
-            item.put("role", message.getRole());
-            item.put("content", message.getContent());
-            list.add(item);
+            list.add(Map.of("role", message.getRole(), "content", content));
         }
         return list;
     }
@@ -525,19 +774,82 @@ public class AiChatServiceImpl implements AiChatService {
     private List<Map<String, Object>> toGeminiContents(List<AiChatRequest.Message> messages) {
         List<Map<String, Object>> contents = new ArrayList<>();
         for (AiChatRequest.Message message : messages) {
-            if ("system".equalsIgnoreCase(message.getRole())) {
+            String content = buildTextOnlyMessageContent(message);
+            if ("system".equalsIgnoreCase(message.getRole()) || StringUtils.isBlank(content)) {
                 continue;
             }
-            if (StringUtils.isBlank(message.getContent())) {
-                continue;
-            }
-            Map<String, Object> content = new HashMap<>();
             String role = "assistant".equalsIgnoreCase(message.getRole()) ? "model" : "user";
-            content.put("role", role);
-            content.put("parts", List.of(Map.of("text", message.getContent())));
-            contents.add(content);
+            contents.add(Map.of("role", role, "parts", List.of(Map.of("text", content))));
         }
         return contents;
+    }
+
+    private Map<String, Object> buildCodexRequestBody(String model, List<AiChatRequest.Message> messages,
+                                                      AiChatRequest request, Map<String, Object> config,
+                                                      boolean stream) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("model", model);
+        body.put("store", pickBoolean(config, "store", false));
+        body.put("stream", stream);
+        putIfNotNull(body, "instructions", buildCodexInstructions(messages));
+        putIfNotNull(body, "temperature", pickDouble(config, "temperature", request.getTemperature()));
+        putIfNotNull(body, "top_p", pickDouble(config, "topP", request.getTopP()));
+        putIfNotNull(body, "max_output_tokens", pickInteger(config, "maxTokens", request.getMaxTokens()));
+
+        List<Map<String, Object>> input = new ArrayList<>();
+        AiChatRequest.Message latestUserMessage = findLatestUserMessage(messages);
+        String latestUserContent = buildTextOnlyMessageContent(latestUserMessage);
+        if (StringUtils.isNotBlank(latestUserContent)) {
+            input.add(Map.of("role", "user", "content", latestUserContent));
+        }
+        if (input.isEmpty()) {
+            throw new IllegalArgumentException("codex input is empty");
+        }
+        body.put("input", input);
+        return body;
+    }
+
+    private String buildCodexInstructions(List<AiChatRequest.Message> messages) {
+        String systemPrompt = pickSystemPrompt(messages);
+        StringBuilder history = new StringBuilder();
+        AiChatRequest.Message latestUserMessage = findLatestUserMessage(messages);
+        for (AiChatRequest.Message message : messages) {
+            if (message == null
+                    || StringUtils.isBlank(buildTextOnlyMessageContent(message))
+                    || "system".equalsIgnoreCase(message.getRole())
+                    || message == latestUserMessage) {
+                continue;
+            }
+            if (history.length() > 0) {
+                history.append("\n");
+            }
+            history.append(message.getRole()).append(": ").append(buildTextOnlyMessageContent(message));
+        }
+        if (StringUtils.isBlank(systemPrompt) && history.length() == 0) {
+            return DEFAULT_CODEX_INSTRUCTIONS;
+        }
+        if (StringUtils.isBlank(systemPrompt)) {
+            return DEFAULT_CODEX_INSTRUCTIONS + "\n\nConversation context:\n" + history;
+        }
+        if (history.length() == 0) {
+            return systemPrompt;
+        }
+        return systemPrompt + "\n\nConversation context:\n" + history;
+    }
+
+    private AiChatRequest.Message findLatestUserMessage(List<AiChatRequest.Message> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return null;
+        }
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            AiChatRequest.Message message = messages.get(i);
+            if (message != null
+                    && "user".equalsIgnoreCase(message.getRole())
+                    && StringUtils.isNotBlank(buildTextOnlyMessageContent(message))) {
+                return message;
+            }
+        }
+        return null;
     }
 
     private String extractOpenAiContent(String raw) {
@@ -587,12 +899,85 @@ public class AiChatServiceImpl implements AiChatService {
         }
     }
 
-    private AiChatResponse buildResponse(String provider, String model, String content, String raw) {
+    private String extractCodexContent(String raw) {
+        try {
+            JsonNode root = JacksonUtils.getObjectMapper().readTree(raw);
+            JsonNode outputText = root.get("output_text");
+            if (outputText != null && outputText.isTextual()) {
+                return outputText.asText();
+            }
+            JsonNode output = root.get("output");
+            if (output != null && output.isArray()) {
+                StringBuilder builder = new StringBuilder();
+                for (JsonNode item : output) {
+                    JsonNode content = item.get("content");
+                    if (content == null || !content.isArray()) {
+                        continue;
+                    }
+                    for (JsonNode contentItem : content) {
+                        JsonNode text = contentItem.get("text");
+                        if (text != null && text.isTextual()) {
+                            builder.append(text.asText());
+                        }
+                    }
+                }
+                return builder.toString();
+            }
+            return "";
+        } catch (Exception e) {
+            log.error("parse codex response failed", e);
+            return "";
+        }
+    }
+
+    private AiUsageSummary extractUsage(String provider, String raw) {
+        AiUsageSummary summary = new AiUsageSummary();
+        try {
+            JsonNode root = JacksonUtils.getObjectMapper().readTree(raw);
+            switch (provider.toLowerCase(Locale.ROOT)) {
+                case "anthropic":
+                    summary.setPromptTokens(root.path("usage").path("input_tokens").asInt(0));
+                    summary.setCompletionTokens(root.path("usage").path("output_tokens").asInt(0));
+                    break;
+                case "gemini":
+                    summary.setPromptTokens(root.path("usageMetadata").path("promptTokenCount").asInt(0));
+                    summary.setCompletionTokens(root.path("usageMetadata").path("candidatesTokenCount").asInt(0));
+                    summary.setTotalTokens(root.path("usageMetadata").path("totalTokenCount").asInt(0));
+                    break;
+                case "ollama":
+                    summary.setPromptTokens(root.path("prompt_eval_count").asInt(0));
+                    summary.setCompletionTokens(root.path("eval_count").asInt(0));
+                    break;
+                case "codexresponses":
+                    summary.setPromptTokens(root.path("usage").path("input_tokens").asInt(0));
+                    summary.setCompletionTokens(root.path("usage").path("output_tokens").asInt(0));
+                    summary.setTotalTokens(root.path("usage").path("total_tokens").asInt(0));
+                    break;
+                default:
+                    summary.setPromptTokens(root.path("usage").path("prompt_tokens").asInt(0));
+                    summary.setCompletionTokens(root.path("usage").path("completion_tokens").asInt(0));
+                    summary.setTotalTokens(root.path("usage").path("total_tokens").asInt(0));
+                    break;
+            }
+            if (summary.getTotalTokens() == null || summary.getTotalTokens() == 0) {
+                summary.setTotalTokens((summary.getPromptTokens() == null ? 0 : summary.getPromptTokens())
+                        + (summary.getCompletionTokens() == null ? 0 : summary.getCompletionTokens()));
+            }
+        } catch (Exception e) {
+            log.warn("extract usage failed", e);
+        }
+        return summary;
+    }
+
+    private AiChatResponse buildResponse(String provider, String model, String content, String raw, AiUsageSummary usage) {
         AiChatResponse response = new AiChatResponse();
         response.setProvider(provider);
         response.setModel(model);
         response.setContent(content);
         response.setRaw(raw);
+        response.setPromptTokens(usage.getPromptTokens());
+        response.setCompletionTokens(usage.getCompletionTokens());
+        response.setTotalTokens(usage.getTotalTokens());
         return response;
     }
 
@@ -609,13 +994,91 @@ public class AiChatServiceImpl implements AiChatService {
         return baseUrl + path;
     }
 
-    private String pickSystemPrompt(List<AiChatRequest.Message> messages, AiApp aiApp) {
+    private String pickSystemPrompt(List<AiChatRequest.Message> messages) {
         for (AiChatRequest.Message message : messages) {
-            if ("system".equalsIgnoreCase(message.getRole()) && StringUtils.isNotBlank(message.getContent())) {
-                return message.getContent();
+            String content = buildTextOnlyMessageContent(message);
+            if ("system".equalsIgnoreCase(message.getRole()) && StringUtils.isNotBlank(content)) {
+                return content;
             }
         }
-        return aiApp != null ? aiApp.getSystemPrompt() : null;
+        return null;
+    }
+
+    private Object toOpenAiContent(AiChatRequest.Message message) {
+        if (message == null) {
+            return null;
+        }
+        List<String> imageUrls = normalizeImageUrls(message.getImageUrls());
+        String text = message.getContent() == null ? null : message.getContent().trim();
+        if (imageUrls.isEmpty()) {
+            return StringUtils.isBlank(text) ? null : text;
+        }
+
+        List<Map<String, Object>> blocks = new ArrayList<>();
+        if (StringUtils.isNotBlank(text)) {
+            blocks.add(Map.of("type", "text", "text", text));
+        }
+        for (String imageUrl : imageUrls) {
+            blocks.add(Map.of("type", "image_url", "image_url", Map.of("url", imageUrl)));
+        }
+        return blocks.isEmpty() ? null : blocks;
+    }
+
+    private String buildTextOnlyMessageContent(AiChatRequest.Message message) {
+        if (message == null) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        if (StringUtils.isNotBlank(message.getContent())) {
+            builder.append(message.getContent().trim());
+        }
+        List<String> imageUrls = normalizeImageUrls(message.getImageUrls());
+        if (!imageUrls.isEmpty()) {
+            if (builder.length() > 0) {
+                builder.append("\n\n");
+            }
+            builder.append("Image URLs:");
+            for (String imageUrl : imageUrls) {
+                builder.append("\n- ").append(imageUrl);
+            }
+        }
+        List<String> fileUrls = normalizeFileUrls(message.getFileUrls());
+        if (!fileUrls.isEmpty()) {
+            if (builder.length() > 0) {
+                builder.append("\n\n");
+            }
+            builder.append("File URLs:");
+            for (String fileUrl : fileUrls) {
+                builder.append("\n- ").append(fileUrl);
+            }
+        }
+        return builder.toString();
+    }
+
+    private List<String> normalizeImageUrls(List<String> imageUrls) {
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> list = new ArrayList<>();
+        for (String imageUrl : imageUrls) {
+            if (StringUtils.isNotBlank(imageUrl)) {
+                list.add(imageUrl.trim());
+            }
+        }
+        return list;
+    }
+
+    private List<String> normalizeFileUrls(List<String> fileUrls) {
+        if (fileUrls == null || fileUrls.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> list = new ArrayList<>();
+        for (String fileUrl : fileUrls) {
+            if (StringUtils.isNotBlank(fileUrl)) {
+                list.add(fileUrl.trim());
+            }
+        }
+        return list;
     }
 
     private String pickString(Map<String, Object> config, String key, String fallback) {
@@ -680,21 +1143,28 @@ public class AiChatServiceImpl implements AiChatService {
         return fallback;
     }
 
+    private BigDecimal pickBigDecimal(Map<String, Object> config, String key, BigDecimal fallback) {
+        if (config != null && config.containsKey(key)) {
+            Object val = config.get(key);
+            if (val instanceof Number) {
+                return BigDecimal.valueOf(((Number) val).doubleValue());
+            }
+            if (val != null) {
+                try {
+                    return new BigDecimal(val.toString());
+                } catch (Exception ignore) {
+                    return fallback;
+                }
+            }
+        }
+        return fallback;
+    }
+
     private Flux<String> toOpenAiStream(String content) {
         if (StringUtils.isBlank(content)) {
             return Flux.just("[DONE]");
         }
-        Map<String, Object> delta = new HashMap<>();
-        delta.put("content", content);
-
-        Map<String, Object> choice = new HashMap<>();
-        choice.put("delta", delta);
-        choice.put("index", 0);
-
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("choices", List.of(choice));
-
-        return Flux.just(JacksonUtils.toJson(payload), "[DONE]");
+        return Flux.just(buildOpenAiChunk("assistant", content, null), "[DONE]");
     }
 
     private void putIfNotNull(Map<String, Object> map, String key, Object value) {
@@ -710,18 +1180,86 @@ public class AiChatServiceImpl implements AiChatService {
         return new String(bytes, StandardCharsets.UTF_8);
     }
 
+    private Flux<String> codexPayloadToOpenAiPayload(String payload, String model) {
+        if (StringUtils.isBlank(payload)) {
+            return Flux.empty();
+        }
+        if ("[DONE]".equals(payload)) {
+            return Flux.just("[DONE]");
+        }
+        try {
+            JsonNode root = JacksonUtils.getObjectMapper().readTree(payload);
+            String type = root.path("type").asText("");
+            if ("response.output_text.delta".equals(type)) {
+                String delta = root.path("delta").asText("");
+                return StringUtils.isBlank(delta) ? Flux.empty() : Flux.just(buildOpenAiChunk("assistant", delta, model));
+            }
+            if ("response.completed".equals(type) || "response.failed".equals(type)) {
+                return Flux.just("[DONE]");
+            }
+            return Flux.empty();
+        } catch (Exception e) {
+            log.warn("parse codex stream payload failed: {}", payload, e);
+            return Flux.empty();
+        }
+    }
+
+    private void appendCodexTextDelta(String payload, StringBuilder builder) {
+        try {
+            JsonNode root = JacksonUtils.getObjectMapper().readTree(payload);
+            if ("response.output_text.delta".equals(root.path("type").asText(""))) {
+                String delta = root.path("delta").asText("");
+                if (StringUtils.isNotBlank(delta)) {
+                    builder.append(delta);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("parse codex delta failed: {}", payload, e);
+        }
+    }
+
+    private String buildOpenAiChunk(String role, String content, String model) {
+        Map<String, Object> delta = new HashMap<>();
+        if (StringUtils.isNotBlank(role)) {
+            delta.put("role", role);
+        }
+        if (StringUtils.isNotBlank(content)) {
+            delta.put("content", content);
+        }
+        Map<String, Object> choice = new HashMap<>();
+        choice.put("index", 0);
+        choice.put("delta", delta);
+        choice.put("finish_reason", null);
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("object", "chat.completion.chunk");
+        payload.put("choices", List.of(choice));
+        if (StringUtils.isNotBlank(model)) {
+            payload.put("model", model);
+        }
+        return JacksonUtils.toJson(payload);
+    }
+
+    private int estimateTokensByChars(int chars) {
+        if (chars <= 0) {
+            return 0;
+        }
+        return Math.max(1, (chars + 3) / 4);
+    }
+
     private Flux<String> sseToPayloadFlux(Flux<String> rawTextFlux) {
         return Flux.create(sink -> {
             StringBuilder buffer = new StringBuilder();
-
             rawTextFlux.subscribe(
                     part -> {
-                        if (part == null) return;
+                        if (part == null) {
+                            return;
+                        }
                         buffer.append(part);
-
                         while (true) {
                             DelimiterHit hit = findEventDelimiter(buffer);
-                            if (hit.index < 0) break;
+                            if (hit.index < 0) {
+                                break;
+                            }
                             String event = buffer.substring(0, hit.index);
                             buffer.delete(0, hit.index + hit.length);
                             emitDataLines(event, sink);
@@ -741,14 +1279,17 @@ public class AiChatServiceImpl implements AiChatService {
     private Flux<String> linesToFlux(Flux<String> rawTextFlux) {
         return Flux.create(sink -> {
             StringBuilder buffer = new StringBuilder();
-
             rawTextFlux.subscribe(
                     part -> {
-                        if (part == null) return;
+                        if (part == null) {
+                            return;
+                        }
                         buffer.append(part);
                         while (true) {
                             int idx = buffer.indexOf("\n");
-                            if (idx < 0) break;
+                            if (idx < 0) {
+                                break;
+                            }
                             String line = buffer.substring(0, idx).trim();
                             buffer.delete(0, idx + 1);
                             if (!line.isEmpty()) {
@@ -769,17 +1310,19 @@ public class AiChatServiceImpl implements AiChatService {
     }
 
     private List<String> extractDataLines(String chunk) {
-        if (!org.springframework.util.StringUtils.hasText(chunk)) return List.of();
-
+        if (!org.springframework.util.StringUtils.hasText(chunk)) {
+            return List.of();
+        }
         String[] lines = chunk.split("\\r?\\n");
         List<String> out = new ArrayList<>();
-
         for (String line : lines) {
-            if (!org.springframework.util.StringUtils.hasText(line)) continue;
+            if (!org.springframework.util.StringUtils.hasText(line)) {
+                continue;
+            }
             line = line.trim();
-
-            if (line.startsWith(":")) continue;
-
+            if (line.startsWith(":")) {
+                continue;
+            }
             if (line.startsWith("data:")) {
                 String data = line.substring(5).trim();
                 if (org.springframework.util.StringUtils.hasText(data)) {
@@ -800,18 +1343,23 @@ public class AiChatServiceImpl implements AiChatService {
     private DelimiterHit findEventDelimiter(StringBuilder buffer) {
         int lfIdx = buffer.indexOf("\n\n");
         int crlfIdx = buffer.indexOf("\r\n\r\n");
-
-        if (lfIdx < 0 && crlfIdx < 0) return new DelimiterHit(-1, 0);
-        if (lfIdx < 0) return new DelimiterHit(crlfIdx, 4);
-        if (crlfIdx < 0) return new DelimiterHit(lfIdx, 2);
-        return (crlfIdx < lfIdx) ? new DelimiterHit(crlfIdx, 4) : new DelimiterHit(lfIdx, 2);
+        if (lfIdx < 0 && crlfIdx < 0) {
+            return new DelimiterHit(-1, 0);
+        }
+        if (lfIdx < 0) {
+            return new DelimiterHit(crlfIdx, 4);
+        }
+        if (crlfIdx < 0) {
+            return new DelimiterHit(lfIdx, 2);
+        }
+        return crlfIdx < lfIdx ? new DelimiterHit(crlfIdx, 4) : new DelimiterHit(lfIdx, 2);
     }
 
     private static final class DelimiterHit {
-        final int index;
-        final int length;
+        private final int index;
+        private final int length;
 
-        DelimiterHit(int index, int length) {
+        private DelimiterHit(int index, int length) {
             this.index = index;
             this.length = length;
         }

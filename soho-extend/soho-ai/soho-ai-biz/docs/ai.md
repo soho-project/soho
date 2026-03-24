@@ -1,141 +1,575 @@
-# AI 模块前端对接文档（soho-ai-biz）
+# AI 模块文档
 
-本文档说明前端如何调用 AI 接口，以及相关配置字段与注意事项。
+## 1. 模块概述
 
-## 1. 接口概览
+`soho-ai-biz` 是 AI 聚合网关模块，负责：
 
-### 1.1 统一对话接口
+- 管理上游 AI 提供方配置 `ai_provider_config`
+- 管理模型信息 `ai_model_info`
+- 管理 provider 与模型关联 `ai_provider_model_rel`
+- 用户创建自己的调用 Key `ai_user_api_key`
+- 提供用户聊天接口
+- 提供 OpenAI 兼容调用入口
+- 统计 token 用量并写入 `ai_api_call_log`
+- 按 provider 配置价格调用钱包扣费
 
-- 路径：`POST /ai/admin/chat`
-- 说明：非流式对话，返回完整结果
+当前模块已经不依赖旧的 `ai_app`。
 
-### 1.2 流式对话接口（SSE）
+## 2. 核心能力
 
-- 路径：`POST /ai/admin/chat/stream`
-- `Content-Type: application/json`
-- 响应：`text/event-stream`
-- 说明：流式输出，前端按 SSE 逐条消费
+### 2.1 支持的调用模式
 
-## 2. 请求体（AiChatRequest）
+- 用户登录态聊天：`/ai/user/chat`、`/ai/user/chat/stream`
+- OpenAI 兼容调用：`/ai/guest/openai/v1/chat/completions`
+- 后台直连调试：`/ai/admin/chat`、`/ai/admin/chat/stream`
+
+### 2.2 支持的消息类型
+
+- 纯文本消息
+- 图片 URL 消息
+- 文件 URL 消息
+
+### 2.3 文件能力
+
+- 支持用户先上传文件到对象存储，再把 URL 传给聊天接口
+- 服务端会下载 `fileUrls` 指向的文件，抽取文本后拼入消息内容，再发送给模型
+- 当前支持：
+  - `pdf`
+  - 常见文本文件：`txt`、`md`、`csv`、`json`、`xml`、`yaml`、`yml`、`log`
+  - 常见代码文本：`java`、`js`、`ts`、`py`、`sql`、`html`、`htm`
+- 当前不支持：
+  - `doc`
+  - `docx`
+  - `xls`
+  - `xlsx`
+
+### 2.4 多模态说明
+
+- `/ai/user/chat` 已兼容 OpenAI 风格 `content` 数组
+- `/ai/guest/openai/v1/chat/completions` 兼容 OpenAI 风格 `content` 数组
+- 图片 URL 在 OpenAI-compatible 上游可按多模态 block 转发
+- 对不支持图片/文件原生输入的 provider，会降级成文本说明或文件抽取文本
+
+## 3. 用户侧接口
+
+所有 `/ai/user/*` 接口都要求用户登录态。
+
+### 3.1 API Key 管理
+
+#### 创建调用 Key
+
+- 路径：`POST /ai/user/apiKey`
+
+请求体：
 
 ```json
 {
-  "appCode": "app_code_optional",
-  "providerCode": "provider_code_optional",
-  "model": "optional_model",
-  "input": "hello",
-  "messages": [
-    { "role": "user", "content": "hello" }
-  ],
-  "temperature": 0.7,
-  "topP": 0.9,
-  "maxTokens": 512,
-  "stream": true,
-  "extra": {}
+  "name": "codex-key-1"
 }
 ```
 
-字段说明：
+说明：
 
-- `appCode`：`ai_app.code`，可选。若提供，会按 app 绑定的 provider 配置。
-- `providerCode`：`ai_provider_config.code`，可选。若不传且未配置 `appCode`，将无法定位配置。
-- `model`：指定模型，优先级高于默认模型。
-- `input`：单轮输入（当 `messages` 为空时使用）。
-- `messages`：对话消息列表，`role` 为 `system/user/assistant`。
-- `temperature/topP/maxTokens/stream/extra`：可选参数。
+- Key 不再绑定单个 provider config
+- 返回明文 `apiKey`
+- 明文只展示一次
 
-## 3. 响应体（AiChatResponse）
+#### 查询 Key 列表
+
+- 路径：`GET /ai/user/apiKey/list`
+
+#### 停用 Key
+
+- 路径：`DELETE /ai/user/apiKey/{id}`
+
+#### 启用 Key
+
+- 路径：`PUT /ai/user/apiKey/{id}/enable`
+
+#### 彻底删除 Key
+
+- 路径：`DELETE /ai/user/apiKey/{id}/destroy`
+
+### 3.2 调用日志
+
+#### 查询调用日志
+
+- 路径：`GET /ai/user/apiCallLog/list`
+
+### 3.3 模型与会话
+
+#### 获取模型列表
+
+- 路径：`GET /ai/user/model/list`
+
+#### 获取会话列表
+
+- 路径：`GET /ai/user/session/list`
+
+#### 获取会话消息列表
+
+- 路径：`GET /ai/user/session/message/list?sessionId=1`
+
+#### 重命名会话
+
+- 路径：`PUT /ai/user/session/rename`
+
+请求体：
 
 ```json
 {
-  "code": 2000,
-  "msg": "success",
-  "payload": {
-    "provider": "openai",
-    "model": "gpt-4o-mini",
-    "content": "Hello",
-    "raw": "{...}"
+  "sessionId": 1,
+  "title": "Python 示例"
+}
+```
+
+#### 删除会话
+
+- 路径：`DELETE /ai/user/session/{sessionId}`
+
+### 3.4 文件上传
+
+#### 上传文件到对象存储
+
+- 路径：`POST /ai/user/file/upload`
+- 请求：`multipart/form-data`
+- 字段：`file`
+
+响应：
+
+- 返回对象存储 URL
+- 可直接用于后续聊天请求中的 `fileUrls`
+
+### 3.5 用户聊天
+
+#### 非流式聊天
+
+- 路径：`POST /ai/user/chat`
+
+#### 流式聊天
+
+- 路径：`POST /ai/user/chat/stream`
+
+说明：
+
+- `sessionId` 为空时自动创建新会话
+- 新会话时 `providerCode` 必填
+- `model` 为空时使用会话模型或 provider 默认模型
+- SSE 接口返回 OpenAI 风格 delta payload
+
+#### 基础文本请求
+
+```json
+{
+  "sessionId": 1,
+  "providerCode": "chatgpt_codex",
+  "model": "gpt-5-codex",
+  "stream": true,
+  "messages": [
+    { "role": "user", "content": "write a python hello world" }
+  ]
+}
+```
+
+#### 图片 URL 请求
+
+推荐写法：
+
+```json
+{
+  "sessionId": 1,
+  "providerCode": "gpt-4o",
+  "messages": [
+    {
+      "role": "user",
+      "content": "请描述这张图片",
+      "imageUrls": ["https://example.com/cat.png"]
+    }
+  ]
+}
+```
+
+兼容 OpenAI 风格写法：
+
+```json
+{
+  "sessionId": 1,
+  "providerCode": "gpt-4o",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        { "type": "text", "text": "请描述这张图片" },
+        { "type": "image_url", "image_url": { "url": "https://example.com/cat.png" } }
+      ]
+    }
+  ]
+}
+```
+
+#### 文件 URL 请求
+
+推荐写法：
+
+```json
+{
+  "sessionId": 1,
+  "providerCode": "gpt-4o",
+  "messages": [
+    {
+      "role": "user",
+      "content": "请总结这个文件",
+      "fileUrls": ["https://example.com/demo.pdf"]
+    }
+  ]
+}
+```
+
+兼容 OpenAI 风格写法：
+
+```json
+{
+  "sessionId": 1,
+  "providerCode": "gpt-4o",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        { "type": "text", "text": "请总结这个文件" },
+        { "type": "file_url", "file_url": { "url": "https://example.com/demo.pdf" } }
+      ]
+    }
+  ]
+}
+```
+
+## 4. OpenAI 兼容接口
+
+### 4.1 chat completions
+
+- 路径：`POST /ai/guest/openai/v1/chat/completions`
+- 鉴权：`Authorization: Bearer <用户创建的AI调用Key>`
+
+说明：
+
+- 只支持 `chat.completions`
+- 不提供 OpenAI 官方的 `files` API
+- `file_url` 是本项目自定义扩展，不是 OpenAI 官方标准字段
+
+#### 基础请求
+
+```json
+{
+  "model": "gpt-5-codex",
+  "messages": [
+    { "role": "system", "content": "You are a helpful coding assistant." },
+    { "role": "user", "content": "write a python hello world" }
+  ],
+  "stream": true,
+  "max_tokens": 1024,
+  "temperature": 0.2
+}
+```
+
+#### 图片 URL 请求
+
+```json
+{
+  "model": "gpt-4o-mini",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        { "type": "text", "text": "请描述这张图片" },
+        { "type": "image_url", "image_url": { "url": "https://example.com/cat.png" } }
+      ]
+    }
+  ]
+}
+```
+
+#### 文件 URL 请求
+
+```json
+{
+  "model": "gpt-4o-mini",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        { "type": "text", "text": "请总结这个文件" },
+        { "type": "file_url", "file_url": { "url": "https://example.com/demo.pdf" } }
+      ]
+    }
+  ]
+}
+```
+
+### 4.2 响应格式
+
+非流式响应会转换成 OpenAI 风格：
+
+```json
+{
+  "id": "chatcmpl-xxx",
+  "object": "chat.completion",
+  "created": 1710000000,
+  "model": "gpt-4o-mini",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "..."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 100,
+    "completion_tokens": 20,
+    "total_tokens": 120
   }
 }
 ```
 
-字段说明：
+流式响应会转换成 `chat.completion.chunk` 风格 SSE。
 
-- `provider`：实际使用的提供方
-- `model`：实际使用的模型
-- `content`：模型输出文本
-- `raw`：上游原始响应（JSON 字符串）
+## 5. 后台管理接口
 
-## 4. SSE 流式返回格式
+### 5.1 Provider Config 管理
 
-### 4.1 SSE 事件
+- 路径前缀：`/ai/admin/aiProviderConfig`
+- 作用：管理 provider 基础配置
 
-接口返回的是标准 SSE 流。每个 `event` 的 `data` 为一条 payload：
+支持：
 
-- OpenAI 兼容：`data: { ... }`
-- 结束标记：`data: [DONE]`
+- `GET /list`
+- `GET /{id}`
+- `POST /`
+- `PUT /`
+- `DELETE /{ids}`
+- `GET /options`
 
-### 4.2 非 SSE Provider 的统一输出
+#### 新增/编辑时直接关联模型
 
-当 `ai_provider_config.config_json` 中设置：
+`AiProviderConfig` 当前支持非持久化字段 `modelInfoIds`。
+
+新增或编辑请求可直接传：
 
 ```json
 {
-  "streamSupported": false
+  "code": "openai_prod",
+  "provider": "openai",
+  "baseUrl": "https://api.openai.com",
+  "defaultModel": "gpt-4o-mini",
+  "status": 1,
+  "modelInfoIds": [1, 2, 5]
 }
 ```
 
-系统会把一次性返回的结果包装成 OpenAI 风格 SSE：
+说明：
 
-1. `data: {"choices":[{"delta":{"content":"..."}}]}`
-2. `data: [DONE]`
+- 保存 provider config 后，会自动同步 `ai_provider_model_rel`
+- `GET /ai/admin/aiProviderConfig/{id}` 会回显 `modelInfoIds`
+- 编辑时传空数组可清空关联
+- 编辑时不传 `modelInfoIds` 则保留现有关联
 
-前端可以用同一套 SSE 解析逻辑处理所有提供方。
+### 5.2 Model Info 管理
 
-## 5. 配置字段说明（ai_provider_config）
+- 路径前缀：`/ai/admin/aiModelInfo`
+- 作用：维护模型基础信息，如 `modelName`、`promptPrice`、`completionPrice`、`sort`
 
-关键字段：
+支持：
 
-- `provider`：openai / anthropic / qwen / gemini / deepseek / ollama
-- `base_url`：上游接口地址
-- `api_key_ref`：API Key（当前实现直接当作 key 使用）
-- `default_model`：默认模型
-- `config_json`：扩展配置（JSON）
+- `GET /list`
+- `GET /{id}`
+- `POST /`
+- `PUT /`
+- `DELETE /{ids}`
+- `GET /options`
 
-常用 `config_json` 示例：
+### 5.3 Provider Model Rel 管理
+
+- 路径前缀：`/ai/admin/aiProviderModelRel`
+- 作用：底层 provider 与模型关联表
+
+说明：
+
+- 现在一般不建议前端直接单独维护这张表
+- 推荐通过 `aiProviderConfig.modelInfoIds` 一体化维护
+
+### 5.4 API Key 管理
+
+- 路径前缀：`/ai/admin/aiUserApiKey`
+
+### 5.5 调用日志管理
+
+- 路径前缀：`/ai/admin/aiApiCallLog`
+
+### 5.6 后台直连聊天
+
+- 路径：`POST /ai/admin/chat`
+- 路径：`POST /ai/admin/chat/stream`
+
+说明：
+
+- 主要用于后台调试或内部调用
+- 请求结构与 `AiChatRequest` 一致
+
+## 6. Provider 适配说明
+
+### 6.1 已支持 provider 类型
+
+代码中当前支持：
+
+- `openai`
+- `deepseek`
+- `qwen`
+- `anthropic`
+- `gemini`
+- `ollama`
+- `codexResponses` adapter
+
+### 6.2 provider 选择逻辑
+
+- OpenAI 兼容入口按 `model` 反查 provider config
+- 业务聊天接口优先使用请求里的 `providerCode`
+- 如果没有 `providerCode`，会尝试根据 `model` 反查已关联的 provider config
+
+### 6.3 模型校验
+
+- provider config 若已绑定模型，则调用时会校验模型是否属于该 provider
+- 若未绑定模型，则退回使用配置内的 `supportedModels` 或 provider 提取结果
+
+## 7. Provider 配置说明
+
+`ai_provider_config.config_json` 常用字段：
+
+### 7.1 通用字段
 
 ```json
 {
-  "streamSupported": true,
-  "model": "deepseek-chat",
-  "baseUrl": "https://api.deepseek.com",
-  "apiKey": "sk-xxxx",
-  "openaiPath": "/v1/chat/completions",
+  "provider": "openai",
+  "baseUrl": "https://api.openai.com",
+  "apiKey": "sk-xxx",
+  "model": "gpt-4o-mini",
+  "timeoutMs": 60000
+}
+```
+
+### 7.2 OpenAI-compatible
+
+```json
+{
+  "openaiPath": "/v1/chat/completions"
+}
+```
+
+### 7.3 Anthropic
+
+```json
+{
+  "provider": "anthropic",
   "anthropicPath": "/v1/messages",
-  "anthropicVersion": "2023-06-01",
-  "geminiApiVersion": "v1beta",
+  "anthropicVersion": "2023-06-01"
+}
+```
+
+### 7.4 Gemini
+
+```json
+{
+  "provider": "gemini",
+  "geminiApiVersion": "v1beta"
+}
+```
+
+### 7.5 Ollama
+
+```json
+{
+  "provider": "ollama",
   "ollamaPath": "/api/chat"
 }
 ```
 
-注意：
+### 7.6 Codex Responses adapter
 
-- `model` 为空时：deepseek 会默认 `deepseek-chat`，gemini 会默认 `gemini-pro`。
-- 若 `provider` 需要 key 但 `apiKey` 为空，会直接报错。
-
-## 6. 鉴权说明
-
-若系统开启鉴权，前端需携带：
-
-```
-Authorization: Bearer <token>
+```json
+{
+  "adapter": "codexResponses",
+  "codexResponsesPath": "/backend-api/codex/responses",
+  "store": false
+}
 ```
 
-是否需要鉴权取决于后端安全配置是否放行 `/ai/**` 路径。
+说明：
 
-## 7. 前端使用建议
+- OpenAI `chat.completions` 请求会被转换成 Codex Responses 请求
+- 流式时会把上游 `response.output_text.delta` 转成 OpenAI chunk
 
-- **普通调用**：`POST /ai/admin/chat`
-- **流式调用**：`POST /ai/admin/chat/stream` + SSE 客户端
-- **统一解析**：使用 SSE 解析 `data:` 行，遇到 `[DONE]` 结束
+## 8. 代理配置
 
+从 `ai_provider_config.config_json` 读取：
+
+```json
+{
+  "proxyType": "http",
+  "proxyHost": "127.0.0.1",
+  "proxyPort": 7890
+}
+```
+
+支持值：
+
+- `proxyType: http`
+- `proxyType: https`
+- `proxyType: socks5`
+
+说明：
+
+- Clash / Mihomo 常见端口通常配置成 `http`
+- 只有代理本身真的是 SOCKS5 监听端口时才配置 `socks5`
+
+## 9. 计费
+
+从 `ai_provider_config.config_json` 读取：
+
+```json
+{
+  "billingEnabled": true,
+  "billingWalletTypeId": 1,
+  "promptPricePer1kTokens": 0.02,
+  "completionPricePer1kTokens": 0.08
+}
+```
+
+逻辑：
+
+1. 调用前按 `prompt_tokens + max_tokens` 做余额预检查
+2. 调用后优先读取上游 usage
+3. 上游没有 usage 时按字符数近似估算 token
+4. 调用钱包扣费
+5. 写入 `ai_api_call_log`
+
+## 10. 数据表
+
+主要数据表：
+
+- `ai_provider_config`
+- `ai_model_info`
+- `ai_provider_model_rel`
+- `ai_user_api_key`
+- `ai_api_call_log`
+- `ai_chat_session`
+- `ai_chat_session_message`
+
+建表 SQL 见 [sql.sql](./sql.sql)。
+
+## 11. 当前限制
+
+- OpenAI 兼容入口当前只实现 `chat.completions`
+- `file_url` 是本项目扩展字段，不是 OpenAI 官方标准字段
+- 文件解析当前不支持 Office 文档
+- 非 OpenAI-compatible provider 对图片 URL 的支持能力取决于对应适配实现，不是所有 provider 都能原生识别图片

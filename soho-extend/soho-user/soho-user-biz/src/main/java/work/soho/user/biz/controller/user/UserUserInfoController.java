@@ -1,5 +1,7 @@
 package work.soho.user.biz.controller.user;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.admin.api.vo.OptionVo;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
 import work.soho.common.data.upload.utils.UploadUtils;
 import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.user.api.request.ChangePasswordRequest;
@@ -21,7 +24,9 @@ import work.soho.user.api.request.SendNewPhoneSmsRequest;
 import work.soho.user.biz.domain.UserInfo;
 import work.soho.user.biz.service.UserInfoService;
 import work.soho.user.biz.service.UserSmsService;
+import work.soho.user.biz.vo.InvitedUserVo;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Log4j2
@@ -43,6 +48,34 @@ public class UserUserInfoController {
     @GetMapping
     public R<UserInfo> getUserInfo(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         return R.success(userInfoService.getById(sohoUserDetails.getId()));
+    }
+
+    /**
+     * 获取我邀请的用户列表
+     *
+     * @param sohoUserDetails
+     * @return
+     */
+    @ApiOperation("获取我邀请的用户列表")
+    @GetMapping("/myInvitedUsers")
+    public R<PageSerializable<InvitedUserVo>> myInvitedUsers(@AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        PageUtils.startPage();
+        LambdaQueryWrapper<UserInfo> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(UserInfo::getReferrerId, sohoUserDetails.getId());
+        lqw.orderByDesc(UserInfo::getId);
+
+        List<UserInfo> list = userInfoService.list(lqw);
+        List<InvitedUserVo> result = new ArrayList<>();
+        for (UserInfo item : list) {
+            InvitedUserVo vo = new InvitedUserVo();
+            vo.setId(item.getId());
+            vo.setCode(item.getCode());
+            vo.setNickname(item.getNickname());
+            vo.setUsername(item.getUsername());
+            vo.setAvatar(item.getAvatar());
+            result.add(vo);
+        }
+        return R.success(new PageSerializable<>(result));
     }
 
     /**

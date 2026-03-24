@@ -8,4 +8,7 @@ public class AiChatResponse {
     private String model;
     private String content;
     private String raw;
+    private Integer promptTokens;
+    private Integer completionTokens;
+    private Integer totalTokens;
 }
