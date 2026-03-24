@@ -3,13 +3,13 @@ package work.soho.ai.biz.enums;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-public class AiAppEnums {
-
+public class AiApiCallLogEnums {
     @RequiredArgsConstructor
     @Getter
     public enum Status {
-        DISABLED(0,"禁用"),
-        ENABLE(1,"启用");
+        FAILED(0, "失败"),
+        SUCCESS(1, "成功");
+
         private final int id;
         private final String name;
     }

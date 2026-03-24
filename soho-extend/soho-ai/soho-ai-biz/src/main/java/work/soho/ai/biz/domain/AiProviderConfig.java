@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.format.DateTimeFormat;
 import java.io.Serializable;
+import java.util.List;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -67,8 +68,16 @@ public class AiProviderConfig implements Serializable {
     private String defaultModel;
 
     /**
-    * 环境(dev/test/prod)
+    * 支持模型列表
     */
+    @ExcelProperty("支持模型列表")
+    @ApiModelProperty(value = "支持模型列表")
+    @TableField(value = "supported_models")
+    private String supportedModels;
+
+    /**
+    * 环境(dev/test/prod)
+     */
     @ExcelProperty("环境(dev/test/prod)")
     @ApiModelProperty(value = "环境(dev/test/prod)")
     @TableField(value = "env")
@@ -135,5 +144,12 @@ public class AiProviderConfig implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedTime;
+
+    /**
+    * 关联模型ID列表
+    */
+    @ApiModelProperty(value = "关联模型ID列表")
+    @TableField(exist = false)
+    private List<Long> modelInfoIds;
 
 }

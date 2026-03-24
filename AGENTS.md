@@ -1,0 +1,7 @@
+- 项目名 soho后端
+- 项目使用 Spring Boot
+- 数据库是 MySQL
+- 优先使用 clean code 风格
+- 返回中文解释
+- 项目后台前端地址：/home/fang/work/html/soho-admin-v2
+- 项目AI用户前端地址：/home/fang/work/html/soho/soho-ai-front

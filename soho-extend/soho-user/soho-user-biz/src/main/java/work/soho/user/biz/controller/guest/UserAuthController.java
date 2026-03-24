@@ -234,7 +234,7 @@ public class UserAuthController {
 
         if(userRegisterVo.getInviteCode() != null) {
             LambdaQueryWrapper<UserInfo> lambdaQuery = new LambdaQueryWrapper<>();
-            lambdaQuery.eq(UserInfo::getId, userRegisterVo.getInviteCode());
+            lambdaQuery.eq(UserInfo::getCode, userRegisterVo.getInviteCode());
             UserInfo isUserInfo = userInfoService.getOne(lambdaQuery);
             if(isUserInfo != null) {
                 userInfo.setReferrerId(isUserInfo.getId());

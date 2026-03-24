@@ -3,9 +3,12 @@ package work.soho.wallet.biz.listen;
 import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import work.soho.common.core.util.BeanUtils;
 import work.soho.pay.api.event.PayCallbackEvent;
+import work.soho.wallet.api.event.WalletRechargeSuccessEvent;
 import work.soho.wallet.api.enums.WalletTypeNameEnums;
 import work.soho.wallet.biz.domain.WalletInfo;
 import work.soho.wallet.biz.domain.WalletRecharge;
@@ -23,6 +26,7 @@ public class RechargePayedListen {
     private final WalletRechargeService walletRechargeService;
     private final WalletTypeService walletTypeService;
     private final WalletInfoService walletInfoService;
+    private final ApplicationContext applicationContext;
 
 //    @Transactional
     @EventListener(PayCallbackEvent.class)
@@ -31,6 +35,10 @@ public class RechargePayedListen {
         // 检查是否是充值单
         WalletRecharge walletRecharge = walletRechargeService.getOne(new LambdaQueryWrapper<WalletRecharge>().eq(WalletRecharge::getCode, event.getOutTradeNo()));
         if(walletRecharge == null) {
+            return;
+        }
+
+        if(walletRecharge.getStatus() != null && walletRecharge.getStatus().equals(WalletRechargeEnums.Status.RECHARGED.getId())) {
             return;
         }
 
@@ -50,5 +58,10 @@ public class RechargePayedListen {
         Assert.notNull(info, "钱包不存在");
 
         walletInfoService.updateAmount(info, walletRecharge.getAmount(), "钱包充值");
+
+        // 发送钱包充值成功事件
+        WalletRechargeSuccessEvent walletRechargeSuccessEvent = BeanUtils.copy(walletRecharge, WalletRechargeSuccessEvent.class);
+        walletRechargeSuccessEvent.setTransactionNo(event.getTransactionNo());
+        applicationContext.publishEvent(walletRechargeSuccessEvent);
     }
 }

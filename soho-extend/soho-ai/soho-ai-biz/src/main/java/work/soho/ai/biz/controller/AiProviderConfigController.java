@@ -28,7 +28,9 @@ import work.soho.common.data.excel.annotation.ExcelExport;
 import work.soho.common.security.annotation.Node;
 import work.soho.admin.api.service.AdminDictApiService;
 import work.soho.ai.biz.domain.AiProviderConfig;
+import work.soho.ai.biz.domain.AiProviderModelRel;
 import work.soho.ai.biz.service.AiProviderConfigService;
+import work.soho.ai.biz.service.AiProviderModelRelService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import work.soho.admin.api.vo.OptionVo;
@@ -49,6 +51,7 @@ import work.soho.admin.api.service.AdminDictApiService;
 public class AiProviderConfigController {
 
     private final AiProviderConfigService aiProviderConfigService;
+    private final AiProviderModelRelService aiProviderModelRelService;
 
     /**
      * 查询AI提供方配置表列表
@@ -67,6 +70,7 @@ public class AiProviderConfigController {
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, AiProviderConfig::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, AiProviderConfig::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
         lqw.like(StringUtils.isNotBlank(aiProviderConfig.getDefaultModel()),AiProviderConfig::getDefaultModel ,aiProviderConfig.getDefaultModel());
+        lqw.like(StringUtils.isNotBlank(aiProviderConfig.getSupportedModels()),AiProviderConfig::getSupportedModels ,aiProviderConfig.getSupportedModels());
         lqw.like(StringUtils.isNotBlank(aiProviderConfig.getEnv()),AiProviderConfig::getEnv ,aiProviderConfig.getEnv());
         lqw.eq(aiProviderConfig.getId() != null, AiProviderConfig::getId ,aiProviderConfig.getId());
         lqw.like(StringUtils.isNotBlank(aiProviderConfig.getProvider()),AiProviderConfig::getProvider ,aiProviderConfig.getProvider());
@@ -87,7 +91,11 @@ public class AiProviderConfigController {
     @Node(value = "aiProviderConfig::getInfo", name = "获取 AI提供方配置表 详细信息")
     @ApiOperation(value = "获取 AI提供方配置表 详细信息", notes = "获取 AI提供方配置表 详细信息")
     public R<AiProviderConfig> getInfo(@PathVariable("id" ) Long id) {
-        return R.success(aiProviderConfigService.getById(id));
+        AiProviderConfig aiProviderConfig = aiProviderConfigService.getById(id);
+        if (aiProviderConfig != null) {
+            aiProviderConfig.setModelInfoIds(aiProviderModelRelService.listEnabledModelIdsByProviderConfigId(id));
+        }
+        return R.success(aiProviderConfig);
     }
 
     /**
@@ -97,7 +105,11 @@ public class AiProviderConfigController {
     @Node(value = "aiProviderConfig::add", name = "新增 AI提供方配置表")
     @ApiOperation(value = "新增 AI提供方配置表", notes = "新增 AI提供方配置表")
     public R<Boolean> add(@RequestBody AiProviderConfig aiProviderConfig) {
-        return R.success(aiProviderConfigService.save(aiProviderConfig));
+        boolean saved = aiProviderConfigService.save(aiProviderConfig);
+        if (saved && aiProviderConfig.getId() != null && aiProviderConfig.getModelInfoIds() != null) {
+            aiProviderModelRelService.replaceRelations(aiProviderConfig.getId(), aiProviderConfig.getModelInfoIds());
+        }
+        return R.success(saved);
     }
 
     /**
@@ -107,7 +119,11 @@ public class AiProviderConfigController {
     @Node(value = "aiProviderConfig::edit", name = "修改 AI提供方配置表")
     @ApiOperation(value = "修改 AI提供方配置表", notes = "修改 AI提供方配置表")
     public R<Boolean> edit(@RequestBody AiProviderConfig aiProviderConfig) {
-        return R.success(aiProviderConfigService.updateById(aiProviderConfig));
+        boolean updated = aiProviderConfigService.updateById(aiProviderConfig);
+        if (updated && aiProviderConfig.getId() != null && aiProviderConfig.getModelInfoIds() != null) {
+            aiProviderModelRelService.replaceRelations(aiProviderConfig.getId(), aiProviderConfig.getModelInfoIds());
+        }
+        return R.success(updated);
     }
 
     /**
@@ -117,7 +133,10 @@ public class AiProviderConfigController {
     @Node(value = "aiProviderConfig::remove", name = "删除 AI提供方配置表")
     @ApiOperation(value = "删除 AI提供方配置表", notes = "删除 AI提供方配置表")
     public R<Boolean> remove(@PathVariable Long[] ids) {
-        return R.success(aiProviderConfigService.removeByIds(Arrays.asList(ids)));
+        List<Long> idList = Arrays.asList(ids);
+        aiProviderModelRelService.remove(new LambdaQueryWrapper<AiProviderModelRel>()
+                .in(AiProviderModelRel::getProviderConfigId, idList));
+        return R.success(aiProviderConfigService.removeByIds(idList));
     }
 
     /**
@@ -158,6 +177,7 @@ public class AiProviderConfigController {
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, AiProviderConfig::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, AiProviderConfig::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
         lqw.like(StringUtils.isNotBlank(aiProviderConfig.getDefaultModel()),AiProviderConfig::getDefaultModel ,aiProviderConfig.getDefaultModel());
+        lqw.like(StringUtils.isNotBlank(aiProviderConfig.getSupportedModels()),AiProviderConfig::getSupportedModels ,aiProviderConfig.getSupportedModels());
         lqw.like(StringUtils.isNotBlank(aiProviderConfig.getEnv()),AiProviderConfig::getEnv ,aiProviderConfig.getEnv());
         lqw.eq(aiProviderConfig.getId() != null, AiProviderConfig::getId ,aiProviderConfig.getId());
         lqw.like(StringUtils.isNotBlank(aiProviderConfig.getProvider()),AiProviderConfig::getProvider ,aiProviderConfig.getProvider());

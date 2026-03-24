@@ -156,6 +156,8 @@
 基础路径：`/user/user/userInfo`
 
 - `GET /`：获取当前用户信息
+- `GET /myInvitedUsers`：获取我邀请的用户列表（分页）
+  - 返回字段：`id` / `code` / `nickname` / `username` / `avatar`
 - `PUT /`：更新用户信息（仅允许更新头像、昵称、邮箱、年龄、性别）
 - `GET /queryLevelOptions`：字典 `user-info-level`
 - `POST /uploadAvatar`：头像上传（`avatar` 文件，需 image 类型）
