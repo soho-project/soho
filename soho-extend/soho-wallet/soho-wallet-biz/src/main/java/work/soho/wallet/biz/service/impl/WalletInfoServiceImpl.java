@@ -4,6 +4,8 @@ import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import work.soho.wallet.api.service.WalletInfoApiService;
@@ -18,9 +20,11 @@ import work.soho.wallet.biz.domain.WalletType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
+@Log4j2
 public class WalletInfoServiceImpl extends ServiceImpl<WalletInfoMapper, WalletInfo>
     implements WalletInfoService, WalletInfoApiService {
 
@@ -29,31 +33,50 @@ public class WalletInfoServiceImpl extends ServiceImpl<WalletInfoMapper, WalletI
 
     @Override
     public WalletInfo getByUserIdAndType(Long userId, Integer type) {
-        WalletInfo walletInfo = null;
-        if (userId != null && type != null) {
-            LambdaQueryWrapper<WalletInfo> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(WalletInfo::getUserId, userId);
-            queryWrapper.eq(WalletInfo::getType, type);
-            walletInfo = getOne(queryWrapper);
-        } else {
+        if (userId == null || type == null) {
             throw new RuntimeException("userId or type is null");
         }
 
-        if( walletInfo == null) {
-            // 检查type是否存在
-            WalletType walletType = walletTypeMapper.selectById(type);
-            Assert.notNull(walletType, "钱包类型不存在");
-
-            walletInfo = new WalletInfo();
-            walletInfo.setUserId(userId);
-            walletInfo.setType(type);
-            walletInfo.setAmount(BigDecimal.ZERO);
-            walletInfo.setStatus(WalletInfoEnums.Status.ACTIVE.getId());
-            walletInfo.setUpdatedTime(LocalDateTime.now());
-            walletInfo.setCreatedTime(LocalDateTime.now());
-            save(walletInfo);
+        LambdaQueryWrapper<WalletInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(WalletInfo::getUserId, userId);
+        queryWrapper.eq(WalletInfo::getType, type);
+        queryWrapper.orderByDesc(WalletInfo::getId);
+        queryWrapper.last("limit 2");
+        List<WalletInfo> walletInfos = list(queryWrapper);
+        if (!walletInfos.isEmpty()) {
+            if (walletInfos.size() > 1) {
+                log.warn("wallet_info duplicate found, userId={}, type={}, pickedId={}", userId, type, walletInfos.get(0).getId());
+            }
+            return walletInfos.get(0);
         }
-        return walletInfo;
+
+        // 检查type是否存在
+        WalletType walletType = walletTypeMapper.selectById(type);
+        Assert.notNull(walletType, "钱包类型不存在");
+
+        WalletInfo walletInfo = new WalletInfo();
+        walletInfo.setUserId(userId);
+        walletInfo.setType(type);
+        walletInfo.setAmount(BigDecimal.ZERO);
+        walletInfo.setStatus(WalletInfoEnums.Status.ACTIVE.getId());
+        walletInfo.setUpdatedTime(LocalDateTime.now());
+        walletInfo.setCreatedTime(LocalDateTime.now());
+        try {
+            save(walletInfo);
+            return walletInfo;
+        } catch (DuplicateKeyException ex) {
+            // 处理并发创建：唯一键冲突后回查
+            LambdaQueryWrapper<WalletInfo> retryQuery = new LambdaQueryWrapper<>();
+            retryQuery.eq(WalletInfo::getUserId, userId);
+            retryQuery.eq(WalletInfo::getType, type);
+            retryQuery.orderByDesc(WalletInfo::getId);
+            retryQuery.last("limit 1");
+            WalletInfo existed = getOne(retryQuery, false);
+            if (existed != null) {
+                return existed;
+            }
+            throw ex;
+        }
     }
 
     @Override
