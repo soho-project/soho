@@ -11,6 +11,8 @@ public interface AiProviderModelRelService extends IService<AiProviderModelRel> 
 
     List<Long> listEnabledModelIdsByProviderConfigId(Long providerConfigId);
 
+    List<Long> listEnabledProviderConfigIdsByModelName(String modelName);
+
     Long findFirstEnabledProviderConfigIdByModelName(String modelName);
 
     void replaceRelations(Long providerConfigId, List<Long> modelInfoIds);

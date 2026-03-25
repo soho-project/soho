@@ -101,6 +101,14 @@ public class AiProviderConfig implements Serializable {
     private String provider;
 
     /**
+    * 服务提供者唯一识别ID（可为空）
+    */
+    @ExcelProperty("服务提供者唯一识别ID")
+    @ApiModelProperty(value = "服务提供者唯一识别ID（可为空）")
+    @TableField(value = "provider_unique_id")
+    private String providerUniqueId;
+
+    /**
     * 每分钟最大请求数
     */
     @ExcelProperty("每分钟最大请求数")
@@ -134,6 +142,15 @@ public class AiProviderConfig implements Serializable {
     @TableField(value = "timeout_ms")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer timeoutMs;
+
+    /**
+    * 路由权重（值越大被选中概率越高）
+    */
+    @ExcelProperty("路由权重")
+    @ApiModelProperty(value = "路由权重（值越大被选中概率越高）")
+    @TableField(value = "weight")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Integer weight;
 
     /**
     * 更新时间

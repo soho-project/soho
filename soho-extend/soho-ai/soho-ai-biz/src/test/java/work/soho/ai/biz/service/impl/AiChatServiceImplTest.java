@@ -19,10 +19,12 @@ import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
 
 public class AiChatServiceImplTest {
 
@@ -101,5 +103,35 @@ public class AiChatServiceImplTest {
         assertThat(items.get(0)).contains("\"chat.completion.chunk\"");
         assertThat(items.get(0)).contains("\"hi\"");
         assertThat(items.get(1)).isEqualTo("[DONE]");
+    }
+
+    @Test
+    public void resolveProviderConfig_whenModelHasMultipleProviders_shouldRouteByWeight() {
+        AiProviderConfigService providerConfigService = Mockito.mock(AiProviderConfigService.class);
+        AiProviderModelRelService providerModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiFileService aiFileService = Mockito.mock(AiFileService.class);
+        AiChatServiceImpl service = new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService);
+
+        when(providerModelRelService.listEnabledProviderConfigIdsByModelName("gpt-4o-mini"))
+                .thenReturn(Arrays.asList(1L, 2L));
+
+        AiProviderConfig lowWeightConfig = new AiProviderConfig();
+        lowWeightConfig.setId(1L);
+        lowWeightConfig.setStatus(1);
+        lowWeightConfig.setCode("low");
+        lowWeightConfig.setWeight(0);
+
+        AiProviderConfig highWeightConfig = new AiProviderConfig();
+        highWeightConfig.setId(2L);
+        highWeightConfig.setStatus(1);
+        highWeightConfig.setCode("high");
+        highWeightConfig.setWeight(10);
+
+        when(providerConfigService.list(Mockito.any())).thenReturn(Arrays.asList(lowWeightConfig, highWeightConfig));
+
+        for (int i = 0; i < 20; i++) {
+            AiProviderConfig selected = service.resolveProviderConfig(null, "gpt-4o-mini");
+            assertThat(selected.getId()).isEqualTo(2L);
+        }
     }
 }

@@ -94,6 +94,13 @@ CREATE TABLE `ai_provider_model_rel` (
 ALTER TABLE `ai_provider_config`
   ADD COLUMN `supported_models` text COMMENT '支持模型列表，建议按逗号/换行或JSON数组存储' AFTER `default_model`;
 
+ALTER TABLE `ai_provider_config`
+  ADD COLUMN `weight` int NOT NULL DEFAULT 1 COMMENT '路由权重（值越大被选中概率越高）' AFTER `timeout_ms`;
+
+ALTER TABLE `ai_provider_config`
+  ADD COLUMN `provider_unique_id` varchar(128) DEFAULT NULL COMMENT '服务提供者唯一识别ID（可为空）' AFTER `provider`,
+  ADD UNIQUE KEY `uk_ai_provider_config_provider_unique_id` (`provider_unique_id`);
+
 -- config_json 建议增加以下配置：
 -- {
 --   "adapter": "codexResponses",
