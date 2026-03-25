@@ -12,6 +12,7 @@ import work.soho.ai.biz.service.AiModelInfoService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -71,8 +72,14 @@ public class AiProviderModelRelServiceImpl extends ServiceImpl<AiProviderModelRe
 
     @Override
     public Long findFirstEnabledProviderConfigIdByModelName(String modelName) {
+        List<Long> providerConfigIds = listEnabledProviderConfigIdsByModelName(modelName);
+        return providerConfigIds.isEmpty() ? null : providerConfigIds.get(0);
+    }
+
+    @Override
+    public List<Long> listEnabledProviderConfigIdsByModelName(String modelName) {
         if (modelName == null || modelName.trim().isEmpty()) {
-            return null;
+            return Collections.emptyList();
         }
         List<AiModelInfo> modelInfos = aiModelInfoService.list(new LambdaQueryWrapper<AiModelInfo>()
                 .eq(AiModelInfo::getModelName, modelName)
@@ -80,20 +87,22 @@ public class AiProviderModelRelServiceImpl extends ServiceImpl<AiProviderModelRe
                 .orderByAsc(AiModelInfo::getSort)
                 .orderByAsc(AiModelInfo::getId));
         if (modelInfos.isEmpty()) {
-            return null;
+            return Collections.emptyList();
         }
+        Set<Long> providerConfigIds = new LinkedHashSet<>();
         for (AiModelInfo modelInfo : modelInfos) {
-            AiProviderModelRel rel = getOne(new LambdaQueryWrapper<AiProviderModelRel>()
+            List<AiProviderModelRel> relList = list(new LambdaQueryWrapper<AiProviderModelRel>()
                     .eq(AiProviderModelRel::getModelInfoId, modelInfo.getId())
                     .eq(AiProviderModelRel::getStatus, 1)
                     .orderByAsc(AiProviderModelRel::getSort)
-                    .orderByAsc(AiProviderModelRel::getId)
-                    .last("limit 1"));
-            if (rel != null && rel.getProviderConfigId() != null) {
-                return rel.getProviderConfigId();
+                    .orderByAsc(AiProviderModelRel::getId));
+            for (AiProviderModelRel rel : relList) {
+                if (rel.getProviderConfigId() != null) {
+                    providerConfigIds.add(rel.getProviderConfigId());
+                }
             }
         }
-        return null;
+        return new ArrayList<>(providerConfigIds);
     }
 
     @Override

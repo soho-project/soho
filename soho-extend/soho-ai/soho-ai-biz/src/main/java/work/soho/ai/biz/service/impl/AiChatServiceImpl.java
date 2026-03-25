@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Log4j2
 @Service
@@ -180,20 +181,67 @@ public class AiChatServiceImpl implements AiChatService {
         }
 
         if (StringUtils.isNotBlank(model)) {
-            Long providerConfigId = aiProviderModelRelService.findFirstEnabledProviderConfigIdByModelName(model);
-            if (providerConfigId != null) {
-                AiProviderConfig config = aiProviderConfigService.getOne(new LambdaQueryWrapper<AiProviderConfig>()
-                        .eq(AiProviderConfig::getId, providerConfigId)
-                        .eq(AiProviderConfig::getStatus, 1)
-                        .last("limit 1"));
-                if (config != null) {
-                    return config;
+            List<Long> providerConfigIds = aiProviderModelRelService.listEnabledProviderConfigIdsByModelName(model);
+            if (!providerConfigIds.isEmpty()) {
+                List<AiProviderConfig> enabledConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
+                        .in(AiProviderConfig::getId, providerConfigIds)
+                        .eq(AiProviderConfig::getStatus, 1));
+                Map<Long, AiProviderConfig> configMap = new HashMap<>();
+                for (AiProviderConfig enabledConfig : enabledConfigs) {
+                    configMap.put(enabledConfig.getId(), enabledConfig);
+                }
+                List<AiProviderConfig> orderedCandidates = new ArrayList<>();
+                for (Long providerConfigId : providerConfigIds) {
+                    AiProviderConfig candidate = configMap.get(providerConfigId);
+                    if (candidate != null) {
+                        orderedCandidates.add(candidate);
+                    }
+                }
+                AiProviderConfig selected = selectByWeight(orderedCandidates);
+                if (selected != null) {
+                    return selected;
                 }
             }
             throw new IllegalArgumentException("provider config not found for model: " + model);
         }
 
         throw new IllegalArgumentException("providerCode or model is required");
+    }
+
+    private AiProviderConfig selectByWeight(List<AiProviderConfig> candidates) {
+        if (candidates == null || candidates.isEmpty()) {
+            return null;
+        }
+        long totalWeight = 0L;
+        for (AiProviderConfig candidate : candidates) {
+            int weight = normalizeWeight(candidate.getWeight());
+            if (weight > 0) {
+                totalWeight += weight;
+            }
+        }
+        if (totalWeight <= 0) {
+            return candidates.get(0);
+        }
+        long random = ThreadLocalRandom.current().nextLong(totalWeight) + 1;
+        long cursor = 0L;
+        for (AiProviderConfig candidate : candidates) {
+            int weight = normalizeWeight(candidate.getWeight());
+            if (weight <= 0) {
+                continue;
+            }
+            cursor += weight;
+            if (random <= cursor) {
+                return candidate;
+            }
+        }
+        return candidates.get(0);
+    }
+
+    private int normalizeWeight(Integer weight) {
+        if (weight == null) {
+            return 1;
+        }
+        return Math.max(weight, 0);
     }
 
     private Map<String, Object> parseConfig(String configJson) {

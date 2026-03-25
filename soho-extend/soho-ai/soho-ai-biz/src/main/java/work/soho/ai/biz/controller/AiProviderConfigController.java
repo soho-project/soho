@@ -74,10 +74,12 @@ public class AiProviderConfigController {
         lqw.like(StringUtils.isNotBlank(aiProviderConfig.getEnv()),AiProviderConfig::getEnv ,aiProviderConfig.getEnv());
         lqw.eq(aiProviderConfig.getId() != null, AiProviderConfig::getId ,aiProviderConfig.getId());
         lqw.like(StringUtils.isNotBlank(aiProviderConfig.getProvider()),AiProviderConfig::getProvider ,aiProviderConfig.getProvider());
+        lqw.like(StringUtils.isNotBlank(aiProviderConfig.getProviderUniqueId()),AiProviderConfig::getProviderUniqueId ,aiProviderConfig.getProviderUniqueId());
         lqw.eq(aiProviderConfig.getRateLimit() != null, AiProviderConfig::getRateLimit ,aiProviderConfig.getRateLimit());
         lqw.like(StringUtils.isNotBlank(aiProviderConfig.getRemark()),AiProviderConfig::getRemark ,aiProviderConfig.getRemark());
         lqw.eq(aiProviderConfig.getStatus() != null, AiProviderConfig::getStatus ,aiProviderConfig.getStatus());
         lqw.eq(aiProviderConfig.getTimeoutMs() != null, AiProviderConfig::getTimeoutMs ,aiProviderConfig.getTimeoutMs());
+        lqw.eq(aiProviderConfig.getWeight() != null, AiProviderConfig::getWeight ,aiProviderConfig.getWeight());
         lqw.eq(aiProviderConfig.getUpdatedTime() != null, AiProviderConfig::getUpdatedTime ,aiProviderConfig.getUpdatedTime());
         lqw.orderByDesc(AiProviderConfig::getId);
         List<AiProviderConfig> list = aiProviderConfigService.list(lqw);
@@ -122,6 +124,32 @@ public class AiProviderConfigController {
         boolean updated = aiProviderConfigService.updateById(aiProviderConfig);
         if (updated && aiProviderConfig.getId() != null && aiProviderConfig.getModelInfoIds() != null) {
             aiProviderModelRelService.replaceRelations(aiProviderConfig.getId(), aiProviderConfig.getModelInfoIds());
+        }
+        return R.success(updated);
+    }
+
+    /**
+     * 根据服务提供者唯一识别ID修改AI提供方配置表
+     */
+    @PutMapping("/providerUniqueId/{providerUniqueId}")
+    @Node(value = "aiProviderConfig::editByProviderUniqueId", name = "根据服务提供者唯一识别ID修改 AI提供方配置表")
+    @ApiOperation(value = "根据服务提供者唯一识别ID修改 AI提供方配置表", notes = "根据服务提供者唯一识别ID修改 AI提供方配置表")
+    public R<Boolean> editByProviderUniqueId(@PathVariable("providerUniqueId") String providerUniqueId,
+                                             @RequestBody AiProviderConfig aiProviderConfig) {
+        if (StringUtils.isBlank(providerUniqueId)) {
+            return R.error("providerUniqueId不能为空");
+        }
+        AiProviderConfig existed = aiProviderConfigService.getOne(new LambdaQueryWrapper<AiProviderConfig>()
+                .eq(AiProviderConfig::getProviderUniqueId, providerUniqueId)
+                .last("limit 1"));
+        if (existed == null || existed.getId() == null) {
+            return R.error("provider config not found for providerUniqueId: " + providerUniqueId);
+        }
+        aiProviderConfig.setId(existed.getId());
+        aiProviderConfig.setProviderUniqueId(providerUniqueId);
+        boolean updated = aiProviderConfigService.updateById(aiProviderConfig);
+        if (updated && aiProviderConfig.getModelInfoIds() != null) {
+            aiProviderModelRelService.replaceRelations(existed.getId(), aiProviderConfig.getModelInfoIds());
         }
         return R.success(updated);
     }
@@ -181,10 +209,12 @@ public class AiProviderConfigController {
         lqw.like(StringUtils.isNotBlank(aiProviderConfig.getEnv()),AiProviderConfig::getEnv ,aiProviderConfig.getEnv());
         lqw.eq(aiProviderConfig.getId() != null, AiProviderConfig::getId ,aiProviderConfig.getId());
         lqw.like(StringUtils.isNotBlank(aiProviderConfig.getProvider()),AiProviderConfig::getProvider ,aiProviderConfig.getProvider());
+        lqw.like(StringUtils.isNotBlank(aiProviderConfig.getProviderUniqueId()),AiProviderConfig::getProviderUniqueId ,aiProviderConfig.getProviderUniqueId());
         lqw.eq(aiProviderConfig.getRateLimit() != null, AiProviderConfig::getRateLimit ,aiProviderConfig.getRateLimit());
         lqw.like(StringUtils.isNotBlank(aiProviderConfig.getRemark()),AiProviderConfig::getRemark ,aiProviderConfig.getRemark());
         lqw.eq(aiProviderConfig.getStatus() != null, AiProviderConfig::getStatus ,aiProviderConfig.getStatus());
         lqw.eq(aiProviderConfig.getTimeoutMs() != null, AiProviderConfig::getTimeoutMs ,aiProviderConfig.getTimeoutMs());
+        lqw.eq(aiProviderConfig.getWeight() != null, AiProviderConfig::getWeight ,aiProviderConfig.getWeight());
         lqw.eq(aiProviderConfig.getUpdatedTime() != null, AiProviderConfig::getUpdatedTime ,aiProviderConfig.getUpdatedTime());
         lqw.orderByDesc(AiProviderConfig::getId);
         return aiProviderConfigService.list(lqw);
