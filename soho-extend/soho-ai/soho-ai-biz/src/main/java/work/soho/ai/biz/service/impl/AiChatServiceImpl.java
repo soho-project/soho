@@ -51,6 +51,8 @@ import java.util.concurrent.ThreadLocalRandom;
 public class AiChatServiceImpl implements AiChatService {
     private static final int DEFAULT_TIMEOUT_MS = 60000;
     private static final String DEFAULT_CODEX_INSTRUCTIONS = "You are a helpful coding assistant.";
+    private static final String EXTRA_NATIVE_RESPONSES = "nativeResponses";
+    private static final String EXTRA_RESPONSES_REQUEST_BODY = "responsesRequestBody";
 
     private final AiProviderConfigService aiProviderConfigService;
     private final AiProviderModelRelService aiProviderModelRelService;
@@ -169,23 +171,32 @@ public class AiChatServiceImpl implements AiChatService {
 
     @Override
     public AiProviderConfig resolveProviderConfig(String providerCode, String model) {
+        log.debug("resolveProviderConfig start providerCode={}, model={}", providerCode, model);
         if (StringUtils.isNotBlank(providerCode)) {
             AiProviderConfig config = aiProviderConfigService.getOne(new LambdaQueryWrapper<AiProviderConfig>()
                     .eq(AiProviderConfig::getCode, providerCode)
                     .eq(AiProviderConfig::getStatus, 1)
                     .last("limit 1"));
             if (config == null) {
+                log.warn("resolveProviderConfig failed: providerCode not found or disabled, providerCode={}", providerCode);
                 throw new IllegalArgumentException("provider config not found");
             }
+            log.debug("resolveProviderConfig matched by providerCode={}, configId={}, provider={}, status={}",
+                    providerCode, config.getId(), config.getProvider(), config.getStatus());
             return config;
         }
 
         if (StringUtils.isNotBlank(model)) {
             List<Long> providerConfigIds = aiProviderModelRelService.listEnabledProviderConfigIdsByModelName(model);
+            log.debug("resolveProviderConfig by model={}, providerConfigIds={}", model, providerConfigIds);
             if (!providerConfigIds.isEmpty()) {
                 List<AiProviderConfig> enabledConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
                         .in(AiProviderConfig::getId, providerConfigIds)
                         .eq(AiProviderConfig::getStatus, 1));
+                log.debug("resolveProviderConfig model={}, enabledConfigCount={}, enabledConfigIds={}",
+                        model,
+                        enabledConfigs.size(),
+                        enabledConfigs.stream().map(AiProviderConfig::getId).collect(java.util.stream.Collectors.toList()));
                 Map<Long, AiProviderConfig> configMap = new HashMap<>();
                 for (AiProviderConfig enabledConfig : enabledConfigs) {
                     configMap.put(enabledConfig.getId(), enabledConfig);
@@ -197,14 +208,22 @@ public class AiChatServiceImpl implements AiChatService {
                         orderedCandidates.add(candidate);
                     }
                 }
+                log.debug("resolveProviderConfig model={}, orderedCandidateCount={}, orderedCandidateCodes={}",
+                        model,
+                        orderedCandidates.size(),
+                        orderedCandidates.stream().map(AiProviderConfig::getCode).collect(java.util.stream.Collectors.toList()));
                 AiProviderConfig selected = selectByWeight(orderedCandidates);
                 if (selected != null) {
+                    log.debug("resolveProviderConfig selected model={}, selectedConfigId={}, selectedCode={}, selectedProvider={}",
+                            model, selected.getId(), selected.getCode(), selected.getProvider());
                     return selected;
                 }
             }
+            log.warn("resolveProviderConfig failed: no available provider for model={}, providerConfigIds={}", model, providerConfigIds);
             throw new IllegalArgumentException("provider config not found for model: " + model);
         }
 
+        log.warn("resolveProviderConfig failed: providerCode and model both empty");
         throw new IllegalArgumentException("providerCode or model is required");
     }
 
@@ -533,7 +552,7 @@ public class AiChatServiceImpl implements AiChatService {
                                               Map<String, Object> config, Integer timeoutMs) {
         String path = pickString(config, "codexResponsesPath", "/backend-api/codex/responses");
         String url = joinUrl(baseUrl, path);
-        Map<String, Object> body = buildCodexRequestBody(model, messages, request, config, true);
+        Map<String, Object> body = resolveCodexRequestBody(model, messages, request, config, true);
 
         List<String> payloads = buildWebClient(config)
                 .post()
@@ -699,9 +718,10 @@ public class AiChatServiceImpl implements AiChatService {
                                               Map<String, Object> config) {
         String path = pickString(config, "codexResponsesPath", "/backend-api/codex/responses");
         String url = joinUrl(baseUrl, path);
-        Map<String, Object> body = buildCodexRequestBody(model, messages, request, config, true);
+        Map<String, Object> body = resolveCodexRequestBody(model, messages, request, config, true);
+        boolean nativeResponses = isNativeResponses(request);
 
-        return buildWebClient(config)
+        Flux<String> payloadFlux = buildWebClient(config)
                 .post()
                 .uri(url)
                 .accept(MediaType.TEXT_EVENT_STREAM)
@@ -718,8 +738,44 @@ public class AiChatServiceImpl implements AiChatService {
                         }))
                 .bodyToFlux(DataBuffer.class)
                 .map(this::bufferToString)
-                .transform(this::sseToPayloadFlux)
-                .flatMap(payload -> codexPayloadToOpenAiPayload(payload, model));
+                .transform(this::sseToPayloadFlux);
+
+        if (nativeResponses) {
+            return payloadFlux;
+        }
+        return payloadFlux.flatMap(payload -> codexPayloadToOpenAiPayload(payload, model));
+    }
+
+    private Map<String, Object> resolveCodexRequestBody(String model, List<AiChatRequest.Message> messages,
+                                                        AiChatRequest request, Map<String, Object> config,
+                                                        boolean stream) {
+        Map<String, Object> body = extractNativeResponsesRequestBody(request);
+        if (body != null) {
+            body.put("model", model);
+            body.put("stream", stream);
+            return body;
+        }
+        return buildCodexRequestBody(model, messages, request, config, stream);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> extractNativeResponsesRequestBody(AiChatRequest request) {
+        if (!isNativeResponses(request) || request.getExtra() == null) {
+            return null;
+        }
+        Object bodyObj = request.getExtra().get(EXTRA_RESPONSES_REQUEST_BODY);
+        if (!(bodyObj instanceof Map)) {
+            return null;
+        }
+        return new HashMap<>((Map<String, Object>) bodyObj);
+    }
+
+    private boolean isNativeResponses(AiChatRequest request) {
+        if (request == null || request.getExtra() == null) {
+            return false;
+        }
+        Object value = request.getExtra().get(EXTRA_NATIVE_RESPONSES);
+        return value instanceof Boolean && (Boolean) value;
     }
 
     private String postJson(String url, Map<String, String> headers, Map<String, Object> body, Integer timeoutMs,
