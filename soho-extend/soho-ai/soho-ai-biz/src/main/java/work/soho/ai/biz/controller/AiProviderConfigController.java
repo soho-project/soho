@@ -5,10 +5,12 @@ import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
 import lombok.extern.log4j.Log4j2;
+import org.redisson.api.IdGenerator;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.PageUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.util.*;
@@ -49,6 +51,22 @@ import work.soho.admin.api.service.AdminDictApiService;
 @RestController
 @RequestMapping("/ai/admin/aiProviderConfig" )
 public class AiProviderConfigController {
+    private static final String DEFAULT_PROVIDER_CODE = "chatgpt_codex_";
+    private static final String DEFAULT_PROVIDER = "openai";
+    private static final String DEFAULT_PROVIDER_UNIQUE_ID = null;
+    private static final String DEFAULT_ENV = "prod";
+    private static final String DEFAULT_BASE_URL = "https://chatgpt.com";
+    private static final String DEFAULT_API_KEY_REF = "";
+    private static final String DEFAULT_MODEL = "gpt-5.3-codex";
+    private static final String DEFAULT_SUPPORTED_MODELS = "gpt-5.3-codex\n  gpt-5.2-codex\n  gpt-5.1-codex\n  gpt-5.1-codex-max\n  gpt-5-codex\n  codex-mini-latest";
+    private static final String DEFAULT_CONFIG_JSON = "{\n    \"adapter\":\"codexResponses\",\n    \"codexResponsesPath\":\"/backend-api/codex/responses\",\n    \"store\":false,\n    \"streamSupported\":true,\n    \"billingEnabled\":true,\n    \"billingWalletTypeId\":1,\n    \"promptPricePer1kTokens\":0.02,\n    \"completionPricePer1kTokens\":0.08,\n    \"proxyType\":\"http\",\n    \"proxyHost\":\"127.0.0.1\",\n    \"proxyPort\":7890\n  }";
+    private static final Integer DEFAULT_RATE_LIMIT = 60;
+    private static final Integer DEFAULT_TIMEOUT_MS = 60000;
+    private static final Integer DEFAULT_STATUS = 1;
+    private static final Integer DEFAULT_WEIGHT = 1;
+    private static final String DEFAULT_REMARK = "ChatGPT Codex Responses 适配";
+    private static final List<Long> DEFAULT_MODEL_INFO_IDS = Arrays.asList(4L, 5L, 7L, 11L, 12L, 13L, 14L); // codex 默认关联模型
+
 
     private final AiProviderConfigService aiProviderConfigService;
     private final AiProviderModelRelService aiProviderModelRelService;
@@ -107,6 +125,9 @@ public class AiProviderConfigController {
     @Node(value = "aiProviderConfig::add", name = "新增 AI提供方配置表")
     @ApiOperation(value = "新增 AI提供方配置表", notes = "新增 AI提供方配置表")
     public R<Boolean> add(@RequestBody AiProviderConfig aiProviderConfig) {
+        if (aiProviderConfig.getModelInfoIds() == null) {
+            aiProviderConfig.setModelInfoIds(new ArrayList<>(DEFAULT_MODEL_INFO_IDS));
+        }
         boolean saved = aiProviderConfigService.save(aiProviderConfig);
         if (saved && aiProviderConfig.getId() != null && aiProviderConfig.getModelInfoIds() != null) {
             aiProviderModelRelService.replaceRelations(aiProviderConfig.getId(), aiProviderConfig.getModelInfoIds());
@@ -130,6 +151,8 @@ public class AiProviderConfigController {
 
     /**
      * 根据服务提供者唯一识别ID修改AI提供方配置表
+     *
+     * 主意 专供 codex api 同步
      */
     @PutMapping("/providerUniqueId/{providerUniqueId}")
     @Node(value = "aiProviderConfig::editByProviderUniqueId", name = "根据服务提供者唯一识别ID修改 AI提供方配置表")
@@ -143,7 +166,14 @@ public class AiProviderConfigController {
                 .eq(AiProviderConfig::getProviderUniqueId, providerUniqueId)
                 .last("limit 1"));
         if (existed == null || existed.getId() == null) {
-            return R.error("provider config not found for providerUniqueId: " + providerUniqueId);
+            AiProviderConfig toCreate = buildDefaultProviderConfig(providerUniqueId);
+            mergeNonNullFields(toCreate, aiProviderConfig);
+            toCreate.setProviderUniqueId(providerUniqueId);
+            boolean saved = aiProviderConfigService.save(toCreate);
+            if (saved && toCreate.getId() != null && toCreate.getModelInfoIds() != null) {
+                aiProviderModelRelService.replaceRelations(toCreate.getId(), toCreate.getModelInfoIds());
+            }
+            return R.success(saved);
         }
         aiProviderConfig.setId(existed.getId());
         aiProviderConfig.setProviderUniqueId(providerUniqueId);
@@ -152,6 +182,74 @@ public class AiProviderConfigController {
             aiProviderModelRelService.replaceRelations(existed.getId(), aiProviderConfig.getModelInfoIds());
         }
         return R.success(updated);
+    }
+
+    private AiProviderConfig buildDefaultProviderConfig(String providerUniqueId) {
+        AiProviderConfig config = new AiProviderConfig();
+        config.setCode(DEFAULT_PROVIDER_CODE + IDGeneratorUtils.uuid());
+        config.setProvider(DEFAULT_PROVIDER);
+        config.setProviderUniqueId(StringUtils.isBlank(providerUniqueId) ? DEFAULT_PROVIDER_UNIQUE_ID : providerUniqueId);
+        config.setEnv(DEFAULT_ENV);
+        config.setBaseUrl(DEFAULT_BASE_URL);
+        config.setApiKeyRef(DEFAULT_API_KEY_REF);
+        config.setDefaultModel(DEFAULT_MODEL);
+        config.setSupportedModels(DEFAULT_SUPPORTED_MODELS);
+        config.setConfigJson(DEFAULT_CONFIG_JSON);
+        config.setRateLimit(DEFAULT_RATE_LIMIT);
+        config.setTimeoutMs(DEFAULT_TIMEOUT_MS);
+        config.setStatus(DEFAULT_STATUS);
+        config.setWeight(DEFAULT_WEIGHT);
+        config.setRemark(DEFAULT_REMARK);
+        config.setModelInfoIds(new ArrayList<>(DEFAULT_MODEL_INFO_IDS));
+        return config;
+    }
+
+    private void mergeNonNullFields(AiProviderConfig target, AiProviderConfig source) {
+        if (target == null || source == null) {
+            return;
+        }
+        if (StringUtils.isNotBlank(source.getApiKeyRef())) {
+            target.setApiKeyRef(source.getApiKeyRef());
+        }
+        if (StringUtils.isNotBlank(source.getBaseUrl())) {
+            target.setBaseUrl(source.getBaseUrl());
+        }
+        if (StringUtils.isNotBlank(source.getCode())) {
+            target.setCode(source.getCode());
+        }
+        if (StringUtils.isNotBlank(source.getConfigJson())) {
+            target.setConfigJson(source.getConfigJson());
+        }
+        if (StringUtils.isNotBlank(source.getDefaultModel())) {
+            target.setDefaultModel(source.getDefaultModel());
+        }
+        if (StringUtils.isNotBlank(source.getSupportedModels())) {
+            target.setSupportedModels(source.getSupportedModels());
+        }
+        if (StringUtils.isNotBlank(source.getEnv())) {
+            target.setEnv(source.getEnv());
+        }
+        if (StringUtils.isNotBlank(source.getProvider())) {
+            target.setProvider(source.getProvider());
+        }
+        if (source.getRateLimit() != null) {
+            target.setRateLimit(source.getRateLimit());
+        }
+        if (StringUtils.isNotBlank(source.getRemark())) {
+            target.setRemark(source.getRemark());
+        }
+        if (source.getStatus() != null) {
+            target.setStatus(source.getStatus());
+        }
+        if (source.getTimeoutMs() != null) {
+            target.setTimeoutMs(source.getTimeoutMs());
+        }
+        if (source.getWeight() != null) {
+            target.setWeight(source.getWeight());
+        }
+        if (source.getModelInfoIds() != null) {
+            target.setModelInfoIds(source.getModelInfoIds());
+        }
     }
 
     /**

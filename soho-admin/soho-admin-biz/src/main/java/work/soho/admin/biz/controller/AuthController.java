@@ -4,6 +4,7 @@ import cn.hutool.json.JSONUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -30,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Api(tags = "用户鉴权")
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 public class AuthController {
@@ -40,7 +42,8 @@ public class AuthController {
     @Resource
     private AuthenticationManager authenticationManager;
 
-    private static final String LOGIN_USE_CAPTCHA = "login_use_captcha";
+    private static final String USER_ROLE_ADMIN = "admin";
+    private static final String REQUEST_HEADER_USER_AGENT = "User-Agent";
 
     @GetMapping("/login/config")
     public R<HashMap<String, Object>> authConfig() {
@@ -54,37 +57,47 @@ public class AuthController {
 
     @ApiOperation("用户登录")
     @PostMapping(value = "/login")
-    public Object login(@RequestBody AdminUserLoginVo adminUserLoginVo) {
-        Authentication authentication = null;
-        try{
-            Boolean useCaptcha = adminSysConfig.getAdminLoginCaptchaEnable();
-            if(useCaptcha && !CaptchaUtils.checking(adminUserLoginVo.getCaptcha())) {
-               //检查验证码是否正确
-               return R.error("验证码错误");
-            }
-            // 该方法会去调用UserDetailsServiceImpl.loadUserByUsername
-            authentication = authenticationManager
-                    .authenticate(new UsernamePasswordAuthenticationToken(adminUserLoginVo.getUsername(), adminUserLoginVo.getPassword(), AuthorityUtils.createAuthorityList("admin") ));
-            //登录成功，删除验证码
-            if(useCaptcha) {
+    public R<Map<String, String>> login(@RequestBody AdminUserLoginVo adminUserLoginVo) {
+        boolean useCaptcha = adminSysConfig.getAdminLoginCaptchaEnable();
+        if (useCaptcha && !CaptchaUtils.checking(adminUserLoginVo.getCaptcha())) {
+            return R.error("验证码错误");
+        }
+
+        Authentication authentication;
+        try {
+            authentication = authenticateAdmin(adminUserLoginVo);
+            if (useCaptcha) {
                 CaptchaUtils.dropCaptcha();
             }
-
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("管理员登录失败 username={}", adminUserLoginVo.getUsername(), e);
             return R.error("登录失败");
         }
+
         SohoUserDetails loginUser = (SohoUserDetails) authentication.getPrincipal();
         Map<String, String> token = tokenService.createTokenInfo(loginUser);
-        //创建登录日志
+        saveLoginLog(loginUser, token);
+        return R.success(token);
+    }
+
+    private Authentication authenticateAdmin(AdminUserLoginVo loginVo) {
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                loginVo.getUsername(),
+                loginVo.getPassword(),
+                AuthorityUtils.createAuthorityList(USER_ROLE_ADMIN)
+        );
+        // 该方法会调用对应角色的 UserDetailsService.loadUserByUsername
+        return authenticationManager.authenticate(authToken);
+    }
+
+    private void saveLoginLog(SohoUserDetails loginUser, Map<String, String> token) {
         AdminUserLoginLog adminUserLoginLog = new AdminUserLoginLog();
         adminUserLoginLog.setAdminUserId(loginUser.getId());
         adminUserLoginLog.setClientIp(IpUtils.getClientIp());
         adminUserLoginLog.setCreatedTime(LocalDateTime.now());
         adminUserLoginLog.setToken(JSONUtil.toJsonStr(token));
-        adminUserLoginLog.setClientUserAgent(RequestUtil.getHeader("User-Agent"));
+        adminUserLoginLog.setClientUserAgent(RequestUtil.getHeader(REQUEST_HEADER_USER_AGENT));
         adminUserLoginLogService.save(adminUserLoginLog);
-        return R.success(token);
     }
 
     /**

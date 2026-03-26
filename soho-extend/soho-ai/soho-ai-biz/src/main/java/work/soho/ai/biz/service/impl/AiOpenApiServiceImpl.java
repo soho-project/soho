@@ -250,8 +250,18 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 WalletLogEnums.BizId.PAY_ORDER.getId(),
                 requestId,
                 amount.negate(),
-                "AI调用扣费 model=" + model + ", totalTokens=" + usage.getTotalTokens()
+                buildChargeNotes(model, usage)
         );
+    }
+
+    private String buildChargeNotes(String model, AiUsageSummary usage) {
+        int promptTokens = usage != null && usage.getPromptTokens() != null ? usage.getPromptTokens() : 0;
+        int completionTokens = usage != null && usage.getCompletionTokens() != null ? usage.getCompletionTokens() : 0;
+        int totalTokens = usage != null && usage.getTotalTokens() != null ? usage.getTotalTokens() : 0;
+        return "AI调用扣费 model=" + model
+                + ", inputTokens=" + promptTokens
+                + ", outputTokens=" + completionTokens
+                + ", totalTokens=" + totalTokens;
     }
 
     private BigDecimal calculateAmount(BillingPlan billingPlan, AiUsageSummary usage, String model) {

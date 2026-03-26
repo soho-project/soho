@@ -193,7 +193,12 @@ public class AiOpenApiServiceImplTest {
                 Mockito.anyInt(),
                 Mockito.anyString(),
                 Mockito.eq(new BigDecimal("-0.0250")),
-                Mockito.contains("AI调用扣费 model=gpt-4o-mini")
+                Mockito.argThat(notes ->
+                        notes != null
+                                && notes.contains("AI调用扣费 model=gpt-4o-mini")
+                                && notes.contains("inputTokens=10")
+                                && notes.contains("outputTokens=20")
+                                && notes.contains("totalTokens=30"))
         );
     }
 }
