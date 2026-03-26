@@ -15,6 +15,7 @@ import work.soho.ai.biz.dto.AiUsageSummary;
 import work.soho.ai.biz.enums.AiApiCallLogEnums;
 import work.soho.ai.biz.request.AiChatRequest;
 import work.soho.ai.biz.request.OpenAiChatCompletionRequest;
+import work.soho.ai.biz.request.OpenAiResponsesRequest;
 import work.soho.ai.biz.service.AiApiCallLogService;
 import work.soho.ai.biz.service.AiChatService;
 import work.soho.ai.biz.service.AiOpenApiService;
@@ -32,9 +33,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Log4j2
 @Service
@@ -95,6 +99,148 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 .doOnError(ex -> saveFailedLog(requestId, apiKey, providerConfig, targetModel, ex.getMessage(), "/ai/guest/openai/v1/chat/completions"));
     }
 
+    @Override
+    public Map<String, Object> responses(String authorization, OpenAiResponsesRequest request) {
+        log.info("responses 请求体: {}", JacksonUtils.toJson(request));
+        AiProviderConfig providerConfig = requireProviderConfig(request.getModel());
+        if (!isCodexResponsesProvider(providerConfig)) {
+            Map<String, Object> response = responsesByChatCompatibility(authorization, request);
+            log.info("responses 最终返回: {}", JacksonUtils.toJson(response));
+            return response;
+        }
+
+        AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
+        AiChatRequest aiChatRequest = convertNativeResponsesRequest(providerConfig.getCode(), request, false);
+        OpenAiChatCompletionRequest pricingRequest = convertResponsesRequest(request);
+        BillingPlan billingPlan = buildBillingPlan(apiKey, providerConfig, aiChatRequest, pricingRequest);
+        preCheckBalance(billingPlan);
+
+        String requestId = IDGeneratorUtils.uuid32();
+        try {
+            AiChatResponse response = aiChatService.chat(providerConfig, aiChatRequest);
+            AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
+            BigDecimal amount = calculateAmount(billingPlan, usage, response.getModel());
+            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, response.getModel());
+            aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+            saveSuccessLog(requestId, apiKey, providerConfig, response.getModel(), usage, amount, walletLogId, "/ai/guest/openai/v1/responses");
+
+            Map<String, Object> result = parseNativeResponsesResult(response.getRaw());
+            if (result.isEmpty()) {
+                Map<String, Object> chatResponse = buildOpenAiResponse(requestId, response.getModel(), response.getContent(), usage);
+                result = buildResponsesResponse(chatResponse);
+            }
+            log.info("responses 最终返回: {}", JacksonUtils.toJson(result));
+            return result;
+        } catch (RuntimeException ex) {
+            saveFailedLog(requestId, apiKey, providerConfig, request.getModel(), ex.getMessage(), "/ai/guest/openai/v1/responses");
+            throw ex;
+        }
+    }
+
+    @Override
+    public Flux<String> streamResponses(String authorization, OpenAiResponsesRequest request) {
+        log.info("responses(stream) 请求体: {}", JacksonUtils.toJson(request));
+        AiProviderConfig providerConfig = requireProviderConfig(request.getModel());
+        if (!isCodexResponsesProvider(providerConfig)) {
+            return streamResponsesByChatCompatibility(authorization, request);
+        }
+
+        AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
+        AiChatRequest aiChatRequest = convertNativeResponsesRequest(providerConfig.getCode(), request, true);
+        OpenAiChatCompletionRequest pricingRequest = convertResponsesRequest(request);
+        pricingRequest.setStream(true);
+        BillingPlan billingPlan = buildBillingPlan(apiKey, providerConfig, aiChatRequest, pricingRequest);
+        preCheckBalance(billingPlan);
+
+        String requestId = IDGeneratorUtils.uuid32();
+        String targetModel = StringUtils.isBlank(request.getModel()) ? providerConfig.getDefaultModel() : request.getModel();
+        StringBuilder contentBuilder = new StringBuilder();
+        AtomicReference<String> completedPayloadRef = new AtomicReference<>("");
+
+        return aiChatService.streamChat(providerConfig, aiChatRequest)
+                .filter(payload -> StringUtils.isNotBlank(payload) && !"[DONE]".equals(payload))
+                .doOnNext(payload -> {
+                    appendResponsesTextDelta(payload, contentBuilder);
+                    captureCompletedPayload(payload, completedPayloadRef);
+                })
+                .doOnComplete(() -> {
+                    AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, contentBuilder.toString());
+                    BigDecimal amount = calculateAmount(billingPlan, usage, targetModel);
+                    Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, targetModel);
+                    aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+                    saveSuccessLog(requestId, apiKey, providerConfig, targetModel, usage, amount, walletLogId, "/ai/guest/openai/v1/responses");
+                    if (StringUtils.isNotBlank(completedPayloadRef.get())) {
+                        log.info("responses(stream) 最终返回(完成): {}", completedPayloadRef.get());
+                    } else {
+                        log.info("responses(stream) 最终返回(完成): {}", buildStreamCompletedSummary(targetModel, contentBuilder.toString()));
+                    }
+                })
+                .doOnError(ex -> {
+                    saveFailedLog(requestId, apiKey, providerConfig, targetModel, ex.getMessage(), "/ai/guest/openai/v1/responses");
+                    String failedPayload = JacksonUtils.toJson(buildResponsesFailedEvent("resp_" + requestId, ex.getMessage()));
+                    log.warn("responses(stream) 最终返回(失败): {}", failedPayload);
+                });
+    }
+
+    private Map<String, Object> responsesByChatCompatibility(String authorization, OpenAiResponsesRequest request) {
+        OpenAiChatCompletionRequest chatRequest = convertResponsesRequest(request);
+        Map<String, Object> chatResponse = chatCompletions(authorization, chatRequest);
+        return buildResponsesResponse(chatResponse);
+    }
+
+    private Flux<String> streamResponsesByChatCompatibility(String authorization, OpenAiResponsesRequest request) {
+        OpenAiChatCompletionRequest chatRequest = convertResponsesRequest(request);
+        chatRequest.setStream(true);
+        String responseId = "resp_" + IDGeneratorUtils.uuid32();
+        String outputItemId = "msg_" + IDGeneratorUtils.uuid32();
+        String model = request.getModel();
+        long createdAt = System.currentTimeMillis() / 1000;
+        StringBuilder outputTextBuilder = new StringBuilder();
+        AtomicBoolean failed = new AtomicBoolean(false);
+
+        Flux<String> head = Flux.just(
+                JacksonUtils.toJson(buildResponsesCreatedEvent(responseId, model, createdAt)),
+                JacksonUtils.toJson(buildResponsesInProgressEvent(responseId, model, createdAt)),
+                JacksonUtils.toJson(buildResponsesOutputItemAddedEvent(responseId, outputItemId)),
+                JacksonUtils.toJson(buildResponsesContentPartAddedEvent(responseId, outputItemId))
+        );
+
+        Flux<String> body = streamChatCompletions(authorization, chatRequest)
+                .flatMap(payload -> {
+                    if ("[DONE]".equals(payload)) {
+                        return Flux.empty();
+                    }
+                    String delta = extractDeltaFromChatStreamPayload(payload);
+                    if (StringUtils.isBlank(delta)) {
+                        return Flux.empty();
+                    }
+                    outputTextBuilder.append(delta);
+                    return Flux.just(JacksonUtils.toJson(buildResponsesDeltaEvent(delta)));
+                })
+                .onErrorResume(ex -> {
+                    failed.set(true);
+                    String failedPayload = JacksonUtils.toJson(buildResponsesFailedEvent(responseId, ex.getMessage()));
+                    log.warn("responses(stream) 最终返回(失败): {}", failedPayload);
+                    return Flux.just(failedPayload);
+                });
+
+        Flux<String> tail = Flux.defer(() -> {
+            if (failed.get()) {
+                return Flux.empty();
+            }
+            String completedPayload = JacksonUtils.toJson(buildResponsesCompletedEvent(responseId, model, createdAt, outputItemId, outputTextBuilder.toString()));
+            log.info("responses(stream) 最终返回(完成): {}", completedPayload);
+            return Flux.just(
+                    JacksonUtils.toJson(buildResponsesOutputTextDoneEvent(outputTextBuilder.toString())),
+                    JacksonUtils.toJson(buildResponsesContentPartDoneEvent(responseId, outputItemId, outputTextBuilder.toString())),
+                    JacksonUtils.toJson(buildResponsesOutputItemDoneEvent(responseId, outputItemId, outputTextBuilder.toString())),
+                    completedPayload
+            );
+        });
+
+        return Flux.concat(head, body, tail);
+    }
+
     private String extractBearerToken(String authorization) {
         Assert.hasText(authorization, "Authorization不能为空");
         String prefix = "Bearer ";
@@ -104,7 +250,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
     private AiProviderConfig requireProviderConfig(String model) {
         Assert.hasText(model, "model不能为空");
-        return aiChatService.resolveProviderConfig(null, model);
+        try {
+            AiProviderConfig providerConfig = aiChatService.resolveProviderConfig(null, model);
+            log.debug("requireProviderConfig success model={}, configId={}, code={}, provider={}",
+                    model, providerConfig.getId(), providerConfig.getCode(), providerConfig.getProvider());
+            return providerConfig;
+        } catch (IllegalArgumentException ex) {
+            log.warn("requireProviderConfig failed model={}", model, ex);
+            throw ex;
+        }
     }
 
     private AiChatRequest convertRequest(String providerCode, OpenAiChatCompletionRequest request) {
@@ -126,6 +280,258 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         }
         aiChatRequest.setMessages(messages);
         return aiChatRequest;
+    }
+
+    private OpenAiChatCompletionRequest convertResponsesRequest(OpenAiResponsesRequest request) {
+        OpenAiChatCompletionRequest chatRequest = new OpenAiChatCompletionRequest();
+        chatRequest.setModel(request.getModel());
+        chatRequest.setStream(Boolean.TRUE.equals(request.getStream()));
+        chatRequest.setTemperature(request.getTemperature());
+        chatRequest.setTopP(request.getTopP());
+        chatRequest.setMaxTokens(request.getMaxOutputTokens());
+        chatRequest.setMessages(convertResponsesInputToMessages(request.getInput(), request.getInstructions()));
+        return chatRequest;
+    }
+
+    private AiChatRequest convertNativeResponsesRequest(String providerCode, OpenAiResponsesRequest request, boolean stream) {
+        AiChatRequest aiChatRequest = new AiChatRequest();
+        aiChatRequest.setProviderCode(providerCode);
+        aiChatRequest.setModel(request.getModel());
+        aiChatRequest.setStream(stream);
+        aiChatRequest.setTemperature(request.getTemperature());
+        aiChatRequest.setTopP(request.getTopP());
+        aiChatRequest.setMaxTokens(request.getMaxOutputTokens());
+        aiChatRequest.setInstructions(request.getInstructions());
+
+        List<OpenAiChatCompletionRequest.Message> sourceMessages = convertResponsesInputToMessages(request.getInput(), null);
+        List<AiChatRequest.Message> messages = new ArrayList<>();
+        for (OpenAiChatCompletionRequest.Message source : sourceMessages) {
+            AiChatRequest.Message item = new AiChatRequest.Message();
+            item.setRole(source.getRole());
+            populateMessageContent(item, source.getContent());
+            messages.add(item);
+        }
+        aiChatRequest.setMessages(messages);
+
+        Map<String, Object> extra = new HashMap<>();
+        extra.put("nativeResponses", true);
+        extra.put("responsesRequestBody", buildNativeResponsesBody(request, stream));
+        aiChatRequest.setExtra(extra);
+        return aiChatRequest;
+    }
+
+    private Map<String, Object> buildNativeResponsesBody(OpenAiResponsesRequest request, boolean stream) {
+        Map<String, Object> body = new HashMap<>();
+        putIfNotNull(body, "model", request.getModel());
+        putIfNotNull(body, "instructions", request.getInstructions());
+        putIfNotNull(body, "input", request.getInput());
+        putIfNotNull(body, "tools", request.getTools());
+        putIfNotNull(body, "tool_choice", request.getToolChoice());
+        putIfNotNull(body, "parallel_tool_calls", request.getParallelToolCalls());
+        putIfNotNull(body, "reasoning", request.getReasoning());
+        putIfNotNull(body, "store", request.getStore());
+        body.put("stream", stream);
+        putIfNotNull(body, "include", request.getInclude());
+        putIfNotNull(body, "service_tier", request.getServiceTier());
+        putIfNotNull(body, "prompt_cache_key", request.getPromptCacheKey());
+        putIfNotNull(body, "text", request.getText());
+        putIfNotNull(body, "temperature", request.getTemperature());
+        putIfNotNull(body, "top_p", request.getTopP());
+        putIfNotNull(body, "max_output_tokens", request.getMaxOutputTokens());
+        return body;
+    }
+
+    private boolean isCodexResponsesProvider(AiProviderConfig providerConfig) {
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        String adapter = String.valueOf(config.getOrDefault("adapter", ""));
+        return "codexResponses".equalsIgnoreCase(adapter) || "chatgptCodexResponses".equalsIgnoreCase(adapter);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseNativeResponsesResult(String raw) {
+        if (StringUtils.isBlank(raw)) {
+            return new HashMap<>();
+        }
+        try {
+            Map<String, Object> root = JacksonUtils.toBean(raw, Map.class);
+            if (root == null) {
+                return new HashMap<>();
+            }
+            Object object = root.get("object");
+            if ("response".equals(object)) {
+                return root;
+            }
+            Object response = root.get("response");
+            if (response instanceof Map) {
+                return (Map<String, Object>) response;
+            }
+            return root;
+        } catch (Exception ex) {
+            log.warn("parse native responses result failed, raw={}", raw, ex);
+            return new HashMap<>();
+        }
+    }
+
+    private void appendResponsesTextDelta(String payload, StringBuilder builder) {
+        try {
+            String type = JacksonUtils.getObjectMapper().readTree(payload).path("type").asText("");
+            if (!"response.output_text.delta".equals(type)) {
+                return;
+            }
+            String delta = JacksonUtils.getObjectMapper().readTree(payload).path("delta").asText("");
+            if (StringUtils.isNotBlank(delta)) {
+                builder.append(delta);
+            }
+        } catch (Exception ignore) {
+        }
+    }
+
+    private void captureCompletedPayload(String payload, AtomicReference<String> completedPayloadRef) {
+        try {
+            String type = JacksonUtils.getObjectMapper().readTree(payload).path("type").asText("");
+            if ("response.completed".equals(type)) {
+                completedPayloadRef.set(payload);
+            }
+        } catch (Exception ignore) {
+        }
+    }
+
+    private String buildStreamCompletedSummary(String model, String outputText) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("type", "response.completed");
+        response.put("model", model);
+        response.put("output_text", outputText);
+        return JacksonUtils.toJson(response);
+    }
+
+    private void putIfNotNull(Map<String, Object> map, String key, Object value) {
+        if (value != null) {
+            map.put(key, value);
+        }
+    }
+
+    private List<OpenAiChatCompletionRequest.Message> convertResponsesInputToMessages(Object input, String instructions) {
+        List<OpenAiChatCompletionRequest.Message> messages = new ArrayList<>();
+        if (StringUtils.isNotBlank(instructions)) {
+            OpenAiChatCompletionRequest.Message systemMessage = new OpenAiChatCompletionRequest.Message();
+            systemMessage.setRole("system");
+            systemMessage.setContent(instructions);
+            messages.add(systemMessage);
+        }
+
+        if (input == null) {
+            return messages;
+        }
+
+        if (input instanceof String) {
+            messages.add(buildMessage("user", input));
+            return messages;
+        }
+
+        if (input instanceof Map) {
+            Map<?, ?> map = (Map<?, ?>) input;
+            Object roleObj = map.get("role");
+            String role = roleObj == null ? "user" : String.valueOf(roleObj);
+            messages.add(buildMessage(role, normalizeResponsesContent(map.get("content"))));
+            return messages;
+        }
+
+        if (input instanceof List) {
+            for (Object item : (List<?>) input) {
+                if (item == null) {
+                    continue;
+                }
+                if (item instanceof String) {
+                    messages.add(buildMessage("user", item));
+                    continue;
+                }
+                if (!(item instanceof Map)) {
+                    messages.add(buildMessage("user", String.valueOf(item)));
+                    continue;
+                }
+                Map<?, ?> map = (Map<?, ?>) item;
+                Object roleObj = map.get("role");
+                String role = roleObj == null ? "user" : String.valueOf(roleObj);
+                Object content = normalizeResponsesContent(map.get("content"));
+                messages.add(buildMessage(role, content));
+            }
+            return messages;
+        }
+
+        messages.add(buildMessage("user", String.valueOf(input)));
+        return messages;
+    }
+
+    private Object normalizeResponsesContent(Object content) {
+        if (!(content instanceof List)) {
+            return content;
+        }
+        List<?> blocks = (List<?>) content;
+        List<Map<String, Object>> transformed = new ArrayList<>();
+        for (Object blockObj : blocks) {
+            if (!(blockObj instanceof Map)) {
+                continue;
+            }
+            Map<?, ?> block = (Map<?, ?>) blockObj;
+            String type = String.valueOf(block.get("type"));
+            if ("input_text".equals(type) || "text".equals(type)) {
+                if (block.get("text") == null) {
+                    continue;
+                }
+                Map<String, Object> textBlock = new HashMap<>();
+                textBlock.put("type", "text");
+                textBlock.put("text", String.valueOf(block.get("text")));
+                transformed.add(textBlock);
+                continue;
+            }
+            if ("input_image".equals(type) || "image_url".equals(type)) {
+                Object imageUrl = block.get("image_url");
+                if (imageUrl == null) {
+                    imageUrl = block.get("url");
+                }
+                if (imageUrl == null) {
+                    continue;
+                }
+                Map<String, Object> imageBlock = new HashMap<>();
+                imageBlock.put("type", "image_url");
+                if (imageUrl instanceof Map) {
+                    imageBlock.put("image_url", imageUrl);
+                } else {
+                    Map<String, Object> imageUrlMap = new HashMap<>();
+                    imageUrlMap.put("url", String.valueOf(imageUrl));
+                    imageBlock.put("image_url", imageUrlMap);
+                }
+                transformed.add(imageBlock);
+                continue;
+            }
+            if ("input_file".equals(type) || "file_url".equals(type)) {
+                Object fileUrl = block.get("file_url");
+                if (fileUrl == null) {
+                    fileUrl = block.get("url");
+                }
+                if (fileUrl == null) {
+                    continue;
+                }
+                Map<String, Object> fileBlock = new HashMap<>();
+                fileBlock.put("type", "file_url");
+                if (fileUrl instanceof Map) {
+                    fileBlock.put("file_url", fileUrl);
+                } else {
+                    Map<String, Object> fileUrlMap = new HashMap<>();
+                    fileUrlMap.put("url", String.valueOf(fileUrl));
+                    fileBlock.put("file_url", fileUrlMap);
+                }
+                transformed.add(fileBlock);
+            }
+        }
+        return transformed.isEmpty() ? content : transformed;
+    }
+
+    private OpenAiChatCompletionRequest.Message buildMessage(String role, Object content) {
+        OpenAiChatCompletionRequest.Message message = new OpenAiChatCompletionRequest.Message();
+        message.setRole(role);
+        message.setContent(content);
+        return message;
     }
 
     private void populateMessageContent(AiChatRequest.Message message, Object content) {
@@ -337,6 +743,17 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         }
     }
 
+    private String extractDeltaFromChatStreamPayload(String payload) {
+        if (StringUtils.isBlank(payload) || "[DONE]".equals(payload)) {
+            return "";
+        }
+        try {
+            return JacksonUtils.getObjectMapper().readTree(payload).at("/choices/0/delta/content").asText("");
+        } catch (Exception ex) {
+            return "";
+        }
+    }
+
     private void saveSuccessLog(String requestId, AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
                                 AiUsageSummary usage, BigDecimal amount, Long walletLogId, String endpoint) {
         AiApiCallLog log = new AiApiCallLog();
@@ -397,6 +814,201 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         usageMap.put("total_tokens", usage.getTotalTokens());
         response.put("usage", usageMap);
         return response;
+    }
+
+    private Map<String, Object> buildResponsesResponse(Map<String, Object> chatResponse) {
+        String id = String.valueOf(chatResponse.getOrDefault("id", "resp_" + IDGeneratorUtils.uuid32()));
+        String model = String.valueOf(chatResponse.getOrDefault("model", ""));
+        String text = extractTextFromChatResponse(chatResponse);
+        Map<String, Object> usageMap = chatResponse.get("usage") instanceof Map
+                ? new HashMap<>((Map<String, Object>) chatResponse.get("usage"))
+                : new HashMap<>();
+
+        String outputItemId = "msg_" + IDGeneratorUtils.uuid32();
+        Map<String, Object> outputItem = buildAssistantOutputItem(outputItemId, text);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", id.replace("chatcmpl-", "resp_"));
+        response.put("object", "response");
+        response.put("created_at", System.currentTimeMillis() / 1000);
+        response.put("status", "completed");
+        response.put("model", model);
+        response.put("error", null);
+        response.put("incomplete_details", null);
+        response.put("output", Collections.singletonList(outputItem));
+        response.put("output_text", text);
+        response.put("usage", buildResponsesUsage(usageMap));
+        return response;
+    }
+
+    private String extractTextFromChatResponse(Map<String, Object> chatResponse) {
+        Object choicesObj = chatResponse.get("choices");
+        if (!(choicesObj instanceof List) || ((List<?>) choicesObj).isEmpty()) {
+            return "";
+        }
+        Object firstChoice = ((List<?>) choicesObj).get(0);
+        if (!(firstChoice instanceof Map)) {
+            return "";
+        }
+        Object messageObj = ((Map<?, ?>) firstChoice).get("message");
+        if (!(messageObj instanceof Map)) {
+            return "";
+        }
+        Object content = ((Map<?, ?>) messageObj).get("content");
+        return content == null ? "" : String.valueOf(content);
+    }
+
+    private Map<String, Object> buildResponsesUsage(Map<String, Object> chatUsageMap) {
+        Number promptTokens = toNumber(chatUsageMap.get("prompt_tokens"));
+        Number completionTokens = toNumber(chatUsageMap.get("completion_tokens"));
+        Number totalTokens = toNumber(chatUsageMap.get("total_tokens"));
+        Map<String, Object> usage = new HashMap<>();
+        usage.put("input_tokens", promptTokens.intValue());
+        usage.put("output_tokens", completionTokens.intValue());
+        usage.put("total_tokens", totalTokens.intValue());
+        return usage;
+    }
+
+    private Number toNumber(Object value) {
+        if (value instanceof Number) {
+            return (Number) value;
+        }
+        if (value == null) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+
+    private Map<String, Object> buildResponsesDeltaEvent(String delta) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "response.output_text.delta");
+        event.put("delta", delta);
+        event.put("output_index", 0);
+        event.put("content_index", 0);
+        return event;
+    }
+
+    private Map<String, Object> buildResponsesOutputTextDoneEvent(String text) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "response.output_text.done");
+        event.put("text", text == null ? "" : text);
+        event.put("output_index", 0);
+        event.put("content_index", 0);
+        return event;
+    }
+
+    private Map<String, Object> buildResponsesCreatedEvent(String responseId, String model, long createdAt) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "response.created");
+        event.put("response", buildResponsesSkeleton(responseId, model, createdAt, "in_progress"));
+        return event;
+    }
+
+    private Map<String, Object> buildResponsesInProgressEvent(String responseId, String model, long createdAt) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "response.in_progress");
+        event.put("response", buildResponsesSkeleton(responseId, model, createdAt, "in_progress"));
+        return event;
+    }
+
+    private Map<String, Object> buildResponsesOutputItemAddedEvent(String responseId, String outputItemId) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "response.output_item.added");
+        event.put("response_id", responseId);
+        event.put("output_index", 0);
+        event.put("item", buildAssistantOutputItem(outputItemId, ""));
+        return event;
+    }
+
+    private Map<String, Object> buildResponsesContentPartAddedEvent(String responseId, String outputItemId) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "response.content_part.added");
+        event.put("response_id", responseId);
+        event.put("output_index", 0);
+        event.put("item_id", outputItemId);
+        event.put("content_index", 0);
+        Map<String, Object> part = new HashMap<>();
+        part.put("type", "output_text");
+        part.put("text", "");
+        event.put("part", part);
+        return event;
+    }
+
+    private Map<String, Object> buildResponsesContentPartDoneEvent(String responseId, String outputItemId, String text) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "response.content_part.done");
+        event.put("response_id", responseId);
+        event.put("output_index", 0);
+        event.put("item_id", outputItemId);
+        event.put("content_index", 0);
+        Map<String, Object> part = new HashMap<>();
+        part.put("type", "output_text");
+        part.put("text", text == null ? "" : text);
+        event.put("part", part);
+        return event;
+    }
+
+    private Map<String, Object> buildResponsesOutputItemDoneEvent(String responseId, String outputItemId, String text) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "response.output_item.done");
+        event.put("response_id", responseId);
+        event.put("output_index", 0);
+        event.put("item", buildAssistantOutputItem(outputItemId, text));
+        return event;
+    }
+
+    private Map<String, Object> buildResponsesFailedEvent(String responseId, String message) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "response.failed");
+        event.put("response_id", responseId);
+        Map<String, Object> error = new HashMap<>();
+        error.put("code", "server_error");
+        error.put("message", StringUtils.isBlank(message) ? "stream failed" : message);
+        event.put("error", error);
+        return event;
+    }
+
+    private Map<String, Object> buildResponsesCompletedEvent(String responseId, String model, long createdAt,
+                                                             String outputItemId, String text) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "response.completed");
+        Map<String, Object> response = buildResponsesSkeleton(responseId, model, createdAt, "completed");
+        response.put("output", Collections.singletonList(buildAssistantOutputItem(outputItemId, text)));
+        response.put("output_text", text == null ? "" : text);
+        event.put("response", response);
+        return event;
+    }
+
+    private Map<String, Object> buildResponsesSkeleton(String responseId, String model, long createdAt, String status) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", responseId);
+        response.put("object", "response");
+        response.put("created_at", createdAt);
+        response.put("status", status);
+        response.put("model", model);
+        response.put("error", null);
+        response.put("incomplete_details", null);
+        response.put("output", new ArrayList<>());
+        response.put("output_text", "");
+        return response;
+    }
+
+    private Map<String, Object> buildAssistantOutputItem(String outputItemId, String text) {
+        Map<String, Object> outputTextBlock = new HashMap<>();
+        outputTextBlock.put("type", "output_text");
+        outputTextBlock.put("text", text == null ? "" : text);
+
+        Map<String, Object> outputItem = new HashMap<>();
+        outputItem.put("id", outputItemId);
+        outputItem.put("type", "message");
+        outputItem.put("status", "completed");
+        outputItem.put("role", "assistant");
+        outputItem.put("content", Collections.singletonList(outputTextBlock));
+        return outputItem;
     }
 
     private Map<String, Object> parseConfig(String configJson) {
