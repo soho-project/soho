@@ -1,41 +1,39 @@
 package work.soho.ai.biz.controller;
 
-import java.time.LocalDateTime;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import work.soho.common.core.util.PageUtils;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
+import org.springframework.web.multipart.MultipartFile;
+import work.soho.admin.api.request.BetweenCreatedTimeRequest;
+import work.soho.ai.biz.domain.AiApiCallLog;
+import work.soho.ai.biz.dto.AiApiCallLogHourTokenDTO;
+import work.soho.ai.biz.dto.AiApiCallLogModelTokenDTO;
+import work.soho.ai.biz.dto.AiApiCallLogTokenOverviewDTO;
+import work.soho.ai.biz.service.AiApiCallLogService;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.excel.annotation.ExcelExport;
 import work.soho.common.security.annotation.Node;
-import work.soho.admin.api.service.AdminDictApiService;
-import work.soho.ai.biz.domain.AiApiCallLog;
-import work.soho.ai.biz.service.AiApiCallLogService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.admin.api.vo.OptionVo;
-import work.soho.admin.api.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.admin.api.vo.TreeNodeVo;
-import work.soho.admin.api.service.AdminDictApiService;
+
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * ai请求日志Controller
  *
@@ -49,7 +47,6 @@ import work.soho.admin.api.service.AdminDictApiService;
 public class AiApiCallLogController {
 
     private final AiApiCallLogService aiApiCallLogService;
-    private final AdminDictApiService adminDictApiService;
 
     /**
      * 查询ai请求日志列表
@@ -91,6 +88,36 @@ public class AiApiCallLogController {
     @ApiOperation(value = "获取 ai请求日志 详细信息", notes = "获取 ai请求日志 详细信息")
     public R<AiApiCallLog> getInfo(@PathVariable("id" ) Long id) {
         return R.success(aiApiCallLogService.getById(id));
+    }
+
+    /**
+     * 获取当天 token 汇总
+     */
+    @GetMapping("/statisticsTodayTokens")
+    @Node(value = "aiApiCallLog::statisticsTodayTokens", name = "获取 ai请求日志 当天token统计")
+    @ApiOperation(value = "获取 ai请求日志 当天token统计", notes = "获取 ai请求日志 当天token统计")
+    public R<AiApiCallLogTokenOverviewDTO> statisticsTodayTokens() {
+        return R.success(aiApiCallLogService.statisticsTodayTokens());
+    }
+
+    /**
+     * 获取最近12小时分时 token 统计
+     */
+    @GetMapping("/statisticsLast12HoursTokens")
+    @Node(value = "aiApiCallLog::statisticsLast12HoursTokens", name = "获取 ai请求日志 最近12小时token统计")
+    @ApiOperation(value = "获取 ai请求日志 最近12小时token统计", notes = "获取 ai请求日志 最近12小时token统计")
+    public R<List<AiApiCallLogHourTokenDTO>> statisticsLast12HoursTokens() {
+        return R.success(aiApiCallLogService.statisticsLast12HoursTokens());
+    }
+
+    /**
+     * 获取最近12小时按模型 token 统计
+     */
+    @GetMapping("/statisticsLast12HoursTokensByModel")
+    @Node(value = "aiApiCallLog::statisticsLast12HoursTokensByModel", name = "获取 ai请求日志 最近12小时模型token统计")
+    @ApiOperation(value = "获取 ai请求日志 最近12小时模型token统计", notes = "获取 ai请求日志 最近12小时模型token统计")
+    public R<List<AiApiCallLogModelTokenDTO>> statisticsLast12HoursTokensByModel() {
+        return R.success(aiApiCallLogService.statisticsLast12HoursTokensByModel());
     }
 
     /**
