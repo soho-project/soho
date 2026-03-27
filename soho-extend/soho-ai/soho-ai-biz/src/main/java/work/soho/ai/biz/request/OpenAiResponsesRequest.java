@@ -11,7 +11,7 @@ public class OpenAiResponsesRequest {
     private String model;
     private String instructions;
     private Object input;
-    private List<ToolDefinition> tools;
+    private List<Map<String, Object>> tools;
     @JsonProperty("tool_choice")
     private String toolChoice;
     @JsonProperty("parallel_tool_calls")
@@ -33,16 +33,6 @@ public class OpenAiResponsesRequest {
     private Double topP;
     @JsonProperty("max_output_tokens")
     private Integer maxOutputTokens;
-
-    @Data
-    public static class ToolDefinition {
-        private String type;
-        private String name;
-        private String description;
-        private Map<String, Object> parameters;
-        @JsonProperty("strict")
-        private Boolean strict;
-    }
 
     @Data
     public static class ReasoningConfig {
