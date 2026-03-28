@@ -26,6 +26,12 @@ public class AiUserMemberCard implements Serializable {
     private Long memberCardId;
 
     /**
+     * 会员卡号
+     */
+    @TableField("no")
+    private String no;
+
+    /**
      * 0:inactive 1:active 2:expired
      */
     @TableField("status")

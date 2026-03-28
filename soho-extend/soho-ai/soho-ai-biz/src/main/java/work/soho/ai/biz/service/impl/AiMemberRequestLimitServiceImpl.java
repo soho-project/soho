@@ -2,7 +2,6 @@ package work.soho.ai.biz.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import work.soho.ai.biz.service.AiMemberRequestLimitService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
@@ -10,6 +9,7 @@ import work.soho.ai.biz.service.AiUserMemberCardService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -23,10 +23,12 @@ public class AiMemberRequestLimitServiceImpl implements AiMemberRequestLimitServ
 
     @Override
     public Decision evaluate(Long userId, Optional<AiUserMemberCardService.ActiveMemberCard> activeMemberCard) {
+        // 没有生效会员卡，按非会员处理
         if (activeMemberCard == null || !activeMemberCard.isPresent()) {
             return Decision.nonMember();
         }
         AiUserMemberCardService.ActiveMemberCard card = activeMemberCard.get();
+        // 当前只实现 by_request 免费配额；其他模式（如 by_token）按非会员处理
         if (!"by_request".equalsIgnoreCase(safeString(card.getLimitMode()))) {
             return Decision.nonMember();
         }
@@ -43,6 +45,7 @@ public class AiMemberRequestLimitServiceImpl implements AiMemberRequestLimitServ
         int fiveHourLimit = Math.max(1, card.getRateLimit5h() == null ? DEFAULT_RATE_LIMIT_5H : card.getRateLimit5h());
         long nowMillis = Instant.now().toEpochMilli();
 
+        // 先校验长窗口（7天）
         if (sevenDayEnabled) {
             long count7d = countInWindow(build7dKey(userId, userCardId), nowMillis, Duration.ofDays(sevenDayWindowDays));
             if (count7d >= sevenDayLimit) {
@@ -50,6 +53,7 @@ public class AiMemberRequestLimitServiceImpl implements AiMemberRequestLimitServ
             }
         }
 
+        // 再校验短窗口（5小时）
         if (fiveHourEnabled) {
             long count5h = countInWindow(build5hKey(userId, userCardId), nowMillis, Duration.ofHours(fiveHourWindowHours));
             if (count5h >= fiveHourLimit) {
@@ -62,35 +66,111 @@ public class AiMemberRequestLimitServiceImpl implements AiMemberRequestLimitServ
 
     @Override
     public void consumeIfNeeded(Decision decision, String requestId) {
+        // 仅在“会员按请求计费且未超限”时，才记录一次配额消耗
         if (decision == null || !decision.canConsumeQuota()) {
             return;
         }
         long nowMillis = decision.getNowMillis() == null ? Instant.now().toEpochMilli() : decision.getNowMillis();
-        String member = nowMillis + ":" + (requestId == null ? "na" : requestId);
         if (decision.isSevenDayEnabled()) {
-            addWindowRecord(build7dKey(decision.getUserId(), decision.getCardId()), member, nowMillis,
+            addWindowRecord(build7dKey(decision.getUserId(), decision.getCardId()), nowMillis,
                     Duration.ofDays(Math.max(1, decision.getSevenDayWindowDays())));
         }
         if (decision.isFiveHourEnabled()) {
-            addWindowRecord(build5hKey(decision.getUserId(), decision.getCardId()), member, nowMillis,
+            addWindowRecord(build5hKey(decision.getUserId(), decision.getCardId()), nowMillis,
                     Duration.ofHours(Math.max(1, decision.getFiveHourWindowHours())));
         }
     }
 
-    private long countInWindow(String key, long nowMillis, Duration duration) {
-        long windowStart = nowMillis - duration.toMillis();
-        ZSetOperations<String, String> zSet = stringRedisTemplate.opsForZSet();
-        zSet.removeRangeByScore(key, Double.NEGATIVE_INFINITY, (double) windowStart);
-        Long count = zSet.count(key, (double) windowStart, (double) nowMillis);
-        return count == null ? 0L : count;
+    @Override
+    public UsageSnapshot queryUsage(Long userId, AiUserMemberCardService.ActiveMemberCard activeMemberCard) {
+        if (activeMemberCard == null) {
+            return UsageSnapshot.empty();
+        }
+        if (!"by_request".equalsIgnoreCase(safeString(activeMemberCard.getLimitMode()))) {
+            return UsageSnapshot.empty();
+        }
+        Long userCardId = activeMemberCard.getUserCardId();
+        if (userId == null || userCardId == null) {
+            return UsageSnapshot.empty();
+        }
+
+        boolean sevenDayEnabled = activeMemberCard.getRateLimit7dEnabled() == null || activeMemberCard.getRateLimit7dEnabled();
+        boolean fiveHourEnabled = activeMemberCard.getRateLimit5hEnabled() == null || activeMemberCard.getRateLimit5hEnabled();
+        int sevenDayWindowDays = Math.max(1, activeMemberCard.getRateLimitWindow7d() == null ? DEFAULT_WINDOW_7D : activeMemberCard.getRateLimitWindow7d());
+        int fiveHourWindowHours = Math.max(1, activeMemberCard.getRateLimitWindow5h() == null ? DEFAULT_WINDOW_5H : activeMemberCard.getRateLimitWindow5h());
+        int sevenDayLimit = Math.max(1, activeMemberCard.getRateLimit7d() == null ? DEFAULT_RATE_LIMIT_7D : activeMemberCard.getRateLimit7d());
+        int fiveHourLimit = Math.max(1, activeMemberCard.getRateLimit5h() == null ? DEFAULT_RATE_LIMIT_5H : activeMemberCard.getRateLimit5h());
+
+        long nowMillis = Instant.now().toEpochMilli();
+        int sevenDayUsed = sevenDayEnabled
+                ? safeToInt(countInWindow(build7dKey(userId, userCardId), nowMillis, Duration.ofDays(sevenDayWindowDays)))
+                : 0;
+        int fiveHourUsed = fiveHourEnabled
+                ? safeToInt(countInWindow(build5hKey(userId, userCardId), nowMillis, Duration.ofHours(fiveHourWindowHours)))
+                : 0;
+        long sevenDayNextResetMillis = sevenDayEnabled
+                ? computeCurrentBucketEndMillis(nowMillis, Duration.ofDays(sevenDayWindowDays))
+                : 0L;
+        long fiveHourNextResetMillis = fiveHourEnabled
+                ? computeCurrentBucketEndMillis(nowMillis, Duration.ofHours(fiveHourWindowHours))
+                : 0L;
+
+        return new UsageSnapshot(
+                true,
+                sevenDayEnabled,
+                fiveHourEnabled,
+                sevenDayWindowDays,
+                fiveHourWindowHours,
+                sevenDayLimit,
+                fiveHourLimit,
+                sevenDayUsed,
+                fiveHourUsed,
+                sevenDayNextResetMillis,
+                fiveHourNextResetMillis
+        );
     }
 
-    private void addWindowRecord(String key, String member, long nowMillis, Duration duration) {
-        long windowStart = nowMillis - duration.toMillis();
-        ZSetOperations<String, String> zSet = stringRedisTemplate.opsForZSet();
-        zSet.removeRangeByScore(key, Double.NEGATIVE_INFINITY, (double) windowStart);
-        zSet.add(key, member, (double) nowMillis);
-        stringRedisTemplate.expire(key, duration);
+    private long countInWindow(String keyPrefix, long nowMillis, Duration duration) {
+        String key = buildFixedWindowKey(keyPrefix, nowMillis, duration);
+        String count = stringRedisTemplate.opsForValue().get(key);
+        if (count == null) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(count);
+        } catch (NumberFormatException ex) {
+            return 0L;
+        }
+    }
+
+    private void addWindowRecord(String keyPrefix, long nowMillis, Duration duration) {
+        String key = buildFixedWindowKey(keyPrefix, nowMillis, duration);
+        Long current = stringRedisTemplate.opsForValue().increment(key);
+        if (current == null) {
+            return;
+        }
+        if (current == 1L) {
+            long ttlMillis = computeCurrentBucketTtlMillis(nowMillis, duration);
+            stringRedisTemplate.expire(key, ttlMillis, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private String buildFixedWindowKey(String keyPrefix, long nowMillis, Duration duration) {
+        long windowMillis = Math.max(1L, duration.toMillis());
+        long bucketIndex = nowMillis / windowMillis;
+        return keyPrefix + ":bucket:" + bucketIndex;
+    }
+
+    private long computeCurrentBucketTtlMillis(long nowMillis, Duration duration) {
+        long bucketEnd = computeCurrentBucketEndMillis(nowMillis, duration);
+        // 额外保留 1 秒，避免边界时刻误删
+        return Math.max(1000L, bucketEnd - nowMillis + 1000L);
+    }
+
+    private long computeCurrentBucketEndMillis(long nowMillis, Duration duration) {
+        long windowMillis = Math.max(1L, duration.toMillis());
+        long bucketStart = (nowMillis / windowMillis) * windowMillis;
+        return bucketStart + windowMillis;
     }
 
     private String build7dKey(Long userId, Long cardId) {
@@ -103,5 +183,9 @@ public class AiMemberRequestLimitServiceImpl implements AiMemberRequestLimitServ
 
     private String safeString(String value) {
         return value == null ? "" : value;
+    }
+
+    private int safeToInt(long value) {
+        return value > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
     }
 }

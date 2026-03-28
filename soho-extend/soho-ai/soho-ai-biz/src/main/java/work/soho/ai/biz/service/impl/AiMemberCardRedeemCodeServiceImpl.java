@@ -12,6 +12,7 @@ import work.soho.ai.biz.mapper.AiMemberCardRedeemCodeMapper;
 import work.soho.ai.biz.service.AiMemberCardRedeemCodeService;
 import work.soho.ai.biz.service.AiMemberCardService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
+import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.StringUtils;
 
 import java.security.SecureRandom;
@@ -143,6 +144,7 @@ public class AiMemberCardRedeemCodeServiceImpl extends ServiceImpl<AiMemberCardR
         AiUserMemberCard userCard = new AiUserMemberCard();
         userCard.setUserId(userId);
         userCard.setMemberCardId(card.getId());
+        userCard.setNo(generateCardNo());
         userCard.setStatus(1);
         userCard.setPriority(0);
         userCard.setIsSelected(true);
@@ -175,5 +177,9 @@ public class AiMemberCardRedeemCodeServiceImpl extends ServiceImpl<AiMemberCardR
             sb.append(CODE_CHARS[RANDOM.nextInt(CODE_CHARS.length)]);
         }
         return sb.toString();
+    }
+
+    private String generateCardNo() {
+        return "MC" + IDGeneratorUtils.uuid32().substring(0, 16).toUpperCase();
     }
 }
