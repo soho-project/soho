@@ -20,9 +20,11 @@ import work.soho.ai.biz.service.AiApiCallLogService;
 import work.soho.ai.biz.service.AiChatService;
 import work.soho.ai.biz.service.AiMemberRequestLimitService;
 import work.soho.ai.biz.service.AiOpenApiService;
+import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
 import work.soho.ai.biz.service.AiUserApiKeyService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
+import work.soho.ai.biz.utils.AiProviderModelUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.common.core.util.StringUtils;
@@ -33,10 +35,13 @@ import work.soho.wallet.biz.service.WalletInfoService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.ZoneId;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,6 +52,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @RequiredArgsConstructor
 public class AiOpenApiServiceImpl implements AiOpenApiService {
     private final AiUserApiKeyService aiUserApiKeyService;
+    private final AiProviderConfigService aiProviderConfigService;
     private final AiProviderModelRelService aiProviderModelRelService;
     private final AiChatService aiChatService;
     private final AiApiCallLogService aiApiCallLogService;
@@ -54,6 +60,38 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private final WalletInfoApiService walletInfoApiService;
     private final AiMemberRequestLimitService aiMemberRequestLimitService;
     private final AiUserMemberCardService aiUserMemberCardService;
+
+    @Override
+    public Map<String, Object> models(String authorization) {
+        AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
+        aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+
+        List<AiProviderConfig> providerConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
+                .eq(AiProviderConfig::getStatus, 1)
+                .orderByAsc(AiProviderConfig::getId));
+
+        Map<String, Map<String, Object>> modelMap = new LinkedHashMap<>();
+        for (AiProviderConfig providerConfig : providerConfigs) {
+            List<AiModelInfo> relModels = aiProviderModelRelService.listEnabledModelsByProviderConfigId(providerConfig.getId());
+            if (!relModels.isEmpty()) {
+                relModels.sort(Comparator.comparing(AiModelInfo::getSort, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(AiModelInfo::getId, Comparator.nullsLast(Long::compareTo)));
+                for (AiModelInfo relModel : relModels) {
+                    addModelRow(modelMap, relModel.getModelName(), providerConfig, relModel.getCreatedTime());
+                }
+                continue;
+            }
+
+            for (String modelName : AiProviderModelUtils.extractModels(providerConfig)) {
+                addModelRow(modelMap, modelName, providerConfig, providerConfig.getCreatedTime());
+            }
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("object", "list");
+        response.put("data", new ArrayList<>(modelMap.values()));
+        return response;
+    }
 
     @Override
     public Map<String, Object> chatCompletions(String authorization, OpenAiChatCompletionRequest request) {
@@ -254,6 +292,24 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         String prefix = "Bearer ";
         Assert.isTrue(authorization.startsWith(prefix), "Authorization格式错误");
         return authorization.substring(prefix.length()).trim();
+    }
+
+    private void addModelRow(Map<String, Map<String, Object>> modelMap, String modelName, AiProviderConfig providerConfig,
+                             LocalDateTime createdTime) {
+        if (StringUtils.isBlank(modelName) || modelMap.containsKey(modelName)) {
+            return;
+        }
+        Map<String, Object> row = new HashMap<>();
+        row.put("id", modelName);
+        row.put("object", "model");
+        row.put("created", toEpochSeconds(createdTime));
+        row.put("owned_by", StringUtils.isNotBlank(providerConfig.getProvider()) ? providerConfig.getProvider() : "soho");
+        modelMap.put(modelName, row);
+    }
+
+    private long toEpochSeconds(LocalDateTime createdTime) {
+        LocalDateTime value = createdTime == null ? LocalDateTime.now() : createdTime;
+        return value.atZone(ZoneId.systemDefault()).toEpochSecond();
     }
 
     private AiProviderConfig requireProviderConfig(String model) {

@@ -21,6 +21,13 @@ import java.io.IOException;
 public class GuestAiOpenAiController {
     private final AiOpenApiService aiOpenApiService;
 
+    @GetMapping(value = "/models")
+    @ApiOperation("OpenAI 兼容 models")
+    public Object models(@RequestHeader("Authorization") String authorization) {
+        log.info("OpenAI 兼容 models");
+        return aiOpenApiService.models(authorization);
+    }
+
     @PostMapping(value = "/chat/completions")
     @ApiOperation("OpenAI 兼容 chat completions")
     public Object chatCompletions(@RequestHeader("Authorization") String authorization,
