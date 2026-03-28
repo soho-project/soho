@@ -2,13 +2,17 @@ package work.soho.user.biz.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.security.service.SohoUserDetailsService;
 import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.user.api.dto.UserInfoDto;
+import work.soho.user.api.event.UserRegisteredEvent;
 import work.soho.user.api.service.UserApiService;
 import work.soho.user.biz.domain.UserInfo;
 import work.soho.user.biz.mapper.UserInfoMapper;
@@ -19,9 +23,12 @@ import work.soho.user.biz.service.UserInfoService;
 * @description 针对表【user_info(用户信息;;option:id~username)】的数据库操作Service实现
 * @createDate 2022-11-28 10:08:51
 */
+@RequiredArgsConstructor
 @Service
 public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo>
     implements UserInfoService, UserApiService, SohoUserDetailsService {
+
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public UserInfoDto getUserById(Long id) {
@@ -81,6 +88,23 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo>
     @Override
     public String getUserRoleName() {
         return "user";
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public UserInfo register(UserInfo userInfo) {
+        save(userInfo);
+
+        UserRegisteredEvent event = new UserRegisteredEvent();
+        event.setUserId(userInfo.getId());
+        event.setCode(userInfo.getCode());
+        event.setUsername(userInfo.getUsername());
+        event.setPhone(userInfo.getPhone());
+        event.setEmail(userInfo.getEmail());
+        event.setNickname(userInfo.getNickname());
+        event.setRegisteredTime(userInfo.getCreatedTime());
+        applicationEventPublisher.publishEvent(event);
+        return userInfo;
     }
 }
 
