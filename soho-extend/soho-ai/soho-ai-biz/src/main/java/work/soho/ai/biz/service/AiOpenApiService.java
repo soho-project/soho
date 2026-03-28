@@ -7,6 +7,8 @@ import work.soho.ai.biz.request.OpenAiResponsesRequest;
 import java.util.Map;
 
 public interface AiOpenApiService {
+    Map<String, Object> models(String authorization);
+
     Map<String, Object> chatCompletions(String authorization, OpenAiChatCompletionRequest request);
 
     Flux<String> streamChatCompletions(String authorization, OpenAiChatCompletionRequest request);
