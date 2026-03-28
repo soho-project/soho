@@ -20,8 +20,10 @@ import work.soho.ai.biz.service.AiApiCallLogService;
 import work.soho.ai.biz.service.AiChatService;
 import work.soho.ai.biz.service.AiChatSessionMessageService;
 import work.soho.ai.biz.service.AiChatSessionService;
+import work.soho.ai.biz.service.AiMemberRequestLimitService;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
+import work.soho.ai.biz.service.AiUserMemberCardService;
 import work.soho.ai.biz.service.AiUserWebChatService;
 import work.soho.ai.biz.utils.AiProviderModelUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
@@ -54,6 +56,8 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
     private final AiChatSessionMessageService aiChatSessionMessageService;
     private final WalletInfoService walletInfoService;
     private final WalletInfoApiService walletInfoApiService;
+    private final AiMemberRequestLimitService aiMemberRequestLimitService;
+    private final AiUserMemberCardService aiUserMemberCardService;
 
     @Override
     public List<AiUserModelView> listModels() {
@@ -136,6 +140,7 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
             AiChatResponse response = aiChatService.chat(providerConfig, aiChatRequest);
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, response.getModel());
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
             saveSuccessLog(requestId, userId, providerConfig, response.getModel(), usage,
                     calculateAmount(billingPlan, usage, response.getModel()), walletLogId, USER_WEB_CHAT_ENDPOINT);
             persistAssistantMessage(session, response.getContent(), request);
@@ -165,6 +170,7 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
                     String model = StringUtils.isNotBlank(aiChatRequest.getModel()) ? aiChatRequest.getModel() : providerConfig.getDefaultModel();
                     BigDecimal amount = calculateAmount(billingPlan, usage, model);
                     Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, model);
+                    aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
                     saveSuccessLog(requestId, userId, providerConfig, model, usage, amount, walletLogId, USER_WEB_CHAT_ENDPOINT);
                     persistAssistantMessage(session, assistantContent.toString(), request);
                 })
@@ -330,6 +336,13 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
         billingPlan.promptPricePer1kTokens = pickBigDecimal(config, "promptPricePer1kTokens", BigDecimal.ZERO);
         billingPlan.completionPricePer1kTokens = pickBigDecimal(config, "completionPricePer1kTokens", billingPlan.promptPricePer1kTokens);
         billingPlan.estimatedModel = StringUtils.isNotBlank(request.getModel()) ? request.getModel() : providerConfig.getDefaultModel();
+        billingPlan.memberLimitDecision = aiMemberRequestLimitService.evaluate(
+                billingPlan.userId,
+                aiUserMemberCardService.resolveActiveMemberCard(billingPlan.userId)
+        );
+        if (billingPlan.memberLimitDecision.isMemberByRequest() && !billingPlan.memberLimitDecision.isOverLimit()) {
+            billingPlan.billingEnabled = false;
+        }
 
         AiUsageSummary estimatedUsage = aiChatService.estimateUsage(request, "");
         int expectedCompletionTokens = request.getMaxTokens() == null ? 0 : Math.max(request.getMaxTokens(), 0);
@@ -532,6 +545,7 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
         private BigDecimal completionPricePer1kTokens;
         private String estimatedModel;
         private AiUsageSummary estimatedUsage;
+        private AiMemberRequestLimitService.Decision memberLimitDecision;
     }
 
     private static final class ModelPricing {

@@ -18,9 +18,11 @@ import work.soho.ai.biz.request.OpenAiChatCompletionRequest;
 import work.soho.ai.biz.request.OpenAiResponsesRequest;
 import work.soho.ai.biz.service.AiApiCallLogService;
 import work.soho.ai.biz.service.AiChatService;
+import work.soho.ai.biz.service.AiMemberRequestLimitService;
 import work.soho.ai.biz.service.AiOpenApiService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
 import work.soho.ai.biz.service.AiUserApiKeyService;
+import work.soho.ai.biz.service.AiUserMemberCardService;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.common.core.util.StringUtils;
@@ -50,6 +52,8 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private final AiApiCallLogService aiApiCallLogService;
     private final WalletInfoService walletInfoService;
     private final WalletInfoApiService walletInfoApiService;
+    private final AiMemberRequestLimitService aiMemberRequestLimitService;
+    private final AiUserMemberCardService aiUserMemberCardService;
 
     @Override
     public Map<String, Object> chatCompletions(String authorization, OpenAiChatCompletionRequest request) {
@@ -65,6 +69,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
             BigDecimal amount = calculateAmount(billingPlan, usage, response.getModel());
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, response.getModel());
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             saveSuccessLog(requestId, apiKey, providerConfig, response.getModel(), usage, amount, walletLogId, "/ai/guest/openai/v1/chat/completions");
             return buildOpenAiResponse(requestId, response.getModel(), response.getContent(), usage);
@@ -93,6 +98,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                     AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, contentBuilder.toString());
                     BigDecimal amount = calculateAmount(billingPlan, usage, targetModel);
                     Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, targetModel);
+                    aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
                     aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
                     saveSuccessLog(requestId, apiKey, providerConfig, targetModel, usage, amount, walletLogId, "/ai/guest/openai/v1/chat/completions");
                 })
@@ -121,6 +127,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
             BigDecimal amount = calculateAmount(billingPlan, usage, response.getModel());
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, response.getModel());
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             saveSuccessLog(requestId, apiKey, providerConfig, response.getModel(), usage, amount, walletLogId, "/ai/guest/openai/v1/responses");
 
@@ -167,6 +174,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                     AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, contentBuilder.toString());
                     BigDecimal amount = calculateAmount(billingPlan, usage, targetModel);
                     Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, targetModel);
+                    aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
                     aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
                     saveSuccessLog(requestId, apiKey, providerConfig, targetModel, usage, amount, walletLogId, "/ai/guest/openai/v1/responses");
                     if (StringUtils.isNotBlank(completedPayloadRef.get())) {
@@ -624,6 +632,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         billingPlan.completionPricePer1kTokens = pickBigDecimal(config, "completionPricePer1kTokens", billingPlan.promptPricePer1kTokens);
         billingPlan.estimatedModel = requestedModel;
         billingPlan.modelPricing = modelPricing;
+        billingPlan.memberLimitDecision = aiMemberRequestLimitService.evaluate(
+                billingPlan.userId,
+                aiUserMemberCardService.resolveActiveMemberCard(billingPlan.userId)
+        );
+        if (billingPlan.memberLimitDecision.isMemberByRequest() && !billingPlan.memberLimitDecision.isOverLimit()) {
+            billingPlan.billingEnabled = false;
+        }
 
         AiUsageSummary estimatedUsage = aiChatService.estimateUsage(aiChatRequest, "");
         int expectedCompletionTokens = request.getMaxTokens() == null ? 0 : Math.max(request.getMaxTokens(), 0);
@@ -1066,6 +1081,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         private String estimatedModel;
         private AiUsageSummary estimatedUsage;
         private ModelPricing modelPricing;
+        private AiMemberRequestLimitService.Decision memberLimitDecision;
     }
 
     private static final class ModelPricing {
