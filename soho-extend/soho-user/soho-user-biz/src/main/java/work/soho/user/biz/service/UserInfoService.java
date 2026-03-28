@@ -9,5 +9,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 * @createDate 2022-11-28 10:08:51
 */
 public interface UserInfoService extends IService<UserInfo> {
-
+    UserInfo register(UserInfo userInfo);
 }

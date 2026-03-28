@@ -19,8 +19,10 @@ import work.soho.user.biz.enums.UserInfoEnums;
 import work.soho.user.biz.enums.UserOauthEnums;
 import work.soho.user.biz.mapper.UserInfoMapper;
 import work.soho.user.biz.mapper.UserOauthMapper;
+import work.soho.user.biz.service.UserInfoService;
 import work.soho.user.biz.service.UserOauthService;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -35,6 +37,8 @@ public class UserOauthServiceImpl extends ServiceImpl<UserOauthMapper, UserOauth
     private final UserInfoMapper userInfoMapper;
 
     private final UserSysConfig userSysConfig;
+
+    private final UserInfoService userInfoService;
 
     @Override
     public Map<String, String> loginWithCode(String code) {
@@ -58,8 +62,10 @@ public class UserOauthServiceImpl extends ServiceImpl<UserOauthMapper, UserOauth
 //            userInfo.setPassword(IDGeneratorUtils.uuid());
             userInfo.setAvatar(userSysConfig.getDefaultAvatar());
             userInfo.setStatus(UserInfoEnums.Status.NORMAL.getId());
+            userInfo.setCreatedTime(LocalDateTime.now());
+            userInfo.setUpdatedTime(LocalDateTime.now());
 
-            userInfoMapper.insert(userInfo);
+            userInfoService.register(userInfo);
 
             userInfo.setNickname("微信用户"+userInfo.getId());
             userInfo.setUsername("wechat_" + userInfo.getId());
@@ -99,7 +105,9 @@ public class UserOauthServiceImpl extends ServiceImpl<UserOauthMapper, UserOauth
                 userInfo.setStatus(UserInfoEnums.Status.NORMAL.getId());
                 userInfo.setSex(thridOauthDto.getGender());
                 userInfo.setPhone(thridOauthDto.getPhone());
-                userInfoMapper.insert(userInfo);
+                userInfo.setCreatedTime(LocalDateTime.now());
+                userInfo.setUpdatedTime(LocalDateTime.now());
+                userInfoService.register(userInfo);
             }
 
             Assert.notNull(userInfo, "创建用户失败");

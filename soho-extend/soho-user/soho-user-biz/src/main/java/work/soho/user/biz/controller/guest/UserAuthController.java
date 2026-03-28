@@ -262,7 +262,7 @@ public class UserAuthController {
             return R.error("手机号已存在");
         }
 
-        userInfoService.save(userInfo);
+        userInfoService.register(userInfo);
         return R.success(userInfo);
     }
 }
