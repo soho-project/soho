@@ -688,10 +688,12 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         billingPlan.completionPricePer1kTokens = pickBigDecimal(config, "completionPricePer1kTokens", billingPlan.promptPricePer1kTokens);
         billingPlan.estimatedModel = requestedModel;
         billingPlan.modelPricing = modelPricing;
+        // 会员卡判定：只对 by_request 模式生效，返回是否超限等结果
         billingPlan.memberLimitDecision = aiMemberRequestLimitService.evaluate(
                 billingPlan.userId,
                 aiUserMemberCardService.resolveActiveMemberCard(billingPlan.userId)
         );
+        // 会员未超限时，本次请求免费，不走钱包扣费
         if (billingPlan.memberLimitDecision.isMemberByRequest() && !billingPlan.memberLimitDecision.isOverLimit()) {
             billingPlan.billingEnabled = false;
         }
@@ -705,6 +707,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     }
 
     private void preCheckBalance(BillingPlan billingPlan) {
+        // 免费请求（billingEnabled=false）直接跳过余额检查
         if (!billingPlan.billingEnabled) {
             return;
         }
@@ -718,6 +721,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     }
 
     private Long chargeIfNeeded(BillingPlan billingPlan, String requestId, AiUsageSummary usage, BigDecimal amount, String model) {
+        // 免费请求或金额为0时不扣费
         if (!billingPlan.billingEnabled || amount.compareTo(BigDecimal.ZERO) <= 0) {
             return null;
         }

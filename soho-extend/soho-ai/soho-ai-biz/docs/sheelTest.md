@@ -1,3 +1,10 @@
+# 模型请求接口
+
+curl 'http://127.0.0.1:6677/ai/guest/openai/v1/models' \
+-X POST \
+-H 'Authorization: Bearer sk-ai-6ba06fa2f342417db6755273110131b2' \
+-H 'Content-Type: application/json'
+
 curl 'http://127.0.0.1:6677/ai/guest/openai/v1/chat/completions' \
 -X POST \
 -H 'Authorization: Bearer sk-ai-6ba06fa2f342417db6755273110131b2' \

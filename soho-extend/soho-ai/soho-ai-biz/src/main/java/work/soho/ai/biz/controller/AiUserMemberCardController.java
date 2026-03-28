@@ -13,8 +13,10 @@ import work.soho.ai.biz.domain.AiMemberCard;
 import work.soho.ai.biz.domain.AiUserMemberCard;
 import work.soho.ai.biz.service.AiMemberCardService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
+import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
 
 import java.time.LocalDateTime;
@@ -59,6 +61,11 @@ public class AiUserMemberCardController {
     @Node(value = "ai::userMemberCard::add", name = "新增 AI 用户会员卡")
     @ApiOperation("新增 AI 用户会员卡")
     public R<Boolean> add(@RequestBody AiUserMemberCard item) {
+        if (StringUtils.isBlank(item.getNo())) {
+            item.setNo(generateCardNo());
+        } else {
+            item.setNo(item.getNo().trim());
+        }
         return R.success(aiUserMemberCardService.save(item));
     }
 
@@ -95,6 +102,7 @@ public class AiUserMemberCardController {
         AiUserMemberCard item = new AiUserMemberCard();
         item.setUserId(request.getUserId());
         item.setMemberCardId(request.getMemberCardId());
+        item.setNo(StringUtils.isNotBlank(request.getNo()) ? request.getNo().trim() : generateCardNo());
         item.setStatus(request.getStatus() == null ? 1 : request.getStatus());
         item.setPriority(request.getPriority() == null ? 0 : request.getPriority());
         item.setIsSelected(Boolean.TRUE.equals(request.getIsSelected()));
@@ -106,6 +114,10 @@ public class AiUserMemberCardController {
         item.setCreatedTime(now);
         item.setUpdatedTime(now);
         return R.success(aiUserMemberCardService.save(item));
+    }
+
+    private String generateCardNo() {
+        return "MC" + IDGeneratorUtils.uuid32().substring(0, 16).toUpperCase();
     }
 
     @Data
@@ -123,5 +135,6 @@ public class AiUserMemberCardController {
         private LocalDateTime activatedTime;
         private String source;
         private String bizNo;
+        private String no;
     }
 }

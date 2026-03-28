@@ -9,9 +9,11 @@ import work.soho.ai.biz.domain.AiUserMemberCard;
 import work.soho.ai.biz.dto.AiUserMemberCardView;
 import work.soho.ai.biz.mapper.AiUserMemberCardMapper;
 import work.soho.ai.biz.service.AiMemberCardService;
+import work.soho.ai.biz.service.AiMemberRequestLimitService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -24,9 +26,12 @@ public class AiUserMemberCardServiceImpl extends ServiceImpl<AiUserMemberCardMap
         implements AiUserMemberCardService {
 
     private final AiMemberCardService aiMemberCardService;
+    private final AiMemberRequestLimitService aiMemberRequestLimitService;
 
-    public AiUserMemberCardServiceImpl(AiMemberCardService aiMemberCardService) {
+    public AiUserMemberCardServiceImpl(AiMemberCardService aiMemberCardService,
+                                       AiMemberRequestLimitService aiMemberRequestLimitService) {
         this.aiMemberCardService = aiMemberCardService;
+        this.aiMemberRequestLimitService = aiMemberRequestLimitService;
     }
 
     @Override
@@ -183,6 +188,7 @@ public class AiUserMemberCardServiceImpl extends ServiceImpl<AiUserMemberCardMap
         AiUserMemberCardView view = new AiUserMemberCardView();
         view.setUserCardId(userCard.getId());
         view.setMemberCardId(card.getId());
+        view.setNo(userCard.getNo());
         view.setName(card.getName());
         view.setCardType(card.getCardType());
         view.setLimitMode(card.getLimitMode());
@@ -197,6 +203,54 @@ public class AiUserMemberCardServiceImpl extends ServiceImpl<AiUserMemberCardMap
         view.setRateLimit7dEnabled(card.getRateLimit7dEnabled());
         view.setRateLimitWindow5h(card.getRateLimitWindow5h());
         view.setRateLimitWindow7d(card.getRateLimitWindow7d());
+        fillUsage(userCard, card, view);
         return view;
+    }
+
+    private void fillUsage(AiUserMemberCard userCard, AiMemberCard card, AiUserMemberCardView view) {
+        if (userCard == null || card == null || view == null) {
+            return;
+        }
+        if (!isCardActive(userCard)) {
+            view.setUsageAvailable(false);
+            return;
+        }
+        ActiveMemberCard activeMemberCard = new ActiveMemberCard(
+                userCard.getId(),
+                card.getLimitMode(),
+                card.getRateLimit5h(),
+                card.getRateLimit7d(),
+                card.getRateLimit5hEnabled(),
+                card.getRateLimit7dEnabled(),
+                card.getRateLimitWindow5h(),
+                card.getRateLimitWindow7d()
+        );
+        AiMemberRequestLimitService.UsageSnapshot usage = aiMemberRequestLimitService.queryUsage(userCard.getUserId(), activeMemberCard);
+        view.setUsageAvailable(usage.isUsageAvailable());
+        view.setRateLimit5hUsed(usage.getFiveHourUsed());
+        view.setRateLimit7dUsed(usage.getSevenDayUsed());
+        view.setRateLimit5hRemaining(usage.getFiveHourRemaining());
+        view.setRateLimit7dRemaining(usage.getSevenDayRemaining());
+        view.setRateLimit5hProgress(usage.getFiveHourProgress());
+        view.setRateLimit7dProgress(usage.getSevenDayProgress());
+        view.setRateLimit5hNextResetTime(toLocalDateTime(usage.getFiveHourNextResetMillis()));
+        view.setRateLimit7dNextResetTime(toLocalDateTime(usage.getSevenDayNextResetMillis()));
+    }
+
+    private boolean isCardActive(AiUserMemberCard userCard) {
+        if (!Integer.valueOf(1).equals(userCard.getStatus())) {
+            return false;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        return userCard.getStartTime() != null && userCard.getEndTime() != null
+                && !userCard.getStartTime().isAfter(now)
+                && !userCard.getEndTime().isBefore(now);
+    }
+
+    private LocalDateTime toLocalDateTime(long epochMillis) {
+        if (epochMillis <= 0L) {
+            return null;
+        }
+        return LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
     }
 }

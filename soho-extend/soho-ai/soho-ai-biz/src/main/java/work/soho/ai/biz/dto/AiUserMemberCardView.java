@@ -13,6 +13,7 @@ public class AiUserMemberCardView {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long memberCardId;
 
+    private String no;
     private String name;
     private String cardType;
     private String limitMode;
@@ -28,4 +29,14 @@ public class AiUserMemberCardView {
     private Boolean rateLimit7dEnabled;
     private Integer rateLimitWindow5h;
     private Integer rateLimitWindow7d;
+
+    private Boolean usageAvailable;
+    private Integer rateLimit5hUsed;
+    private Integer rateLimit7dUsed;
+    private Integer rateLimit5hRemaining;
+    private Integer rateLimit7dRemaining;
+    private Integer rateLimit5hProgress;
+    private Integer rateLimit7dProgress;
+    private LocalDateTime rateLimit5hNextResetTime;
+    private LocalDateTime rateLimit7dNextResetTime;
 }

@@ -336,10 +336,12 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
         billingPlan.promptPricePer1kTokens = pickBigDecimal(config, "promptPricePer1kTokens", BigDecimal.ZERO);
         billingPlan.completionPricePer1kTokens = pickBigDecimal(config, "completionPricePer1kTokens", billingPlan.promptPricePer1kTokens);
         billingPlan.estimatedModel = StringUtils.isNotBlank(request.getModel()) ? request.getModel() : providerConfig.getDefaultModel();
+        // 会员卡判定：by_request 且未超限则本次免费
         billingPlan.memberLimitDecision = aiMemberRequestLimitService.evaluate(
                 billingPlan.userId,
                 aiUserMemberCardService.resolveActiveMemberCard(billingPlan.userId)
         );
+        // 命中会员免费配额时关闭计费开关
         if (billingPlan.memberLimitDecision.isMemberByRequest() && !billingPlan.memberLimitDecision.isOverLimit()) {
             billingPlan.billingEnabled = false;
         }
@@ -353,6 +355,7 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
     }
 
     private void preCheckBalance(BillingPlan billingPlan) {
+        // 免费请求不需要检查钱包余额
         if (!billingPlan.billingEnabled) {
             return;
         }
@@ -368,6 +371,7 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
 
     private Long chargeIfNeeded(BillingPlan billingPlan, String requestId, AiUsageSummary usage, String model) {
         BigDecimal amount = calculateAmount(billingPlan, usage, model);
+        // 免费请求或金额为0时不扣钱包
         if (!billingPlan.billingEnabled || amount.compareTo(BigDecimal.ZERO) <= 0) {
             return null;
         }

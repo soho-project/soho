@@ -140,6 +140,7 @@ CREATE TABLE `ai_user_member_card` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL COMMENT '用户ID',
   `member_card_id` bigint NOT NULL COMMENT '会员卡模板ID',
+  `no` varchar(64) NOT NULL COMMENT '会员卡号',
   `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态:0未激活,1生效中,2已过期',
   `priority` int NOT NULL DEFAULT 0 COMMENT '优先级，值越大越优先',
   `is_selected` tinyint(1) NOT NULL DEFAULT 0 COMMENT '用户显式选择使用',
@@ -151,6 +152,7 @@ CREATE TABLE `ai_user_member_card` (
   `updated_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_time` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ai_user_member_card_no` (`no`),
   KEY `idx_ai_user_member_card_user_status_time` (`user_id`, `status`, `start_time`, `end_time`),
   KEY `idx_ai_user_member_card_member_card_id` (`member_card_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
