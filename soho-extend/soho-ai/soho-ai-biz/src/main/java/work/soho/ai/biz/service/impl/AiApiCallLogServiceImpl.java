@@ -8,6 +8,7 @@ import work.soho.ai.biz.domain.AiApiCallLog;
 import work.soho.ai.biz.dto.AiApiCallLogHourTokenDTO;
 import work.soho.ai.biz.dto.AiApiCallLogModelTokenDTO;
 import work.soho.ai.biz.dto.AiApiCallLogTokenOverviewDTO;
+import work.soho.ai.biz.dto.AiApiCallLogUserTodayStatsDTO;
 import work.soho.ai.biz.mapper.AiApiCallLogMapper;
 import work.soho.ai.biz.service.AiApiCallLogService;
 
@@ -99,6 +100,42 @@ public class AiApiCallLogServiceImpl extends ServiceImpl<AiApiCallLogMapper, AiA
         return result;
     }
 
+    @Override
+    public List<AiApiCallLogUserTodayStatsDTO> statisticsTodayByUser() {
+        LocalDateTime startTime = LocalDate.now().atStartOfDay();
+        LocalDateTime endTime = LocalDateTime.now();
+
+        QueryWrapper<AiApiCallLog> queryWrapper = new QueryWrapper<>();
+        queryWrapper.select(
+                "user_id",
+                "COUNT(*) AS request_count",
+                "SUM(prompt_tokens) AS prompt_tokens",
+                "SUM(completion_tokens) AS completion_tokens",
+                "SUM(total_tokens) AS total_tokens"
+        );
+        queryWrapper.between("created_time", startTime, endTime);
+        queryWrapper.groupBy("user_id");
+        queryWrapper.orderByDesc("request_count");
+        queryWrapper.orderByDesc("total_tokens");
+
+        List<Map<String, Object>> records = this.listMaps(queryWrapper);
+        List<AiApiCallLogUserTodayStatsDTO> result = new ArrayList<>();
+        if (CollectionUtils.isEmpty(records)) {
+            return result;
+        }
+
+        for (Map<String, Object> row : records) {
+            result.add(new AiApiCallLogUserTodayStatsDTO(
+                    nullableLongValue(row.get("user_id")),
+                    longValue(row.get("request_count")),
+                    longValue(row.get("prompt_tokens")),
+                    longValue(row.get("completion_tokens")),
+                    longValue(row.get("total_tokens"))
+            ));
+        }
+        return result;
+    }
+
     private AiApiCallLogTokenOverviewDTO sumTokens(LocalDateTime startTime, LocalDateTime endTime) {
         QueryWrapper<AiApiCallLog> queryWrapper = new QueryWrapper<>();
         queryWrapper.select(
@@ -131,6 +168,10 @@ public class AiApiCallLogServiceImpl extends ServiceImpl<AiApiCallLogMapper, AiA
 
     private Long longValue(Object value) {
         return value instanceof Number ? ((Number) value).longValue() : 0L;
+    }
+
+    private Long nullableLongValue(Object value) {
+        return value instanceof Number ? ((Number) value).longValue() : null;
     }
 
     private String stringValue(Object value) {
