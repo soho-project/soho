@@ -85,6 +85,7 @@ public class AiMemberCardRedeemCodeServiceImpl extends ServiceImpl<AiMemberCardR
             item.setBatchNo(resolvedBatchNo);
             item.setRedeemCode(code);
             item.setStatus(0);
+            item.setSoldStatus(0);
             item.setExpireTime(expireTime);
             item.setRemark(remark);
             item.setCreatedTime(now);
@@ -168,6 +169,20 @@ public class AiMemberCardRedeemCodeServiceImpl extends ServiceImpl<AiMemberCardR
                 .set(AiMemberCardRedeemCode::getUpdatedTime, now));
 
         return new RedeemResult(true, "兑换成功");
+    }
+
+    @Override
+    public int batchMarkSold(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return 0;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        return baseMapper.update(null, new LambdaUpdateWrapper<AiMemberCardRedeemCode>()
+                .in(AiMemberCardRedeemCode::getId, ids)
+                .eq(AiMemberCardRedeemCode::getStatus, 0)
+                .eq(AiMemberCardRedeemCode::getSoldStatus, 0)
+                .set(AiMemberCardRedeemCode::getSoldStatus, 1)
+                .set(AiMemberCardRedeemCode::getUpdatedTime, now));
     }
 
     private String generateCode() {

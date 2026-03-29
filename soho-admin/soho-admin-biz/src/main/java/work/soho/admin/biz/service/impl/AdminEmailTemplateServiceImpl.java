@@ -68,8 +68,8 @@ public class AdminEmailTemplateServiceImpl extends ServiceImpl<AdminEmailTemplat
 
             javaMailSender.send(message);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("send email failed, to=" + to + ", template=" + name, e);
+            throw new IllegalStateException("邮件发送失败: " + e.getMessage(), e);
         }
     }
 }
