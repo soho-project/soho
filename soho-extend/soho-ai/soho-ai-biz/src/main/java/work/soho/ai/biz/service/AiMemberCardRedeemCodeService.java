@@ -4,12 +4,15 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import work.soho.ai.biz.domain.AiMemberCardRedeemCode;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface AiMemberCardRedeemCodeService extends IService<AiMemberCardRedeemCode> {
     BatchGenerateResult batchGenerate(Long memberCardId, Integer count, String batchNo,
                                       LocalDateTime expireTime, String remark);
 
     RedeemResult redeem(Long userId, String redeemCode);
+
+    int batchMarkSold(List<Long> ids);
 
     final class BatchGenerateResult {
         private final String batchNo;

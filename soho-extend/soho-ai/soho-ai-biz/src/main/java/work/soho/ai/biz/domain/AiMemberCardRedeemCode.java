@@ -40,6 +40,13 @@ public class AiMemberCardRedeemCode implements Serializable {
     @TableField("status")
     private Integer status;
 
+    /**
+     * 0:unsold 1:sold
+     */
+    @ExcelProperty("sold_status")
+    @TableField("sold_status")
+    private Integer soldStatus;
+
     @ExcelProperty("used_by_user_id")
     @TableField("used_by_user_id")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
