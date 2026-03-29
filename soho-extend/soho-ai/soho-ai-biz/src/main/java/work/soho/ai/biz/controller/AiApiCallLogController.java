@@ -24,6 +24,7 @@ import work.soho.ai.biz.domain.AiApiCallLog;
 import work.soho.ai.biz.dto.AiApiCallLogHourTokenDTO;
 import work.soho.ai.biz.dto.AiApiCallLogModelTokenDTO;
 import work.soho.ai.biz.dto.AiApiCallLogTokenOverviewDTO;
+import work.soho.ai.biz.dto.AiApiCallLogUserTodayStatsDTO;
 import work.soho.ai.biz.service.AiApiCallLogService;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
@@ -118,6 +119,16 @@ public class AiApiCallLogController {
     @ApiOperation(value = "获取 ai请求日志 最近12小时模型token统计", notes = "获取 ai请求日志 最近12小时模型token统计")
     public R<List<AiApiCallLogModelTokenDTO>> statisticsLast12HoursTokensByModel() {
         return R.success(aiApiCallLogService.statisticsLast12HoursTokensByModel());
+    }
+
+    /**
+     * 获取当天按用户 token 与请求次数统计
+     */
+    @GetMapping("/statisticsTodayByUser")
+    @Node(value = "aiApiCallLog::statisticsTodayByUser", name = "获取 ai请求日志 当天按用户统计")
+    @ApiOperation(value = "获取 ai请求日志 当天按用户统计", notes = "按用户统计当天请求次数与token汇总")
+    public R<List<AiApiCallLogUserTodayStatsDTO>> statisticsTodayByUser() {
+        return R.success(aiApiCallLogService.statisticsTodayByUser());
     }
 
     /**
