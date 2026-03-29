@@ -10,8 +10,11 @@ import work.soho.ai.biz.dto.AiUsageSummary;
 import work.soho.ai.biz.request.OpenAiChatCompletionRequest;
 import work.soho.ai.biz.service.AiApiCallLogService;
 import work.soho.ai.biz.service.AiChatService;
+import work.soho.ai.biz.service.AiMemberRequestLimitService;
+import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
 import work.soho.ai.biz.service.AiUserApiKeyService;
+import work.soho.ai.biz.service.AiUserMemberCardService;
 import work.soho.wallet.biz.domain.WalletInfo;
 import work.soho.wallet.api.service.WalletInfoApiService;
 import work.soho.wallet.biz.service.WalletInfoService;
@@ -26,19 +29,27 @@ public class AiOpenApiServiceImplTest {
     @Test
     public void chatCompletions_whenProviderConfigMissing_throwsClearError() {
         AiUserApiKeyService aiUserApiKeyService = Mockito.mock(AiUserApiKeyService.class);
+        AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
         AiChatService aiChatService = Mockito.mock(AiChatService.class);
         AiApiCallLogService aiApiCallLogService = Mockito.mock(AiApiCallLogService.class);
         WalletInfoService walletInfoService = Mockito.mock(WalletInfoService.class);
         WalletInfoApiService walletInfoApiService = Mockito.mock(WalletInfoApiService.class);
+        AiMemberRequestLimitService aiMemberRequestLimitService = Mockito.mock(AiMemberRequestLimitService.class);
+        AiUserMemberCardService aiUserMemberCardService = Mockito.mock(AiUserMemberCardService.class);
+        when(aiMemberRequestLimitService.evaluate(Mockito.any(), Mockito.any()))
+                .thenReturn(AiMemberRequestLimitService.Decision.nonMember());
 
         AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
                 aiUserApiKeyService,
+                aiProviderConfigService,
                 aiProviderModelRelService,
                 aiChatService,
                 aiApiCallLogService,
                 walletInfoService,
-                walletInfoApiService
+                walletInfoApiService,
+                aiMemberRequestLimitService,
+                aiUserMemberCardService
         );
 
         AiUserApiKey apiKey = new AiUserApiKey();
@@ -61,19 +72,27 @@ public class AiOpenApiServiceImplTest {
     @Test
     public void chatCompletions_whenProviderConfigResolvedByModel_usesThatConfig() {
         AiUserApiKeyService aiUserApiKeyService = Mockito.mock(AiUserApiKeyService.class);
+        AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
         AiChatService aiChatService = Mockito.mock(AiChatService.class);
         AiApiCallLogService aiApiCallLogService = Mockito.mock(AiApiCallLogService.class);
         WalletInfoService walletInfoService = Mockito.mock(WalletInfoService.class);
         WalletInfoApiService walletInfoApiService = Mockito.mock(WalletInfoApiService.class);
+        AiMemberRequestLimitService aiMemberRequestLimitService = Mockito.mock(AiMemberRequestLimitService.class);
+        AiUserMemberCardService aiUserMemberCardService = Mockito.mock(AiUserMemberCardService.class);
+        when(aiMemberRequestLimitService.evaluate(Mockito.any(), Mockito.any()))
+                .thenReturn(AiMemberRequestLimitService.Decision.nonMember());
 
         AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
                 aiUserApiKeyService,
+                aiProviderConfigService,
                 aiProviderModelRelService,
                 aiChatService,
                 aiApiCallLogService,
                 walletInfoService,
-                walletInfoApiService
+                walletInfoApiService,
+                aiMemberRequestLimitService,
+                aiUserMemberCardService
         );
 
         AiUserApiKey apiKey = new AiUserApiKey();
@@ -117,19 +136,27 @@ public class AiOpenApiServiceImplTest {
     @Test
     public void chatCompletions_whenModelHasPrice_shouldChargeEvenIfProviderBillingDisabled() {
         AiUserApiKeyService aiUserApiKeyService = Mockito.mock(AiUserApiKeyService.class);
+        AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
         AiChatService aiChatService = Mockito.mock(AiChatService.class);
         AiApiCallLogService aiApiCallLogService = Mockito.mock(AiApiCallLogService.class);
         WalletInfoService walletInfoService = Mockito.mock(WalletInfoService.class);
         WalletInfoApiService walletInfoApiService = Mockito.mock(WalletInfoApiService.class);
+        AiMemberRequestLimitService aiMemberRequestLimitService = Mockito.mock(AiMemberRequestLimitService.class);
+        AiUserMemberCardService aiUserMemberCardService = Mockito.mock(AiUserMemberCardService.class);
+        when(aiMemberRequestLimitService.evaluate(Mockito.any(), Mockito.any()))
+                .thenReturn(AiMemberRequestLimitService.Decision.nonMember());
 
         AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
                 aiUserApiKeyService,
+                aiProviderConfigService,
                 aiProviderModelRelService,
                 aiChatService,
                 aiApiCallLogService,
                 walletInfoService,
-                walletInfoApiService
+                walletInfoApiService,
+                aiMemberRequestLimitService,
+                aiUserMemberCardService
         );
 
         AiUserApiKey apiKey = new AiUserApiKey();
@@ -200,5 +227,64 @@ public class AiOpenApiServiceImplTest {
                                 && notes.contains("outputTokens=20")
                                 && notes.contains("totalTokens=30"))
         );
+    }
+
+    @Test
+    public void chatCompletions_whenWalletMissing_shouldThrowWalletNotFound() {
+        AiUserApiKeyService aiUserApiKeyService = Mockito.mock(AiUserApiKeyService.class);
+        AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
+        AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiChatService aiChatService = Mockito.mock(AiChatService.class);
+        AiApiCallLogService aiApiCallLogService = Mockito.mock(AiApiCallLogService.class);
+        WalletInfoService walletInfoService = Mockito.mock(WalletInfoService.class);
+        WalletInfoApiService walletInfoApiService = Mockito.mock(WalletInfoApiService.class);
+        AiMemberRequestLimitService aiMemberRequestLimitService = Mockito.mock(AiMemberRequestLimitService.class);
+        AiUserMemberCardService aiUserMemberCardService = Mockito.mock(AiUserMemberCardService.class);
+        when(aiMemberRequestLimitService.evaluate(Mockito.any(), Mockito.any()))
+                .thenReturn(AiMemberRequestLimitService.Decision.nonMember());
+
+        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+                aiUserApiKeyService,
+                aiProviderConfigService,
+                aiProviderModelRelService,
+                aiChatService,
+                aiApiCallLogService,
+                walletInfoService,
+                walletInfoApiService,
+                aiMemberRequestLimitService,
+                aiUserMemberCardService
+        );
+
+        AiUserApiKey apiKey = new AiUserApiKey();
+        apiKey.setId(10L);
+        apiKey.setUserId(7L);
+        when(aiUserApiKeyService.requireByPlaintextKey("token")).thenReturn(apiKey);
+
+        AiProviderConfig providerConfig = new AiProviderConfig();
+        providerConfig.setId(42L);
+        providerConfig.setCode("openai-prod");
+        providerConfig.setDefaultModel("gpt-4o-mini");
+        providerConfig.setConfigJson("{\"billingEnabled\":true,\"billingWalletTypeId\":1,\"promptPricePer1kTokens\":1}");
+        when(aiChatService.resolveProviderConfig(null, "gpt-4o-mini")).thenReturn(providerConfig);
+        when(aiProviderModelRelService.listEnabledModelsByProviderConfigId(42L))
+                .thenReturn(java.util.List.of());
+
+        AiUsageSummary estimatedUsage = new AiUsageSummary();
+        estimatedUsage.setPromptTokens(10);
+        estimatedUsage.setCompletionTokens(0);
+        estimatedUsage.setTotalTokens(10);
+        when(aiChatService.estimateUsage(Mockito.any(), Mockito.anyString())).thenReturn(estimatedUsage);
+        when(walletInfoService.getByUserIdAndType(7L, 1)).thenReturn(null);
+
+        OpenAiChatCompletionRequest request = new OpenAiChatCompletionRequest();
+        request.setModel("gpt-4o-mini");
+        OpenAiChatCompletionRequest.Message message = new OpenAiChatCompletionRequest.Message();
+        message.setRole("user");
+        message.setContent("hello");
+        request.setMessages(java.util.List.of(message));
+
+        assertThatThrownBy(() -> service.chatCompletions("Bearer token", request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("钱包不存在");
     }
 }

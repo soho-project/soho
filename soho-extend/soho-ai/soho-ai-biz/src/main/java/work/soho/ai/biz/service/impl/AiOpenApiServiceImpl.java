@@ -717,6 +717,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             return;
         }
         WalletInfo walletInfo = walletInfoService.getByUserIdAndType(billingPlan.userId, billingPlan.walletTypeId);
+        Assert.notNull(walletInfo, "钱包不存在");
         Assert.isTrue(walletInfo.getAmount().compareTo(estimatedAmount) >= 0, "钱包余额不足");
     }
 

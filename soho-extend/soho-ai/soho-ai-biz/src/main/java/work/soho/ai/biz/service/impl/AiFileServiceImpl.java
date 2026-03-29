@@ -13,6 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
@@ -53,6 +54,9 @@ public class AiFileServiceImpl implements AiFileService {
     }
 
     private RemoteFile download(String fileUrl) throws IOException {
+        if (isBlockedFileUrl(fileUrl)) {
+            throw new IllegalArgumentException("blocked file url");
+        }
         HttpURLConnection connection = (HttpURLConnection) new URL(fileUrl).openConnection();
         connection.setInstanceFollowRedirects(true);
         connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
@@ -71,6 +75,39 @@ public class AiFileServiceImpl implements AiFileService {
             return new RemoteFile(bytes, contentType);
         } finally {
             connection.disconnect();
+        }
+    }
+
+    boolean isBlockedFileUrl(String fileUrl) {
+        if (StringUtils.isBlank(fileUrl)) {
+            return true;
+        }
+        try {
+            URL url = new URL(fileUrl);
+            String protocol = url.getProtocol();
+            if (!"http".equalsIgnoreCase(protocol) && !"https".equalsIgnoreCase(protocol)) {
+                return true;
+            }
+            String host = url.getHost();
+            if (StringUtils.isBlank(host)) {
+                return true;
+            }
+            if ("localhost".equalsIgnoreCase(host)) {
+                return true;
+            }
+            InetAddress[] addresses = InetAddress.getAllByName(host);
+            for (InetAddress address : addresses) {
+                if (address.isAnyLocalAddress()
+                        || address.isLoopbackAddress()
+                        || address.isSiteLocalAddress()
+                        || address.isLinkLocalAddress()
+                        || address.isMulticastAddress()) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception ex) {
+            return true;
         }
     }
 
