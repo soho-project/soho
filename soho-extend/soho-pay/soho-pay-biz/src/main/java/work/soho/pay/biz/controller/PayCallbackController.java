@@ -11,11 +11,13 @@ import org.springframework.web.bind.annotation.*;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.pay.biz.domain.PayHfpayWallet;
 import work.soho.pay.biz.domain.PayInfo;
+import work.soho.pay.biz.domain.PayOrder;
 import work.soho.pay.biz.enums.PayHfpayWalletEnums;
 import work.soho.pay.biz.platform.adapay.adapter.RsaUtils;
 import work.soho.pay.biz.platform.adapay.adapter.SecurityService;
 import work.soho.pay.biz.platform.alipay.utils.AlipayHelpUtil;
 import work.soho.pay.biz.platform.model.PayOrderDetails;
+import work.soho.pay.biz.platform.ndpay.adapter.NdpaySignUtil;
 import work.soho.pay.biz.platform.wechat.model.PayOrderNotify;
 import work.soho.pay.biz.platform.wechat.utils.AesUtil;
 import work.soho.pay.biz.platform.wechat.utils.HelpUtil;
@@ -32,6 +34,7 @@ import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 支付回调接口地址
@@ -223,6 +226,86 @@ public class PayCallbackController {
             payHfpayWallet.setCreatedTime(LocalDateTime.now());
             payHfpayWallet.setUpdatedTime(LocalDateTime.now());
             payHfpayWalletService.save(payHfpayWallet);
+        }
+    }
+
+    /**
+     * ndpay 支付回调
+     *
+     * 返回字符串必须为 success 或 fail
+     *
+     * @param params
+     * @param response
+     * @throws IOException
+     */
+    @PostMapping(value = "/ndpay")
+    public void ndpayCallback(@RequestParam Map<String, String> params, HttpServletResponse response) throws IOException {
+        log.info("ndpay callback params: {}", params);
+        String respText = "fail";
+        try {
+            String mchOrderNo = params.get("mchOrderNo");
+            if(mchOrderNo == null) {
+                response.getOutputStream().write(respText.getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+
+            PayOrder payOrder = payOrderService.lambdaQuery().eq(PayOrder::getOrderNo, mchOrderNo).one();
+            if(payOrder == null) {
+                response.getOutputStream().write(respText.getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+
+            PayInfo payInfo = payInfoService.getById(payOrder.getPayId());
+            if(payInfo == null) {
+                response.getOutputStream().write(respText.getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+
+            if(!NdpaySignUtil.verify(params, payInfo.getAccountPrivateKey(), params.get("sign"))) {
+                response.getOutputStream().write(respText.getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+
+            PayOrderDetails payOrderDetails = new PayOrderDetails();
+            payOrderDetails.setOutTradeNo(mchOrderNo);
+            payOrderDetails.setTradeType(params.get("wayCode"));
+            payOrderDetails.setTransactionId(params.getOrDefault("channelOrderNo", params.get("payOrderId")));
+            payOrderDetails.setAmount(getAmountFromCent(params.get("amount")));
+            Integer state = getNdpayState(params);
+            payOrderDetails.setTradeState(state);
+            payOrderDetails.setPaySuccessTime(new Date());
+
+            if(state != null && state.intValue() == PayOrderDetails.TradeStateEnum.SUCCESS.getState()) {
+                payOrderService.checkPaySuccess(payOrderDetails);
+            }
+            respText = "success";
+        } catch (Exception e) {
+            log.error("ndpay callback error", e);
+        }
+        response.getOutputStream().write(respText.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private BigDecimal getAmountFromCent(String amount) {
+        if(amount == null) {
+            return BigDecimal.ZERO;
+        }
+        return new BigDecimal(amount).divide(new BigDecimal("100"));
+    }
+
+    private Integer getNdpayState(Map<String, String> params) {
+        String orderState = params.getOrDefault("orderState", params.get("state"));
+        if(orderState == null) {
+            return PayOrderDetails.TradeStateEnum.NOTPAY.getState();
+        }
+        switch (Integer.parseInt(orderState)) {
+            case 2:
+                return PayOrderDetails.TradeStateEnum.SUCCESS.getState();
+            case 3:
+                return PayOrderDetails.TradeStateEnum.PAYERROR.getState();
+            case 6:
+                return PayOrderDetails.TradeStateEnum.CLOSED.getState();
+            default:
+                return PayOrderDetails.TradeStateEnum.NOTPAY.getState();
         }
     }
 }
