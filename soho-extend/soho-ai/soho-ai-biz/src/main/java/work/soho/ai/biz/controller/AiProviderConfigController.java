@@ -1,45 +1,35 @@
 package work.soho.ai.biz.controller;
 
-import java.time.LocalDateTime;
 import com.alibaba.excel.EasyExcelFactory;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
-import lombok.extern.log4j.Log4j2;
-import org.redisson.api.IdGenerator;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import work.soho.common.core.util.IDGeneratorUtils;
-import work.soho.common.core.util.PageUtils;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.util.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import work.soho.common.core.util.StringUtils;
-import com.github.pagehelper.PageSerializable;
-import work.soho.common.core.result.R;
-import work.soho.common.data.excel.annotation.ExcelExport;
-import work.soho.common.security.annotation.Node;
-import work.soho.admin.api.service.AdminDictApiService;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import work.soho.admin.api.request.BetweenCreatedTimeRequest;
+import work.soho.admin.api.vo.OptionVo;
+import work.soho.ai.biz.config.AiSysConfig;
 import work.soho.ai.biz.domain.AiProviderConfig;
 import work.soho.ai.biz.domain.AiProviderModelRel;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
+import work.soho.common.core.result.R;
+import work.soho.common.core.util.IDGeneratorUtils;
+import work.soho.common.core.util.JacksonUtils;
+import work.soho.common.core.util.PageUtils;
+import work.soho.common.core.util.StringUtils;
+import work.soho.common.data.excel.annotation.ExcelExport;
+import work.soho.common.security.annotation.Node;
+
 import java.util.ArrayList;
-import java.util.HashMap;
-import work.soho.admin.api.vo.OptionVo;
-import work.soho.admin.api.request.BetweenCreatedTimeRequest;
-import java.util.stream.Collectors;
-import work.soho.admin.api.vo.TreeNodeVo;
-import work.soho.admin.api.service.AdminDictApiService;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
 /**
  * AI提供方配置表Controller
  *
@@ -59,7 +49,6 @@ public class AiProviderConfigController {
     private static final String DEFAULT_API_KEY_REF = "";
     private static final String DEFAULT_MODEL = "gpt-5.3-codex";
     private static final String DEFAULT_SUPPORTED_MODELS = "gpt-5.3-codex\n  gpt-5.2-codex\n  gpt-5.1-codex\n  gpt-5.1-codex-max\n  gpt-5-codex\n  codex-mini-latest";
-    private static final String DEFAULT_CONFIG_JSON = "{\n    \"adapter\":\"codexResponses\",\n    \"codexResponsesPath\":\"/backend-api/codex/responses\",\n    \"store\":false,\n    \"streamSupported\":true,\n    \"billingEnabled\":true,\n    \"billingWalletTypeId\":1,\n    \"promptPricePer1kTokens\":0.02,\n    \"completionPricePer1kTokens\":0.08,\n    \"proxyType\":\"http\",\n    \"proxyHost\":\"127.0.0.1\",\n    \"proxyPort\":7890\n  }";
     private static final Integer DEFAULT_RATE_LIMIT = 60;
     private static final Integer DEFAULT_TIMEOUT_MS = 60000;
     private static final Integer DEFAULT_STATUS = 1;
@@ -70,6 +59,7 @@ public class AiProviderConfigController {
 
     private final AiProviderConfigService aiProviderConfigService;
     private final AiProviderModelRelService aiProviderModelRelService;
+    private final AiSysConfig aiSysConfig;
 
     /**
      * 查询AI提供方配置表列表
@@ -126,7 +116,7 @@ public class AiProviderConfigController {
     @ApiOperation(value = "新增 AI提供方配置表", notes = "新增 AI提供方配置表")
     public R<Boolean> add(@RequestBody AiProviderConfig aiProviderConfig) {
         if (aiProviderConfig.getModelInfoIds() == null) {
-            aiProviderConfig.setModelInfoIds(new ArrayList<>(DEFAULT_MODEL_INFO_IDS));
+            aiProviderConfig.setModelInfoIds(new ArrayList<>());
         }
         boolean saved = aiProviderConfigService.save(aiProviderConfig);
         if (saved && aiProviderConfig.getId() != null && aiProviderConfig.getModelInfoIds() != null) {
@@ -194,7 +184,7 @@ public class AiProviderConfigController {
         config.setApiKeyRef(DEFAULT_API_KEY_REF);
         config.setDefaultModel(DEFAULT_MODEL);
         config.setSupportedModels(DEFAULT_SUPPORTED_MODELS);
-        config.setConfigJson(DEFAULT_CONFIG_JSON);
+        config.setConfigJson(buildDefaultConfigJson());
         config.setRateLimit(DEFAULT_RATE_LIMIT);
         config.setTimeoutMs(DEFAULT_TIMEOUT_MS);
         config.setStatus(DEFAULT_STATUS);
@@ -202,6 +192,28 @@ public class AiProviderConfigController {
         config.setRemark(DEFAULT_REMARK);
         config.setModelInfoIds(new ArrayList<>(DEFAULT_MODEL_INFO_IDS));
         return config;
+    }
+
+    private String buildDefaultConfigJson() {
+        LinkedHashMap<String, Object> config = new LinkedHashMap<>();
+        config.put("adapter", "codexResponses");
+        config.put("codexResponsesPath", "/backend-api/codex/responses");
+        config.put("store", false);
+        config.put("streamSupported", true);
+        config.put("billingEnabled", true);
+        config.put("billingWalletTypeId", 1);
+        config.put("promptPricePer1kTokens", 0.02);
+        config.put("completionPricePer1kTokens", 0.08);
+
+        String proxyType = aiSysConfig.getCodexProxyType();
+        String proxyHost = aiSysConfig.getCodexProxyHost();
+        Integer proxyPort = aiSysConfig.getCodexProxyPort();
+        if (StringUtils.isNotBlank(proxyType) && StringUtils.isNotBlank(proxyHost) && proxyPort != null) {
+            config.put("proxyType", proxyType.trim());
+            config.put("proxyHost", proxyHost.trim());
+            config.put("proxyPort", proxyPort);
+        }
+        return JacksonUtils.toJson(config);
     }
 
     private void mergeNonNullFields(AiProviderConfig target, AiProviderConfig source) {
