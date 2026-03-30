@@ -25,8 +25,10 @@ import work.soho.user.api.vo.UserLoginVo;
 import work.soho.user.api.vo.UserRegisterVo;
 import work.soho.user.biz.config.UserSysConfig;
 import work.soho.user.biz.domain.UserInfo;
+import work.soho.user.biz.enums.UserInfoEnums;
 import work.soho.user.biz.service.UserInfoService;
 import work.soho.user.biz.service.UserSmsService;
+import work.soho.user.biz.vo.UserSimpleRegisterVo;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -261,6 +263,42 @@ public class UserAuthController {
         if(userInfoService.getOne(new LambdaQueryWrapper<UserInfo>().eq(UserInfo::getPhone, userRegisterVo.getPhone())) != null) {
             return R.error("手机号已存在");
         }
+
+        userInfoService.register(userInfo);
+        return R.success(userInfo);
+    }
+
+    /**
+     * 用户名密码注册
+     */
+    @ApiOperation("用户名密码注册")
+    @PostMapping("simpleRegister")
+    public R<UserInfo> simpleRegister(@RequestBody UserSimpleRegisterVo userSimpleRegisterVo) {
+        String username = userSimpleRegisterVo.getUsername();
+        if(username == null || username.trim().isEmpty()) {
+            return R.error("请输入用户名");
+        }
+        username = username.trim();
+
+        String password = userSimpleRegisterVo.getPassword();
+        if(password == null || password.isEmpty()) {
+            return R.error("请输入密码");
+        }
+
+        if(userInfoService.getOne(new LambdaQueryWrapper<UserInfo>().eq(UserInfo::getUsername, username)) != null) {
+            return R.error("用户名已存在");
+        }
+
+        UserInfo userInfo = new UserInfo();
+        userInfo.setCode(IDGeneratorUtils.snowflake().toString());
+        userInfo.setUsername(username);
+        userInfo.setNickname(username);
+        userInfo.setPassword(new BCryptPasswordEncoder().encode(password));
+        userInfo.setStatus(UserInfoEnums.Status.NORMAL.getId());
+        userInfo.setAvatar(userSysConfig.getDefaultAvatar());
+        userInfo.setCreatedTime(LocalDateTime.now());
+        userInfo.setUpdatedTime(LocalDateTime.now());
+        userInfo.setId(null);
 
         userInfoService.register(userInfo);
         return R.success(userInfo);

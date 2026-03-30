@@ -13,6 +13,7 @@ import org.springframework.web.context.WebApplicationContext;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.test.TestApp;
 import work.soho.user.api.vo.UserRegisterVo;
+import work.soho.user.biz.vo.UserSimpleRegisterVo;
 
 import java.util.HashMap;
 
@@ -91,6 +92,19 @@ class UserAuthControllerTest {
         request.setCodeId("111111");
 
         mockMvc.perform(post("/guest/user/auth/register").contentType("application/json")
+                        .content(JacksonUtils.toJson(request)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+    }
+
+    @Test
+    void simpleRegister() throws Exception {
+        UserSimpleRegisterVo request = new UserSimpleRegisterVo();
+        request.setUsername("simple_user_" + System.currentTimeMillis());
+        request.setPassword("123456");
+
+        mockMvc.perform(post("/guest/user/auth/simpleRegister").contentType("application/json")
                         .content(JacksonUtils.toJson(request)))
                 .andDo(print())
                 .andExpect(status().isOk())
