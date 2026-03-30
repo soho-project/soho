@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import work.soho.ai.biz.config.AiSysConfig;
 import work.soho.ai.biz.domain.AiProviderConfig;
 import work.soho.ai.biz.domain.AiProviderModelRel;
 import work.soho.ai.biz.service.AiProviderConfigService;
@@ -24,9 +25,11 @@ public class AiProviderConfigControllerTest {
     public void remove_deletesRelationsAndConfigs() {
         AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiSysConfig aiSysConfig = Mockito.mock(AiSysConfig.class);
         AiProviderConfigController controller = new AiProviderConfigController(
                 aiProviderConfigService,
-                aiProviderModelRelService
+                aiProviderModelRelService,
+                aiSysConfig
         );
 
         when(aiProviderConfigService.removeByIds(Arrays.asList(1L))).thenReturn(true);
@@ -42,9 +45,11 @@ public class AiProviderConfigControllerTest {
     public void editByProviderUniqueId_updatesMatchedConfig() {
         AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiSysConfig aiSysConfig = Mockito.mock(AiSysConfig.class);
         AiProviderConfigController controller = new AiProviderConfigController(
                 aiProviderConfigService,
-                aiProviderModelRelService
+                aiProviderModelRelService,
+                aiSysConfig
         );
 
         AiProviderConfig existed = new AiProviderConfig();
@@ -67,9 +72,11 @@ public class AiProviderConfigControllerTest {
     public void editByProviderUniqueId_createsDefaultConfigWhenMissing() {
         AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiSysConfig aiSysConfig = Mockito.mock(AiSysConfig.class);
         AiProviderConfigController controller = new AiProviderConfigController(
                 aiProviderConfigService,
-                aiProviderModelRelService
+                aiProviderModelRelService,
+                aiSysConfig
         );
 
         when(aiProviderConfigService.getOne(any(LambdaQueryWrapper.class))).thenReturn(null);
@@ -94,9 +101,11 @@ public class AiProviderConfigControllerTest {
     public void add_usesDefaultModelInfoIdsWhenMissing() {
         AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiSysConfig aiSysConfig = Mockito.mock(AiSysConfig.class);
         AiProviderConfigController controller = new AiProviderConfigController(
                 aiProviderConfigService,
-                aiProviderModelRelService
+                aiProviderModelRelService,
+                aiSysConfig
         );
 
         when(aiProviderConfigService.save(any(AiProviderConfig.class))).thenReturn(true);
@@ -113,9 +122,11 @@ public class AiProviderConfigControllerTest {
     public void add_keepsIncomingModelInfoIds() {
         AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiSysConfig aiSysConfig = Mockito.mock(AiSysConfig.class);
         AiProviderConfigController controller = new AiProviderConfigController(
                 aiProviderConfigService,
-                aiProviderModelRelService
+                aiProviderModelRelService,
+                aiSysConfig
         );
 
         when(aiProviderConfigService.save(any(AiProviderConfig.class))).thenReturn(true);
