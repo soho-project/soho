@@ -25,9 +25,11 @@ import work.soho.pay.biz.platform.PayConfig;
 import work.soho.pay.biz.platform.model.Order;
 import work.soho.pay.biz.platform.model.PayOrderDetails;
 import work.soho.pay.biz.platform.payapis.Pay;
+import work.soho.pay.biz.platform.payapis.QueryOrder;
 import work.soho.pay.biz.service.PayInfoService;
 import work.soho.pay.biz.service.PayOrderService;
 
+import java.util.HashMap;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -166,6 +168,13 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder>
         lambdaQueryWrapper.eq(PayOrder::getOrderNo, payOrderDetails.getOutTradeNo());
         lambdaQueryWrapper.ne(PayOrder::getStatus, PayOrderDetails.TradeStateEnum.CLOSED.getState());
         PayOrder payOrder =  getOne(lambdaQueryWrapper);
+        if(payOrder == null) {
+            return Boolean.FALSE;
+        }
+        if(payOrder.getStatus() != null
+                && payOrder.getStatus().intValue() == PayOrderDetails.TradeStateEnum.SUCCESS.getState()) {
+            return Boolean.TRUE;
+        }
         payOrder.setStatus(PayOrderDetails.TradeStateEnum.SUCCESS.getState());
         payOrder.setTransactionId(payOrderDetails.getTransactionId());
         payOrder.setPayedTime(LocalDateTime.now());
@@ -181,8 +190,64 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder>
         SpringContextHolder.getApplicationContext().publishEvent(payCallbackEvent);
         return Boolean.TRUE;
     }
-}
 
+    @Override
+    public Map<String, Object> syncOrderState(String orderNo) {
+        HashMap<String, Object> result = new HashMap<>();
+        result.put("orderNo", orderNo);
+        result.put("success", Boolean.FALSE);
+        LambdaQueryWrapper<PayOrder> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PayOrder::getOrderNo, orderNo);
+        PayOrder payOrder = getOne(wrapper);
+        if(payOrder == null) {
+            result.put("message", "支付单不存在");
+            return result;
+        }
+
+        result.put("status", payOrder.getStatus());
+        if(payOrder.getStatus() != null
+                && payOrder.getStatus().intValue() == PayOrderDetails.TradeStateEnum.SUCCESS.getState()) {
+            result.put("success", Boolean.TRUE);
+            result.put("message", "订单已支付成功");
+            return result;
+        }
+
+        PayInfo payInfo = payInfoService.getById(payOrder.getPayId());
+        if(payInfo == null) {
+            result.put("message", "支付配置不存在");
+            return result;
+        }
+
+        PayConfig payConfig = new PayConfig();
+        payConfig.setId(payInfo.getId());
+        payConfig.setPayCertificate(payInfo.getAccountPublicKey());
+        payConfig.setMerchantSerialNumber(payInfo.getAccountSerialNumber());
+        payConfig.setPrivateKey(payInfo.getAccountPrivateKey());
+        payConfig.setMerchantId(payInfo.getAccountId());
+        payConfig.setAppId(payInfo.getAccountAppId());
+        Pay payApis = FactoryApis.getApisByName(payInfo.getAdapterName(), payConfig);
+        if(!(payApis instanceof QueryOrder)) {
+            result.put("message", "当前支付方式不支持主动查询订单");
+            return result;
+        }
+
+        PayOrderDetails details = ((QueryOrder) payApis).queryOrder(orderNo);
+        result.put("queryTradeState", details.getTradeState());
+        result.put("queryTransactionId", details.getTransactionId());
+        if(details.getTradeState() != null
+                && details.getTradeState().intValue() == PayOrderDetails.TradeStateEnum.SUCCESS.getState()) {
+            boolean handled = checkPaySuccess(details);
+            PayOrder latest = getById(payOrder.getId());
+            result.put("success", handled);
+            result.put("status", latest != null ? latest.getStatus() : payOrder.getStatus());
+            result.put("message", handled ? "订单支付成功，已同步" : "订单支付成功，同步处理失败");
+            return result;
+        }
+
+        result.put("message", "订单未支付成功");
+        return result;
+    }
+}
 
 
 

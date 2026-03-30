@@ -14,6 +14,7 @@ import work.soho.pay.biz.service.PayOrderService;
 import work.soho.pay.biz.vo.ClientPayInfoVo;
 
 import java.util.List;
+import java.util.Map;
 
 @Api(tags = "客户端支付")
 @RequiredArgsConstructor
@@ -36,5 +37,16 @@ public class ClientApiPayController {
         payInfoLambdaQueryWrapper.eq(PayInfo::getStatus, 1);
         List<PayInfo> list = payInfoService.list(payInfoLambdaQueryWrapper);
         return R.success(BeanUtils.copyList(list, ClientPayInfoVo.class));
+    }
+
+    /**
+     * 客户端轮询主动同步订单支付状态
+     *
+     * @param orderNo 本地支付单号（pay_order.order_no）
+     * @return
+     */
+    @GetMapping("syncOrderState")
+    public R<Map<String, Object>> syncOrderState(String orderNo) {
+        return R.success(payOrderService.syncOrderState(orderNo));
     }
 }
