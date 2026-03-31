@@ -75,7 +75,7 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder>
             //创建请求支付单
             Order order = BeanUtils.copy(orderDetailsDto, Order.class);
             //TODO 设置回调地址; 本机的回调地址
-            String callbackUrl = getCallbackUrl(payInfo.getAdapterName());
+            String callbackUrl = getCallbackUrl(payInfo.getAdapterName(), payInfo.getId());
             log.info(callbackUrl);
             order.setNotifyUrl(callbackUrl);
             //创建支付单入库
@@ -142,7 +142,11 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder>
      * @param adapterName
      * @return
      */
-    private String getCallbackUrl(String adapterName) {
+    private String getCallbackUrl(String adapterName, Integer payInfoId) {
+        if(adapterName != null && adapterName.startsWith("paypal_")) {
+            return RequestUtil.getRequest().getScheme() + "://" + RequestUtil.getRequest().getHeader("HOST")
+                    + "/client/api/payCallback/paypal/" + payInfoId;
+        }
         String[] parts = adapterName.split("_");
         if(parts.length<1) {
             throw new RuntimeException("请联系管理员配置回调地址");
@@ -248,6 +252,5 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder>
         return result;
     }
 }
-
 
 

@@ -18,6 +18,8 @@ import work.soho.pay.biz.platform.adapay.adapter.SecurityService;
 import work.soho.pay.biz.platform.alipay.utils.AlipayHelpUtil;
 import work.soho.pay.biz.platform.model.PayOrderDetails;
 import work.soho.pay.biz.platform.ndpay.adapter.NdpaySignUtil;
+import work.soho.pay.biz.platform.paypal.adapter.PaypalWebApis;
+import work.soho.pay.biz.platform.PayConfig;
 import work.soho.pay.biz.platform.wechat.model.PayOrderNotify;
 import work.soho.pay.biz.platform.wechat.utils.AesUtil;
 import work.soho.pay.biz.platform.wechat.utils.HelpUtil;
@@ -283,6 +285,63 @@ public class PayCallbackController {
             log.error("ndpay callback error", e);
         }
         response.getOutputStream().write(respText.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * paypal webhook 回调
+     */
+    @PostMapping(value = "/paypal/{id}")
+    public void paypalCallback(@PathVariable("id") Integer id,
+                               @RequestBody String body,
+                               @RequestHeader Map<String, String> headers,
+                               HttpServletResponse response) throws IOException {
+        String respText = "SUCCESS";
+        try {
+            PayInfo payInfo = payInfoService.getById(id);
+            if(payInfo == null || !"paypal_web".equals(payInfo.getAdapterName())) {
+                response.setStatus(400);
+                response.getOutputStream().write("INVALID_PAY_INFO".getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+
+            PaypalWebApis paypalWebApis = new PaypalWebApis(getPayConfig(payInfo));
+            if(!paypalWebApis.verifyWebhook(headers, body)) {
+                response.setStatus(400);
+                response.getOutputStream().write("INVALID_SIGNATURE".getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+
+            PayOrderDetails payOrderDetails = paypalWebApis.captureFromWebhook(body);
+            if(payOrderDetails != null
+                    && payOrderDetails.getTradeState() != null
+                    && payOrderDetails.getTradeState().intValue() == PayOrderDetails.TradeStateEnum.SUCCESS.getState()) {
+                payOrderService.checkPaySuccess(payOrderDetails);
+            }
+        } catch (Exception e) {
+            log.error("paypal callback error", e);
+            response.setStatus(500);
+            respText = "ERROR";
+        }
+        response.getOutputStream().write(respText.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @GetMapping(value = "/paypal/{id}")
+    public String paypalReturn(@PathVariable("id") Integer id,
+                               @RequestParam(value = "token", required = false) String token,
+                               @RequestParam(value = "PayerID", required = false) String payerId,
+                               @RequestParam(value = "state", required = false) String state) {
+        return "paypal return received, id=" + id + ", token=" + token + ", payerId=" + payerId + ", state=" + state;
+    }
+
+    private PayConfig getPayConfig(PayInfo payInfo) {
+        PayConfig payConfig = new PayConfig();
+        payConfig.setId(payInfo.getId());
+        payConfig.setPayCertificate(payInfo.getAccountPublicKey());
+        payConfig.setMerchantSerialNumber(payInfo.getAccountSerialNumber());
+        payConfig.setPrivateKey(payInfo.getAccountPrivateKey());
+        payConfig.setMerchantId(payInfo.getAccountId());
+        payConfig.setAppId(payInfo.getAccountAppId());
+        return payConfig;
     }
 
     private BigDecimal getAmountFromCent(String amount) {

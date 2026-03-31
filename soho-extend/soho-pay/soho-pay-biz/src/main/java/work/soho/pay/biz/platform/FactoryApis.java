@@ -3,6 +3,7 @@ package work.soho.pay.biz.platform;
 import work.soho.pay.biz.platform.alipay.adapter.WapApis;
 import work.soho.pay.biz.platform.alipay.adapter.WebApis;
 import work.soho.pay.biz.platform.ndpay.adapter.NdpayApis;
+import work.soho.pay.biz.platform.paypal.adapter.PaypalWebApis;
 import work.soho.pay.biz.platform.payapis.HftCreateWallet;
 import work.soho.pay.biz.platform.payapis.Pay;
 import work.soho.pay.biz.platform.wallet.adapter.WalletApis;
@@ -37,6 +38,8 @@ public class FactoryApis {
                 return new WebApis(payConfig);
             case "ndpay":
                 return new NdpayApis(payConfig);
+            case "paypal_web":
+                return new PaypalWebApis(payConfig);
             case "wallet": // 内部钱包支付
                 return new WalletApis(payConfig);
             default:
