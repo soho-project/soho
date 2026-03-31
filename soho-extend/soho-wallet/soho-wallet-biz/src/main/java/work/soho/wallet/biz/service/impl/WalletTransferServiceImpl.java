@@ -17,6 +17,7 @@ import work.soho.wallet.biz.service.WalletTransferService;
 import work.soho.wallet.biz.service.WalletTypeService;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -87,7 +88,8 @@ public class WalletTransferServiceImpl extends ServiceImpl<WalletTransferMapper,
         // 计算实际转账支付金额
         BigDecimal payAmount = amount.subtract(commissionAmount);
         // 计算入账金额
-        BigDecimal toAmount = payAmount.multiply(toWalletType.getRate()).divide(fromWalletType.getRate());
+        BigDecimal toAmount = payAmount.multiply(toWalletType.getRate())
+                .divide(fromWalletType.getRate(), 6, RoundingMode.HALF_UP);
 
         // 创建转账单
         WalletTransfer walletTransfer = new WalletTransfer();

@@ -761,7 +761,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             BigDecimal completionCost = modelPricing.completionPricePer1kTokens
                     .multiply(BigDecimal.valueOf(usage.getCompletionTokens() == null ? 0 : usage.getCompletionTokens()))
                     .divide(BigDecimal.valueOf(1000), 8, RoundingMode.HALF_UP);
-            return promptCost.add(completionCost).setScale(4, RoundingMode.HALF_UP);
+            return promptCost.add(completionCost).setScale(6, RoundingMode.HALF_UP);
         }
         BigDecimal promptCost = billingPlan.promptPricePer1kTokens
                 .multiply(BigDecimal.valueOf(usage.getPromptTokens() == null ? 0 : usage.getPromptTokens()))
@@ -769,7 +769,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         BigDecimal completionCost = billingPlan.completionPricePer1kTokens
                 .multiply(BigDecimal.valueOf(usage.getCompletionTokens() == null ? 0 : usage.getCompletionTokens()))
                 .divide(BigDecimal.valueOf(1000), 8, RoundingMode.HALF_UP);
-        return promptCost.add(completionCost).setScale(4, RoundingMode.HALF_UP);
+        return promptCost.add(completionCost).setScale(6, RoundingMode.HALF_UP);
     }
 
     private ModelPricing resolveModelPricing(Long providerConfigId, String model) {
