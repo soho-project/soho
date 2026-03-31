@@ -117,6 +117,7 @@ CREATE TABLE `ai_member_card` (
   `card_type` varchar(32) NOT NULL COMMENT '卡类型: monthly/quarterly/yearly',
   `limit_mode` varchar(32) NOT NULL COMMENT '限制模式: by_request/by_token',
   `validity_days` int NOT NULL DEFAULT 30 COMMENT '有效天数',
+  `sale_price` decimal(18,4) NOT NULL DEFAULT 0.0000 COMMENT '销售价格',
   `rate_limit_5h` int DEFAULT 100 COMMENT '5小时最大请求次数',
   `rate_limit_7d` int DEFAULT 300 COMMENT '7天最大请求次数',
   `rate_limit_5h_enabled` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否启用5小时限制',
@@ -135,6 +136,9 @@ CREATE TABLE `ai_member_card` (
   KEY `idx_ai_member_card_status` (`status`),
   KEY `idx_ai_member_card_type_mode` (`card_type`, `limit_mode`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `ai_member_card`
+  ADD COLUMN `sale_price` decimal(18,4) NOT NULL DEFAULT 0.0000 COMMENT '销售价格' AFTER `validity_days`;
 
 CREATE TABLE `ai_user_member_card` (
   `id` bigint NOT NULL AUTO_INCREMENT,

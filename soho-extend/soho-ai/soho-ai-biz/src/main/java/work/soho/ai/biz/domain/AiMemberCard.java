@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -61,6 +62,9 @@ public class AiMemberCard implements Serializable {
 
     @TableField("weekly_total_token_limit")
     private Integer weeklyTotalTokenLimit;
+
+    @TableField("sale_price")
+    private BigDecimal salePrice;
 
     @TableField("status")
     private Integer status;

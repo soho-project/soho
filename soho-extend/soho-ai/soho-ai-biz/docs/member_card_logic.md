@@ -27,6 +27,7 @@
 - `card_type`: 卡类型（`monthly/quarterly/yearly`）
 - `limit_mode`: 限制模式（`by_request/by_token`）
 - `validity_days`: 有效天数
+- `sale_price`: 销售价格（用于按卡自动定价扣款）
 - `rate_limit_5h` / `rate_limit_7d`: 请求次数阈值
 - `rate_limit_5h_enabled` / `rate_limit_7d_enabled`: 对应窗口是否启用
 - `rate_limit_window_5h` / `rate_limit_window_7d`: 窗口大小

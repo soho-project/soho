@@ -12,16 +12,25 @@ import work.soho.ai.biz.mapper.AiMemberCardRedeemCodeMapper;
 import work.soho.ai.biz.service.AiMemberCardRedeemCodeService;
 import work.soho.ai.biz.service.AiMemberCardService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
+import work.soho.admin.api.service.EmailApiService;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.StringUtils;
+import work.soho.wallet.api.enums.WalletLogEnums;
+import work.soho.wallet.api.enums.WalletTypeNameEnums;
+import work.soho.wallet.api.service.WalletInfoApiService;
+import work.soho.wallet.biz.domain.WalletInfo;
+import work.soho.wallet.biz.service.WalletInfoService;
 
 import java.security.SecureRandom;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 
 @Service
@@ -30,14 +39,25 @@ public class AiMemberCardRedeemCodeServiceImpl extends ServiceImpl<AiMemberCardR
 
     private static final char[] CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".toCharArray();
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final String DEFAULT_TEMPLATE_NAME = "ai-member-card-redeem-code";
+    private static final int DEFAULT_WALLET_TYPE_ID = 1;
 
     private final AiMemberCardService aiMemberCardService;
     private final AiUserMemberCardService aiUserMemberCardService;
+    private final WalletInfoService walletInfoService;
+    private final WalletInfoApiService walletInfoApiService;
+    private final EmailApiService emailApiService;
 
     public AiMemberCardRedeemCodeServiceImpl(AiMemberCardService aiMemberCardService,
-                                             AiUserMemberCardService aiUserMemberCardService) {
+                                             AiUserMemberCardService aiUserMemberCardService,
+                                             WalletInfoService walletInfoService,
+                                             WalletInfoApiService walletInfoApiService,
+                                             EmailApiService emailApiService) {
         this.aiMemberCardService = aiMemberCardService;
         this.aiUserMemberCardService = aiUserMemberCardService;
+        this.walletInfoService = walletInfoService;
+        this.walletInfoApiService = walletInfoApiService;
+        this.emailApiService = emailApiService;
     }
 
     @Override
@@ -169,6 +189,92 @@ public class AiMemberCardRedeemCodeServiceImpl extends ServiceImpl<AiMemberCardR
                 .set(AiMemberCardRedeemCode::getUpdatedTime, now));
 
         return new RedeemResult(true, "兑换成功");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PurchaseRedeemCodeResult purchaseByMemberCardName(Long userId, String memberCardName,
+                                                             String email) {
+        if (userId == null || userId <= 0) {
+            return new PurchaseRedeemCodeResult(false, "用户未登录", memberCardName, null, BigDecimal.ZERO,
+                    DEFAULT_WALLET_TYPE_ID, null);
+        }
+        if (StringUtils.isBlank(memberCardName)) {
+            return new PurchaseRedeemCodeResult(false, "会员卡名称不能为空", null, null, BigDecimal.ZERO,
+                    DEFAULT_WALLET_TYPE_ID, null);
+        }
+
+        String normalizedCardName = memberCardName.trim();
+        int resolvedWalletTypeId = WalletTypeNameEnums.RMB.getId();
+        LocalDateTime now = LocalDateTime.now();
+
+        AiMemberCard memberCard = aiMemberCardService.getOne(new LambdaQueryWrapper<AiMemberCard>()
+                .eq(AiMemberCard::getName, normalizedCardName)
+                .eq(AiMemberCard::getStatus, 1)
+                .last("limit 1"));
+        if (memberCard == null || memberCard.getId() == null) {
+            return new PurchaseRedeemCodeResult(false, "会员卡不存在或已禁用", normalizedCardName, null, BigDecimal.ZERO,
+                    resolvedWalletTypeId, null);
+        }
+        BigDecimal amount = memberCard.getSalePrice() == null ? BigDecimal.ZERO : memberCard.getSalePrice();
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            return new PurchaseRedeemCodeResult(false, "会员卡价格未配置", normalizedCardName, null, amount,
+                    resolvedWalletTypeId, null);
+        }
+
+        WalletInfo walletInfo = walletInfoService.getByUserIdAndType(userId, resolvedWalletTypeId);
+        if (walletInfo == null) {
+            return new PurchaseRedeemCodeResult(false, "钱包不存在", normalizedCardName, null, amount,
+                    resolvedWalletTypeId, null);
+        }
+        if (walletInfo.getAmount() == null || walletInfo.getAmount().compareTo(amount) < 0) {
+            return new PurchaseRedeemCodeResult(false, "钱包余额不足", normalizedCardName, null, amount,
+                    resolvedWalletTypeId, null);
+        }
+
+        AiMemberCardRedeemCode code = getOne(new LambdaQueryWrapper<AiMemberCardRedeemCode>()
+                .eq(AiMemberCardRedeemCode::getMemberCardId, memberCard.getId())
+                .eq(AiMemberCardRedeemCode::getStatus, 0)
+                .eq(AiMemberCardRedeemCode::getSoldStatus, 0)
+                .and(wrapper -> wrapper.isNull(AiMemberCardRedeemCode::getExpireTime)
+                        .or()
+                        .gt(AiMemberCardRedeemCode::getExpireTime, now))
+                .orderByAsc(AiMemberCardRedeemCode::getId)
+                .last("limit 1"));
+        if (code == null) {
+            return new PurchaseRedeemCodeResult(false, "兑换码库存不足", normalizedCardName, null, amount,
+                    resolvedWalletTypeId, null);
+        }
+
+        boolean lockSuccess = update(new LambdaUpdateWrapper<AiMemberCardRedeemCode>()
+                .eq(AiMemberCardRedeemCode::getId, code.getId())
+                .eq(AiMemberCardRedeemCode::getStatus, 0)
+                .eq(AiMemberCardRedeemCode::getSoldStatus, 0)
+                .set(AiMemberCardRedeemCode::getSoldStatus, 1)
+                .set(AiMemberCardRedeemCode::getUpdatedTime, now));
+        if (!lockSuccess) {
+            return new PurchaseRedeemCodeResult(false, "兑换码已售罄，请重试", normalizedCardName, null, amount,
+                    resolvedWalletTypeId, null);
+        }
+
+        Long walletLogId = walletInfoApiService.changeWalletAmount(
+                userId,
+                resolvedWalletTypeId,
+                WalletLogEnums.BizId.PAY_ORDER.getId(),
+                "ai_member_card_code_" + IDGeneratorUtils.uuid32(),
+                amount.negate(),
+                "AI会员卡兑换码购买 cardName=" + normalizedCardName + ", redeemCode=" + code.getRedeemCode()
+        );
+        if (StringUtils.isNotBlank(email)) {
+            Map<String, Object> model = new HashMap<>();
+            model.put("count", 1);
+            model.put("batchNo", code.getBatchNo());
+            model.put("redeemCodeList", List.of(code.getRedeemCode()));
+            model.put("redeemCodes", code.getRedeemCode());
+            emailApiService.sendEmail(email.trim(), DEFAULT_TEMPLATE_NAME, model);
+        }
+        return new PurchaseRedeemCodeResult(true, "购买成功", normalizedCardName, code.getRedeemCode(), amount,
+                resolvedWalletTypeId, walletLogId);
     }
 
     @Override
