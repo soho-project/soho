@@ -13,6 +13,7 @@ import work.soho.wallet.biz.service.WalletTypeService;
 import work.soho.wallet.biz.enums.WalletTypeEnums;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Objects;
 
 @RequiredArgsConstructor
@@ -37,7 +38,7 @@ public class WalletTypeServiceImpl extends ServiceImpl<WalletTypeMapper, WalletT
         }
         BigDecimal commission = BigDecimal.ZERO;
         if(walletType.getWithdrawalCommissionRate().compareTo(BigDecimal.ZERO) > 0) {
-            commission = amount.multiply(walletType.getWithdrawalCommissionRate()).setScale(2, BigDecimal.ROUND_HALF_UP);
+            commission = amount.multiply(walletType.getWithdrawalCommissionRate()).setScale(6, RoundingMode.HALF_UP);
             if(commission.compareTo(walletType.getWithdrawalMinCommission()) < 0) {
                 commission = walletType.getWithdrawalMinCommission();
             }

@@ -75,3 +75,19 @@ curl -sS "http://127.0.0.1:6677/ai/guest/openai/v1/responses" \
   }
 ]
 }"
+
+# 开放平台兑换码领取接口
+APP_KEY=551356445229674496   APP_SECRET=0ff5ad94cbe14a51affd9ab956758c91   MEMBER_CARD_NAME='月卡A套餐'   BASE_URL='http://127.0.0.1:6677'   bash -c '
+set -euo pipefail
+PATH_ONLY="/ai/open/app/memberCardRedeemCode/purchaseByName"
+BODY="{\"memberCardName\":\"${MEMBER_CARD_NAME}\"}"
+REQ_TIME="$(date +%s)"
+SIGN="$(printf "%s" "${PATH_ONLY}_${BODY}_${APP_SECRET}" | md5sum | awk "{print \$1}")"
+curl -sS -X POST "${BASE_URL}${PATH_ONLY}" \
+-H "Content-Type: application/json" \
+-H "app-key: ${APP_KEY}" \
+-H "req-time: ${REQ_TIME}" \
+-H "sign: ${SIGN}" \
+-d "${BODY}"
+echo
+'

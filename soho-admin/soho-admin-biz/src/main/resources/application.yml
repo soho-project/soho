@@ -21,6 +21,11 @@
           username: ${MYSQL_USERNAME:dev}
           password: ${MYSQL_PASSWORD:Dev@123456789}
           driver-class-name: com.mysql.cj.jdbc.Driver
+        wallet:
+          url: jdbc:mysql://${MYSQL_HOST:mysql.dev.soho.work}:${MYSQL_PORT:3306}/soho_wallet?useUnicode=true&characterEncoding=utf-8
+          username: ${MYSQL_USERNAME:dev}
+          password: ${MYSQL_PASSWORD:Dev@123456789}
+          driver-class-name: com.mysql.cj.jdbc.Driver
   redis:
     host: localhost
     port: 6379
@@ -100,4 +105,3 @@ token:
 
 redisson:
   nodeAddress: redis://localhost:6379
-
