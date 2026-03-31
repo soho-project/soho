@@ -2,6 +2,7 @@ package work.soho.ai.biz.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -192,7 +193,7 @@ public class AiMemberCardRedeemCodeServiceImpl extends ServiceImpl<AiMemberCardR
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @DSTransactional(rollbackFor = Exception.class)
     public PurchaseRedeemCodeResult purchaseByMemberCardName(Long userId, String memberCardName,
                                                              String email) {
         if (userId == null || userId <= 0) {
@@ -227,6 +228,12 @@ public class AiMemberCardRedeemCodeServiceImpl extends ServiceImpl<AiMemberCardR
             return new PurchaseRedeemCodeResult(false, "钱包不存在", normalizedCardName, null, amount,
                     resolvedWalletTypeId, null);
         }
+
+        System.out.println("用户钱包ID");
+        System.out.println(resolvedWalletTypeId);
+        System.out.println(userId);
+        System.out.println(walletInfo);
+
         if (walletInfo.getAmount() == null || walletInfo.getAmount().compareTo(amount) < 0) {
             return new PurchaseRedeemCodeResult(false, "钱包余额不足", normalizedCardName, null, amount,
                     resolvedWalletTypeId, null);

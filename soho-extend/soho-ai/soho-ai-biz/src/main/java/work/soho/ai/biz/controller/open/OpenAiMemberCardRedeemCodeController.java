@@ -13,17 +13,20 @@ import work.soho.ai.biz.service.AiMemberCardRedeemCodeService;
 import work.soho.common.core.result.R;
 import work.soho.common.security.userdetails.SohoUserDetails;
 import work.soho.open.api.annotation.OpenApi;
+import work.soho.open.api.annotation.OpenApiDoc;
 
 @Api(tags = "AI 开放接口-会员卡兑换码")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/ai/open/memberCardRedeemCode")
+@RequestMapping("/ai/open/app/memberCardRedeemCode")
+@OpenApiDoc(value = "AI会员卡", name = "AI会员卡", description = "AI会员卡")
 public class OpenAiMemberCardRedeemCodeController {
     private final AiMemberCardRedeemCodeService aiMemberCardRedeemCodeService;
 
     @PostMapping("/purchaseByName")
     @ApiOperation("按会员卡名称购买兑换码并自动钱包扣款")
     @OpenApi(value = "open::ai::memberCardRedeemCode::purchaseByName", name = "按名称购买 AI 兑换码")
+    @OpenApiDoc(value = "open::ai::memberCardRedeemCode::purchaseByName", name = "按名称购买 AI 兑换码", description = "按名称购买 AI 兑换码", authRole = "openApp")
     public R<AiMemberCardRedeemCodeService.PurchaseRedeemCodeResult> purchaseByName(
             @AuthenticationPrincipal SohoUserDetails userDetails,
             @RequestBody PurchaseByNameRequest request) {

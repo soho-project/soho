@@ -1,6 +1,7 @@
 package work.soho.wallet.biz.service.impl;
 
 import cn.hutool.core.lang.Assert;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Service
 @Log4j2
+@DS("wallet")
 public class WalletInfoServiceImpl extends ServiceImpl<WalletInfoMapper, WalletInfo>
     implements WalletInfoService, WalletInfoApiService {
 

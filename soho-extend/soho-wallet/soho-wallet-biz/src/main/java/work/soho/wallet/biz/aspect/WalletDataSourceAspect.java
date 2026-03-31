@@ -18,7 +18,7 @@ public class WalletDataSourceAspect {
     private static final String READ_DB_NAME = "wallet"; // 读数据源
     private static final String WRITE_DB_NAME = "wallet";  // 写数据源
 
-    @Around("bean(wallet*ServiceImpl) && execution(* com.baomidou.mybatisplus.extension.service.IService+.*(..))")
+    @Around("bean(wallet*ServiceImpl) && execution(* *(..))")
     public Object dbAround(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
             log.info("切换数据源：" + determineDataSource(joinPoint));
