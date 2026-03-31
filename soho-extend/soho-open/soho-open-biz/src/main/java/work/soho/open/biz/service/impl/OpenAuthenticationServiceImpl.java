@@ -79,7 +79,7 @@ public class OpenAuthenticationServiceImpl implements OpenAuthenticationService 
 
             // 组装用户信息
             SohoUserDetails user = new SohoUserDetails();
-            user.setId(openApp.getId());
+            user.setId(openApp.getUserId());
             user.setUsername(openApp.getAppName());
 
             // 扩展参数
