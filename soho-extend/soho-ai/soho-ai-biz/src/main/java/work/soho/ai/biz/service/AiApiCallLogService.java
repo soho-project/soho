@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import work.soho.ai.biz.domain.AiApiCallLog;
 import work.soho.ai.biz.dto.AiApiCallLogHourTokenDTO;
 import work.soho.ai.biz.dto.AiApiCallLogModelTokenDTO;
+import work.soho.ai.biz.dto.AiApiCallLogProviderConfigStatsDTO;
 import work.soho.ai.biz.dto.AiApiCallLogTokenOverviewDTO;
 import work.soho.ai.biz.dto.AiApiCallLogUserTodayStatsDTO;
 
@@ -17,4 +18,8 @@ public interface AiApiCallLogService extends IService<AiApiCallLog> {
     List<AiApiCallLogModelTokenDTO> statisticsLast12HoursTokensByModel();
 
     List<AiApiCallLogUserTodayStatsDTO> statisticsTodayByUser();
+
+    List<AiApiCallLogProviderConfigStatsDTO> statisticsTodayByProviderConfig();
+
+    List<AiApiCallLogProviderConfigStatsDTO> statisticsTotalByProviderConfig();
 }
