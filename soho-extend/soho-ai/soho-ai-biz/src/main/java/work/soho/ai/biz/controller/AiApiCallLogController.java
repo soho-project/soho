@@ -23,6 +23,7 @@ import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.ai.biz.domain.AiApiCallLog;
 import work.soho.ai.biz.dto.AiApiCallLogHourTokenDTO;
 import work.soho.ai.biz.dto.AiApiCallLogModelTokenDTO;
+import work.soho.ai.biz.dto.AiApiCallLogProviderConfigStatsDTO;
 import work.soho.ai.biz.dto.AiApiCallLogTokenOverviewDTO;
 import work.soho.ai.biz.dto.AiApiCallLogUserTodayStatsDTO;
 import work.soho.ai.biz.service.AiApiCallLogService;
@@ -129,6 +130,26 @@ public class AiApiCallLogController {
     @ApiOperation(value = "获取 ai请求日志 当天按用户统计", notes = "按用户统计当天请求次数与token汇总")
     public R<List<AiApiCallLogUserTodayStatsDTO>> statisticsTodayByUser() {
         return R.success(aiApiCallLogService.statisticsTodayByUser());
+    }
+
+    /**
+     * 获取当天按 providerConfigId 统计（请求数 + token）
+     */
+    @GetMapping("/statisticsTodayByProviderConfig")
+    @Node(value = "aiApiCallLog::statisticsTodayByProviderConfig", name = "获取 ai请求日志 当天按providerConfig统计")
+    @ApiOperation(value = "获取 ai请求日志 当天按providerConfig统计", notes = "按 providerConfigId 统计当天请求数与token汇总")
+    public R<List<AiApiCallLogProviderConfigStatsDTO>> statisticsTodayByProviderConfig() {
+        return R.success(aiApiCallLogService.statisticsTodayByProviderConfig());
+    }
+
+    /**
+     * 获取累计按 providerConfigId 统计（请求数 + token）
+     */
+    @GetMapping("/statisticsTotalByProviderConfig")
+    @Node(value = "aiApiCallLog::statisticsTotalByProviderConfig", name = "获取 ai请求日志 总量按providerConfig统计")
+    @ApiOperation(value = "获取 ai请求日志 总量按providerConfig统计", notes = "按 providerConfigId 统计总请求数与token汇总")
+    public R<List<AiApiCallLogProviderConfigStatsDTO>> statisticsTotalByProviderConfig() {
+        return R.success(aiApiCallLogService.statisticsTotalByProviderConfig());
     }
 
     /**

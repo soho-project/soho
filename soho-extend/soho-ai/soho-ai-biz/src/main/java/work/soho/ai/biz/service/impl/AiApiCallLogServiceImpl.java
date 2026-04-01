@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import work.soho.ai.biz.domain.AiApiCallLog;
 import work.soho.ai.biz.dto.AiApiCallLogHourTokenDTO;
 import work.soho.ai.biz.dto.AiApiCallLogModelTokenDTO;
+import work.soho.ai.biz.dto.AiApiCallLogProviderConfigStatsDTO;
 import work.soho.ai.biz.dto.AiApiCallLogTokenOverviewDTO;
 import work.soho.ai.biz.dto.AiApiCallLogUserTodayStatsDTO;
 import work.soho.ai.biz.mapper.AiApiCallLogMapper;
@@ -136,6 +137,16 @@ public class AiApiCallLogServiceImpl extends ServiceImpl<AiApiCallLogMapper, AiA
         return result;
     }
 
+    @Override
+    public List<AiApiCallLogProviderConfigStatsDTO> statisticsTodayByProviderConfig() {
+        return statisticsByProviderConfig(LocalDate.now().atStartOfDay(), LocalDateTime.now());
+    }
+
+    @Override
+    public List<AiApiCallLogProviderConfigStatsDTO> statisticsTotalByProviderConfig() {
+        return statisticsByProviderConfig(null, null);
+    }
+
     private AiApiCallLogTokenOverviewDTO sumTokens(LocalDateTime startTime, LocalDateTime endTime) {
         QueryWrapper<AiApiCallLog> queryWrapper = new QueryWrapper<>();
         queryWrapper.select(
@@ -155,6 +166,40 @@ public class AiApiCallLogServiceImpl extends ServiceImpl<AiApiCallLogMapper, AiA
                 longValue(row.get("completion_tokens")),
                 longValue(row.get("total_tokens"))
         );
+    }
+
+    private List<AiApiCallLogProviderConfigStatsDTO> statisticsByProviderConfig(LocalDateTime startTime, LocalDateTime endTime) {
+        QueryWrapper<AiApiCallLog> queryWrapper = new QueryWrapper<>();
+        queryWrapper.select(
+                "provider_config_id",
+                "COUNT(*) AS request_count",
+                "SUM(prompt_tokens) AS prompt_tokens",
+                "SUM(completion_tokens) AS completion_tokens",
+                "SUM(total_tokens) AS total_tokens"
+        );
+        if (startTime != null && endTime != null) {
+            queryWrapper.between("created_time", startTime, endTime);
+        }
+        queryWrapper.groupBy("provider_config_id");
+        queryWrapper.orderByDesc("request_count");
+        queryWrapper.orderByDesc("total_tokens");
+
+        List<Map<String, Object>> records = this.listMaps(queryWrapper);
+        List<AiApiCallLogProviderConfigStatsDTO> result = new ArrayList<>();
+        if (CollectionUtils.isEmpty(records)) {
+            return result;
+        }
+
+        for (Map<String, Object> row : records) {
+            result.add(new AiApiCallLogProviderConfigStatsDTO(
+                    nullableLongValue(row.get("provider_config_id")),
+                    longValue(row.get("request_count")),
+                    longValue(row.get("prompt_tokens")),
+                    longValue(row.get("completion_tokens")),
+                    longValue(row.get("total_tokens"))
+            ));
+        }
+        return result;
     }
 
     private Map<String, AiApiCallLogHourTokenDTO> initHourTokenMap(LocalDateTime startHour, int size) {
