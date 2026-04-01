@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @RequiredArgsConstructor
 @RequestMapping("/ai/guest/openai/v1")
 public class GuestAiOpenAiController {
+    private static final String CLIENT_ERROR_MESSAGE = "临时错误，如果长期错误请联系管理员";
     private final AiOpenApiService aiOpenApiService;
 
     @GetMapping(value = "/models")
@@ -34,30 +35,48 @@ public class GuestAiOpenAiController {
         return aiOpenApiService.models(authorization);
     }
 
+    /**
+     * 处理 OpenAI 兼容 chat completions 请求。
+     * 发生异常时统一返回脱敏后的错误结构，避免直接透出上游错误详情。
+     */
     @PostMapping(value = "/chat/completions")
     @ApiOperation("OpenAI 兼容 chat completions")
     public Object chatCompletions(@RequestHeader("Authorization") String authorization,
                                   @RequestBody OpenAiChatCompletionRequest request) {
         log.info("OpenAI 兼容 chat completions 请求摘要: {}", JacksonUtils.toJson(buildChatCompletionsLogSummary(request)));
-        if (Boolean.TRUE.equals(request.getStream())) {
-            SseEmitter emitter = new SseEmitter(0L);
-            subscribeWithEmitter(emitter, aiOpenApiService.streamChatCompletions(authorization, request));
-            return emitter;
+        try {
+            if (Boolean.TRUE.equals(request.getStream())) {
+                SseEmitter emitter = new SseEmitter(0L);
+                subscribeWithEmitter(emitter, aiOpenApiService.streamChatCompletions(authorization, request));
+                return emitter;
+            }
+            return aiOpenApiService.chatCompletions(authorization, request);
+        } catch (RuntimeException ex) {
+            log.error("OpenAI 兼容 chat completions 失败, msg={}", ex.getMessage(), ex);
+            return buildOpenAiErrorResponse();
         }
-        return aiOpenApiService.chatCompletions(authorization, request);
     }
 
+    /**
+     * 处理 OpenAI 兼容 responses 请求。
+     * 发生异常时统一返回脱敏后的错误结构，避免直接透出上游错误详情。
+     */
     @PostMapping(value = "/responses")
     @ApiOperation("OpenAI 兼容 responses")
     public Object responses(@RequestHeader("Authorization") String authorization,
                             @RequestBody OpenAiResponsesRequest request) {
         log.info("OpenAI 兼容 responses 请求摘要: {}", JacksonUtils.toJson(buildResponsesLogSummary(request)));
-        if (Boolean.TRUE.equals(request.getStream())) {
-            SseEmitter emitter = new SseEmitter(0L);
-            subscribeWithEmitter(emitter, aiOpenApiService.streamResponses(authorization, request));
-            return emitter;
+        try {
+            if (Boolean.TRUE.equals(request.getStream())) {
+                SseEmitter emitter = new SseEmitter(0L);
+                subscribeWithEmitter(emitter, aiOpenApiService.streamResponses(authorization, request));
+                return emitter;
+            }
+            return aiOpenApiService.responses(authorization, request);
+        } catch (RuntimeException ex) {
+            log.error("OpenAI 兼容 responses 失败, msg={}", ex.getMessage(), ex);
+            return buildOpenAiErrorResponse();
         }
-        return aiOpenApiService.responses(authorization, request);
     }
 
     private void sendEvent(SseEmitter emitter, String payload) {
@@ -93,7 +112,11 @@ public class GuestAiOpenAiController {
     private void subscribeWithEmitter(SseEmitter emitter, Flux<String> flux) {
         AtomicReference<Disposable> disposableRef = new AtomicReference<>();
         Disposable disposable = flux.subscribe(payload -> sendEvent(emitter, payload),
-                emitter::completeWithError,
+                ex -> {
+                    log.error("OpenAI SSE 请求失败, msg={}", ex.getMessage(), ex);
+                    sendEvent(emitter, JacksonUtils.toJson(buildOpenAiErrorResponse()));
+                    emitter.complete();
+                },
                 emitter::complete);
         disposableRef.set(disposable);
         emitter.onCompletion(() -> dispose(disposableRef));
@@ -109,5 +132,18 @@ public class GuestAiOpenAiController {
         if (disposable != null && !disposable.isDisposed()) {
             disposable.dispose();
         }
+    }
+
+    /**
+     * 构建 OpenAI 兼容错误响应，避免向客户端暴露上游原始错误信息。
+     */
+    private Map<String, Object> buildOpenAiErrorResponse() {
+        Map<String, Object> error = new HashMap<>();
+        error.put("message", CLIENT_ERROR_MESSAGE);
+        error.put("type", "server_error");
+        error.put("code", "server_error");
+        Map<String, Object> result = new HashMap<>();
+        result.put("error", error);
+        return result;
     }
 }

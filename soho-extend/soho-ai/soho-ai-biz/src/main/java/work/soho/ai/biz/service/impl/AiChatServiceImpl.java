@@ -16,7 +16,10 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
@@ -618,9 +621,12 @@ public class AiChatServiceImpl implements AiChatService {
         }
         return req.bodyValue(body)
                 .retrieve()
+                .onStatus(HttpStatus::isError, response -> buildUpstreamHttpError(url, body, response))
                 .bodyToFlux(DataBuffer.class)
                 .map(this::bufferToString)
-                .transform(this::sseToPayloadFlux);
+                .transform(this::sseToPayloadFlux)
+                .doOnError(ex -> log.error("openai stream upstream request failed, url={}, error={}",
+                        url, extractUpstreamErrorMessage(ex), ex));
     }
 
     private Flux<String> streamAnthropic(String baseUrl, String apiKey, String model,
@@ -651,9 +657,12 @@ public class AiChatServiceImpl implements AiChatService {
                 .header("anthropic-version", version)
                 .bodyValue(body)
                 .retrieve()
+                .onStatus(HttpStatus::isError, response -> buildUpstreamHttpError(url, body, response))
                 .bodyToFlux(DataBuffer.class)
                 .map(this::bufferToString)
-                .transform(this::sseToPayloadFlux);
+                .transform(this::sseToPayloadFlux)
+                .doOnError(ex -> log.error("anthropic stream upstream request failed, url={}, error={}",
+                        url, extractUpstreamErrorMessage(ex), ex));
     }
 
     private Flux<String> streamGemini(String baseUrl, String apiKey, String model,
@@ -665,6 +674,7 @@ public class AiChatServiceImpl implements AiChatService {
         if (StringUtils.isNotBlank(apiKey)) {
             url = url + "?key=" + apiKey;
         }
+        final String requestUrl = url;
 
         Map<String, Object> body = new HashMap<>();
         body.put("contents", toGeminiContents(messages));
@@ -682,14 +692,17 @@ public class AiChatServiceImpl implements AiChatService {
 
         return buildWebClient(config)
                 .post()
-                .uri(url)
+                .uri(requestUrl)
                 .accept(MediaType.TEXT_EVENT_STREAM)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)
                 .retrieve()
+                .onStatus(HttpStatus::isError, response -> buildUpstreamHttpError(requestUrl, body, response))
                 .bodyToFlux(DataBuffer.class)
                 .map(this::bufferToString)
-                .transform(this::sseToPayloadFlux);
+                .transform(this::sseToPayloadFlux)
+                .doOnError(ex -> log.error("gemini stream upstream request failed, url={}, error={}",
+                        requestUrl, extractUpstreamErrorMessage(ex), ex));
     }
 
     private Flux<String> streamOllama(String baseUrl, String model,
@@ -708,9 +721,12 @@ public class AiChatServiceImpl implements AiChatService {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)
                 .retrieve()
+                .onStatus(HttpStatus::isError, response -> buildUpstreamHttpError(url, body, response))
                 .bodyToFlux(DataBuffer.class)
                 .map(this::bufferToString)
-                .transform(this::linesToFlux);
+                .transform(this::linesToFlux)
+                .doOnError(ex -> log.error("ollama stream upstream request failed, url={}, error={}",
+                        url, extractUpstreamErrorMessage(ex), ex));
     }
 
     private Flux<String> streamCodexResponses(String baseUrl, String apiKey, String model,
@@ -787,8 +803,55 @@ public class AiChatServiceImpl implements AiChatService {
             headers.forEach(httpHeaders::add);
         }
         HttpEntity<String> entity = new HttpEntity<>(JacksonUtils.toJson(body), httpHeaders);
-        ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-        return response.getBody();
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+            return response.getBody();
+        } catch (RuntimeException ex) {
+            throw wrapUpstreamException(url, body, ex);
+        }
+    }
+
+    /**
+     * 构建 WebClient 上游 HTTP 异常并写入日志，保留上游错误正文用于排查。
+     */
+    private Mono<? extends Throwable> buildUpstreamHttpError(String url, Map<String, Object> requestBody, ClientResponse response) {
+        return response.bodyToMono(String.class)
+                .defaultIfEmpty("")
+                .flatMap(errorBody -> {
+                    log.error("upstream api http error, url={}, status={}, body={}, requestBody={}",
+                            url, response.statusCode().value(), errorBody, JacksonUtils.toJson(requestBody));
+                    return Mono.error(new IllegalArgumentException("upstream api request failed: " + errorBody));
+                });
+    }
+
+    /**
+     * 统一包装上游请求异常，确保日志中包含请求地址、请求体及上游错误信息。
+     */
+    private RuntimeException wrapUpstreamException(String url, Map<String, Object> requestBody, RuntimeException ex) {
+        String message = extractUpstreamErrorMessage(ex);
+        log.error("upstream api request failed, url={}, error={}, requestBody={}",
+                url, message, JacksonUtils.toJson(requestBody), ex);
+        return new IllegalArgumentException("upstream api request failed: " + message, ex);
+    }
+
+    /**
+     * 提取上游错误信息，优先读取 HTTP 响应体，避免只拿到笼统异常描述。
+     */
+    private String extractUpstreamErrorMessage(Throwable ex) {
+        if (ex instanceof WebClientResponseException) {
+            String responseBody = ((WebClientResponseException) ex).getResponseBodyAsString();
+            if (StringUtils.isNotBlank(responseBody)) {
+                return responseBody;
+            }
+        }
+        if (ex instanceof HttpStatusCodeException) {
+            String responseBody = ((HttpStatusCodeException) ex).getResponseBodyAsString();
+            if (StringUtils.isNotBlank(responseBody)) {
+                return responseBody;
+            }
+        }
+        String message = ex == null ? null : ex.getMessage();
+        return StringUtils.isBlank(message) ? "unknown upstream error" : message;
     }
 
     private RestTemplate buildRestTemplate(Integer timeoutMs, Proxy proxy) {

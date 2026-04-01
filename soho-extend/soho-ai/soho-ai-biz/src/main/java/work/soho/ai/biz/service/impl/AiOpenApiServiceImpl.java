@@ -51,6 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Service
 @RequiredArgsConstructor
 public class AiOpenApiServiceImpl implements AiOpenApiService {
+    private static final String CLIENT_ERROR_MESSAGE = "临时错误，如果长期错误请联系管理员";
     private final AiUserApiKeyService aiUserApiKeyService;
     private final AiProviderConfigService aiProviderConfigService;
     private final AiProviderModelRelService aiProviderModelRelService;
@@ -223,7 +224,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 })
                 .doOnError(ex -> {
                     saveFailedLog(requestId, apiKey, providerConfig, targetModel, ex.getMessage(), "/ai/guest/openai/v1/responses");
-                    String failedPayload = JacksonUtils.toJson(buildResponsesFailedEvent("resp_" + requestId, ex.getMessage()));
+                    String failedPayload = JacksonUtils.toJson(buildResponsesFailedEvent("resp_" + requestId, CLIENT_ERROR_MESSAGE));
                     log.warn("responses(stream) 最终返回(失败): {}", failedPayload);
                 });
     }
@@ -265,7 +266,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 })
                 .onErrorResume(ex -> {
                     failed.set(true);
-                    String failedPayload = JacksonUtils.toJson(buildResponsesFailedEvent(responseId, ex.getMessage()));
+                    String failedPayload = JacksonUtils.toJson(buildResponsesFailedEvent(responseId, CLIENT_ERROR_MESSAGE));
                     log.warn("responses(stream) 最终返回(失败): {}", failedPayload);
                     return Flux.just(failedPayload);
                 });
