@@ -9,6 +9,7 @@ import work.soho.common.core.support.SpringContextHolder;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.RequestUtil;
+import work.soho.common.core.util.StringUtils;
 import work.soho.pay.api.dto.CreatePayInfoDto;
 import work.soho.pay.api.dto.OrderDetailsDto;
 import work.soho.pay.api.event.PayCallbackEvent;
@@ -63,6 +64,9 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder>
         try {
             //获取支付方案
             PayInfo payInfo = payInfoService.getById(orderDetailsDto.getPayInfoId());
+            if (payInfo == null) {
+                throw new RuntimeException("支付方式不存在");
+            }
             PayConfig payConfig = new PayConfig();
             payConfig.setId(payInfo.getId());
             payConfig.setPayCertificate(payInfo.getAccountPublicKey());
@@ -70,8 +74,14 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder>
             payConfig.setPrivateKey(payInfo.getAccountPrivateKey());
             payConfig.setMerchantId(payInfo.getAccountId());
             payConfig.setAppId(payInfo.getAccountAppId());
+            payConfig.setTitle(payInfo.getTitle());
+            payConfig.setAccountName(payInfo.getName());
+            payConfig.setAccountPublicKey(payInfo.getAccountPublicKey());
             //获取支付驱动
             Pay payApis = FactoryApis.getApisByName(payInfo.getAdapterName(), payConfig);
+            if (payApis == null) {
+                throw new RuntimeException("支付驱动不存在: " + payInfo.getAdapterName());
+            }
             //创建请求支付单
             Order order = BeanUtils.copy(orderDetailsDto, Order.class);
             //TODO 设置回调地址; 本机的回调地址
@@ -179,20 +189,10 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder>
                 && payOrder.getStatus().intValue() == PayOrderDetails.TradeStateEnum.SUCCESS.getState()) {
             return Boolean.TRUE;
         }
-        payOrder.setStatus(PayOrderDetails.TradeStateEnum.SUCCESS.getState());
-        payOrder.setTransactionId(payOrderDetails.getTransactionId());
-        payOrder.setPayedTime(LocalDateTime.now());
-        payOrder.setUpdatedTime(LocalDateTime.now());
-        updateById(payOrder);
-        //支付事件通知
-        PayCallbackEvent payCallbackEvent = new PayCallbackEvent();
-        payCallbackEvent.setStatus(payOrder.getStatus());
-        payCallbackEvent.setOrderNo(payOrder.getOrderNo());
-        payCallbackEvent.setOutTradeNo(payOrder.getTrackingNo());
-        payCallbackEvent.setTransactionNo(payOrder.getTransactionId());
-        payCallbackEvent.setPayInfoId(payOrder.getPayId());
-        SpringContextHolder.getApplicationContext().publishEvent(payCallbackEvent);
-        return Boolean.TRUE;
+        LocalDateTime paidAt = payOrderDetails.getPaySuccessTime() == null
+                ? LocalDateTime.now()
+                : LocalDateTime.ofInstant(payOrderDetails.getPaySuccessTime().toInstant(), java.time.ZoneId.systemDefault());
+        return doConfirmOrderPaid(payOrder, payOrderDetails.getTransactionId(), paidAt);
     }
 
     @Override
@@ -229,7 +229,14 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder>
         payConfig.setPrivateKey(payInfo.getAccountPrivateKey());
         payConfig.setMerchantId(payInfo.getAccountId());
         payConfig.setAppId(payInfo.getAccountAppId());
+        payConfig.setTitle(payInfo.getTitle());
+        payConfig.setAccountName(payInfo.getName());
+        payConfig.setAccountPublicKey(payInfo.getAccountPublicKey());
         Pay payApis = FactoryApis.getApisByName(payInfo.getAdapterName(), payConfig);
+        if (payApis == null) {
+            result.put("message", "支付驱动不存在");
+            return result;
+        }
         if(!(payApis instanceof QueryOrder)) {
             result.put("message", "当前支付方式不支持主动查询订单");
             return result;
@@ -251,6 +258,69 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder>
         result.put("message", "订单未支付成功");
         return result;
     }
+
+    /**
+     * 人工上报场景下确认支付单支付成功。
+     *
+     * @param orderNo 支付单号
+     * @param transactionId 三方交易号
+     * @param payedTime 支付时间
+     * @return 是否成功
+     */
+    @Override
+    public Boolean confirmOrderPaid(String orderNo, String transactionId, LocalDateTime payedTime) {
+        if (StringUtils.isBlank(orderNo)) {
+            return Boolean.FALSE;
+        }
+        LambdaQueryWrapper<PayOrder> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PayOrder::getOrderNo, orderNo);
+        wrapper.ne(PayOrder::getStatus, PayOrderDetails.TradeStateEnum.CLOSED.getState());
+        PayOrder payOrder = getOne(wrapper);
+        if (payOrder == null) {
+            return Boolean.FALSE;
+        }
+        if (payOrder.getStatus() != null
+                && payOrder.getStatus().intValue() == PayOrderDetails.TradeStateEnum.SUCCESS.getState()) {
+            return Boolean.TRUE;
+        }
+        return doConfirmOrderPaid(payOrder, transactionId, payedTime);
+    }
+
+    /**
+     * 执行支付单成功确认并发送支付结果事件。
+     *
+     * @param payOrder 支付单
+     * @param transactionId 三方交易号
+     * @param payedTime 支付时间
+     * @return 是否成功
+     */
+    private Boolean doConfirmOrderPaid(PayOrder payOrder, String transactionId, LocalDateTime payedTime) {
+        if (payOrder == null) {
+            return Boolean.FALSE;
+        }
+        payOrder.setStatus(PayOrderDetails.TradeStateEnum.SUCCESS.getState());
+        if (StringUtils.isNotBlank(transactionId)) {
+            payOrder.setTransactionId(transactionId);
+        }
+        payOrder.setPayedTime(payedTime == null ? LocalDateTime.now() : payedTime);
+        payOrder.setUpdatedTime(LocalDateTime.now());
+        updateById(payOrder);
+        publishPayCallbackEvent(payOrder);
+        return Boolean.TRUE;
+    }
+
+    /**
+     * 发布支付成功事件，通知业务系统更新业务订单状态。
+     *
+     * @param payOrder 支付单
+     */
+    private void publishPayCallbackEvent(PayOrder payOrder) {
+        PayCallbackEvent payCallbackEvent = new PayCallbackEvent();
+        payCallbackEvent.setStatus(payOrder.getStatus());
+        payCallbackEvent.setOrderNo(payOrder.getOrderNo());
+        payCallbackEvent.setOutTradeNo(payOrder.getTrackingNo());
+        payCallbackEvent.setTransactionNo(payOrder.getTransactionId());
+        payCallbackEvent.setPayInfoId(payOrder.getPayId());
+        SpringContextHolder.getApplicationContext().publishEvent(payCallbackEvent);
+    }
 }
-
-

@@ -34,4 +34,19 @@ public class PayConfig {
      * 平台证书
      */
     private String payCertificate;
+
+    /**
+     * 支付展示标题
+     */
+    private String title;
+
+    /**
+     * 支付账户展示名称
+     */
+    private String accountName;
+
+    /**
+     * 收款二维码内容（复用 account_public_key 字段）
+     */
+    private String accountPublicKey;
 }

@@ -63,9 +63,9 @@ public class PayOrder implements Serializable {
     private BigDecimal amount;
 
     /**
-     * 支付单状态;1:待支付,10:已扫码,20:支付成功,30:支付失败;frontType:select
+     * 支付单状态;1:支付成功,3:未支付,4:关闭,6:用户支付中,7:支付失败;frontType:select
      */
-    @ApiModelProperty(value = "支付单状态;1:待支付,10:已扫码,20:支付成功,30:支付失败;")
+    @ApiModelProperty(value = "支付单状态;1:支付成功,3:未支付,4:关闭,6:用户支付中,7:支付失败;")
     @TableField(value = "status")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer status;
