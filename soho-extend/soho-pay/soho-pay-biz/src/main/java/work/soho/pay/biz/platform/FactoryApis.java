@@ -6,6 +6,7 @@ import work.soho.pay.biz.platform.ndpay.adapter.NdpayApis;
 import work.soho.pay.biz.platform.paypal.adapter.PaypalWebApis;
 import work.soho.pay.biz.platform.payapis.HftCreateWallet;
 import work.soho.pay.biz.platform.payapis.Pay;
+import work.soho.pay.biz.platform.customqr.adapter.CustomQrApis;
 import work.soho.pay.biz.platform.wallet.adapter.WalletApis;
 import work.soho.pay.biz.platform.wechat.adapter.AppApis;
 import work.soho.pay.biz.platform.wechat.adapter.H5Apis;
@@ -42,6 +43,8 @@ public class FactoryApis {
                 return new PaypalWebApis(payConfig);
             case "wallet": // 内部钱包支付
                 return new WalletApis(payConfig);
+            case "custom_qr":
+                return new CustomQrApis(payConfig);
             default:
                 return null;
         }

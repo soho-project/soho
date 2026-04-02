@@ -120,9 +120,9 @@ public class PayInfo implements Serializable {
     private Integer status;
 
     /**
-     * 支付驱动;wechat_jsapi,wechat_h5,wechat_app,wechat_native,alipay_wap,alipay_web,ndpay,wallet,paypal_web;frontType:select
+     * 支付驱动;wechat_jsapi,wechat_h5,wechat_app,wechat_native,alipay_wap,alipay_web,ndpay,wallet,paypal_web,custom_qr;frontType:select
      */
-    @ApiModelProperty(value = "支付驱动;wechat_jsapi,wechat_h5,wechat_app,wechat_native,alipay_wap,alipay_web,ndpay,wallet,paypal_web;frontType:select")
+    @ApiModelProperty(value = "支付驱动;wechat_jsapi,wechat_h5,wechat_app,wechat_native,alipay_wap,alipay_web,ndpay,wallet,paypal_web,custom_qr;frontType:select")
     @TableField(value = "adapter_name")
     private String adapterName;
 

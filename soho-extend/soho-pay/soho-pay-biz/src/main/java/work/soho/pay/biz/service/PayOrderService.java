@@ -14,7 +14,20 @@ import java.util.Map;
 * @createDate 2022-11-11 16:31:43
 */
 public interface PayOrderService extends IService<PayOrder> {
+    /**
+     * 创建支付单并生成支付参数。
+     *
+     * @param orderDetailsDto 下单参数
+     * @return 支付参数结果
+     */
     CreatePayInfoDto pay(OrderDetailsDto orderDetailsDto);
+
+    /**
+     * 处理支付网关回调并检查是否支付成功。
+     *
+     * @param payOrderDetails 网关订单详情
+     * @return 是否处理成功
+     */
     Boolean checkPaySuccess(PayOrderDetails payOrderDetails);
 
     /**
@@ -24,4 +37,14 @@ public interface PayOrderService extends IService<PayOrder> {
      * @return 同步结果
      */
     Map<String, Object> syncOrderState(String orderNo);
+
+    /**
+     * 人工上报场景下将订单确认支付成功。
+     *
+     * @param orderNo 支付单号
+     * @param transactionId 三方交易号
+     * @param payedTime 支付时间
+     * @return 是否确认成功
+     */
+    Boolean confirmOrderPaid(String orderNo, String transactionId, java.time.LocalDateTime payedTime);
 }
