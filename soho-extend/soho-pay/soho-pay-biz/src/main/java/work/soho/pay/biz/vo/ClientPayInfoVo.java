@@ -8,6 +8,11 @@ public class ClientPayInfoVo {
     private Integer id;
 
     /**
+     * 适配器名称
+     */
+    private String adapterName;
+
+    /**
      * 支付标题
      */
     @ApiModelProperty(value = "支付标题")
