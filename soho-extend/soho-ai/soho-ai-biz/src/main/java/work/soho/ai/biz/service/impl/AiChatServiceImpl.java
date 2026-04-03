@@ -53,6 +53,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 public class AiChatServiceImpl implements AiChatService {
     private static final int DEFAULT_TIMEOUT_MS = 60000;
+    private static final int MAX_FAILOVER_ATTEMPTS = 3;
     private static final String DEFAULT_CODEX_INSTRUCTIONS = "You are a helpful coding assistant.";
     private static final String EXTRA_NATIVE_RESPONSES = "nativeResponses";
     private static final String EXTRA_RESPONSES_REQUEST_BODY = "responsesRequestBody";
@@ -63,12 +64,30 @@ public class AiChatServiceImpl implements AiChatService {
 
     @Override
     public AiChatResponse chat(AiChatRequest request) {
-        return chat(resolveProviderConfig(request.getProviderCode(), request.getModel()), request);
+        List<AiProviderConfig> candidates = resolveProviderConfigCandidates(request.getProviderCode(), request.getModel());
+        int maxAttempts = Math.min(MAX_FAILOVER_ATTEMPTS, candidates.size());
+        RuntimeException lastException = null;
+        for (int i = 0; i < maxAttempts; i++) {
+            AiProviderConfig candidate = candidates.get(i);
+            try {
+                return chat(candidate, request);
+            } catch (RuntimeException ex) {
+                lastException = ex;
+                log.warn("chat upstream attempt failed, attempt={}/{}, providerCode={}, model={}, error={}",
+                        i + 1, maxAttempts, candidate.getCode(), request.getModel(), ex.getMessage());
+            }
+        }
+        if (lastException != null) {
+            throw lastException;
+        }
+        throw new IllegalArgumentException("provider config not found");
     }
 
     @Override
     public Flux<String> streamChat(AiChatRequest request) {
-        return streamChat(resolveProviderConfig(request.getProviderCode(), request.getModel()), request);
+        List<AiProviderConfig> candidates = resolveProviderConfigCandidates(request.getProviderCode(), request.getModel());
+        int maxAttempts = Math.min(MAX_FAILOVER_ATTEMPTS, candidates.size());
+        return streamChatWithFailover(candidates, request, 0, maxAttempts);
     }
 
     @Override
@@ -264,6 +283,82 @@ public class AiChatServiceImpl implements AiChatService {
             return 1;
         }
         return Math.max(weight, 0);
+    }
+
+    /**
+     * 解析候选上游配置列表。
+     * 当指定 providerCode 时仅返回该配置；按 model 选择时返回“首个按权重随机 + 剩余按原顺序”的候选列表。
+     *
+     * @param providerCode 指定的提供方编码
+     * @param model 模型名
+     * @return 候选配置列表
+     */
+    private List<AiProviderConfig> resolveProviderConfigCandidates(String providerCode, String model) {
+        if (StringUtils.isNotBlank(providerCode)) {
+            return Collections.singletonList(resolveProviderConfig(providerCode, model));
+        }
+        if (StringUtils.isBlank(model)) {
+            throw new IllegalArgumentException("providerCode or model is required");
+        }
+        List<Long> providerConfigIds = aiProviderModelRelService.listEnabledProviderConfigIdsByModelName(model);
+        if (providerConfigIds.isEmpty()) {
+            throw new IllegalArgumentException("provider config not found for model: " + model);
+        }
+        List<AiProviderConfig> enabledConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
+                .in(AiProviderConfig::getId, providerConfigIds)
+                .eq(AiProviderConfig::getStatus, 1));
+        Map<Long, AiProviderConfig> configMap = new HashMap<>();
+        for (AiProviderConfig enabledConfig : enabledConfigs) {
+            configMap.put(enabledConfig.getId(), enabledConfig);
+        }
+        List<AiProviderConfig> orderedCandidates = new ArrayList<>();
+        for (Long providerConfigId : providerConfigIds) {
+            AiProviderConfig candidate = configMap.get(providerConfigId);
+            if (candidate != null) {
+                orderedCandidates.add(candidate);
+            }
+        }
+        if (orderedCandidates.isEmpty()) {
+            throw new IllegalArgumentException("provider config not found for model: " + model);
+        }
+        AiProviderConfig first = selectByWeight(orderedCandidates);
+        if (first == null) {
+            return orderedCandidates;
+        }
+        List<AiProviderConfig> candidates = new ArrayList<>();
+        candidates.add(first);
+        for (AiProviderConfig candidate : orderedCandidates) {
+            if (!first.getId().equals(candidate.getId())) {
+                candidates.add(candidate);
+            }
+        }
+        return candidates;
+    }
+
+    /**
+     * 流式请求失败自动切换候选上游。
+     *
+     * @param candidates 候选配置
+     * @param request 请求参数
+     * @param index 当前尝试索引
+     * @param maxAttempts 最大尝试次数
+     * @return 流式响应
+     */
+    private Flux<String> streamChatWithFailover(List<AiProviderConfig> candidates, AiChatRequest request,
+                                                int index, int maxAttempts) {
+        if (index >= maxAttempts) {
+            return Flux.error(new IllegalArgumentException("all upstream providers failed"));
+        }
+        AiProviderConfig candidate = candidates.get(index);
+        return Flux.defer(() -> streamChat(candidate, request))
+                .onErrorResume(ex -> {
+                    log.warn("stream chat upstream attempt failed, attempt={}/{}, providerCode={}, model={}, error={}",
+                            index + 1, maxAttempts, candidate.getCode(), request.getModel(), ex.getMessage());
+                    if (index + 1 >= maxAttempts) {
+                        return Flux.error(ex);
+                    }
+                    return streamChatWithFailover(candidates, request, index + 1, maxAttempts);
+                });
     }
 
     private Map<String, Object> parseConfig(String configJson) {
