@@ -47,4 +47,5 @@ public interface PayOrderService extends IService<PayOrder> {
      * @return 是否确认成功
      */
     Boolean confirmOrderPaid(String orderNo, String transactionId, java.time.LocalDateTime payedTime);
+
 }
