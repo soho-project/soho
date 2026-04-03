@@ -1,6 +1,7 @@
 package work.soho.wallet.biz.listen;
 
 import cn.hutool.core.lang.Assert;
+import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
@@ -8,8 +9,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.pay.api.event.PayCallbackEvent;
-import work.soho.wallet.api.event.WalletRechargeSuccessEvent;
 import work.soho.wallet.api.enums.WalletTypeNameEnums;
+import work.soho.wallet.api.event.WalletRechargeSuccessEvent;
 import work.soho.wallet.biz.domain.WalletInfo;
 import work.soho.wallet.biz.domain.WalletRecharge;
 import work.soho.wallet.biz.domain.WalletType;
@@ -28,8 +29,17 @@ public class RechargePayedListen {
     private final WalletInfoService walletInfoService;
     private final ApplicationContext applicationContext;
 
-//    @Transactional
-    @EventListener(PayCallbackEvent.class)
+    /**
+     * 处理支付成功事件。
+     *
+     * <p>在存在事务时延迟到事务提交后再执行，避免主库事务上下文影响钱包库动态数据源切换。</p>
+     * <p>在不存在事务时（如常规支付回调）允许立即执行。</p>
+     *
+     * @param event 支付回调事件
+     */
+//    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    @DSTransactional
+    @EventListener
     public void onApplicationEvent(PayCallbackEvent event) {
         System.out.println("充值成功");
         // 检查是否是充值单

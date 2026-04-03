@@ -1,5 +1,6 @@
 package work.soho.pay.biz.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -125,7 +126,7 @@ public class PayManualReportServiceImpl extends ServiceImpl<PayManualReportMappe
      * @return 审核结果
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @DSTransactional(rollbackFor = Exception.class)
     public Map<String, Object> auditReport(PayManualReportAuditRequest request) {
         if (request == null || request.getReportId() == null || request.getApproved() == null) {
             return buildResult(false, "审核参数不完整", null, false, false);
