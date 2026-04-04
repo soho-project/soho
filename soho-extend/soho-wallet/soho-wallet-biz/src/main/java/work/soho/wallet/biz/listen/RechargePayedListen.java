@@ -1,11 +1,10 @@
 package work.soho.wallet.biz.listen;
 
 import cn.hutool.core.lang.Assert;
-import com.baomidou.dynamic.datasource.annotation.DSTransactional;
+import com.baomidou.dynamic.datasource.annotation.DsTxEventListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.pay.api.event.PayCallbackEvent;
@@ -37,9 +36,7 @@ public class RechargePayedListen {
      *
      * @param event 支付回调事件
      */
-//    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
-    @DSTransactional
-    @EventListener
+    @DsTxEventListener
     public void onApplicationEvent(PayCallbackEvent event) {
         System.out.println("充值成功");
         // 检查是否是充值单

@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import work.soho.common.core.util.StringUtils;
 import work.soho.pay.biz.domain.PayInfo;
 import work.soho.pay.biz.domain.PayManualReport;
@@ -37,7 +36,7 @@ import java.util.Map;
 public class PayManualReportServiceImpl extends ServiceImpl<PayManualReportMapper, PayManualReport>
         implements PayManualReportService {
     private static final String CUSTOM_QR_ADAPTER = "custom_qr";
-    private static final int MAX_AUTO_MATCH_MINUTES_DIFF = 5;
+    private static final int MAX_AUTO_MATCH_MINUTES_DIFF = 15;
     private static final int MAX_REPORT_DAYS_RANGE = 7;
     private static final long SIGN_EXPIRE_MILLIS = 10 * 60 * 1000L;
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -52,7 +51,7 @@ public class PayManualReportServiceImpl extends ServiceImpl<PayManualReportMappe
      * @return 处理结果
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @DSTransactional(rollbackFor = Exception.class)
     public Map<String, Object> submitReport(PayManualReportSubmitRequest request) {
         String validateMessage = validateSubmitRequest(request);
         if (StringUtils.isNotBlank(validateMessage)) {
@@ -101,7 +100,7 @@ public class PayManualReportServiceImpl extends ServiceImpl<PayManualReportMappe
             boolean confirmed = payOrderService.confirmOrderPaid(matchedOrder.getOrderNo(), request.getPayOrderNo(), request.getPayTime());
             if (confirmed) {
                 report.setMatchStatus(PayManualReportEnums.MatchStatus.AUTO_MATCHED.getCode());
-                report.setMatchNote("自动匹配成功：5分钟窗口内唯一订单命中");
+                report.setMatchNote("自动匹配成功："+ MAX_AUTO_MATCH_MINUTES_DIFF +"分钟窗口内唯一订单命中");
                 report.setReviewedBy("system");
                 report.setReviewedTime(LocalDateTime.now());
                 updateById(report);
@@ -111,7 +110,7 @@ public class PayManualReportServiceImpl extends ServiceImpl<PayManualReportMappe
 
         report.setMatchStatus(PayManualReportEnums.MatchStatus.WAIT_REVIEW.getCode());
         if (candidates.isEmpty()) {
-            report.setMatchNote("未找到5分钟窗口内匹配订单，进入人工审核");
+            report.setMatchNote("未找到"+ MAX_AUTO_MATCH_MINUTES_DIFF +"分钟窗口内匹配订单，进入人工审核");
         } else {
             report.setMatchNote("存在多笔候选订单(" + candidates.size() + ")，进入人工审核");
         }
