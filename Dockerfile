@@ -7,7 +7,7 @@ COPY ./soho-admin-web/target/soho-admin-web-1.0-SNAPSHOT.jar /root/
 WORKDIR /root/
 ARG CONFIG_PROFILE="dev"
 ENV TZ="Asia/Shanghai"
-ENV JAVA_TOOL_OPTIONS="-Duser.timezone=Asia/Shanghai -Xmx390m"
+ENV JAVA_TOOL_OPTIONS="-Duser.timezone=Asia/Shanghai -Xmx380m"
 ENV SPRING_CLOUD_CONFIG_PROFILE="-Dspring.profiles.active=${CONFIG_PROFILE}"
 #CMD java -jar ${SPRING_CLOUD_CONFIG_PROFILE} /root/soho-admin-web-1.0-SNAPSHOT.jar
 CMD java -jar ${SPRING_CLOUD_CONFIG_PROFILE} /root/soho-admin-web-1.0-SNAPSHOT.jar
