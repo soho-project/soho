@@ -47,6 +47,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 @Log4j2
 @Service
@@ -554,13 +556,15 @@ public class AiChatServiceImpl implements AiChatService {
         if (StringUtils.isNotBlank(apiKey)) {
             headers.put("Authorization", "Bearer " + apiKey);
         }
-        String raw = postJson(url, headers, body, timeoutMs, config);
-        String content = extractOpenAiContent(raw);
-        AiUsageSummary usage = extractUsage(provider, raw);
-        if (usage.getTotalTokens() == 0) {
-            usage = estimateUsage(request, content);
-        }
-        return buildResponse(provider, model, content, raw, usage);
+        return withUpstreamRequestTimingLog(provider, model, url, () -> {
+            String raw = postJson(url, headers, body, timeoutMs, config);
+            String content = extractOpenAiContent(raw);
+            AiUsageSummary usage = extractUsage(provider, raw);
+            if (usage.getTotalTokens() == 0) {
+                usage = estimateUsage(request, content);
+            }
+            return buildResponse(provider, model, content, raw, usage);
+        });
     }
 
     private AiChatResponse callAnthropic(String provider, String baseUrl, String apiKey, String model,
@@ -584,13 +588,15 @@ public class AiChatServiceImpl implements AiChatService {
         Map<String, String> headers = new HashMap<>();
         headers.put("x-api-key", apiKey);
         headers.put("anthropic-version", version);
-        String raw = postJson(url, headers, body, timeoutMs, config);
-        String content = extractAnthropicContent(raw);
-        AiUsageSummary usage = extractUsage(provider, raw);
-        if (usage.getTotalTokens() == 0) {
-            usage = estimateUsage(request, content);
-        }
-        return buildResponse(provider, model, content, raw, usage);
+        return withUpstreamRequestTimingLog(provider, model, url, () -> {
+            String raw = postJson(url, headers, body, timeoutMs, config);
+            String content = extractAnthropicContent(raw);
+            AiUsageSummary usage = extractUsage(provider, raw);
+            if (usage.getTotalTokens() == 0) {
+                usage = estimateUsage(request, content);
+            }
+            return buildResponse(provider, model, content, raw, usage);
+        });
     }
 
     private AiChatResponse callGemini(String provider, String baseUrl, String apiKey, String model,
@@ -602,6 +608,7 @@ public class AiChatServiceImpl implements AiChatService {
         if (StringUtils.isNotBlank(apiKey)) {
             url = url + "?key=" + apiKey;
         }
+        final String requestUrl = url;
 
         Map<String, Object> body = new HashMap<>();
         body.put("contents", toGeminiContents(messages));
@@ -617,13 +624,15 @@ public class AiChatServiceImpl implements AiChatService {
             body.put("systemInstruction", Map.of("parts", List.of(Map.of("text", system))));
         }
 
-        String raw = postJson(url, Collections.emptyMap(), body, timeoutMs, config);
-        String content = extractGeminiContent(raw);
-        AiUsageSummary usage = extractUsage(provider, raw);
-        if (usage.getTotalTokens() == 0) {
-            usage = estimateUsage(request, content);
-        }
-        return buildResponse(provider, model, content, raw, usage);
+        return withUpstreamRequestTimingLog(provider, model, requestUrl, () -> {
+            String raw = postJson(requestUrl, Collections.emptyMap(), body, timeoutMs, config);
+            String content = extractGeminiContent(raw);
+            AiUsageSummary usage = extractUsage(provider, raw);
+            if (usage.getTotalTokens() == 0) {
+                usage = estimateUsage(request, content);
+            }
+            return buildResponse(provider, model, content, raw, usage);
+        });
     }
 
     private AiChatResponse callOllama(String provider, String baseUrl, String model,
@@ -636,13 +645,15 @@ public class AiChatServiceImpl implements AiChatService {
         body.put("messages", toOpenAiMessages(messages));
         putIfNotNull(body, "stream", request.getStream() != null ? request.getStream() : Boolean.FALSE);
 
-        String raw = postJson(url, Collections.emptyMap(), body, timeoutMs, config);
-        String content = extractOllamaContent(raw);
-        AiUsageSummary usage = extractUsage(provider, raw);
-        if (usage.getTotalTokens() == 0) {
-            usage = estimateUsage(request, content);
-        }
-        return buildResponse(provider, model, content, raw, usage);
+        return withUpstreamRequestTimingLog(provider, model, url, () -> {
+            String raw = postJson(url, Collections.emptyMap(), body, timeoutMs, config);
+            String content = extractOllamaContent(raw);
+            AiUsageSummary usage = extractUsage(provider, raw);
+            if (usage.getTotalTokens() == 0) {
+                usage = estimateUsage(request, content);
+            }
+            return buildResponse(provider, model, content, raw, usage);
+        });
     }
 
     private AiChatResponse callCodexResponses(String provider, String baseUrl, String apiKey, String model,
@@ -652,45 +663,47 @@ public class AiChatServiceImpl implements AiChatService {
         String url = joinUrl(baseUrl, path);
         Map<String, Object> body = resolveCodexRequestBody(model, messages, request, config, true);
 
-        List<String> payloads = buildWebClient(config)
-                .post()
-                .uri(url)
-                .accept(MediaType.TEXT_EVENT_STREAM)
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Bearer " + apiKey)
-                .bodyValue(body)
-                .retrieve()
-                .onStatus(HttpStatus::isError, response -> response.bodyToMono(String.class)
-                        .defaultIfEmpty("")
-                        .flatMap(errorBody -> {
-                            log.error("codex responses request failed status={}, body={}, requestBody={}",
-                                    response.statusCode().value(), errorBody, JacksonUtils.toJson(body));
-                            return Mono.error(new IllegalArgumentException("codex responses request failed: " + errorBody));
-                        }))
-                .bodyToFlux(DataBuffer.class)
-                .map(this::bufferToString)
-                .transform(this::sseToPayloadFlux)
-                .collectList()
-                .block();
+        return withUpstreamRequestTimingLog(provider, model, url, () -> {
+            List<String> payloads = buildWebClient(config)
+                    .post()
+                    .uri(url)
+                    .accept(MediaType.TEXT_EVENT_STREAM)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .bodyValue(body)
+                    .retrieve()
+                    .onStatus(HttpStatus::isError, response -> response.bodyToMono(String.class)
+                            .defaultIfEmpty("")
+                            .flatMap(errorBody -> {
+                                log.error("codex responses request failed status={}, body={}, requestBody={}",
+                                        response.statusCode().value(), errorBody, JacksonUtils.toJson(body));
+                                return Mono.error(new IllegalArgumentException("codex responses request failed: " + errorBody));
+                            }))
+                    .bodyToFlux(DataBuffer.class)
+                    .map(this::bufferToString)
+                    .transform(this::sseToPayloadFlux)
+                    .collectList()
+                    .block();
 
-        StringBuilder contentBuilder = new StringBuilder();
-        String completedPayload = "";
-        if (payloads != null) {
-            for (String payload : payloads) {
-                if (StringUtils.isBlank(payload) || "[DONE]".equals(payload)) {
-                    continue;
+            StringBuilder contentBuilder = new StringBuilder();
+            String completedPayload = "";
+            if (payloads != null) {
+                for (String payload : payloads) {
+                    if (StringUtils.isBlank(payload) || "[DONE]".equals(payload)) {
+                        continue;
+                    }
+                    completedPayload = payload;
+                    appendCodexTextDelta(payload, contentBuilder);
                 }
-                completedPayload = payload;
-                appendCodexTextDelta(payload, contentBuilder);
             }
-        }
-        String raw = StringUtils.isBlank(completedPayload) ? "{}" : completedPayload;
-        String content = contentBuilder.toString();
-        AiUsageSummary usage = extractUsage("codexResponses", raw);
-        if (usage.getTotalTokens() == 0) {
-            usage = estimateUsage(request, content);
-        }
-        return buildResponse(provider, model, content, raw, usage);
+            String raw = StringUtils.isBlank(completedPayload) ? "{}" : completedPayload;
+            String content = contentBuilder.toString();
+            AiUsageSummary usage = extractUsage("codexResponses", raw);
+            if (usage.getTotalTokens() == 0) {
+                usage = estimateUsage(request, content);
+            }
+            return buildResponse(provider, model, content, raw, usage);
+        });
     }
 
     private Flux<String> streamOpenAiCompatible(String baseUrl, String apiKey, String model,
@@ -714,7 +727,7 @@ public class AiChatServiceImpl implements AiChatService {
         if (StringUtils.isNotBlank(apiKey)) {
             req.header("Authorization", "Bearer " + apiKey);
         }
-        return req.bodyValue(body)
+        Flux<String> stream = req.bodyValue(body)
                 .retrieve()
                 .onStatus(HttpStatus::isError, response -> buildUpstreamHttpError(url, body, response))
                 .bodyToFlux(DataBuffer.class)
@@ -722,6 +735,7 @@ public class AiChatServiceImpl implements AiChatService {
                 .transform(this::sseToPayloadFlux)
                 .doOnError(ex -> log.error("openai stream upstream request failed, url={}, error={}",
                         url, extractUpstreamErrorMessage(ex), ex));
+        return withUpstreamStreamTimingLog("openai", url, model, stream);
     }
 
     private Flux<String> streamAnthropic(String baseUrl, String apiKey, String model,
@@ -743,7 +757,7 @@ public class AiChatServiceImpl implements AiChatService {
             body.put("system", system);
         }
 
-        return buildWebClient(config)
+        Flux<String> stream = buildWebClient(config)
                 .post()
                 .uri(url)
                 .accept(MediaType.TEXT_EVENT_STREAM)
@@ -758,6 +772,7 @@ public class AiChatServiceImpl implements AiChatService {
                 .transform(this::sseToPayloadFlux)
                 .doOnError(ex -> log.error("anthropic stream upstream request failed, url={}, error={}",
                         url, extractUpstreamErrorMessage(ex), ex));
+        return withUpstreamStreamTimingLog("anthropic", url, model, stream);
     }
 
     private Flux<String> streamGemini(String baseUrl, String apiKey, String model,
@@ -785,7 +800,7 @@ public class AiChatServiceImpl implements AiChatService {
             body.put("systemInstruction", Map.of("parts", List.of(Map.of("text", system))));
         }
 
-        return buildWebClient(config)
+        Flux<String> stream = buildWebClient(config)
                 .post()
                 .uri(requestUrl)
                 .accept(MediaType.TEXT_EVENT_STREAM)
@@ -798,6 +813,7 @@ public class AiChatServiceImpl implements AiChatService {
                 .transform(this::sseToPayloadFlux)
                 .doOnError(ex -> log.error("gemini stream upstream request failed, url={}, error={}",
                         requestUrl, extractUpstreamErrorMessage(ex), ex));
+        return withUpstreamStreamTimingLog("gemini", requestUrl, model, stream);
     }
 
     private Flux<String> streamOllama(String baseUrl, String model,
@@ -810,7 +826,7 @@ public class AiChatServiceImpl implements AiChatService {
         body.put("messages", toOpenAiMessages(messages));
         body.put("stream", true);
 
-        return buildWebClient(config)
+        Flux<String> stream = buildWebClient(config)
                 .post()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -822,6 +838,7 @@ public class AiChatServiceImpl implements AiChatService {
                 .transform(this::linesToFlux)
                 .doOnError(ex -> log.error("ollama stream upstream request failed, url={}, error={}",
                         url, extractUpstreamErrorMessage(ex), ex));
+        return withUpstreamStreamTimingLog("ollama", url, model, stream);
     }
 
     private Flux<String> streamCodexResponses(String baseUrl, String apiKey, String model,
@@ -852,9 +869,122 @@ public class AiChatServiceImpl implements AiChatService {
                 .transform(this::sseToPayloadFlux);
 
         if (nativeResponses) {
-            return payloadFlux;
+            return withUpstreamStreamTimingLog("codex-responses", url, model, payloadFlux);
         }
-        return payloadFlux.flatMap(payload -> codexPayloadToOpenAiPayload(payload, model));
+        Flux<String> openAiStream = payloadFlux.flatMap(payload -> codexPayloadToOpenAiPayload(payload, model));
+        return withUpstreamStreamTimingLog("codex-responses", url, model, openAiStream);
+    }
+
+    /**
+     * 记录上游流式请求耗时日志（首字用时、总用时）。
+     *
+     * @param provider 上游提供方
+     * @param url      上游请求地址
+     * @param model    上游模型
+     * @param source   原始流
+     * @return 带日志打点的流
+     */
+    private Flux<String> withUpstreamStreamTimingLog(String provider, String url, String model, Flux<String> source) {
+        long startAt = System.currentTimeMillis();
+        AtomicLong firstTokenAt = new AtomicLong(-1L);
+        return source
+                .doOnSubscribe(s -> log.info("ai upstream stream request start, provider={}, model={}, url={}",
+                        provider, model, url))
+                .doOnNext(payload -> {
+                    if (firstTokenAt.get() >= 0) {
+                        return;
+                    }
+                    if (hasTextDelta(payload) && firstTokenAt.compareAndSet(-1L, System.currentTimeMillis())) {
+                        long firstTokenMs = firstTokenAt.get() - startAt;
+                        log.info("ai upstream stream first token, provider={}, model={}, url={}, first_token_ms={}",
+                                provider, model, url, firstTokenMs);
+                    }
+                })
+                .doOnComplete(() -> {
+                    long totalMs = System.currentTimeMillis() - startAt;
+                    long firstTokenMs = firstTokenAt.get() < 0 ? -1L : firstTokenAt.get() - startAt;
+                    log.info("ai upstream stream completed, provider={}, model={}, url={}, total_ms={}, first_token_ms={}",
+                            provider, model, url, totalMs, firstTokenMs);
+                })
+                .doOnError(ex -> {
+                    long totalMs = System.currentTimeMillis() - startAt;
+                    long firstTokenMs = firstTokenAt.get() < 0 ? -1L : firstTokenAt.get() - startAt;
+                    log.warn("ai upstream stream failed, provider={}, model={}, url={}, total_ms={}, first_token_ms={}, error={}",
+                            provider, model, url, totalMs, firstTokenMs, ex.getMessage());
+                });
+    }
+
+    /**
+     * 记录上游非流式请求总耗时日志。
+     *
+     * @param provider 上游提供方
+     * @param model    上游模型
+     * @param url      上游请求地址
+     * @param call     请求执行逻辑
+     * @return 上游响应
+     */
+    private AiChatResponse withUpstreamRequestTimingLog(String provider, String model, String url,
+                                                        Supplier<AiChatResponse> call) {
+        long startAt = System.currentTimeMillis();
+        log.info("ai upstream request start, provider={}, model={}, url={}", provider, model, url);
+        try {
+            AiChatResponse response = call.get();
+            long totalMs = System.currentTimeMillis() - startAt;
+            log.info("ai upstream request completed, provider={}, model={}, url={}, total_ms={}",
+                    provider, model, url, totalMs);
+            return response;
+        } catch (RuntimeException ex) {
+            long totalMs = System.currentTimeMillis() - startAt;
+            log.warn("ai upstream request failed, provider={}, model={}, url={}, total_ms={}, error={}",
+                    provider, model, url, totalMs, ex.getMessage());
+            throw ex;
+        }
+    }
+
+    /**
+     * 判断流式 payload 是否包含文本增量。
+     *
+     * @param payload 单条 payload
+     * @return 是否包含文本增量
+     */
+    private boolean hasTextDelta(String payload) {
+        if (StringUtils.isBlank(payload) || "[DONE]".equals(payload)) {
+            return false;
+        }
+        try {
+            JsonNode root = JacksonUtils.toBean(payload, JsonNode.class);
+            if (root == null || root.isMissingNode()) {
+                return false;
+            }
+            if (hasNonBlankNode(root.at("/choices/0/delta/content"))) {
+                return true;
+            }
+            if (hasNonBlankNode(root.at("/delta/text"))) {
+                return true;
+            }
+            if (hasNonBlankNode(root.at("/candidates/0/content/parts/0/text"))) {
+                return true;
+            }
+            if (hasNonBlankNode(root.at("/message/content"))) {
+                return true;
+            }
+            if (hasNonBlankNode(root.at("/delta"))) {
+                return true;
+            }
+            return hasNonBlankNode(root.at("/output_text"));
+        } catch (Exception ignore) {
+            return false;
+        }
+    }
+
+    /**
+     * 判断 JSON 节点是否为非空文本。
+     *
+     * @param node JSON 节点
+     * @return 是否为非空文本
+     */
+    private boolean hasNonBlankNode(JsonNode node) {
+        return node != null && !node.isMissingNode() && !node.isNull() && StringUtils.isNotBlank(node.asText());
     }
 
     private Map<String, Object> resolveCodexRequestBody(String model, List<AiChatRequest.Message> messages,

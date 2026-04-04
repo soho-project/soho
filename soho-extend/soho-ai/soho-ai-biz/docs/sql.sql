@@ -29,6 +29,8 @@ CREATE TABLE `ai_api_call_log` (
   `status` tinyint NOT NULL DEFAULT 1,
   `error_message` varchar(500) DEFAULT NULL,
   `wallet_log_id` bigint DEFAULT NULL,
+  `total_ms` bigint DEFAULT NULL COMMENT '总耗时(毫秒)',
+  `first_token_ms` bigint DEFAULT NULL COMMENT '首字耗时(毫秒)',
   `updated_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_time` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

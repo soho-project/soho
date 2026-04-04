@@ -45,6 +45,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Log4j2
@@ -103,6 +104,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         preCheckBalance(billingPlan);
 
         String requestId = IDGeneratorUtils.uuid32();
+        long startAt = System.currentTimeMillis();
         try {
             AiChatResponse response = aiChatService.chat(providerConfig, aiChatRequest);
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
@@ -110,10 +112,14 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, response.getModel());
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
-            saveSuccessLog(requestId, apiKey, providerConfig, response.getModel(), usage, amount, walletLogId, "/ai/guest/openai/v1/chat/completions");
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveSuccessLog(requestId, apiKey, providerConfig, response.getModel(), usage, amount, walletLogId,
+                    "/ai/guest/openai/v1/chat/completions", totalMs, null);
             return buildOpenAiResponse(requestId, response.getModel(), response.getContent(), usage);
         } catch (RuntimeException ex) {
-            saveFailedLog(requestId, apiKey, providerConfig, request.getModel(), ex.getMessage(), "/ai/guest/openai/v1/chat/completions");
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveFailedLog(requestId, apiKey, providerConfig, request.getModel(), ex.getMessage(),
+                    "/ai/guest/openai/v1/chat/completions", totalMs, null);
             throw ex;
         }
     }
@@ -129,19 +135,30 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         String requestId = IDGeneratorUtils.uuid32();
         StringBuilder contentBuilder = new StringBuilder();
         String targetModel = StringUtils.isBlank(request.getModel()) ? providerConfig.getDefaultModel() : request.getModel();
+        long startAt = System.currentTimeMillis();
+        AtomicLong firstTokenAt = new AtomicLong(-1L);
 
         log.info("streamChatCompletions: {}",  aiChatRequest);
         return aiChatService.streamChat(providerConfig, aiChatRequest)
-                .doOnNext(payload -> appendContent(payload, contentBuilder))
+                .doOnNext(payload -> {
+                    appendContent(payload, contentBuilder);
+                    recordFirstTokenAt(firstTokenAt, startAt, extractDeltaFromChatStreamPayload(payload));
+                })
                 .doOnComplete(() -> {
                     AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, contentBuilder.toString());
                     BigDecimal amount = calculateAmount(billingPlan, usage, targetModel);
                     Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, targetModel);
                     aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
                     aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
-                    saveSuccessLog(requestId, apiKey, providerConfig, targetModel, usage, amount, walletLogId, "/ai/guest/openai/v1/chat/completions");
+                    long totalMs = System.currentTimeMillis() - startAt;
+                    saveSuccessLog(requestId, apiKey, providerConfig, targetModel, usage, amount, walletLogId,
+                            "/ai/guest/openai/v1/chat/completions", totalMs, resolveFirstTokenMs(firstTokenAt, startAt));
                 })
-                .doOnError(ex -> saveFailedLog(requestId, apiKey, providerConfig, targetModel, ex.getMessage(), "/ai/guest/openai/v1/chat/completions"));
+                .doOnError(ex -> {
+                    long totalMs = System.currentTimeMillis() - startAt;
+                    saveFailedLog(requestId, apiKey, providerConfig, targetModel, ex.getMessage(),
+                            "/ai/guest/openai/v1/chat/completions", totalMs, resolveFirstTokenMs(firstTokenAt, startAt));
+                });
     }
 
     @Override
@@ -161,6 +178,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         preCheckBalance(billingPlan);
 
         String requestId = IDGeneratorUtils.uuid32();
+        long startAt = System.currentTimeMillis();
         try {
             AiChatResponse response = aiChatService.chat(providerConfig, aiChatRequest);
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
@@ -168,7 +186,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, response.getModel());
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
-            saveSuccessLog(requestId, apiKey, providerConfig, response.getModel(), usage, amount, walletLogId, "/ai/guest/openai/v1/responses");
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveSuccessLog(requestId, apiKey, providerConfig, response.getModel(), usage, amount, walletLogId,
+                    "/ai/guest/openai/v1/responses", totalMs, null);
 
             Map<String, Object> result = parseNativeResponsesResult(response.getRaw());
             if (result.isEmpty()) {
@@ -178,7 +198,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             log.info("responses 最终返回: {}", JacksonUtils.toJson(result));
             return result;
         } catch (RuntimeException ex) {
-            saveFailedLog(requestId, apiKey, providerConfig, request.getModel(), ex.getMessage(), "/ai/guest/openai/v1/responses");
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveFailedLog(requestId, apiKey, providerConfig, request.getModel(), ex.getMessage(),
+                    "/ai/guest/openai/v1/responses", totalMs, null);
             throw ex;
         }
     }
@@ -202,12 +224,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         String targetModel = StringUtils.isBlank(request.getModel()) ? providerConfig.getDefaultModel() : request.getModel();
         StringBuilder contentBuilder = new StringBuilder();
         AtomicReference<String> completedPayloadRef = new AtomicReference<>("");
+        long startAt = System.currentTimeMillis();
+        AtomicLong firstTokenAt = new AtomicLong(-1L);
 
         return aiChatService.streamChat(providerConfig, aiChatRequest)
                 .filter(payload -> StringUtils.isNotBlank(payload) && !"[DONE]".equals(payload))
                 .doOnNext(payload -> {
                     appendResponsesTextDelta(payload, contentBuilder);
                     captureCompletedPayload(payload, completedPayloadRef);
+                    recordFirstTokenAt(firstTokenAt, startAt, extractDeltaFromResponsesPayload(payload));
                 })
                 .doOnComplete(() -> {
                     AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, contentBuilder.toString());
@@ -215,7 +240,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                     Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, targetModel);
                     aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
                     aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
-                    saveSuccessLog(requestId, apiKey, providerConfig, targetModel, usage, amount, walletLogId, "/ai/guest/openai/v1/responses");
+                    long totalMs = System.currentTimeMillis() - startAt;
+                    saveSuccessLog(requestId, apiKey, providerConfig, targetModel, usage, amount, walletLogId,
+                            "/ai/guest/openai/v1/responses", totalMs, resolveFirstTokenMs(firstTokenAt, startAt));
                     if (StringUtils.isNotBlank(completedPayloadRef.get())) {
                         log.info("responses(stream) 最终返回(完成): {}", completedPayloadRef.get());
                     } else {
@@ -223,7 +250,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                     }
                 })
                 .doOnError(ex -> {
-                    saveFailedLog(requestId, apiKey, providerConfig, targetModel, ex.getMessage(), "/ai/guest/openai/v1/responses");
+                    long totalMs = System.currentTimeMillis() - startAt;
+                    saveFailedLog(requestId, apiKey, providerConfig, targetModel, ex.getMessage(),
+                            "/ai/guest/openai/v1/responses", totalMs, resolveFirstTokenMs(firstTokenAt, startAt));
                     String failedPayload = JacksonUtils.toJson(buildResponsesFailedEvent("resp_" + requestId, CLIENT_ERROR_MESSAGE));
                     log.warn("responses(stream) 最终返回(失败): {}", failedPayload);
                 });
@@ -831,8 +860,45 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         }
     }
 
+    /**
+     * 提取 Responses 流式协议中的文本增量。
+     */
+    private String extractDeltaFromResponsesPayload(String payload) {
+        if (StringUtils.isBlank(payload) || "[DONE]".equals(payload)) {
+            return "";
+        }
+        try {
+            if (!"response.output_text.delta".equals(JacksonUtils.getObjectMapper().readTree(payload).path("type").asText(""))) {
+                return "";
+            }
+            return JacksonUtils.getObjectMapper().readTree(payload).path("delta").asText("");
+        } catch (Exception ex) {
+            return "";
+        }
+    }
+
+    /**
+     * 记录首字时间戳。
+     */
+    private void recordFirstTokenAt(AtomicLong firstTokenAt, long startAt, String delta) {
+        if (firstTokenAt.get() >= 0 || StringUtils.isBlank(delta)) {
+            return;
+        }
+        if (firstTokenAt.compareAndSet(-1L, System.currentTimeMillis())) {
+            log.info("ai openapi first token captured, first_token_ms={}", firstTokenAt.get() - startAt);
+        }
+    }
+
+    /**
+     * 计算首字耗时。
+     */
+    private Long resolveFirstTokenMs(AtomicLong firstTokenAt, long startAt) {
+        return firstTokenAt.get() < 0 ? null : (firstTokenAt.get() - startAt);
+    }
+
     private void saveSuccessLog(String requestId, AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
-                                AiUsageSummary usage, BigDecimal amount, Long walletLogId, String endpoint) {
+                                AiUsageSummary usage, BigDecimal amount, Long walletLogId, String endpoint,
+                                Long totalMs, Long firstTokenMs) {
         AiApiCallLog log = new AiApiCallLog();
         log.setRequestId(requestId);
         log.setUserId(apiKey.getUserId());
@@ -846,13 +912,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         log.setAmount(amount);
         log.setStatus(AiApiCallLogEnums.Status.SUCCESS.getId());
         log.setWalletLogId(walletLogId);
+        log.setTotalMs(totalMs);
+        log.setFirstTokenMs(firstTokenMs);
         log.setCreatedTime(LocalDateTime.now());
         log.setUpdatedTime(LocalDateTime.now());
         aiApiCallLogService.save(log);
     }
 
     private void saveFailedLog(String requestId, AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
-                               String errorMessage, String endpoint) {
+                               String errorMessage, String endpoint, Long totalMs, Long firstTokenMs) {
         AiApiCallLog log = new AiApiCallLog();
         log.setRequestId(requestId);
         log.setUserId(apiKey.getUserId());
@@ -863,6 +931,8 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         log.setAmount(BigDecimal.ZERO);
         log.setStatus(AiApiCallLogEnums.Status.FAILED.getId());
         log.setErrorMessage(StringUtils.isBlank(errorMessage) ? "AI request failed" : errorMessage);
+        log.setTotalMs(totalMs);
+        log.setFirstTokenMs(firstTokenMs);
         log.setCreatedTime(LocalDateTime.now());
         log.setUpdatedTime(LocalDateTime.now());
         aiApiCallLogService.save(log);

@@ -95,6 +95,16 @@ public class AiApiCallLog implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long walletLogId;
 
+    @ExcelProperty("total_ms")
+    @ApiModelProperty(value = "总耗时(毫秒)")
+    @TableField(value = "total_ms")
+    private Long totalMs;
+
+    @ExcelProperty("first_token_ms")
+    @ApiModelProperty(value = "首字耗时(毫秒)")
+    @TableField(value = "first_token_ms")
+    private Long firstTokenMs;
+
     @ExcelProperty("updated_time")
     @ApiModelProperty(value = "updated_time")
     @TableField(value = "updated_time", fill = FieldFill.INSERT_UPDATE)
