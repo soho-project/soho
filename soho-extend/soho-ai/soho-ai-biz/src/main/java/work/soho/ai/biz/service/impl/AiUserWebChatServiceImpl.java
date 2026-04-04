@@ -2,6 +2,7 @@ package work.soho.ai.biz.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -41,8 +42,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
+@Log4j2
 @RequiredArgsConstructor
 public class AiUserWebChatServiceImpl implements AiUserWebChatService {
     private static final Long USER_WEB_CHAT_API_KEY_ID = 0L;
@@ -135,20 +138,24 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
         BillingPlan billingPlan = buildBillingPlan(userId, providerConfig, aiChatRequest);
         preCheckBalance(billingPlan);
         String requestId = IDGeneratorUtils.uuid32();
+        long startAt = System.currentTimeMillis();
         try {
             persistUserMessage(session.getId(), aiChatRequest);
             AiChatResponse response = aiChatService.chat(providerConfig, aiChatRequest);
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, response.getModel());
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            long totalMs = System.currentTimeMillis() - startAt;
             saveSuccessLog(requestId, userId, providerConfig, response.getModel(), usage,
-                    calculateAmount(billingPlan, usage, response.getModel()), walletLogId, USER_WEB_CHAT_ENDPOINT);
+                    calculateAmount(billingPlan, usage, response.getModel()), walletLogId, USER_WEB_CHAT_ENDPOINT,
+                    totalMs, null);
             persistAssistantMessage(session, response.getContent(), request);
             return response;
         } catch (RuntimeException ex) {
+            long totalMs = System.currentTimeMillis() - startAt;
             saveFailedLog(requestId, userId, providerConfig,
                     StringUtils.isNotBlank(aiChatRequest.getModel()) ? aiChatRequest.getModel() : providerConfig.getDefaultModel(),
-                    ex.getMessage(), USER_WEB_CHAT_ENDPOINT);
+                    ex.getMessage(), USER_WEB_CHAT_ENDPOINT, totalMs, null);
             throw ex;
         }
     }
@@ -163,20 +170,30 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
         String requestId = IDGeneratorUtils.uuid32();
         persistUserMessage(session.getId(), aiChatRequest);
         StringBuilder assistantContent = new StringBuilder();
+        long startAt = System.currentTimeMillis();
+        AtomicLong firstTokenAt = new AtomicLong(-1L);
         return aiChatService.streamChat(providerConfig, aiChatRequest)
-                .doOnNext(payload -> appendAssistantDelta(payload, assistantContent))
+                .doOnNext(payload -> {
+                    appendAssistantDelta(payload, assistantContent);
+                    recordFirstTokenAt(firstTokenAt, startAt, extractAssistantDelta(payload));
+                })
                 .doOnComplete(() -> {
                     AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, assistantContent.toString());
                     String model = StringUtils.isNotBlank(aiChatRequest.getModel()) ? aiChatRequest.getModel() : providerConfig.getDefaultModel();
                     BigDecimal amount = calculateAmount(billingPlan, usage, model);
                     Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, model);
                     aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
-                    saveSuccessLog(requestId, userId, providerConfig, model, usage, amount, walletLogId, USER_WEB_CHAT_ENDPOINT);
+                    long totalMs = System.currentTimeMillis() - startAt;
+                    saveSuccessLog(requestId, userId, providerConfig, model, usage, amount, walletLogId, USER_WEB_CHAT_ENDPOINT,
+                            totalMs, resolveFirstTokenMs(firstTokenAt, startAt));
                     persistAssistantMessage(session, assistantContent.toString(), request);
                 })
-                .doOnError(ex -> saveFailedLog(requestId, userId, providerConfig,
-                        StringUtils.isNotBlank(aiChatRequest.getModel()) ? aiChatRequest.getModel() : providerConfig.getDefaultModel(),
-                        ex.getMessage(), USER_WEB_CHAT_ENDPOINT));
+                .doOnError(ex -> {
+                    long totalMs = System.currentTimeMillis() - startAt;
+                    saveFailedLog(requestId, userId, providerConfig,
+                            StringUtils.isNotBlank(aiChatRequest.getModel()) ? aiChatRequest.getModel() : providerConfig.getDefaultModel(),
+                            ex.getMessage(), USER_WEB_CHAT_ENDPOINT, totalMs, resolveFirstTokenMs(firstTokenAt, startAt));
+                });
     }
 
     private AiChatSession prepareSession(Long userId, UserAiChatRequest request) {
@@ -318,12 +335,45 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
             return;
         }
         try {
-            String content = JacksonUtils.getObjectMapper().readTree(payload).at("/choices/0/delta/content").asText("");
+            String content = extractAssistantDelta(payload);
             if (StringUtils.isNotBlank(content)) {
                 builder.append(content);
             }
         } catch (Exception ignore) {
         }
+    }
+
+    /**
+     * 提取流式 payload 中的助手文本增量。
+     */
+    private String extractAssistantDelta(String payload) {
+        if (StringUtils.isBlank(payload) || "[DONE]".equals(payload)) {
+            return "";
+        }
+        try {
+            return JacksonUtils.getObjectMapper().readTree(payload).at("/choices/0/delta/content").asText("");
+        } catch (Exception ex) {
+            return "";
+        }
+    }
+
+    /**
+     * 记录首字时间戳。
+     */
+    private void recordFirstTokenAt(AtomicLong firstTokenAt, long startAt, String delta) {
+        if (firstTokenAt.get() >= 0 || StringUtils.isBlank(delta)) {
+            return;
+        }
+        if (firstTokenAt.compareAndSet(-1L, System.currentTimeMillis())) {
+            log.info("ai user chat first token captured, first_token_ms={}", firstTokenAt.get() - startAt);
+        }
+    }
+
+    /**
+     * 计算首字耗时。
+     */
+    private Long resolveFirstTokenMs(AtomicLong firstTokenAt, long startAt) {
+        return firstTokenAt.get() < 0 ? null : (firstTokenAt.get() - startAt);
     }
 
     private BillingPlan buildBillingPlan(Long userId, AiProviderConfig providerConfig, AiChatRequest request) {
@@ -453,7 +503,8 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
     }
 
     private void saveSuccessLog(String requestId, Long userId, AiProviderConfig providerConfig, String model,
-                                AiUsageSummary usage, BigDecimal amount, Long walletLogId, String endpoint) {
+                                AiUsageSummary usage, BigDecimal amount, Long walletLogId, String endpoint,
+                                Long totalMs, Long firstTokenMs) {
         work.soho.ai.biz.domain.AiApiCallLog log = new work.soho.ai.biz.domain.AiApiCallLog();
         log.setRequestId(requestId);
         log.setUserId(userId);
@@ -467,13 +518,15 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
         log.setAmount(amount);
         log.setStatus(AiApiCallLogEnums.Status.SUCCESS.getId());
         log.setWalletLogId(walletLogId);
+        log.setTotalMs(totalMs);
+        log.setFirstTokenMs(firstTokenMs);
         log.setCreatedTime(LocalDateTime.now());
         log.setUpdatedTime(LocalDateTime.now());
         aiApiCallLogService.save(log);
     }
 
     private void saveFailedLog(String requestId, Long userId, AiProviderConfig providerConfig, String model,
-                               String errorMessage, String endpoint) {
+                               String errorMessage, String endpoint, Long totalMs, Long firstTokenMs) {
         work.soho.ai.biz.domain.AiApiCallLog log = new work.soho.ai.biz.domain.AiApiCallLog();
         log.setRequestId(requestId);
         log.setUserId(userId);
@@ -484,6 +537,8 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
         log.setAmount(BigDecimal.ZERO);
         log.setStatus(AiApiCallLogEnums.Status.FAILED.getId());
         log.setErrorMessage(StringUtils.isBlank(errorMessage) ? "AI user chat failed" : errorMessage);
+        log.setTotalMs(totalMs);
+        log.setFirstTokenMs(firstTokenMs);
         log.setCreatedTime(LocalDateTime.now());
         log.setUpdatedTime(LocalDateTime.now());
         aiApiCallLogService.save(log);

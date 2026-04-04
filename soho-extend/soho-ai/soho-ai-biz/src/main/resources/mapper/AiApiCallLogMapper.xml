@@ -18,10 +18,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="status" column="status" jdbcType="INTEGER"/>
         <result property="errorMessage" column="error_message" jdbcType="VARCHAR"/>
         <result property="walletLogId" column="wallet_log_id" jdbcType="BIGINT"/>
+        <result property="totalMs" column="total_ms" jdbcType="BIGINT"/>
+        <result property="firstTokenMs" column="first_token_ms" jdbcType="BIGINT"/>
         <result property="updatedTime" column="updated_time" jdbcType="TIMESTAMP"/>
         <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
     </resultMap>
     <sql id="Base_Column_List">
-        id,request_id,user_id,api_key_id,provider_config_id,endpoint,model,prompt_tokens,completion_tokens,total_tokens,amount,status,error_message,wallet_log_id,updated_time,created_time
+        id,request_id,user_id,api_key_id,provider_config_id,endpoint,model,prompt_tokens,completion_tokens,total_tokens,amount,status,error_message,wallet_log_id,total_ms,first_token_ms,updated_time,created_time
     </sql>
 </mapper>
