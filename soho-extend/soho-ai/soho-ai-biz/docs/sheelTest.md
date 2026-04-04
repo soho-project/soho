@@ -76,6 +76,28 @@ curl -sS "http://127.0.0.1:6677/ai/guest/openai/v1/responses" \
 ]
 }"
 
+
+curl -sS "https://caowo.xin/v1/responses" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer sk-RQDuwpaJZjU5FdW8oevmNst1q5wNTWS88bjCOab4tAHQV8iz" \
+-d "{
+\"model\": \"gpt-5.4\",
+\"stream\": true,
+\"instructions\": \"你是一个简洁助手\",
+\"input\": [
+{
+\"role\": \"user\",
+\"content\": [
+{
+\"type\": \"input_text\",
+\"text\": \"写一个 Python hello world\"
+}
+]
+}
+]
+}"
+
+
 # 开放平台兑换码领取接口
 APP_KEY=551356445229674496   APP_SECRET=0ff5ad94cbe14a51affd9ab956758c91   MEMBER_CARD_NAME='月卡A套餐'   BASE_URL='http://127.0.0.1:6677'   bash -c '
 set -euo pipefail
