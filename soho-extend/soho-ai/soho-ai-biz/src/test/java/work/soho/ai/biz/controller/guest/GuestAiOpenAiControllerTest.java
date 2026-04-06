@@ -72,4 +72,76 @@ public class GuestAiOpenAiControllerTest {
         verify(disposable).dispose();
         assertThat(disposableRef.get()).isNull();
     }
+
+    @Test
+    public void balance_shouldDelegateToService() {
+        AiOpenApiService aiOpenApiService = Mockito.mock(AiOpenApiService.class);
+        GuestAiOpenAiController controller = new GuestAiOpenAiController(aiOpenApiService);
+        Map<String, Object> expected = Map.of(
+                "object", "balance",
+                "is_active", true,
+                "balance", 12.34,
+                "unit", "USD"
+        );
+        when(aiOpenApiService.balance("Bearer token")).thenReturn(expected);
+
+        Object result = controller.balance("Bearer token", "cc-switch/1.0");
+
+        assertThat(result).isEqualTo(expected);
+        verify(aiOpenApiService).balance("Bearer token");
+    }
+
+    @Test
+    public void balance_whenServiceThrows_shouldReturnFallbackBalanceResponse() {
+        AiOpenApiService aiOpenApiService = Mockito.mock(AiOpenApiService.class);
+        GuestAiOpenAiController controller = new GuestAiOpenAiController(aiOpenApiService);
+        when(aiOpenApiService.balance("Bearer token")).thenThrow(new IllegalArgumentException("bad token"));
+
+        Object result = controller.balance("Bearer token", "cc-switch/1.0");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> resultMap = (Map<String, Object>) result;
+
+        assertThat(result).isInstanceOf(Map.class);
+        assertThat(resultMap).containsEntry("object", "balance");
+        assertThat(resultMap).containsEntry("is_active", false);
+        assertThat(resultMap).containsEntry("balance", 0);
+        assertThat(resultMap).containsEntry("unit", "USD");
+    }
+
+    @Test
+    public void self_shouldDelegateToService() {
+        AiOpenApiService aiOpenApiService = Mockito.mock(AiOpenApiService.class);
+        GuestAiOpenAiController controller = new GuestAiOpenAiController(aiOpenApiService);
+        work.soho.common.security.userdetails.SohoUserDetails userDetails =
+                new work.soho.common.security.userdetails.SohoUserDetails();
+        userDetails.setId(123L);
+        Map<String, Object> expected = Map.of(
+                "success", true,
+                "message", "success",
+                "data", Map.of("group", "专业版套餐")
+        );
+        when(aiOpenApiService.selfPackage(123L, "123")).thenReturn(expected);
+
+        Object result = controller.self(userDetails, "123");
+
+        assertThat(result).isEqualTo(expected);
+        verify(aiOpenApiService).selfPackage(123L, "123");
+    }
+
+    @Test
+    public void self_whenServiceThrows_shouldReturnFallbackResponse() {
+        AiOpenApiService aiOpenApiService = Mockito.mock(AiOpenApiService.class);
+        GuestAiOpenAiController controller = new GuestAiOpenAiController(aiOpenApiService);
+        work.soho.common.security.userdetails.SohoUserDetails userDetails =
+                new work.soho.common.security.userdetails.SohoUserDetails();
+        userDetails.setId(123L);
+        when(aiOpenApiService.selfPackage(123L, "123")).thenThrow(new IllegalArgumentException("bad request"));
+
+        Object result = controller.self(userDetails, "123");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> resultMap = (Map<String, Object>) result;
+
+        assertThat(resultMap).containsEntry("success", false);
+        assertThat(resultMap).containsEntry("message", "临时错误，如果长期错误请联系管理员");
+    }
 }
