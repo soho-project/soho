@@ -4,6 +4,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.Disposable;
@@ -12,6 +13,7 @@ import work.soho.ai.biz.request.OpenAiChatCompletionRequest;
 import work.soho.ai.biz.request.OpenAiResponsesRequest;
 import work.soho.ai.biz.service.AiOpenApiService;
 import work.soho.common.core.util.JacksonUtils;
+import work.soho.common.security.userdetails.SohoUserDetails;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -28,6 +30,42 @@ public class GuestAiOpenAiController {
     private static final String CLIENT_ERROR_MESSAGE = "临时错误，如果长期错误请联系管理员";
     private final AiOpenApiService aiOpenApiService;
 
+    /**
+     * 查询 OpenAI/Codex 兼容余额。
+     */
+    @GetMapping(value = "/user/balance")
+    @ApiOperation("OpenAI/Codex 兼容余额查询")
+    public Object balance(@RequestHeader("Authorization") String authorization,
+                          @RequestHeader(value = "User-Agent", required = false) String userAgent) {
+        log.info("OpenAI/Codex 兼容余额查询, userAgent={}", userAgent);
+        try {
+            return aiOpenApiService.balance(authorization);
+        } catch (RuntimeException ex) {
+            log.error("OpenAI/Codex 兼容余额查询失败, msg={}", ex.getMessage(), ex);
+            return buildBalanceErrorResponse();
+        }
+    }
+
+    /**
+     * 查询兼容客户端的用户套餐用量。
+     */
+    @GetMapping(value = "/api/user/self")
+    @ApiOperation("OpenAI/Codex 兼容用户套餐用量查询")
+    public Object self(@AuthenticationPrincipal SohoUserDetails userDetails,
+                       @RequestHeader(value = "New-Api-User", required = false) String newApiUserHeader) {
+        log.info("OpenAI/Codex 兼容套餐查询, userId={}, newApiUser={}",
+                userDetails == null ? null : userDetails.getId(), newApiUserHeader);
+        try {
+            return aiOpenApiService.selfPackage(userDetails == null ? null : userDetails.getId(), newApiUserHeader);
+        } catch (RuntimeException ex) {
+            log.error("OpenAI/Codex 兼容套餐查询失败, msg={}", ex.getMessage(), ex);
+            return buildSelfPackageErrorResponse();
+        }
+    }
+
+    /**
+     * 查询 OpenAI 兼容模型列表。
+     */
     @GetMapping(value = "/models")
     @ApiOperation("OpenAI 兼容 models")
     public Object models(@RequestHeader("Authorization") String authorization) {
@@ -132,6 +170,28 @@ public class GuestAiOpenAiController {
         if (disposable != null && !disposable.isDisposed()) {
             disposable.dispose();
         }
+    }
+
+    /**
+     * 构建余额查询失败时的兜底响应，保证 Codex 余额提取器可继续工作。
+     */
+    private Map<String, Object> buildBalanceErrorResponse() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("object", "balance");
+        result.put("is_active", false);
+        result.put("balance", 0);
+        result.put("unit", "USD");
+        return result;
+    }
+
+    /**
+     * 构建套餐查询失败兜底响应。
+     */
+    private Map<String, Object> buildSelfPackageErrorResponse() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", false);
+        result.put("message", CLIENT_ERROR_MESSAGE);
+        return result;
     }
 
     /**

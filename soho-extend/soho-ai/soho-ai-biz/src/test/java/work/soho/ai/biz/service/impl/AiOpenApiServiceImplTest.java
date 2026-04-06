@@ -20,11 +20,117 @@ import work.soho.wallet.api.service.WalletInfoApiService;
 import work.soho.wallet.biz.service.WalletInfoService;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 public class AiOpenApiServiceImplTest {
+
+    @Test
+    public void balance_shouldReturnCodexCompatibleFields() {
+        AiUserApiKeyService aiUserApiKeyService = Mockito.mock(AiUserApiKeyService.class);
+        AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
+        AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiChatService aiChatService = Mockito.mock(AiChatService.class);
+        AiApiCallLogService aiApiCallLogService = Mockito.mock(AiApiCallLogService.class);
+        WalletInfoService walletInfoService = Mockito.mock(WalletInfoService.class);
+        WalletInfoApiService walletInfoApiService = Mockito.mock(WalletInfoApiService.class);
+        AiMemberRequestLimitService aiMemberRequestLimitService = Mockito.mock(AiMemberRequestLimitService.class);
+        AiUserMemberCardService aiUserMemberCardService = Mockito.mock(AiUserMemberCardService.class);
+
+        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+                aiUserApiKeyService,
+                aiProviderConfigService,
+                aiProviderModelRelService,
+                aiChatService,
+                aiApiCallLogService,
+                walletInfoService,
+                walletInfoApiService,
+                aiMemberRequestLimitService,
+                aiUserMemberCardService
+        );
+
+        AiUserApiKey apiKey = new AiUserApiKey();
+        apiKey.setId(11L);
+        apiKey.setUserId(7L);
+        when(aiUserApiKeyService.requireByPlaintextKey("token")).thenReturn(apiKey);
+
+        AiProviderConfig providerConfig = new AiProviderConfig();
+        providerConfig.setId(1L);
+        providerConfig.setConfigJson("{\"billingWalletTypeId\":2}");
+        when(aiProviderConfigService.list(Mockito.any())).thenReturn(Collections.singletonList(providerConfig));
+
+        WalletInfo walletInfo = new WalletInfo();
+        walletInfo.setAmount(new BigDecimal("88.1256"));
+        when(walletInfoService.getByUserIdAndType(7L, 2)).thenReturn(walletInfo);
+
+        when(aiUserMemberCardService.resolveActiveMemberCard(7L)).thenReturn(java.util.Optional.empty());
+        when(aiApiCallLogService.getMap(Mockito.any()))
+                .thenReturn(Map.of(
+                        "request_count", 3,
+                        "prompt_tokens", 100,
+                        "completion_tokens", 50,
+                        "total_tokens", 150,
+                        "amount", new BigDecimal("1.2500")
+                ));
+
+        Map<String, Object> result = service.balance("Bearer token");
+
+        assertThat(result).containsEntry("object", "balance");
+        assertThat(result).containsEntry("is_active", true);
+        assertThat(result).containsEntry("unit", "USD");
+        assertThat(result.get("balance")).isEqualTo(new BigDecimal("88.1256"));
+        assertThat(result.get("wallet_type_ids")).isEqualTo(Collections.singletonList(2));
+        assertThat(result.get("request_usage")).isInstanceOf(Map.class);
+        assertThat(result.get("token_usage")).isInstanceOf(Map.class);
+    }
+
+    @Test
+    public void selfPackage_shouldReturnClientCompatibleFields() {
+        AiUserApiKeyService aiUserApiKeyService = Mockito.mock(AiUserApiKeyService.class);
+        AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
+        AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiChatService aiChatService = Mockito.mock(AiChatService.class);
+        AiApiCallLogService aiApiCallLogService = Mockito.mock(AiApiCallLogService.class);
+        WalletInfoService walletInfoService = Mockito.mock(WalletInfoService.class);
+        WalletInfoApiService walletInfoApiService = Mockito.mock(WalletInfoApiService.class);
+        AiMemberRequestLimitService aiMemberRequestLimitService = Mockito.mock(AiMemberRequestLimitService.class);
+        AiUserMemberCardService aiUserMemberCardService = Mockito.mock(AiUserMemberCardService.class);
+
+        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+                aiUserApiKeyService,
+                aiProviderConfigService,
+                aiProviderModelRelService,
+                aiChatService,
+                aiApiCallLogService,
+                walletInfoService,
+                walletInfoApiService,
+                aiMemberRequestLimitService,
+                aiUserMemberCardService
+        );
+
+        work.soho.ai.biz.dto.AiUserMemberCardView view = new work.soho.ai.biz.dto.AiUserMemberCardView();
+        view.setName("专业版套餐");
+        view.setUsageAvailable(true);
+        view.setRateLimit7dEnabled(true);
+        view.setRateLimit7dUsed(2);
+        view.setRateLimit7dRemaining(8);
+        view.setLimitMode("by_request");
+        when(aiUserMemberCardService.currentUserCard(123L)).thenReturn(java.util.Optional.of(view));
+
+        Map<String, Object> result = service.selfPackage(123L, "123");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) result.get("data");
+
+        assertThat(result).containsEntry("success", true);
+        assertThat(data).containsEntry("group", "专业版套餐");
+        assertThat(data).containsEntry("quota", 8L * 500000L);
+        assertThat(data).containsEntry("used_quota", 2L * 500000L);
+        assertThat(data).containsEntry("total_quota", 10L * 500000L);
+    }
 
     @Test
     public void chatCompletions_whenProviderConfigMissing_throwsClearError() {
@@ -219,7 +325,7 @@ public class AiOpenApiServiceImplTest {
                 Mockito.eq(1),
                 Mockito.anyInt(),
                 Mockito.anyString(),
-                Mockito.eq(new BigDecimal("-0.0250")),
+                Mockito.argThat(amount -> amount != null && amount.compareTo(new BigDecimal("-0.0250")) == 0),
                 Mockito.argThat(notes ->
                         notes != null
                                 && notes.contains("AI调用扣费 model=gpt-4o-mini")

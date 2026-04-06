@@ -1,6 +1,7 @@
 package work.soho.ai.biz.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import work.soho.ai.biz.domain.AiModelInfo;
 import work.soho.ai.biz.domain.AiProviderConfig;
 import work.soho.ai.biz.domain.AiUserApiKey;
 import work.soho.ai.biz.dto.AiChatResponse;
+import work.soho.ai.biz.dto.AiUserMemberCardView;
 import work.soho.ai.biz.dto.AiUsageSummary;
 import work.soho.ai.biz.enums.AiApiCallLogEnums;
 import work.soho.ai.biz.request.AiChatRequest;
@@ -35,6 +37,7 @@ import work.soho.wallet.biz.service.WalletInfoService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -62,7 +65,64 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private final WalletInfoApiService walletInfoApiService;
     private final AiMemberRequestLimitService aiMemberRequestLimitService;
     private final AiUserMemberCardService aiUserMemberCardService;
+    private static final long PACKAGE_QUOTA_UNIT = 500000L;
 
+    /**
+     * 查询 OpenAI/Codex 兼容余额与用量信息。
+     */
+    @Override
+    public Map<String, Object> balance(String authorization) {
+        AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
+        aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+
+        List<Integer> walletTypeIds = resolveBalanceWalletTypeIds();
+        BigDecimal balance = sumWalletBalance(apiKey.getUserId(), walletTypeIds);
+        AiMemberRequestLimitService.UsageSnapshot usageSnapshot = resolveRequestUsage(apiKey.getUserId());
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("object", "balance");
+        response.put("is_active", true);
+        response.put("balance", balance);
+        response.put("unit", "USD");
+        response.put("wallet_type_ids", walletTypeIds);
+        response.put("request_usage", buildRequestUsage(usageSnapshot));
+        response.put("token_usage", buildTokenUsage(apiKey));
+        return response;
+    }
+
+    /**
+     * 查询当前用户套餐用量信息。
+     */
+    @Override
+    public Map<String, Object> selfPackage(Long userId, String newApiUserHeader) {
+        if (userId == null) {
+            return buildSelfPackageFailedResponse("未登录");
+        }
+        if (StringUtils.isNotBlank(newApiUserHeader)
+                && !String.valueOf(userId).equals(newApiUserHeader.trim())) {
+            return buildSelfPackageFailedResponse("用户信息不匹配");
+        }
+
+        AiUserMemberCardView currentCard = aiUserMemberCardService.currentUserCard(userId).orElse(null);
+        PackageQuotaSnapshot quotaSnapshot = resolvePackageQuotaSnapshot(currentCard);
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("group", currentCard == null || StringUtils.isBlank(currentCard.getName()) ? "默认套餐" : currentCard.getName());
+        data.put("quota", quotaSnapshot.remainingQuota);
+        data.put("used_quota", quotaSnapshot.usedQuota);
+        data.put("total_quota", quotaSnapshot.totalQuota);
+        data.put("quota_unit", "USD");
+        data.put("limit_mode", currentCard == null ? null : currentCard.getLimitMode());
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", true);
+        result.put("message", "success");
+        result.put("data", data);
+        return result;
+    }
+
+    /**
+     * 查询 OpenAI 兼容模型列表。
+     */
     @Override
     public Map<String, Object> models(String authorization) {
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
@@ -340,6 +400,208 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private long toEpochSeconds(LocalDateTime createdTime) {
         LocalDateTime value = createdTime == null ? LocalDateTime.now() : createdTime;
         return value.atZone(ZoneId.systemDefault()).toEpochSecond();
+    }
+
+    /**
+     * 解析套餐额度快照。
+     */
+    private PackageQuotaSnapshot resolvePackageQuotaSnapshot(AiUserMemberCardView currentCard) {
+        if (currentCard == null || !Boolean.TRUE.equals(currentCard.getUsageAvailable())) {
+            return PackageQuotaSnapshot.empty();
+        }
+        if (Boolean.TRUE.equals(currentCard.getRateLimit7dEnabled())) {
+            return PackageQuotaSnapshot.of(currentCard.getRateLimit7dUsed(), currentCard.getRateLimit7dRemaining());
+        }
+        if (Boolean.TRUE.equals(currentCard.getRateLimit5hEnabled())) {
+            return PackageQuotaSnapshot.of(currentCard.getRateLimit5hUsed(), currentCard.getRateLimit5hRemaining());
+        }
+        return PackageQuotaSnapshot.empty();
+    }
+
+    /**
+     * 构建套餐查询失败响应。
+     */
+    private Map<String, Object> buildSelfPackageFailedResponse(String message) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", false);
+        result.put("message", message);
+        return result;
+    }
+
+    /**
+     * 解析余额接口使用的钱包类型列表。
+     */
+    private List<Integer> resolveBalanceWalletTypeIds() {
+        List<AiProviderConfig> providerConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
+                .eq(AiProviderConfig::getStatus, 1)
+                .orderByAsc(AiProviderConfig::getId));
+        List<Integer> walletTypeIds = new ArrayList<>();
+        for (AiProviderConfig providerConfig : providerConfigs) {
+            Integer walletTypeId = pickInteger(parseConfig(providerConfig.getConfigJson()), "billingWalletTypeId", 1);
+            if (!walletTypeIds.contains(walletTypeId)) {
+                walletTypeIds.add(walletTypeId);
+            }
+        }
+        if (walletTypeIds.isEmpty()) {
+            walletTypeIds.add(1);
+        }
+        return walletTypeIds;
+    }
+
+    /**
+     * 汇总用户在 AI 钱包中的可用余额。
+     */
+    private BigDecimal sumWalletBalance(Long userId, List<Integer> walletTypeIds) {
+        BigDecimal totalBalance = BigDecimal.ZERO;
+        for (Integer walletTypeId : walletTypeIds) {
+            WalletInfo walletInfo = walletInfoService.getByUserIdAndType(userId, walletTypeId);
+            if (walletInfo == null || walletInfo.getAmount() == null) {
+                continue;
+            }
+            totalBalance = totalBalance.add(walletInfo.getAmount());
+        }
+        return totalBalance.setScale(4, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 查询当前用户的会员请求量使用情况。
+     */
+    private AiMemberRequestLimitService.UsageSnapshot resolveRequestUsage(Long userId) {
+        return aiUserMemberCardService.resolveActiveMemberCard(userId)
+                .map(card -> aiMemberRequestLimitService.queryUsage(userId, card))
+                .orElse(AiMemberRequestLimitService.UsageSnapshot.empty());
+    }
+
+    /**
+     * 构建请求量统计结构。
+     */
+    private Map<String, Object> buildRequestUsage(AiMemberRequestLimitService.UsageSnapshot usageSnapshot) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("usage_available", usageSnapshot.isUsageAvailable());
+        result.put("five_hour_enabled", usageSnapshot.isFiveHourEnabled());
+        result.put("five_hour_limit", usageSnapshot.getFiveHourLimit());
+        result.put("five_hour_used", usageSnapshot.getFiveHourUsed());
+        result.put("five_hour_remaining", usageSnapshot.getFiveHourRemaining());
+        result.put("five_hour_next_reset_millis", usageSnapshot.getFiveHourNextResetMillis());
+        result.put("seven_day_enabled", usageSnapshot.isSevenDayEnabled());
+        result.put("seven_day_limit", usageSnapshot.getSevenDayLimit());
+        result.put("seven_day_used", usageSnapshot.getSevenDayUsed());
+        result.put("seven_day_remaining", usageSnapshot.getSevenDayRemaining());
+        result.put("seven_day_next_reset_millis", usageSnapshot.getSevenDayNextResetMillis());
+        return result;
+    }
+
+    /**
+     * 构建 token 用量统计结构。
+     */
+    private Map<String, Object> buildTokenUsage(AiUserApiKey apiKey) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("today", queryTokenUsage(apiKey, LocalDate.now().atStartOfDay(), LocalDateTime.now()));
+        result.put("total", queryTokenUsage(apiKey, null, null));
+        return result;
+    }
+
+    /**
+     * 聚合 token 用量。
+     */
+    private Map<String, Object> queryTokenUsage(AiUserApiKey apiKey, LocalDateTime startTime, LocalDateTime endTime) {
+        QueryWrapper<AiApiCallLog> queryWrapper = new QueryWrapper<>();
+        queryWrapper.select(
+                "COUNT(*) AS request_count",
+                "SUM(prompt_tokens) AS prompt_tokens",
+                "SUM(completion_tokens) AS completion_tokens",
+                "SUM(total_tokens) AS total_tokens",
+                "SUM(amount) AS amount"
+        );
+        queryWrapper.eq("user_id", apiKey.getUserId());
+        queryWrapper.eq("api_key_id", apiKey.getId());
+        queryWrapper.eq("status", AiApiCallLogEnums.Status.SUCCESS.getId());
+        if (startTime != null && endTime != null) {
+            queryWrapper.between("created_time", startTime, endTime);
+        }
+
+        Map<String, Object> row = aiApiCallLogService.getMap(queryWrapper);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("request_count", longValue(row, "request_count"));
+        result.put("prompt_tokens", longValue(row, "prompt_tokens"));
+        result.put("completion_tokens", longValue(row, "completion_tokens"));
+        result.put("total_tokens", longValue(row, "total_tokens"));
+        result.put("amount", decimalValue(row, "amount"));
+        return result;
+    }
+
+    /**
+     * 读取长整型聚合值。
+     */
+    private long longValue(Map<String, Object> row, String key) {
+        if (row == null) {
+            return 0L;
+        }
+        Object value = row.get(key);
+        return value instanceof Number ? ((Number) value).longValue() : 0L;
+    }
+
+    /**
+     * 读取金额聚合值。
+     */
+    private BigDecimal decimalValue(Map<String, Object> row, String key) {
+        if (row == null || row.get(key) == null) {
+            return BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
+        }
+        Object value = row.get(key);
+        if (value instanceof BigDecimal) {
+            return ((BigDecimal) value).setScale(4, RoundingMode.HALF_UP);
+        }
+        return new BigDecimal(String.valueOf(value)).setScale(4, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 套餐额度快照。
+     */
+    private static class PackageQuotaSnapshot {
+        /**
+         * 已用额度。
+         */
+        private final long usedQuota;
+
+        /**
+         * 剩余额度。
+         */
+        private final long remainingQuota;
+
+        /**
+         * 总额度。
+         */
+        private final long totalQuota;
+
+        /**
+         * 构造套餐额度快照。
+         */
+        private PackageQuotaSnapshot(long usedQuota, long remainingQuota, long totalQuota) {
+            this.usedQuota = usedQuota;
+            this.remainingQuota = remainingQuota;
+            this.totalQuota = totalQuota;
+        }
+
+        /**
+         * 创建空快照。
+         */
+        private static PackageQuotaSnapshot empty() {
+            return new PackageQuotaSnapshot(0L, 0L, 0L);
+        }
+
+        /**
+         * 基于请求量创建快照。
+         */
+        private static PackageQuotaSnapshot of(Integer used, Integer remaining) {
+            long usedValue = Math.max(used == null ? 0 : used, 0);
+            long remainingValue = Math.max(remaining == null ? 0 : remaining, 0);
+            return new PackageQuotaSnapshot(
+                    usedValue * PACKAGE_QUOTA_UNIT,
+                    remainingValue * PACKAGE_QUOTA_UNIT,
+                    (usedValue + remainingValue) * PACKAGE_QUOTA_UNIT
+            );
+        }
     }
 
     private AiProviderConfig requireProviderConfig(String model) {
