@@ -51,6 +51,7 @@ public class AiModelInfoController {
         lqw.like(StringUtils.isNotBlank(aiModelInfo.getModelName()), AiModelInfo::getModelName, aiModelInfo.getModelName());
         lqw.like(StringUtils.isNotBlank(aiModelInfo.getModelDesc()), AiModelInfo::getModelDesc, aiModelInfo.getModelDesc());
         lqw.like(StringUtils.isNotBlank(aiModelInfo.getModelDetail()), AiModelInfo::getModelDetail, aiModelInfo.getModelDetail());
+        lqw.eq(StringUtils.isNotBlank(aiModelInfo.getModelTag()), AiModelInfo::getModelTag, aiModelInfo.getModelTag());
         lqw.eq(aiModelInfo.getStatus() != null, AiModelInfo::getStatus, aiModelInfo.getStatus());
         lqw.eq(aiModelInfo.getPromptPrice() != null, AiModelInfo::getPromptPrice, aiModelInfo.getPromptPrice());
         lqw.eq(aiModelInfo.getCompletionPrice() != null, AiModelInfo::getCompletionPrice, aiModelInfo.getCompletionPrice());
@@ -113,6 +114,7 @@ public class AiModelInfoController {
         lqw.like(StringUtils.isNotBlank(aiModelInfo.getModelName()), AiModelInfo::getModelName, aiModelInfo.getModelName());
         lqw.like(StringUtils.isNotBlank(aiModelInfo.getModelDesc()), AiModelInfo::getModelDesc, aiModelInfo.getModelDesc());
         lqw.like(StringUtils.isNotBlank(aiModelInfo.getModelDetail()), AiModelInfo::getModelDetail, aiModelInfo.getModelDetail());
+        lqw.eq(StringUtils.isNotBlank(aiModelInfo.getModelTag()), AiModelInfo::getModelTag, aiModelInfo.getModelTag());
         lqw.eq(aiModelInfo.getStatus() != null, AiModelInfo::getStatus, aiModelInfo.getStatus());
         lqw.eq(aiModelInfo.getPromptPrice() != null, AiModelInfo::getPromptPrice, aiModelInfo.getPromptPrice());
         lqw.eq(aiModelInfo.getCompletionPrice() != null, AiModelInfo::getCompletionPrice, aiModelInfo.getCompletionPrice());

@@ -41,6 +41,11 @@ public class AiModelInfo implements Serializable {
     @TableField(value = "model_detail")
     private String modelDetail;
 
+    @ExcelProperty("模型标记")
+    @ApiModelProperty(value = "模型标记: chat/images/audio/embeddings/fine-tuning")
+    @TableField(value = "model_tag")
+    private String modelTag;
+
     @ExcelProperty("模型状态")
     @ApiModelProperty(value = "模型状态")
     @TableField(value = "status")

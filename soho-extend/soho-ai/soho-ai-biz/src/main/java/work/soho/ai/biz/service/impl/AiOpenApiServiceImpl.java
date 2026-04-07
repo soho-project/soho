@@ -4,8 +4,20 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import work.soho.ai.biz.domain.AiApiCallLog;
 import work.soho.ai.biz.domain.AiModelInfo;
@@ -37,6 +49,8 @@ import work.soho.wallet.biz.service.WalletInfoService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.LocalDateTime;
@@ -47,6 +61,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -318,6 +333,51 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 });
     }
 
+    /**
+     * 转发 OpenAI 兼容图片生成请求。
+     */
+    @Override
+    public Map<String, Object> imageGenerations(String authorization, Map<String, Object> request) {
+        return proxyFixedPriceJsonRequest(authorization, request, "model", "imagesPath",
+                "/v1/images/generations", "/ai/guest/openai/v1/images/generations");
+    }
+
+    /**
+     * 转发 OpenAI 兼容向量请求。
+     */
+    @Override
+    public Map<String, Object> embeddings(String authorization, Map<String, Object> request) {
+        return proxyEmbeddingsRequest(authorization, request, "model", "embeddingsPath",
+                "/v1/embeddings", "/ai/guest/openai/v1/embeddings");
+    }
+
+    /**
+     * 转发 OpenAI 兼容音频转写请求。
+     */
+    @Override
+    public Object audioTranscriptions(String authorization, Map<String, String> request, MultipartFile file) {
+        return proxyFixedPriceMultipartRequest(authorization, request, file, "model", "audioTranscriptionsPath",
+                "/v1/audio/transcriptions", "/ai/guest/openai/v1/audio/transcriptions");
+    }
+
+    /**
+     * 转发 OpenAI 兼容音频翻译请求。
+     */
+    @Override
+    public Object audioTranslations(String authorization, Map<String, String> request, MultipartFile file) {
+        return proxyFixedPriceMultipartRequest(authorization, request, file, "model", "audioTranslationsPath",
+                "/v1/audio/translations", "/ai/guest/openai/v1/audio/translations");
+    }
+
+    /**
+     * 转发 OpenAI 兼容语音合成请求。
+     */
+    @Override
+    public ResponseEntity<byte[]> audioSpeech(String authorization, Map<String, Object> request) {
+        return proxyFixedPriceBinaryRequest(authorization, request, "model", "audioSpeechPath",
+                "/v1/audio/speech", "/ai/guest/openai/v1/audio/speech");
+    }
+
     private Map<String, Object> responsesByChatCompatibility(String authorization, OpenAiResponsesRequest request) {
         OpenAiChatCompletionRequest chatRequest = convertResponsesRequest(request);
         Map<String, Object> chatResponse = chatCompletions(authorization, chatRequest);
@@ -375,6 +435,401 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         });
 
         return Flux.concat(head, body, tail);
+    }
+
+    /**
+     * 统一代理 JSON 类型的 OpenAI 兼容请求。
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> proxyJsonRequest(String authorization, Map<String, Object> request, String modelField,
+                                                 String pathConfigKey, String defaultPath, String endpoint) {
+        String model = request == null ? null : stringify(request.get(modelField));
+        Assert.hasText(model, "model不能为空");
+
+        AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
+        AiProviderConfig providerConfig = requireProviderConfig(model);
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
+        String upstreamApiKey = pickApiKey(providerConfig, config);
+        Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
+        String requestId = IDGeneratorUtils.uuid32();
+        long startAt = System.currentTimeMillis();
+
+        try {
+            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,
+                    new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+
+            aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveSuccessLog(requestId, apiKey, providerConfig, model, emptyUsage(), BigDecimal.ZERO, null,
+                    endpoint, totalMs, null);
+            return parseJsonMap(response.getBody());
+        } catch (RuntimeException ex) {
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null);
+            throw ex;
+        }
+    }
+
+    /**
+     * 处理 embeddings 请求并按 usage 扣费。
+     */
+    private Map<String, Object> proxyEmbeddingsRequest(String authorization, Map<String, Object> request, String modelField,
+                                                       String pathConfigKey, String defaultPath, String endpoint) {
+        String model = request == null ? null : stringify(request.get(modelField));
+        Assert.hasText(model, "model不能为空");
+
+        AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
+        AiProviderConfig providerConfig = requireProviderConfig(model);
+        BillingPlan billingPlan = buildEmbeddingBillingPlan(apiKey, providerConfig, model, request);
+        preCheckBalance(billingPlan);
+
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
+        String upstreamApiKey = pickApiKey(providerConfig, config);
+        Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
+        String requestId = IDGeneratorUtils.uuid32();
+        long startAt = System.currentTimeMillis();
+
+        try {
+            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,
+                    new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+
+            Map<String, Object> result = parseJsonMap(response.getBody());
+            AiUsageSummary usage = extractEmbeddingUsage(result, request);
+            BigDecimal amount = calculateAmount(billingPlan, usage, model);
+            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null);
+            return result;
+        } catch (RuntimeException ex) {
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null);
+            throw ex;
+        }
+    }
+
+    /**
+     * 处理固定单价的 JSON 请求。
+     */
+    private Map<String, Object> proxyFixedPriceJsonRequest(String authorization, Map<String, Object> request, String modelField,
+                                                           String pathConfigKey, String defaultPath, String endpoint) {
+        String model = request == null ? null : stringify(request.get(modelField));
+        Assert.hasText(model, "model不能为空");
+
+        AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
+        AiProviderConfig providerConfig = requireProviderConfig(model);
+        BillingPlan billingPlan = buildFixedPriceBillingPlan(apiKey, providerConfig, model);
+        preCheckBalance(billingPlan);
+
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
+        String upstreamApiKey = pickApiKey(providerConfig, config);
+        Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
+        String requestId = IDGeneratorUtils.uuid32();
+        long startAt = System.currentTimeMillis();
+
+        try {
+            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,
+                    new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+
+            AiUsageSummary usage = emptyUsage();
+            BigDecimal amount = calculateAmount(billingPlan, usage, model);
+            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null);
+            return parseJsonMap(response.getBody());
+        } catch (RuntimeException ex) {
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null);
+            throw ex;
+        }
+    }
+
+    /**
+     * 统一代理 multipart/form-data 类型的 OpenAI 兼容请求。
+     */
+    private Object proxyMultipartRequest(String authorization, Map<String, String> request, MultipartFile file,
+                                         String modelField, String pathConfigKey, String defaultPath, String endpoint) {
+        Assert.notNull(file, "file不能为空");
+        String model = request == null ? null : request.get(modelField);
+        Assert.hasText(model, "model不能为空");
+
+        AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
+        AiProviderConfig providerConfig = requireProviderConfig(model);
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
+        String upstreamApiKey = pickApiKey(providerConfig, config);
+        Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
+        String requestId = IDGeneratorUtils.uuid32();
+        long startAt = System.currentTimeMillis();
+
+        try {
+            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(buildMultipartBody(request, file), headers);
+            ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.POST, entity, byte[].class);
+
+            aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveSuccessLog(requestId, apiKey, providerConfig, model, emptyUsage(), BigDecimal.ZERO, null,
+                    endpoint, totalMs, null);
+            return parseResponseBody(response);
+        } catch (RuntimeException ex) {
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null);
+            throw ex;
+        }
+    }
+
+    /**
+     * 处理固定单价的 multipart 请求。
+     */
+    private Object proxyFixedPriceMultipartRequest(String authorization, Map<String, String> request, MultipartFile file,
+                                                   String modelField, String pathConfigKey, String defaultPath, String endpoint) {
+        Assert.notNull(file, "file不能为空");
+        String model = request == null ? null : request.get(modelField);
+        Assert.hasText(model, "model不能为空");
+
+        AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
+        AiProviderConfig providerConfig = requireProviderConfig(model);
+        BillingPlan billingPlan = buildFixedPriceBillingPlan(apiKey, providerConfig, model);
+        preCheckBalance(billingPlan);
+
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
+        String upstreamApiKey = pickApiKey(providerConfig, config);
+        Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
+        String requestId = IDGeneratorUtils.uuid32();
+        long startAt = System.currentTimeMillis();
+
+        try {
+            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(buildMultipartBody(request, file), headers);
+            ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.POST, entity, byte[].class);
+
+            AiUsageSummary usage = emptyUsage();
+            BigDecimal amount = calculateAmount(billingPlan, usage, model);
+            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null);
+            return parseResponseBody(response);
+        } catch (RuntimeException ex) {
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null);
+            throw ex;
+        }
+    }
+
+    /**
+     * 统一代理二进制响应的 OpenAI 兼容请求。
+     */
+    private ResponseEntity<byte[]> proxyBinaryRequest(String authorization, Map<String, Object> request, String modelField,
+                                                      String pathConfigKey, String defaultPath, String endpoint) {
+        String model = request == null ? null : stringify(request.get(modelField));
+        Assert.hasText(model, "model不能为空");
+
+        AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
+        AiProviderConfig providerConfig = requireProviderConfig(model);
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
+        String upstreamApiKey = pickApiKey(providerConfig, config);
+        Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
+        String requestId = IDGeneratorUtils.uuid32();
+        long startAt = System.currentTimeMillis();
+
+        try {
+            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.POST,
+                    new HttpEntity<>(request == null ? new HashMap<>() : request, headers), byte[].class);
+
+            aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveSuccessLog(requestId, apiKey, providerConfig, model, emptyUsage(), BigDecimal.ZERO, null,
+                    endpoint, totalMs, null);
+            return ResponseEntity.status(response.getStatusCode())
+                    .headers(filterBinaryResponseHeaders(response.getHeaders()))
+                    .body(response.getBody());
+        } catch (RuntimeException ex) {
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null);
+            throw ex;
+        }
+    }
+
+    /**
+     * 处理固定单价的二进制请求。
+     */
+    private ResponseEntity<byte[]> proxyFixedPriceBinaryRequest(String authorization, Map<String, Object> request, String modelField,
+                                                                String pathConfigKey, String defaultPath, String endpoint) {
+        String model = request == null ? null : stringify(request.get(modelField));
+        Assert.hasText(model, "model不能为空");
+
+        AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
+        AiProviderConfig providerConfig = requireProviderConfig(model);
+        BillingPlan billingPlan = buildFixedPriceBillingPlan(apiKey, providerConfig, model);
+        preCheckBalance(billingPlan);
+
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
+        String upstreamApiKey = pickApiKey(providerConfig, config);
+        Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
+        String requestId = IDGeneratorUtils.uuid32();
+        long startAt = System.currentTimeMillis();
+
+        try {
+            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.POST,
+                    new HttpEntity<>(request == null ? new HashMap<>() : request, headers), byte[].class);
+
+            AiUsageSummary usage = emptyUsage();
+            BigDecimal amount = calculateAmount(billingPlan, usage, model);
+            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null);
+            return ResponseEntity.status(response.getStatusCode())
+                    .headers(filterBinaryResponseHeaders(response.getHeaders()))
+                    .body(response.getBody());
+        } catch (RuntimeException ex) {
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null);
+            throw ex;
+        }
+    }
+
+    /**
+     * 构建透传请求的认证头。
+     */
+    private HttpHeaders buildAuthorizationHeaders(String apiKey) {
+        HttpHeaders headers = new HttpHeaders();
+        if (StringUtils.isNotBlank(apiKey)) {
+            headers.setBearerAuth(apiKey);
+        }
+        return headers;
+    }
+
+    /**
+     * 构建 multipart 请求体，保留原始文件名。
+     */
+    private MultiValueMap<String, Object> buildMultipartBody(Map<String, String> request, MultipartFile file) {
+        LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        if (request != null) {
+            request.forEach((key, value) -> {
+                if (StringUtils.isNotBlank(value)) {
+                    body.add(key, value);
+                }
+            });
+        }
+        try {
+            body.add("file", new NamedByteArrayResource(file.getBytes(), file.getOriginalFilename()));
+            return body;
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("读取上传文件失败", ex);
+        }
+    }
+
+    /**
+     * 解析上游响应体，兼容 JSON 与纯文本格式。
+     */
+    private Object parseResponseBody(ResponseEntity<byte[]> response) {
+        byte[] body = response.getBody();
+        if (body == null || body.length == 0) {
+            return new HashMap<>();
+        }
+        MediaType contentType = response.getHeaders().getContentType();
+        String content = new String(body);
+        if (contentType != null && MediaType.APPLICATION_JSON.includes(contentType)) {
+            return parseJsonMap(content);
+        }
+        if (looksLikeJson(content)) {
+            return parseJsonMap(content);
+        }
+        return content;
+    }
+
+    /**
+     * 过滤二进制透传时需要保留的响应头。
+     */
+    private HttpHeaders filterBinaryResponseHeaders(HttpHeaders source) {
+        HttpHeaders headers = new HttpHeaders();
+        MediaType contentType = source.getContentType();
+        if (contentType != null) {
+            headers.setContentType(contentType);
+        }
+        long contentLength = source.getContentLength();
+        if (contentLength >= 0) {
+            headers.setContentLength(contentLength);
+        }
+        String disposition = source.getFirst(HttpHeaders.CONTENT_DISPOSITION);
+        if (StringUtils.isNotBlank(disposition)) {
+            headers.set(HttpHeaders.CONTENT_DISPOSITION, disposition);
+        }
+        return headers;
+    }
+
+    /**
+     * 解析 JSON 对象字符串。
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseJsonMap(String body) {
+        if (StringUtils.isBlank(body)) {
+            return new HashMap<>();
+        }
+        Map<String, Object> result = JacksonUtils.toBean(body, Map.class);
+        return result == null ? new HashMap<>() : result;
+    }
+
+    /**
+     * 构建空 token 用量，用于暂未计费的透传接口。
+     */
+    private AiUsageSummary emptyUsage() {
+        AiUsageSummary usage = new AiUsageSummary();
+        usage.setPromptTokens(0);
+        usage.setCompletionTokens(0);
+        usage.setTotalTokens(0);
+        return usage;
+    }
+
+    /**
+     * 判断响应体是否可能为 JSON。
+     */
+    private boolean looksLikeJson(String content) {
+        if (StringUtils.isBlank(content)) {
+            return false;
+        }
+        String value = content.trim();
+        return value.startsWith("{") || value.startsWith("[");
+    }
+
+    /**
+     * 统一转字符串，便于读取动态请求字段。
+     */
+    private String stringify(Object value) {
+        return value == null ? null : String.valueOf(value);
     }
 
     private String extractBearerToken(String authorization) {
@@ -998,6 +1453,63 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         return billingPlan;
     }
 
+    /**
+     * 构建 embeddings 计费方案，按输入 token 计费。
+     */
+    private BillingPlan buildEmbeddingBillingPlan(AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
+                                                  Map<String, Object> request) {
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model);
+        BillingPlan billingPlan = new BillingPlan();
+        billingPlan.userId = apiKey.getUserId();
+        billingPlan.apiKeyId = apiKey.getId();
+        billingPlan.providerConfigId = providerConfig.getId();
+        billingPlan.billingEnabled = modelPricing.hasSplitPrice() || pickBoolean(config, "billingEnabled", false);
+        billingPlan.walletTypeId = pickInteger(config, "billingWalletTypeId", 1);
+        billingPlan.promptPricePer1kTokens = pickBigDecimal(config, "promptPricePer1kTokens", BigDecimal.ZERO);
+        billingPlan.completionPricePer1kTokens = BigDecimal.ZERO;
+        billingPlan.estimatedModel = model;
+        billingPlan.modelPricing = modelPricing;
+        billingPlan.memberLimitDecision = aiMemberRequestLimitService.evaluate(
+                billingPlan.userId,
+                aiUserMemberCardService.resolveActiveMemberCard(billingPlan.userId)
+        );
+        if (billingPlan.memberLimitDecision.isMemberByRequest() && !billingPlan.memberLimitDecision.isOverLimit()) {
+            billingPlan.billingEnabled = false;
+        }
+        billingPlan.estimatedUsage = estimateEmbeddingUsage(request);
+        return billingPlan;
+    }
+
+    /**
+     * 构建固定单价计费方案，按次扣费。
+     */
+    private BillingPlan buildFixedPriceBillingPlan(AiUserApiKey apiKey, AiProviderConfig providerConfig, String model) {
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model);
+        BillingPlan billingPlan = new BillingPlan();
+        billingPlan.userId = apiKey.getUserId();
+        billingPlan.apiKeyId = apiKey.getId();
+        billingPlan.providerConfigId = providerConfig.getId();
+        billingPlan.billingEnabled = modelPricing.hasFixedRequestPrice() || pickBoolean(config, "billingEnabled", false);
+        billingPlan.walletTypeId = pickInteger(config, "billingWalletTypeId", 1);
+        billingPlan.promptPricePer1kTokens = BigDecimal.ZERO;
+        billingPlan.completionPricePer1kTokens = BigDecimal.ZERO;
+        billingPlan.fixedRequestPrice = modelPricing.fixedRequestPrice();
+        billingPlan.fixedRequestBilling = billingPlan.fixedRequestPrice.compareTo(BigDecimal.ZERO) > 0;
+        billingPlan.estimatedModel = model;
+        billingPlan.modelPricing = modelPricing;
+        billingPlan.memberLimitDecision = aiMemberRequestLimitService.evaluate(
+                billingPlan.userId,
+                aiUserMemberCardService.resolveActiveMemberCard(billingPlan.userId)
+        );
+        if (billingPlan.memberLimitDecision.isMemberByRequest() && !billingPlan.memberLimitDecision.isOverLimit()) {
+            billingPlan.billingEnabled = false;
+        }
+        billingPlan.estimatedUsage = emptyUsage();
+        return billingPlan;
+    }
+
     private void preCheckBalance(BillingPlan billingPlan) {
         // 免费请求（billingEnabled=false）直接跳过余额检查
         if (!billingPlan.billingEnabled) {
@@ -1042,6 +1554,11 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         if (!billingPlan.billingEnabled || usage == null) {
             return BigDecimal.ZERO;
         }
+        if (billingPlan.fixedRequestBilling) {
+            return billingPlan.fixedRequestPrice == null
+                    ? BigDecimal.ZERO
+                    : billingPlan.fixedRequestPrice.setScale(6, RoundingMode.HALF_UP);
+        }
         ModelPricing modelPricing = billingPlan.modelPricing;
         if (modelPricing == null || !modelPricing.matches(model)) {
             modelPricing = resolveModelPricing(billingPlan.providerConfigId, model);
@@ -1085,6 +1602,73 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             }
         }
         return ModelPricing.empty();
+    }
+
+    /**
+     * 估算 embeddings 请求的 token。
+     */
+    private AiUsageSummary estimateEmbeddingUsage(Map<String, Object> request) {
+        AiUsageSummary usage = new AiUsageSummary();
+        if (request == null) {
+            return usage;
+        }
+        int promptTokens = estimateTokensByObject(request.get("input"));
+        usage.setPromptTokens(promptTokens);
+        usage.setCompletionTokens(0);
+        usage.setTotalTokens(promptTokens);
+        return usage;
+    }
+
+    /**
+     * 从 embeddings 响应中提取 usage。
+     */
+    @SuppressWarnings("unchecked")
+    private AiUsageSummary extractEmbeddingUsage(Map<String, Object> response, Map<String, Object> request) {
+        AiUsageSummary usage = new AiUsageSummary();
+        if (response != null && response.get("usage") instanceof Map) {
+            Map<String, Object> usageMap = (Map<String, Object>) response.get("usage");
+            usage.setPromptTokens(toNumber(usageMap.get("prompt_tokens")).intValue());
+            usage.setCompletionTokens(0);
+            int totalTokens = toNumber(usageMap.get("total_tokens")).intValue();
+            usage.setTotalTokens(totalTokens > 0 ? totalTokens : usage.getPromptTokens());
+        }
+        if (usage.getTotalTokens() == 0) {
+            return estimateEmbeddingUsage(request);
+        }
+        return usage;
+    }
+
+    /**
+     * 估算任意输入对象的 token 数。
+     */
+    private int estimateTokensByObject(Object value) {
+        if (value == null) {
+            return 0;
+        }
+        if (value instanceof String) {
+            return estimateTokensByChars(((String) value).length());
+        }
+        if (value instanceof List) {
+            int total = 0;
+            for (Object item : (List<?>) value) {
+                total += estimateTokensByObject(item);
+            }
+            return total;
+        }
+        if (value instanceof Map) {
+            return estimateTokensByChars(JacksonUtils.toJson(value).length());
+        }
+        return estimateTokensByChars(String.valueOf(value).length());
+    }
+
+    /**
+     * 按字符数近似估算 token。
+     */
+    private int estimateTokensByChars(int chars) {
+        if (chars <= 0) {
+            return 0;
+        }
+        return Math.max(1, (chars + 3) / 4);
     }
 
     private AiUsageSummary usageFromResponse(AiChatRequest request, AiChatResponse response) {
@@ -1428,6 +2012,38 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         return map == null ? new HashMap<>() : map;
     }
 
+    /**
+     * 读取上游 API Key。
+     */
+    private String pickApiKey(AiProviderConfig providerConfig, Map<String, Object> config) {
+        String apiKey = pickString(config, "apiKey", providerConfig.getApiKeyRef());
+        return apiKey == null ? "" : apiKey;
+    }
+
+    /**
+     * 读取上游基础地址。
+     */
+    private String pickBaseUrl(AiProviderConfig providerConfig, Map<String, Object> config) {
+        String baseUrl = pickString(config, "baseUrl", providerConfig.getBaseUrl());
+        return baseUrl == null ? "" : baseUrl;
+    }
+
+    /**
+     * 拼接基础地址与路径。
+     */
+    private String joinUrl(String baseUrl, String path) {
+        if (StringUtils.isBlank(baseUrl)) {
+            return path;
+        }
+        if (baseUrl.endsWith("/") && path.startsWith("/")) {
+            return baseUrl.substring(0, baseUrl.length() - 1) + path;
+        }
+        if (!baseUrl.endsWith("/") && !path.startsWith("/")) {
+            return baseUrl + "/" + path;
+        }
+        return baseUrl + path;
+    }
+
     private Integer pickInteger(Map<String, Object> config, String key, Integer fallback) {
         Object value = config.get(key);
         if (value instanceof Number) {
@@ -1464,12 +2080,76 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         return fallback;
     }
 
+    /**
+     * 读取字符串配置。
+     */
+    private String pickString(Map<String, Object> config, String key, String fallback) {
+        Object value = config.get(key);
+        return value == null ? fallback : String.valueOf(value);
+    }
+
+    /**
+     * 构建支持代理的 RestTemplate。
+     */
+    private RestTemplate buildRestTemplate(Integer timeoutMs, Proxy proxy) {
+        int timeout = timeoutMs == null || timeoutMs <= 0 ? 60000 : timeoutMs;
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(timeout);
+        factory.setReadTimeout(timeout);
+        if (proxy != null) {
+            factory.setProxy(proxy);
+        }
+        return new RestTemplate(factory);
+    }
+
+    /**
+     * 构建上游代理配置。
+     */
+    private Proxy buildProxy(Map<String, Object> config) {
+        String proxyType = pickString(config, "proxyType", "");
+        String proxyHost = pickString(config, "proxyHost", "");
+        Integer proxyPort = pickInteger(config, "proxyPort", null);
+        if (StringUtils.isBlank(proxyType) || StringUtils.isBlank(proxyHost) || proxyPort == null || proxyPort <= 0) {
+            return null;
+        }
+        Proxy.Type type;
+        switch (proxyType.toLowerCase(Locale.ROOT)) {
+            case "http":
+            case "https":
+                type = Proxy.Type.HTTP;
+                break;
+            case "socks":
+            case "socks5":
+                type = Proxy.Type.SOCKS;
+                break;
+            default:
+                throw new IllegalArgumentException("unsupported proxyType: " + proxyType);
+        }
+        return new Proxy(type, new InetSocketAddress(proxyHost, proxyPort));
+    }
+
+    /**
+     * 尽量提取上游错误正文，便于排查问题。
+     */
+    private String extractUpstreamErrorMessage(Throwable ex) {
+        if (ex instanceof HttpStatusCodeException) {
+            String responseBody = ((HttpStatusCodeException) ex).getResponseBodyAsString();
+            if (StringUtils.isNotBlank(responseBody)) {
+                return responseBody;
+            }
+        }
+        String message = ex == null ? null : ex.getMessage();
+        return StringUtils.isBlank(message) ? "unknown upstream error" : message;
+    }
+
     private static final class BillingPlan {
         private Long userId;
         private Long apiKeyId;
         private Long providerConfigId;
         private boolean billingEnabled;
+        private boolean fixedRequestBilling;
         private Integer walletTypeId;
+        private BigDecimal fixedRequestPrice;
         private BigDecimal promptPricePer1kTokens;
         private BigDecimal completionPricePer1kTokens;
         private String estimatedModel;
@@ -1502,11 +2182,42 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                     || completionPricePer1kTokens.compareTo(BigDecimal.ZERO) > 0;
         }
 
+        private boolean hasFixedRequestPrice() {
+            return fixedRequestPrice().compareTo(BigDecimal.ZERO) > 0;
+        }
+
+        private BigDecimal fixedRequestPrice() {
+            if (promptPricePer1kTokens.compareTo(BigDecimal.ZERO) > 0) {
+                return promptPricePer1kTokens;
+            }
+            if (completionPricePer1kTokens.compareTo(BigDecimal.ZERO) > 0) {
+                return completionPricePer1kTokens;
+            }
+            return BigDecimal.ZERO;
+        }
+
         private boolean matches(String model) {
             if (StringUtils.isBlank(modelName) || StringUtils.isBlank(model)) {
                 return false;
             }
             return modelName.equals(model);
+        }
+    }
+
+    /**
+     * 携带原始文件名的二进制资源。
+     */
+    private static final class NamedByteArrayResource extends ByteArrayResource {
+        private final String filename;
+
+        private NamedByteArrayResource(byte[] byteArray, String filename) {
+            super(byteArray);
+            this.filename = filename;
+        }
+
+        @Override
+        public String getFilename() {
+            return StringUtils.isBlank(filename) ? "upload.bin" : filename;
         }
     }
 }

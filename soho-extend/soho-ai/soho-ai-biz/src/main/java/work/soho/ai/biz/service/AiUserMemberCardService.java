@@ -8,13 +8,30 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AiUserMemberCardService extends IService<AiUserMemberCard> {
+    /**
+     * 解析当前生效中的会员卡。
+     */
     Optional<ActiveMemberCard> resolveActiveMemberCard(Long userId);
 
+    /**
+     * 查询用户会员卡视图列表。
+     */
     List<AiUserMemberCardView> listUserCards(Long userId);
 
+    /**
+     * 查询当前优先使用的会员卡视图。
+     */
     Optional<AiUserMemberCardView> currentUserCard(Long userId);
 
+    /**
+     * 切换用户当前选中的会员卡。
+     */
     boolean selectUserCard(Long userId, Long userCardId);
+
+    /**
+     * 为管理端用户会员卡列表填充用量信息。
+     */
+    List<AiUserMemberCard> fillUsageInfo(List<AiUserMemberCard> userCards);
 
     final class ActiveMemberCard {
         private final Long userCardId;

@@ -1,6 +1,8 @@
 package work.soho.ai.biz.service;
 
 import reactor.core.publisher.Flux;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 import work.soho.ai.biz.request.OpenAiChatCompletionRequest;
 import work.soho.ai.biz.request.OpenAiResponsesRequest;
 
@@ -67,4 +69,51 @@ public interface AiOpenApiService {
      * @return SSE 数据流
      */
     Flux<String> streamResponses(String authorization, OpenAiResponsesRequest request);
+
+    /**
+     * 发起 images generations 请求。
+     *
+     * @param authorization Bearer Token
+     * @param request 请求体
+     * @return OpenAI 兼容响应
+     */
+    Map<String, Object> imageGenerations(String authorization, Map<String, Object> request);
+
+    /**
+     * 发起 embeddings 请求。
+     *
+     * @param authorization Bearer Token
+     * @param request 请求体
+     * @return OpenAI 兼容响应
+     */
+    Map<String, Object> embeddings(String authorization, Map<String, Object> request);
+
+    /**
+     * 发起 audio transcriptions 请求。
+     *
+     * @param authorization Bearer Token
+     * @param request 请求参数
+     * @param file 音频文件
+     * @return OpenAI 兼容响应
+     */
+    Object audioTranscriptions(String authorization, Map<String, String> request, MultipartFile file);
+
+    /**
+     * 发起 audio translations 请求。
+     *
+     * @param authorization Bearer Token
+     * @param request 请求参数
+     * @param file 音频文件
+     * @return OpenAI 兼容响应
+     */
+    Object audioTranslations(String authorization, Map<String, String> request, MultipartFile file);
+
+    /**
+     * 发起 audio speech 请求。
+     *
+     * @param authorization Bearer Token
+     * @param request 请求体
+     * @return 音频二进制响应
+     */
+    ResponseEntity<byte[]> audioSpeech(String authorization, Map<String, Object> request);
 }

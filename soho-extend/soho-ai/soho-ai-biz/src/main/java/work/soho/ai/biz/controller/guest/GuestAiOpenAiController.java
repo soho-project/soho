@@ -4,9 +4,11 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.web.multipart.MultipartFile;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import work.soho.ai.biz.request.OpenAiChatCompletionRequest;
@@ -117,6 +119,88 @@ public class GuestAiOpenAiController {
         }
     }
 
+    /**
+     * 处理 OpenAI 兼容 images generations 请求。
+     */
+    @PostMapping(value = "/images/generations")
+    @ApiOperation("OpenAI 兼容 images generations")
+    public Object imageGenerations(@RequestHeader("Authorization") String authorization,
+                                   @RequestBody Map<String, Object> request) {
+        log.info("OpenAI 兼容 images generations 请求摘要: {}", JacksonUtils.toJson(buildSimpleLogSummary(request)));
+        try {
+            return aiOpenApiService.imageGenerations(authorization, request);
+        } catch (RuntimeException ex) {
+            log.error("OpenAI 兼容 images generations 失败, msg={}", ex.getMessage(), ex);
+            return buildOpenAiErrorResponse();
+        }
+    }
+
+    /**
+     * 处理 OpenAI 兼容 embeddings 请求。
+     */
+    @PostMapping(value = "/embeddings")
+    @ApiOperation("OpenAI 兼容 embeddings")
+    public Object embeddings(@RequestHeader("Authorization") String authorization,
+                             @RequestBody Map<String, Object> request) {
+        log.info("OpenAI 兼容 embeddings 请求摘要: {}", JacksonUtils.toJson(buildSimpleLogSummary(request)));
+        try {
+            return aiOpenApiService.embeddings(authorization, request);
+        } catch (RuntimeException ex) {
+            log.error("OpenAI 兼容 embeddings 失败, msg={}", ex.getMessage(), ex);
+            return buildOpenAiErrorResponse();
+        }
+    }
+
+    /**
+     * 处理 OpenAI 兼容 audio transcriptions 请求。
+     */
+    @PostMapping(value = "/audio/transcriptions")
+    @ApiOperation("OpenAI 兼容 audio transcriptions")
+    public Object audioTranscriptions(@RequestHeader("Authorization") String authorization,
+                                      @RequestParam Map<String, String> request,
+                                      @RequestPart("file") MultipartFile file) {
+        log.info("OpenAI 兼容 audio transcriptions 请求摘要: {}", JacksonUtils.toJson(buildMultipartLogSummary(request, file)));
+        try {
+            return aiOpenApiService.audioTranscriptions(authorization, request, file);
+        } catch (RuntimeException ex) {
+            log.error("OpenAI 兼容 audio transcriptions 失败, msg={}", ex.getMessage(), ex);
+            return buildOpenAiErrorResponse();
+        }
+    }
+
+    /**
+     * 处理 OpenAI 兼容 audio translations 请求。
+     */
+    @PostMapping(value = "/audio/translations")
+    @ApiOperation("OpenAI 兼容 audio translations")
+    public Object audioTranslations(@RequestHeader("Authorization") String authorization,
+                                    @RequestParam Map<String, String> request,
+                                    @RequestPart("file") MultipartFile file) {
+        log.info("OpenAI 兼容 audio translations 请求摘要: {}", JacksonUtils.toJson(buildMultipartLogSummary(request, file)));
+        try {
+            return aiOpenApiService.audioTranslations(authorization, request, file);
+        } catch (RuntimeException ex) {
+            log.error("OpenAI 兼容 audio translations 失败, msg={}", ex.getMessage(), ex);
+            return buildOpenAiErrorResponse();
+        }
+    }
+
+    /**
+     * 处理 OpenAI 兼容 audio speech 请求。
+     */
+    @PostMapping(value = "/audio/speech")
+    @ApiOperation("OpenAI 兼容 audio speech")
+    public ResponseEntity<byte[]> audioSpeech(@RequestHeader("Authorization") String authorization,
+                                              @RequestBody Map<String, Object> request) {
+        log.info("OpenAI 兼容 audio speech 请求摘要: {}", JacksonUtils.toJson(buildSimpleLogSummary(request)));
+        try {
+            return aiOpenApiService.audioSpeech(authorization, request);
+        } catch (RuntimeException ex) {
+            log.error("OpenAI 兼容 audio speech 失败, msg={}", ex.getMessage(), ex);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     private void sendEvent(SseEmitter emitter, String payload) {
         try {
             emitter.send(SseEmitter.event().data(payload));
@@ -144,6 +228,22 @@ public class GuestAiOpenAiController {
         summary.put("includeCount", sizeOf(request == null ? null : request.getInclude()));
         summary.put("toolsCount", sizeOf(request == null ? null : request.getTools()));
         summary.put("hasInput", request != null && request.getInput() != null);
+        return summary;
+    }
+
+    Map<String, Object> buildSimpleLogSummary(Map<String, Object> request) {
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("model", request == null ? null : request.get("model"));
+        summary.put("size", request == null ? 0 : request.size());
+        return summary;
+    }
+
+    Map<String, Object> buildMultipartLogSummary(Map<String, String> request, MultipartFile file) {
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("model", request == null ? null : request.get("model"));
+        summary.put("fileName", file == null ? null : file.getOriginalFilename());
+        summary.put("fileSize", file == null ? 0 : file.getSize());
+        summary.put("size", request == null ? 0 : request.size());
         return summary;
     }
 

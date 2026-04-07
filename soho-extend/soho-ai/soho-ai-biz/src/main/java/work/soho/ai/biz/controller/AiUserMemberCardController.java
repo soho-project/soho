@@ -21,6 +21,7 @@ import work.soho.common.security.annotation.Node;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Api(tags = "AI 用户会员卡管理")
@@ -47,6 +48,7 @@ public class AiUserMemberCardController {
                 AiUserMemberCard::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
         lqw.orderByDesc(AiUserMemberCard::getId);
         List<AiUserMemberCard> list = aiUserMemberCardService.list(lqw);
+        aiUserMemberCardService.fillUsageInfo(list);
         return R.success(new PageSerializable<>(list));
     }
 
@@ -54,7 +56,11 @@ public class AiUserMemberCardController {
     @Node(value = "ai::userMemberCard::getInfo", name = "获取 AI 用户会员卡详情")
     @ApiOperation("获取 AI 用户会员卡详情")
     public R<AiUserMemberCard> getInfo(@PathVariable Long id) {
-        return R.success(aiUserMemberCardService.getById(id));
+        AiUserMemberCard item = aiUserMemberCardService.getById(id);
+        if (item != null) {
+            aiUserMemberCardService.fillUsageInfo(Collections.singletonList(item));
+        }
+        return R.success(item);
     }
 
     @PostMapping

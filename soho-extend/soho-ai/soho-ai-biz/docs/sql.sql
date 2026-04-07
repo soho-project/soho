@@ -68,6 +68,7 @@ CREATE TABLE `ai_model_info` (
   `model_name` varchar(128) NOT NULL,
   `model_desc` varchar(255) DEFAULT NULL,
   `model_detail` text,
+  `model_tag` varchar(32) DEFAULT 'chat' COMMENT '模型标记: chat/images/audio/embeddings/fine-tuning',
   `status` tinyint NOT NULL DEFAULT 1,
   `prompt_price` decimal(18,4) DEFAULT 0.0000,
   `completion_price` decimal(18,4) DEFAULT 0.0000,

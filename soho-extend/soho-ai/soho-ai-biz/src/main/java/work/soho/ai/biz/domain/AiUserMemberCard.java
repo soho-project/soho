@@ -74,4 +74,35 @@ public class AiUserMemberCard implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
+
+    @TableField(exist = false)
+    private Boolean usageAvailable;
+
+    @TableField(exist = false)
+    private Integer rateLimit5hUsed;
+
+    @TableField(exist = false)
+    private Integer rateLimit7dUsed;
+
+    @TableField(exist = false)
+    private Integer rateLimit5hRemaining;
+
+    @TableField(exist = false)
+    private Integer rateLimit7dRemaining;
+
+    @TableField(exist = false)
+    private Integer rateLimit5hProgress;
+
+    @TableField(exist = false)
+    private Integer rateLimit7dProgress;
+
+    @TableField(exist = false)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime rateLimit5hNextResetTime;
+
+    @TableField(exist = false)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime rateLimit7dNextResetTime;
 }
