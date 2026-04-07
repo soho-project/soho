@@ -168,6 +168,22 @@ public class AiUserMemberCardServiceImpl extends ServiceImpl<AiUserMemberCardMap
         return updateById(target);
     }
 
+    /**
+     * 为管理端用户会员卡列表批量填充用量信息。
+     */
+    @Override
+    public List<AiUserMemberCard> fillUsageInfo(List<AiUserMemberCard> userCards) {
+        if (userCards == null || userCards.isEmpty()) {
+            return userCards;
+        }
+        java.util.Map<Long, AiMemberCard> cardMap = loadCardMap(userCards);
+        for (AiUserMemberCard userCard : userCards) {
+            AiMemberCard card = cardMap.get(userCard.getMemberCardId());
+            fillUsage(userCard, card, userCard);
+        }
+        return userCards;
+    }
+
     private java.util.Map<Long, AiMemberCard> loadCardMap(List<AiUserMemberCard> userCards) {
         Set<Long> cardIds = userCards.stream()
                 .map(AiUserMemberCard::getMemberCardId)
@@ -235,6 +251,39 @@ public class AiUserMemberCardServiceImpl extends ServiceImpl<AiUserMemberCardMap
         view.setRateLimit7dProgress(usage.getSevenDayProgress());
         view.setRateLimit5hNextResetTime(toLocalDateTime(usage.getFiveHourNextResetMillis()));
         view.setRateLimit7dNextResetTime(toLocalDateTime(usage.getSevenDayNextResetMillis()));
+    }
+
+    /**
+     * 为管理端实体对象填充用量信息。
+     */
+    private void fillUsage(AiUserMemberCard userCard, AiMemberCard card, AiUserMemberCard target) {
+        if (userCard == null || card == null || target == null) {
+            return;
+        }
+        if (!isCardActive(userCard)) {
+            target.setUsageAvailable(false);
+            return;
+        }
+        ActiveMemberCard activeMemberCard = new ActiveMemberCard(
+                userCard.getId(),
+                card.getLimitMode(),
+                card.getRateLimit5h(),
+                card.getRateLimit7d(),
+                card.getRateLimit5hEnabled(),
+                card.getRateLimit7dEnabled(),
+                card.getRateLimitWindow5h(),
+                card.getRateLimitWindow7d()
+        );
+        AiMemberRequestLimitService.UsageSnapshot usage = aiMemberRequestLimitService.queryUsage(userCard.getUserId(), activeMemberCard);
+        target.setUsageAvailable(usage.isUsageAvailable());
+        target.setRateLimit5hUsed(usage.getFiveHourUsed());
+        target.setRateLimit7dUsed(usage.getSevenDayUsed());
+        target.setRateLimit5hRemaining(usage.getFiveHourRemaining());
+        target.setRateLimit7dRemaining(usage.getSevenDayRemaining());
+        target.setRateLimit5hProgress(usage.getFiveHourProgress());
+        target.setRateLimit7dProgress(usage.getSevenDayProgress());
+        target.setRateLimit5hNextResetTime(toLocalDateTime(usage.getFiveHourNextResetMillis()));
+        target.setRateLimit7dNextResetTime(toLocalDateTime(usage.getSevenDayNextResetMillis()));
     }
 
     private boolean isCardActive(AiUserMemberCard userCard) {
