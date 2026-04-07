@@ -18,6 +18,10 @@ import work.soho.user.biz.domain.UserInfo;
 import work.soho.user.biz.mapper.UserInfoMapper;
 import work.soho.user.biz.service.UserInfoService;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 /**
 * @author fang
 * @description 针对表【user_info(用户信息;;option:id~username)】的数据库操作Service实现
@@ -67,6 +71,14 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo>
             return BeanUtils.copy(userInfo, UserInfoDto.class);
         }
         return null;
+    }
+
+    @Override
+    public List<Long> getAllUserIds() {
+        return list().stream()
+                .map(UserInfo::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     @Override

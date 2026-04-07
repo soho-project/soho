@@ -15,6 +15,9 @@ import work.soho.longlink.api.sender.Sender;
 @Component
 @RequiredArgsConstructor
 public class NewNotificationListener {
+    private static final String RECEIVER_TYPE_ADMIN = "admin";
+    private static final String RECEIVER_TYPE_USER = "user";
+
     private final AdminSysConfig adminSysConfig;
 
     /**
@@ -27,20 +30,31 @@ public class NewNotificationListener {
     @Async
     @EventListener
     public void handleNewNotificationEvent(NewNotificationEvent event) {
-        // 处理新的通知事件
+        if (event == null || event.getNotification() == null) {
+            return;
+        }
         if(adminSysConfig.getAdminNoticeAdapter().equalsIgnoreCase("longLink")) {
             Sender sender = SpringContextHolder.getBean(Sender.class);
             if(sender != null) {
-                // 发送长链接刷新通知
                 LongLinkMessage longLinkMessage = new LongLinkMessage();
-                longLinkMessage.setNamespace("admin");
+                longLinkMessage.setNamespace(resolveNamespace(event.getNotification().getReceiverType()));
                 longLinkMessage.setTopic("notification");
                 longLinkMessage.setType("cmd");
                 longLinkMessage.setPayload("refresh");
                 longLinkMessage.setTraceId(IDGeneratorUtils.snowflake().toString());
                 longLinkMessage.setHeaders(null);
-                sender.sendToUid(event.getNotification().getAdminUserId().toString(), JacksonUtils.toJson(longLinkMessage));
+                sender.sendToUid(event.getNotification().getReceiverId().toString(), JacksonUtils.toJson(longLinkMessage));
             }
         }
+    }
+
+    /**
+     * 根据接收角色计算推送命名空间。
+     */
+    private String resolveNamespace(String receiverType) {
+        if (RECEIVER_TYPE_USER.equalsIgnoreCase(receiverType)) {
+            return "user";
+        }
+        return RECEIVER_TYPE_ADMIN;
     }
 }

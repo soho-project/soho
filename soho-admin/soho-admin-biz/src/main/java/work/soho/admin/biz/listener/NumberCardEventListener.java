@@ -4,22 +4,23 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import work.soho.common.security.utils.SecurityUtils;
-import work.soho.admin.biz.domain.AdminNotification;
+import work.soho.admin.api.event.DashboardEvent;
+import work.soho.admin.api.vo.DashboardUserCardVo;
+import work.soho.admin.api.vo.NumberCardVo;
 import work.soho.admin.biz.domain.AdminUser;
 import work.soho.admin.biz.domain.AdminUserLoginLog;
 import work.soho.admin.biz.service.AdminNotificationService;
 import work.soho.admin.biz.service.AdminUserLoginLogService;
 import work.soho.admin.biz.service.AdminUserService;
-import work.soho.admin.api.event.DashboardEvent;
-import work.soho.admin.api.vo.DashboardUserCardVo;
-import work.soho.admin.api.vo.NumberCardVo;
+import work.soho.common.security.utils.SecurityUtils;
 
 import java.math.BigDecimal;
 import java.util.Calendar;
 
 @Component
 public class NumberCardEventListener {
+    private static final String RECEIVER_TYPE_ADMIN = "admin";
+
     @Autowired
     private AdminUserLoginLogService adminUserLoginLogService;
 
@@ -50,10 +51,8 @@ public class NumberCardEventListener {
 
         //统计用户未读消息数
         NumberCardVo userMessageCount  = new NumberCardVo();
-        LambdaQueryWrapper<AdminNotification> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(AdminNotification::getAdminUserId, SecurityUtils.getLoginUserId())
-                .eq(AdminNotification::getIsRead, 0);
-        userMessageCount.setNumber(new BigDecimal(adminNotificationService.count(lambdaQueryWrapper)));
+        userMessageCount.setNumber(BigDecimal.valueOf(
+                adminNotificationService.countUnread(RECEIVER_TYPE_ADMIN, SecurityUtils.getLoginUserId())));
         userMessageCount.setIcon("message");
         userMessageCount.setColor("#d897eb");
         userMessageCount.setTitle("未读系统消息");

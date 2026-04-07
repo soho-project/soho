@@ -6,17 +6,15 @@
 
     <resultMap id="BaseResultMap" type="work.soho.admin.biz.domain.AdminNotification">
             <id property="id" column="id" jdbcType="INTEGER"/>
-            <result property="adminUserId" column="admin_user_id" jdbcType="INTEGER"/>
             <result property="title" column="title" jdbcType="VARCHAR"/>
             <result property="createAdminUserId" column="create_admin_user_id" jdbcType="INTEGER"/>
+            <result property="senderType" column="sender_type" jdbcType="VARCHAR"/>
+            <result property="senderId" column="sender_id" jdbcType="BIGINT"/>
             <result property="content" column="content" jdbcType="VARCHAR"/>
-            <result property="cteatedTime" column="cteated_time" jdbcType="TIMESTAMP"/>
-            <result property="isRead" column="is_read" jdbcType="TINYINT"/>
+            <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,admin_user_id,title,
-        create_admin_user_id,content,cteated_time,
-        is_read
+        id,title,create_admin_user_id,sender_type,sender_id,content,created_time
     </sql>
 </mapper>

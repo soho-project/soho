@@ -2,6 +2,8 @@ package work.soho.user.api.service;
 
 import work.soho.user.api.dto.UserInfoDto;
 
+import java.util.List;
+
 public interface UserApiService {
     /**
      * 根据用户id获取用户信息
@@ -31,4 +33,11 @@ public interface UserApiService {
      * @return
      */
     UserInfoDto updateUserInfoDto(UserInfoDto userInfoDto);
+
+    /**
+     * 获取全部用户 ID。
+     *
+     * @return 用户 ID 列表
+     */
+    List<Long> getAllUserIds();
 }
