@@ -7,6 +7,16 @@ import java.util.ArrayList;
 @Data
 public class AdminNotificationCreateRequest {
     /**
+     * 接收范围：custom/all。
+     */
+    private String receiverScope;
+
+    /**
+     * 接收者类型：admin/user
+     */
+    private String receiverType;
+
+    /**
      * 标题
      */
     private String title;
@@ -22,7 +32,17 @@ public class AdminNotificationCreateRequest {
     private Long adminUserId;
 
     /**
+     * 前端用户接收者
+     */
+    private Long userId;
+
+    /**
      * 批量接收者
      */
     private ArrayList<Long> adminUserIds = new ArrayList<>();
+
+    /**
+     * 批量前端用户接收者
+     */
+    private ArrayList<Long> userIds = new ArrayList<>();
 }

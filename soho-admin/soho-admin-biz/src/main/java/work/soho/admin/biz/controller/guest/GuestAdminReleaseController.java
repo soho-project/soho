@@ -1,4 +1,4 @@
-package work.soho.admin.biz.controller.client;
+package work.soho.admin.biz.controller.guest;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.annotations.Api;
@@ -16,8 +16,8 @@ import java.util.Optional;
 @Api(tags = "客户端版本信息API")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/client/api/admin/adminRelease")
-public class ClientAdminReleaseController {
+@RequestMapping("/admin/guest/adminRelease")
+public class GuestAdminReleaseController {
     private final AdminDictApiService adminDictApiService;
     private final AdminReleaseService adminReleaseService;
 

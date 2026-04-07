@@ -1,10 +1,8 @@
 package work.soho.admin.biz.longlink;
 
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
-import work.soho.admin.biz.domain.AdminNotification;
 import work.soho.admin.biz.service.AdminNotificationService;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.longlink.api.handler.LongLinkMessageHandler;
@@ -19,41 +17,53 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class AdminNoticeMessageHandler implements LongLinkMessageHandler {
-    private static final String NAMESPACE = "admin-notice";
+    private static final String NAMESPACE_ADMIN = "admin-notice";
+    private static final String NAMESPACE_USER = "user-notice";
+    private static final String RECEIVER_TYPE_ADMIN = "admin";
+    private static final String RECEIVER_TYPE_USER = "user";
     private static final String TOPIC_READ = "read";
 
     private final AdminNotificationService adminNotificationService;
 
     @Override
     public boolean supports(LongLinkMessage message) {
-        return message != null && NAMESPACE.equals(message.getNamespace());
+        return message != null && (NAMESPACE_ADMIN.equals(message.getNamespace()) || NAMESPACE_USER.equals(message.getNamespace()));
     }
 
     @Override
     public void onMessage(LongLinkMessage message, String connectId, String uid) {
         String topic = message.getTopic();
         if (TOPIC_READ.equals(topic)) {
-            handleRead(message.getPayload(), uid);
+            handleRead(message.getPayload(), uid, resolveReceiverType(message.getNamespace()));
             return;
         }
         log.info("admin notice message ignored: topic={}, connectId={}, uid={}", topic, connectId, uid);
     }
 
-    private void handleRead(Object payload, String uid) {
-        Long adminUserId = parseLong(uid);
-        if (adminUserId == null) {
+    /**
+     * 处理通知已读回执。
+     */
+    private void handleRead(Object payload, String uid, String receiverType) {
+        Long receiverId = parseLong(uid);
+        if (receiverId == null) {
             return;
         }
         List<Long> ids = extractIds(payload);
         if (ids.isEmpty()) {
             return;
         }
-        LambdaUpdateWrapper<AdminNotification> wrapper = new LambdaUpdateWrapper<>();
-        wrapper.in(AdminNotification::getId, ids)
-                .eq(AdminNotification::getAdminUserId, adminUserId)
-                .set(AdminNotification::getIsRead, 1);
-        boolean updated = adminNotificationService.update(wrapper);
-        log.info("admin notice read updated: userId={}, ids={}, updated={}", adminUserId, ids, updated);
+        boolean updated = adminNotificationService.readReceivers(receiverType, receiverId, ids);
+        log.info("notice read updated: receiverType={}, receiverId={}, ids={}, updated={}", receiverType, receiverId, ids, updated);
+    }
+
+    /**
+     * 根据命名空间解析接收角色。
+     */
+    private String resolveReceiverType(String namespace) {
+        if (NAMESPACE_USER.equals(namespace)) {
+            return RECEIVER_TYPE_USER;
+        }
+        return RECEIVER_TYPE_ADMIN;
     }
 
     private List<Long> extractIds(Object payload) {
