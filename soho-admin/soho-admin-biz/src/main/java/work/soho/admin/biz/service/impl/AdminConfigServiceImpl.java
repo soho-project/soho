@@ -13,9 +13,15 @@ import work.soho.admin.api.request.AdminConfigInitRequest;
 import work.soho.admin.api.service.AdminConfigApiService;
 import work.soho.common.core.util.BeanUtils;
 import work.soho.common.core.util.JacksonUtils;
+import work.soho.common.core.util.StringUtils;
 
+import java.util.Collection;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +43,9 @@ public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, Admin
      * @return
      */
     public String getByKey(String key) {
+        if (StringUtils.isBlank(key)) {
+            return null;
+        }
         LambdaQueryWrapper<AdminConfig> lqw = new LambdaQueryWrapper<>();
         lqw.eq(AdminConfig::getKey, key);
         AdminConfig adminConfig = getOne(lqw);
@@ -70,14 +79,41 @@ public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, Admin
     public <T> T getByKey(String key, Class<T> clazz, T defaultValue) {
         String value = getByKey(key);
         try {
-            if(value == null && defaultValue != null) {
+            if (value == null) {
                 return defaultValue;
             }
             return JacksonUtils.toBean(value, clazz);
         } catch (Exception e) {
-            //ignore
+            return defaultValue;
         }
-        return defaultValue;
+    }
+
+    /**
+     * 批量获取指定 key 的配置值。
+     *
+     * @param keys 配置 key 集合
+     * @return key 与 value 映射
+     */
+    @Override
+    public Map<String, String> getByKeys(Collection<String> keys) {
+        if (keys == null || keys.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<String> normalizedKeys = keys.stream()
+                .filter(StringUtils::isNotBlank)
+                .map(String::trim)
+                .distinct()
+                .collect(Collectors.toList());
+        if (normalizedKeys.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        LambdaQueryWrapper<AdminConfig> lqw = new LambdaQueryWrapper<>();
+        lqw.in(AdminConfig::getKey, normalizedKeys);
+        List<AdminConfig> configList = list(lqw);
+        Map<String, String> valueMap = new LinkedHashMap<>();
+        configList.forEach(item -> valueMap.put(item.getKey(), item.getValue()));
+        return valueMap;
     }
 
     /**
@@ -122,6 +158,5 @@ public class AdminConfigServiceImpl extends ServiceImpl<AdminConfigMapper, Admin
         return saveBatch(saveDataList);
     }
 }
-
 
 

@@ -3,6 +3,9 @@ package work.soho.admin.biz.service;
 import work.soho.admin.biz.domain.AdminConfig;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.Collection;
+import java.util.Map;
+
 /**
 * @author i
 * @description 针对表【admin_config】的数据库操作Service
@@ -37,4 +40,12 @@ public interface AdminConfigService extends IService<AdminConfig> {
      * @return
      */
     <T> T getByKey(String key, Class<T> clazz, T defaultValue);
+
+    /**
+     * 批量获取指定 key 的配置值。
+     *
+     * @param keys 配置 key 集合
+     * @return key 与 value 映射
+     */
+    Map<String, String> getByKeys(Collection<String> keys);
 }
