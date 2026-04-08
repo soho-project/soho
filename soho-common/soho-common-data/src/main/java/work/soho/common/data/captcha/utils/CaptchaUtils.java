@@ -7,6 +7,7 @@ import org.springframework.core.env.Environment;
 import work.soho.common.core.support.SpringContextHolder;
 import work.soho.common.core.util.IpUtils;
 import work.soho.common.core.util.ResponseUtil;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.data.captcha.storage.Redis;
 import work.soho.common.data.captcha.storage.StorageInterface;
 
@@ -78,7 +79,15 @@ public class CaptchaUtils {
     public Boolean checking(String captcha) {
         StorageInterface storageInterface = SpringContextHolder.getBean(Redis.class);
         String key = getKey();
-        return captcha.equals(storageInterface.get(key));
+        if (StringUtils.isEmpty(captcha)) {
+            return false;
+        }
+        Object storedCaptchaValue = storageInterface.get(key);
+        String storedCaptcha = storedCaptchaValue == null ? null : String.valueOf(storedCaptchaValue);
+        if (StringUtils.isEmpty(storedCaptcha)) {
+            return false;
+        }
+        return captcha.equals(storedCaptcha);
     }
 
     public void dropCaptcha() {

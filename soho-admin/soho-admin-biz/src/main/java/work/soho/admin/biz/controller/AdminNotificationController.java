@@ -12,6 +12,7 @@ import work.soho.admin.biz.domain.AdminNotification;
 import work.soho.admin.biz.service.AdminNotificationReceiverService;
 import work.soho.admin.biz.service.AdminNotificationService;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
 import work.soho.common.security.annotation.Node;
 import work.soho.common.security.userdetails.SohoUserDetails;
 
@@ -24,7 +25,7 @@ import java.util.Arrays;
 @RestController
 @RequestMapping("/admin/admin/adminNotification")
 @Api(tags = "系统消息")
-public class AdminNotificationController extends BaseController {
+public class AdminNotificationController {
     private static final String RECEIVER_TYPE_ADMIN = "admin";
 
     private final AdminNotificationService adminNotificationService;
@@ -36,7 +37,7 @@ public class AdminNotificationController extends BaseController {
     @Node("adminNotification:list")
     @GetMapping("/list")
     public R<PageSerializable<AdminNotificationVo>> list(AdminNotification adminNotification) {
-        startPage();
+        PageUtils.startPage();
         return R.success(adminNotificationService.listNotifications(adminNotification));
     }
 
@@ -46,7 +47,7 @@ public class AdminNotificationController extends BaseController {
     @Node("adminNotification:myNotification")
     @GetMapping("/myNotification")
     public R<PageSerializable<AdminNotificationVo>> myNotification(@AuthenticationPrincipal SohoUserDetails userDetails) {
-        startPage();
+        PageUtils.startPage();
         return R.success(adminNotificationService.myNotifications(RECEIVER_TYPE_ADMIN, userDetails.getId()));
     }
 

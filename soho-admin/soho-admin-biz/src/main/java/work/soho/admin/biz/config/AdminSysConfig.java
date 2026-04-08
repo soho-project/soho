@@ -26,6 +26,14 @@ public class AdminSysConfig implements InitializingBean {
 
     //登录验证码开关
     private final String ADMIN_LOGIN_CAPTCHA_ENABLE_KEY = "login_use_captcha";
+    // 是否启用自动验证码
+    private final String ADMIN_LOGIN_AUTO_CAPTCHA_ENABLE_KEY = "login_auto_captcha_enable";
+    // 单个用户名触发验证码的失败次数
+    private final String ADMIN_LOGIN_CAPTCHA_USER_FAIL_THRESHOLD_KEY = "login_captcha_user_fail_threshold";
+    // 单个IP触发验证码的失败次数
+    private final String ADMIN_LOGIN_CAPTCHA_IP_FAIL_THRESHOLD_KEY = "login_captcha_ip_fail_threshold";
+    // 登录失败计数窗口（分钟）
+    private final String ADMIN_LOGIN_CAPTCHA_FAIL_WINDOW_MINUTES_KEY = "login_captcha_fail_window_minutes";
     //后台通知方式
     private final String ADMIN_NOTICE_ADAPTER_KEY = "admin-notice-adapter";
     // 后台用户是否关联普通用户
@@ -61,6 +69,42 @@ public class AdminSysConfig implements InitializingBean {
     }
 
     /**
+     * 获取是否开启自动验证码。
+     *
+     * @return 是否开启自动验证码
+     */
+    public Boolean getAdminLoginAutoCaptchaEnable() {
+        return adminConfigApiService.getByKey(ADMIN_LOGIN_AUTO_CAPTCHA_ENABLE_KEY, Boolean.class, Boolean.TRUE);
+    }
+
+    /**
+     * 获取用户名登录失败触发验证码阈值。
+     *
+     * @return 用户名触发阈值
+     */
+    public Integer getAdminLoginCaptchaUserFailThreshold() {
+        return adminConfigApiService.getByKey(ADMIN_LOGIN_CAPTCHA_USER_FAIL_THRESHOLD_KEY, Integer.class, 3);
+    }
+
+    /**
+     * 获取 IP 登录失败触发验证码阈值。
+     *
+     * @return IP 触发阈值
+     */
+    public Integer getAdminLoginCaptchaIpFailThreshold() {
+        return adminConfigApiService.getByKey(ADMIN_LOGIN_CAPTCHA_IP_FAIL_THRESHOLD_KEY, Integer.class, 5);
+    }
+
+    /**
+     * 获取登录失败计数窗口分钟数。
+     *
+     * @return 计数窗口分钟数
+     */
+    public Integer getAdminLoginCaptchaFailWindowMinutes() {
+        return adminConfigApiService.getByKey(ADMIN_LOGIN_CAPTCHA_FAIL_WINDOW_MINUTES_KEY, Integer.class, 30);
+    }
+
+    /**
      * 获取后台通知方式
      *
      * @return
@@ -86,6 +130,18 @@ public class AdminSysConfig implements InitializingBean {
         items.add(AdminConfigInitRequest.Item.builder().groupKey(DEFAULT_GROUP_KEY)
                         .explain("\t后台登录是否开启验证码")
                 .type(AdminConfigInitRequest.ItemType.BOOL.getType()).key(ADMIN_LOGIN_CAPTCHA_ENABLE_KEY).value("false").build());
+        items.add(AdminConfigInitRequest.Item.builder().groupKey(DEFAULT_GROUP_KEY)
+                .explain("后台登录是否开启自动验证码；开启后默认不展示验证码，达到风控阈值后自动要求验证码")
+                .type(AdminConfigInitRequest.ItemType.BOOL.getType()).key(ADMIN_LOGIN_AUTO_CAPTCHA_ENABLE_KEY).value("true").build());
+        items.add(AdminConfigInitRequest.Item.builder().groupKey(DEFAULT_GROUP_KEY)
+                .explain("同一用户名在统计窗口内登录失败多少次后要求验证码")
+                .type(AdminConfigInitRequest.ItemType.TEXT.getType()).key(ADMIN_LOGIN_CAPTCHA_USER_FAIL_THRESHOLD_KEY).value("3").build());
+        items.add(AdminConfigInitRequest.Item.builder().groupKey(DEFAULT_GROUP_KEY)
+                .explain("同一IP在统计窗口内登录失败多少次后要求验证码")
+                .type(AdminConfigInitRequest.ItemType.TEXT.getType()).key(ADMIN_LOGIN_CAPTCHA_IP_FAIL_THRESHOLD_KEY).value("5").build());
+        items.add(AdminConfigInitRequest.Item.builder().groupKey(DEFAULT_GROUP_KEY)
+                .explain("登录失败计数统计窗口，单位分钟")
+                .type(AdminConfigInitRequest.ItemType.TEXT.getType()).key(ADMIN_LOGIN_CAPTCHA_FAIL_WINDOW_MINUTES_KEY).value("30").build());
         //后台通知方式
         items.add(AdminConfigInitRequest.Item.builder().groupKey(DEFAULT_GROUP_KEY)
                         .explain("通知驱动方式；none:不通知,polling:轮训,lon")
