@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import work.soho.admin.cloud.bridge.feign.AdminConfigApiServiceFeign;
 import work.soho.admin.api.request.AdminConfigInitRequest;
 import work.soho.admin.api.service.AdminConfigApiService;
+import work.soho.common.core.util.JacksonUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -13,14 +14,20 @@ public class AdminConfigApiServiceImpl implements AdminConfigApiService {
 
     @Override
     public <T> T getByKey(String key, Class<T> clazz) {
-        String val = adminConfigApiServiceFeign.getByKey(key);
-        return val == null ? null : clazz.cast(val);
+        return getByKey(key, clazz, null);
     }
 
     @Override
     public <T> T getByKey(String key, Class<T> clazz, T defaultValue) {
         String value = adminConfigApiServiceFeign.getByKey(key);
-        return value == null ? defaultValue : clazz.cast(value);
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return JacksonUtils.toBean(value, clazz);
+        } catch (Exception e) {
+            return defaultValue;
+        }
     }
 
     @Override

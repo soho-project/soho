@@ -11,9 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.biz.domain.AdminConfig;
 import work.soho.admin.biz.service.AdminConfigService;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.StringUtils;
 
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,20 +26,15 @@ import java.util.stream.Collectors;
 public class GuestAdminConfigController {
     private final AdminConfigService adminConfigService;
 
+    /**
+     * 获取后台前端公开配置。
+     *
+     * @param roleName 角色名称
+     * @return 配置结果
+     */
     @GetMapping("/roleConfig")
     public R<Map<String, Object>> roleConfig(String roleName) {
-        Map<String, Object> result = new HashMap<>();
-        // 检查对应前端配置信息前缀
-        String prefix = adminConfigService.getByKey("common-admin-front-config-prefix");
-        if(prefix != null && !prefix.isEmpty()) {
-            // 查询指定前置的所有配置信息
-            LambdaQueryWrapper<AdminConfig> lqw = new LambdaQueryWrapper<>();
-            lqw.likeRight(AdminConfig::getKey, prefix);
-            List<AdminConfig> list = adminConfigService.list(lqw);
-            list.forEach(item-> result.put(item.getKey(), item.getValue()));
-        }
-
-        return R.success(result);
+        return R.success(loadConfigsByPrefix(adminConfigService.getByKey("common-admin-front-config-prefix")));
     }
 
     /**
@@ -50,21 +46,52 @@ public class GuestAdminConfigController {
     @GetMapping("/configCollect/{key}")
     public R<Map<String, Object>> config(@PathVariable("key") String key) {
         String keys = adminConfigService.getByKey("common-guest-access-keys");
-        if(keys == null || keys == "") {
+        if (StringUtils.isBlank(keys)) {
             return R.error();
         }
-        List< String> configKeys = Arrays.stream(keys.split(",")).collect(Collectors.toList());
-        // 检查key是否在 configKeys 中
-        if(!configKeys.contains(key)) {
+        List<String> configKeys = splitConfigKeys(keys);
+        if (!configKeys.contains(key)) {
             return R.error("非法访问");
         }
         String accessKeys = adminConfigService.getByKey(key);
-        List< String> accessKeyList = Arrays.stream(accessKeys.split(",")).collect(Collectors.toList());
-
-        HashMap<String, Object> result = new HashMap<>();
-        accessKeyList.forEach(item->{
-            result.put(item, adminConfigService.getByKey(item));
-        });
+        if (StringUtils.isBlank(accessKeys)) {
+            return R.success(new LinkedHashMap<>());
+        }
+        List<String> accessKeyList = splitConfigKeys(accessKeys);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.putAll(adminConfigService.getByKeys(accessKeyList));
         return R.success(result);
+    }
+
+    /**
+     * 按分隔符拆分配置 key。
+     *
+     * @param keys 原始 key 字符串
+     * @return 配置 key 列表
+     */
+    private List<String> splitConfigKeys(String keys) {
+        return Arrays.stream(keys.split("[;,]"))
+                .map(String::trim)
+                .filter(StringUtils::isNotBlank)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 按前缀加载配置集合。
+     *
+     * @param prefix 配置前缀
+     * @return 配置结果
+     */
+    private Map<String, Object> loadConfigsByPrefix(String prefix) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (StringUtils.isBlank(prefix)) {
+            return result;
+        }
+        LambdaQueryWrapper<AdminConfig> lqw = new LambdaQueryWrapper<>();
+        lqw.likeRight(AdminConfig::getKey, prefix.trim());
+        List<AdminConfig> list = adminConfigService.list(lqw);
+        list.forEach(item -> result.put(item.getKey(), item.getValue()));
+        return result;
     }
 }

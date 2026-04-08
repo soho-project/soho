@@ -18,9 +18,9 @@ import work.soho.common.security.userdetails.SohoUserDetails;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -120,16 +120,13 @@ public class AdminConfigController {
      */
     @GetMapping("/common")
     public R<Map<String,Object>> common() {
-        Map<String,Object> result = new HashMap<>();
+        Map<String,Object> result = new LinkedHashMap<>();
         String keys = adminConfigService.getByKey("admin-common-config");
-        if(keys == null || keys == "") {
+        if (StringUtils.isBlank(keys)) {
             return R.success(result);
         }
-
-        List<String> configKeys = Arrays.stream(keys.split(";")).collect(Collectors.toList());
-        configKeys.stream().forEach(item->{
-            result.put(item, adminConfigService.getByKey(item));
-        });
+        List<String> configKeys = splitConfigKeys(keys);
+        result.putAll(adminConfigService.getByKeys(configKeys));
         return R.success(result);
     }
 
@@ -142,28 +139,46 @@ public class AdminConfigController {
      */
     @GetMapping("/roleConfig")
     public R<Map<String, Object>> roleConfig(@AuthenticationPrincipal SohoUserDetails userDetails, String roleName) {
-        Map<String, Object> result = new HashMap<>();
-        AtomicReference<Boolean> isRole = new AtomicReference<>(Boolean.FALSE);
-        userDetails.getAuthorities().forEach(item->{
-            if(roleName.equals(item.getAuthority())) {
-                isRole.set(Boolean.TRUE);
-            }
-        });
-
-        if(Boolean.FALSE.equals(isRole.get())) {
+        if (StringUtils.isBlank(roleName)) {
+            return R.error("角色不能为空");
+        }
+        boolean isRole = userDetails.getAuthorities().stream()
+                .anyMatch(item -> roleName.equals(item.getAuthority()));
+        if (!isRole) {
             return R.error("没有权限访问");
         }
+        return R.success(loadConfigsByPrefix(adminConfigService.getByKey("common-admin-front-config-prefix")));
+    }
 
-        // 检查对应前端配置信息前缀
-        String prefix = adminConfigService.getByKey("common-admin-front-config-prefix");
-        if(prefix != null && !prefix.isEmpty()) {
-            // 查询指定前置的所有配置信息
-            LambdaQueryWrapper<AdminConfig> lqw = new LambdaQueryWrapper<>();
-            lqw.likeRight(AdminConfig::getKey, prefix);
-            List<AdminConfig> list = adminConfigService.list(lqw);
-            list.forEach(item-> result.put(item.getKey(), item.getValue()));
+    /**
+     * 按分隔符拆分配置 key。
+     *
+     * @param keys 原始 key 字符串
+     * @return 配置 key 列表
+     */
+    private List<String> splitConfigKeys(String keys) {
+        return Arrays.stream(keys.split("[;,]"))
+                .map(String::trim)
+                .filter(StringUtils::isNotBlank)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 按前缀加载配置集合。
+     *
+     * @param prefix 配置前缀
+     * @return 配置结果
+     */
+    private Map<String, Object> loadConfigsByPrefix(String prefix) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (StringUtils.isBlank(prefix)) {
+            return result;
         }
-
-        return R.success(result);
+        LambdaQueryWrapper<AdminConfig> lqw = new LambdaQueryWrapper<>();
+        lqw.likeRight(AdminConfig::getKey, prefix.trim());
+        List<AdminConfig> list = adminConfigService.list(lqw);
+        list.forEach(item -> result.put(item.getKey(), item.getValue()));
+        return result;
     }
 }
