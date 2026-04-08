@@ -1,17 +1,16 @@
-项目规范
-=======
+# 项目规范
 
-编码
-----
+本文档整理项目中的基础开发约束，适合作为日常编码和代码审查的最低标准。
 
-> 文件编码，使用utf-8编码； 
-> 
-> 配置运行jvm 参数:  -Dfile.encoding=UTF-8
+## 编码与运行环境
 
-注入相关
--------
+- 文件编码统一使用 `UTF-8`
+- 建议配置 JVM 参数：`-Dfile.encoding=UTF-8`
 
-> > 依赖注入使用构造注入 <br>
+## 依赖注入
+
+- 优先使用构造注入
+- 推荐配合 Lombok 的 `@RequiredArgsConstructor`
 
 ```java
 import lombok.RequiredArgsConstructor;
@@ -20,38 +19,34 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class A {
-    private final class B
-
-    ;
+    private final B b;
 }
 ```
 
-> 禁止使用sout，打印使用log <br>
+## 日志规范
+
+- 禁止使用 `System.out.println`
+- 统一使用日志组件输出运行信息
 
 ```java
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class A {
-
     public void test() {
         log.info("xxx");
     }
 }
 ```
 
-> 代码审查使用sonarlint <br>
+## 开发约束
 
-```text
-idea插件自行下载
-```
+- 代码审查建议启用 SonarLint
+- 版本控制统一由父 `POM` 管理
+- `service` 层建议提供接口
+- 可复用配置优先沉淀到 `common` 模块
 
-> 版本控制使用父POM <br>
-> service一定要写接口
-> 可通用的配置写common
-
-
-类注释模板
+## 类注释模板
 
 ```java
 /**
@@ -64,67 +59,71 @@ idea插件自行下载
  */
 ```
 
-Api文档
+## API 文档
 
-http://localhost:6677/swagger-ui/index.html
-http://localhost:6677/doc.html
+- Swagger UI: <http://localhost:6677/swagger-ui/index.html>
+- Knife4j: <http://localhost:6677/doc.html>
 
-开启Swagger:
+关闭 Swagger：
 
-    # 关闭 Swagger
-    springfox.documentation.enabled=false
-
-配置测试获取验证码：
-
-    # 参考文档 https://gitee.com/xiaoym/knife4j/wikis/AfterScript
-    var code=ke.response.data.code;
-    if(code==2000){
-      //判断,如果服务端响应code是8200才执行操作
-      //获取token
-      var token=ke.response.data.payload.token;
-      //1、如何参数是Header，则设置当前逻辑分组下的全局Header
-      ke.global.setHeader("Authorization",token);
-      //2、如果全局参数是query类型,则设置当前逻辑分组下的全局Parameter,开发者自行选择
-      //ke.global.setParameter("token",token);
-    }
-
-
-```text
-|--soho
-    |--soho-admin
-        |--soho-admin-api (实体类存放，之后feign也放在这里)
-        |--soho-admin-biz (springboot服务)
-    |--soho-common
-        |--soho-common-bom (版本管理)
-        |--soho-common-core (核心包)
-        |--soho-common-security (鉴权依赖包)
-        、、、(common包待补充)
+```properties
+springfox.documentation.enabled=false
 ```
 
-Action
+## Knife4j 调试脚本示例
 
-    @Node(value = "unique-key", visible = 1, describe = "describe")
+```javascript
+// 参考文档 https://gitee.com/xiaoym/knife4j/wikis/AfterScript
+var code = ke.response.data.code;
+if (code == 2000) {
+  var token = ke.response.data.payload.token;
+  ke.global.setHeader("Authorization", token);
+}
+```
 
-@Log 对方法调用进行日志记载
+## 项目结构示例
 
-    @Log("log key word")
+```text
+|-- soho
+    |-- soho-admin
+        |-- soho-admin-api
+        |-- soho-admin-biz
+    |-- soho-common
+        |-- soho-common-bom
+        |-- soho-common-core
+        |-- soho-common-security
+```
 
-URL路由命名规范
-=============
+说明：
 
+- `soho-admin-api`：公共实体、接口定义与跨模块调用契约
+- `soho-admin-biz`：Spring Boot 业务实现
+- `soho-common-*`：通用基础能力
 
-    /[业务模块名]/[角色名]/[Controller Name]/[业务名；可选]
+## 权限与日志注解
 
+资源节点注解：
 
-- 角色名
+```java
+@Node(value = "unique-key", name = "describe")
+```
 
-  用来鉴权的角色；例如 admin, chat, user
+操作日志注解：
 
-- 业务模块名
+```java
+@Log("log key word")
+```
 
-  例如： chat, code, content
+## URL 路由命名规范
 
-- 控制器名
+统一采用以下结构：
 
-  一般控制器名称同业务紧密相关
-****
+```text
+/[业务模块名]/[角色名]/[Controller Name]/[业务名; 可选]
+```
+
+说明：
+
+- 角色名：如 `admin`、`chat`、`user`
+- 业务模块名：如 `chat`、`content`、`shop`
+- 控制器名：应与业务职责保持一致

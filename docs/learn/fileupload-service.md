@@ -1,16 +1,25 @@
-文件上传服务
-==========
+# 文件上传服务
 
-    队文件进行统一业务封装，进行文件数据存储，优化实现文件秒传
+该服务对文件上传做了统一业务封装，用于：
 
+- 统一文件存储入口
+- 保存文件元数据
+- 支持秒传与缓存检查
 
-接口
----
+## 核心接口
 
-    public interface Upload {
-        UploadInfoVo save(MultipartFile file);
-    
-        UploadInfoVo save(String uri);
-    
-        UploadInfoVo checkUploadCache(UploadInfoVo uploadInfoVo);
-    }
+```java
+public interface Upload {
+    UploadInfoVo save(MultipartFile file);
+
+    UploadInfoVo save(String uri);
+
+    UploadInfoVo checkUploadCache(UploadInfoVo uploadInfoVo);
+}
+```
+
+## 说明
+
+- `save(MultipartFile file)`：上传本地文件对象。
+- `save(String uri)`：通过 URI 方式保存文件。
+- `checkUploadCache(UploadInfoVo uploadInfoVo)`：用于检查是否命中已有上传记录。
