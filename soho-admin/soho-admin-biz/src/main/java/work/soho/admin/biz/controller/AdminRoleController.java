@@ -18,6 +18,7 @@ import work.soho.common.security.annotation.Node;
 import work.soho.admin.api.vo.AdminRoleVo;
 import work.soho.admin.api.vo.OptionsRoleVo;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/admin/admin/adminRole")
 @RequiredArgsConstructor
-public class AdminRoleController extends BaseController {
+public class AdminRoleController {
 	private final AdminRoleServiceImpl adminRoleService;
 	private final AdminRoleResourceService adminRoleResourceService;
 	private final AdminRoleUserService adminRoleUserService;
@@ -50,7 +51,7 @@ public class AdminRoleController extends BaseController {
 			lqw.like(AdminRole::getName, name);
 		}
 		lqw.orderByDesc(AdminRole::getId);
-		startPage();
+		PageUtils.startPage();
 		List<AdminRole> list = adminRoleService.list(lqw);
 		return R.success(new PageSerializable<>(list));
 	}

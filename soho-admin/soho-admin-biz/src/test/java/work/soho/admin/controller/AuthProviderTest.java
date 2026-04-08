@@ -15,11 +15,13 @@ import work.soho.common.core.util.JacksonUtils;
 
 import java.util.HashMap;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * 认证提供者测试。
+ */
 @ContextConfiguration
 @WebAppConfiguration("src/main/resources")
 @SpringBootTest(classes = AdminApplication.class)
@@ -34,6 +36,9 @@ class AuthProviderTest {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(this.webApplicationContext).build();
     }
 
+    /**
+     * 密码加密测试。
+     */
     @Test
     void testPassword() {
         System.out.println(new BCryptPasswordEncoder().encode("123456"));
@@ -50,7 +55,7 @@ class AuthProviderTest {
         request.put("username", "admin");
         request.put("password", "123456");
 
-        mockMvc.perform(post("/login").contentType("application/json")
+        mockMvc.perform(post("/admin/guest/auth/login").contentType("application/json")
                                 .content(JacksonUtils.toJson(request)))
                 .andDo(print())
                 .andExpect(status().isOk())

@@ -10,6 +10,7 @@ import work.soho.admin.api.vo.OptionVo;
 import work.soho.admin.biz.domain.AdminConfigGroup;
 import work.soho.admin.biz.service.AdminConfigGroupService;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
 
@@ -27,7 +28,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/admin/adminConfigGroup" )
 @Api(tags = "配置分组")
-public class AdminConfigGroupController extends BaseController {
+public class AdminConfigGroupController {
 
     private final AdminConfigGroupService adminConfigGroupService;
 
@@ -38,7 +39,7 @@ public class AdminConfigGroupController extends BaseController {
     @GetMapping("/list")
     public R<Page<AdminConfigGroup>> list(AdminConfigGroup adminConfigGroup)
     {
-        startPage();
+        PageUtils.startPage();
         LambdaQueryWrapper<AdminConfigGroup> lqw = new LambdaQueryWrapper<>();
 
         if (adminConfigGroup.getId() != null){

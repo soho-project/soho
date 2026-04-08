@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import work.soho.admin.biz.domain.AdminConfig;
 import work.soho.admin.biz.service.AdminConfigService;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
 import work.soho.common.security.annotation.Node;
 import work.soho.common.security.userdetails.SohoUserDetails;
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/admin/admin/adminConfig" )
 @Api(tags = "系统配置信息")
-public class AdminConfigController extends BaseController {
+public class AdminConfigController {
 
     private final AdminConfigService adminConfigService;
 
@@ -43,7 +44,7 @@ public class AdminConfigController extends BaseController {
     @GetMapping("/list")
     public R<PageSerializable<AdminConfig>> list(AdminConfig adminConfig)
     {
-        startPage();
+        PageUtils.startPage();
         LambdaQueryWrapper<AdminConfig> lqw = new LambdaQueryWrapper<>();
 
         if (adminConfig.getId() != null){

@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/admin/admin/adminUser")
 @Api(tags = "系统用户管理")
-public class AdminUserController extends BaseController {
+public class AdminUserController {
     private final UserDetailsServiceImpl userDetailsService;
     private final AdminUserService adminUserService;
     private final AdminRoleService adminRoleService;
@@ -147,7 +147,7 @@ public class AdminUserController extends BaseController {
         lqw.eq(StringUtils.isNotEmpty(adminUserVo.getEmail()), AdminUser::getEmail, adminUserVo.getEmail());
         lqw.eq(AdminUser::getIsDeleted, 0);
         lqw.orderByDesc(AdminUser::getId);
-        startPage();
+        PageUtils.startPage();
         List<AdminUser> list = adminUserService.list(lqw);
         List<AdminUserVo> voList = new ArrayList<>();
         list.forEach(item->{
