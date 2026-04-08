@@ -1,42 +1,34 @@
-鉴权
-====
+# 鉴权与安全
 
-鉴权相关接口与工具类位于 `soho-common-security` 模块。
-后台相关配置已提供统一实现，其他模块只需引入依赖并按需扩展。
+鉴权相关接口与工具类位于 `soho-common-security` 模块。后台模块已提供统一实现，其他业务模块在引入依赖后可按需扩展。
 
-当前系统主要角色：
+## 当前系统角色
 
 - `admin`：后台管理
 - `user`：普通用户
-- `open`：开放平台用户鉴权（开放平台模块默认角色）
+- `open`：开放平台默认角色
 - `openUser`：开放平台 OAuth2 用户级授权
 - `openApp`：开放平台 OAuth2 应用级授权
 
-核心点：
+## 核心组件
 
-- 通过 `TokenServiceImpl` 生成/解析 JWT
-- 通过 `SohoAuthenticationProvider` 统一认证
-- 通过 `SecurityConfig` 定义路径与角色访问规则
+- `TokenServiceImpl`：生成与解析 JWT
+- `SohoAuthenticationProvider`：统一认证入口
+- `SecurityConfig`：定义路径与角色访问规则
 
----
+## 请求携带 Token
 
-请求携带 Token
-=============
+默认通过 HTTP Header 传递：
 
-默认使用 HTTP 头：
-
-```
+```http
 Authorization: Bearer <token>
 ```
 
-`TokenServiceImpl` 会解析 `Authorization` 头并恢复用户信息。
+系统会从 `Authorization` 头中解析用户信息。
 
----
+## 路由与角色建议
 
-路由与角色建议
-===========
-
-以下是建议的路径与角色映射：
+推荐的路径与角色映射如下：
 
 - `/*/admin/**` → `admin`
 - `/*/user/**` → `user`
@@ -46,60 +38,55 @@ Authorization: Bearer <token>
 
 说明：
 
-- `open` 为开放平台模块默认用户鉴权角色
-- `openUser` / `openApp` 用于区分 OAuth2 授权方式
+- `open` 用于开放平台模块级访问控制
+- `openUser` / `openApp` 用于区分 OAuth2 授权主体
 
----
+## OAuth2 角色区分
 
-开放平台 OAuth2 角色区分
-======================
+开放平台 OAuth2 支持两类主体：
 
-开放平台 OAuth2 分为：
+- 授权码模式 `authorization_code` → `openUser`
+- 客户端模式 `client_credentials` → `openApp`
 
-- 授权码模式（authorization_code） → 用户级授权 (`openUser`)
-- 客户端模式（client_credentials） → 应用级授权 (`openApp`)
+相关说明见 [oauth2.md](oauth2.md)。
 
-Token 中包含的主体信息会随着授权模式变化（见 `docs/learn/oauth2.md`）。
+## 控制器中获取当前用户
 
----
+方式一，直接注入：
 
-控制器中获取认证用户
-==================
-
-```
+```java
 @AuthenticationPrincipal SohoUserDetails sohoUserDetails
 ```
 
-或：
+方式二，通过 `TokenServiceImpl` 获取：
 
+```java
+SohoUserDetails user = tokenService.getLoginUser(request);
 ```
-SohoUserDetails user = tokenService.getLoginUser(request)
-```
 
----
+## 自定义鉴权实现
 
-自定义鉴权实现（可选）
-==================
-
-如需为某个模块提供自定义鉴权（非 JWT），可实现：
+如果某个模块不使用默认 JWT 方案，可实现以下接口：
 
 - `SohoRoleAuthenticationService`
 
-并注册为 Spring Bean，系统会自动遍历并尝试获取 `SohoUserDetails`。
+注册为 Spring Bean 后，系统会自动尝试解析当前请求并恢复 `SohoUserDetails`。
 
----
+## 测试中启用安全配置
 
-测试中启用安全配置
-===============
-
-```
+```java
 @BeforeEach
 public void setup() {
     this.mockMvc = MockMvcBuilders.webAppContextSetup(this.webApplicationContext)
-            // 注意：开启 security
             .apply(springSecurity())
             .build();
 }
 
 @SohoWithUser(id = 6, username = "197489090675871745", role = "chat")
 ```
+
+## 维护建议
+
+- 路径级鉴权只能解决角色隔离，不能替代资源归属校验。
+- 用户态接口建议同时校验当前登录用户与数据归属关系。
+- 对内部接口、云端接口与开放接口，建议补充网关或服务间鉴权，而不是只依赖路径规则。

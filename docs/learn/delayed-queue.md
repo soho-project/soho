@@ -1,21 +1,33 @@
-延时消息队列
-==========
+# 延时消息队列
 
-- Exec延时队列
+项目内提供了对延时执行与延时事件投递的简化封装。
 
-      DelayedQueueUtils.addExecDelayedMessage(ExecDelayedMessage message)
-      DelayedQueueUtils.addExecDelayedMessage(Runnable message, long delayMilliseconds)
+## 执行型延时任务
 
-- 延时Event
+```java
+DelayedQueueUtils.addExecDelayedMessage(ExecDelayedMessage message);
+DelayedQueueUtils.addExecDelayedMessage(Runnable message, long delayMilliseconds);
+```
 
-      DelayedQueueUtils.addEventDelayedMessage(Object message, long delayMilliseconds)
+## 事件型延时任务
 
-- 删除延时队列
+```java
+DelayedQueueUtils.addEventDelayedMessage(Object message, long delayMilliseconds);
+```
 
-要删除延时队列，在初始化任务 Message 的时候必须设置消息 id, 以及groupName （分组名默认为default）
+## 删除延时任务
 
-    // 按照 id, groupName 删除延时队列
-    DelayedQueueUtils.delete(id, groupName)
-    
-    // 删除指定的延时队列 （前提是设置了  id, groupName）
-    DelayedQueueUtils.delete(message)
+若需要删除延时任务，初始化消息时必须设置：
+
+- `id`
+- `groupName`
+
+其中 `groupName` 默认值为 `default`。
+
+```java
+// 按照 id 与 groupName 删除延时任务
+DelayedQueueUtils.delete(id, groupName);
+
+// 直接按消息对象删除，前提是消息已设置 id 与 groupName
+DelayedQueueUtils.delete(message);
+```
