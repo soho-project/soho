@@ -1,6 +1,7 @@
 package work.soho.admin.biz.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
@@ -93,6 +94,20 @@ public class AdminUser implements Serializable {
      */
     @ApiModelProperty("年龄")
     private Integer age;
+
+    /**
+     * 部门ID
+     */
+    @ApiModelProperty("部门ID")
+    @TableField("dept_id")
+    private Long deptId;
+
+    /**
+     * 岗位ID
+     */
+    @ApiModelProperty("岗位ID")
+    @TableField("post_id")
+    private Long postId;
 
     /**
      * 软删除标记

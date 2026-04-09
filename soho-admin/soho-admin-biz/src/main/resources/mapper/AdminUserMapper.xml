@@ -11,6 +11,11 @@
        phone,
        password,
        updated_time,
-       created_time
+       created_time,
+       sex,
+       age,
+       dept_id,
+       post_id,
+       is_deleted
    </sql>
 </mapper>
