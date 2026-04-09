@@ -28,5 +28,9 @@ public class AdminUserVo {
     private Date updatedTime;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdTime;
+    private Long deptId;
+    private String deptName;
+    private Long postId;
+    private String postName;
     private List<Long> roleIds;
 }

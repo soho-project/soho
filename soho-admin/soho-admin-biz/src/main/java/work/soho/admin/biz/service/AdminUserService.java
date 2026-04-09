@@ -7,9 +7,19 @@ import work.soho.admin.api.vo.AdminUserVo;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
+import java.util.List;
 
+/**
+ * 管理员用户服务。
+ */
 public interface AdminUserService extends IService<AdminUser> {
 
+	/**
+	 * 根据登录名获取管理员。
+	 *
+	 * @param loginName 登录名
+	 * @return 管理员
+	 */
 	AdminUser getByLoginName(String loginName);
 
 	/**
@@ -24,4 +34,18 @@ public interface AdminUserService extends IService<AdminUser> {
      * @return
      */
 	HashMap<String, AdminResource> getResourceByUid(Long uid) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException;
+
+	/**
+	 * 批量填充用户部门和岗位信息。
+	 *
+	 * @param adminUserVoList 用户列表
+	 */
+	void fillDeptAndPostInfo(List<AdminUserVo> adminUserVoList);
+
+	/**
+	 * 填充单个用户部门和岗位信息。
+	 *
+	 * @param adminUserVo 用户信息
+	 */
+	void fillDeptAndPostInfo(AdminUserVo adminUserVo);
 }

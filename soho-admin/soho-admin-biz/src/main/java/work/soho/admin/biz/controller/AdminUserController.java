@@ -145,6 +145,8 @@ public class AdminUserController {
         lqw.eq(StringUtils.isNotEmpty(adminUserVo.getRealName()), AdminUser::getRealName, adminUserVo.getRealName());
         lqw.eq(StringUtils.isNotEmpty(adminUserVo.getPhone()), AdminUser::getPhone, adminUserVo.getPhone());
         lqw.eq(StringUtils.isNotEmpty(adminUserVo.getEmail()), AdminUser::getEmail, adminUserVo.getEmail());
+        lqw.eq(adminUserVo.getDeptId()!=null, AdminUser::getDeptId, adminUserVo.getDeptId());
+        lqw.eq(adminUserVo.getPostId()!=null, AdminUser::getPostId, adminUserVo.getPostId());
         lqw.eq(AdminUser::getIsDeleted, 0);
         lqw.orderByDesc(AdminUser::getId);
         PageUtils.startPage();
@@ -155,6 +157,7 @@ public class AdminUserController {
             BeanUtils.copyProperties(item, vo);
             voList.add(vo);
         });
+        adminUserService.fillDeptAndPostInfo(voList);
         PageSerializable<AdminUserVo> pageSerializable = new PageSerializable<>(voList);
         pageSerializable.setTotal(((Page<AdminUser>)list).getTotal());
         return R.success(pageSerializable);
@@ -208,6 +211,7 @@ public class AdminUserController {
         List<Long> roleIds = adminRoleUserService.list(new LambdaQueryWrapper<AdminRoleUser>().eq(AdminRoleUser::getUserId, id)).stream()
                 .map(AdminRoleUser::getRoleId).collect(Collectors.toList());
         adminUserVo.setRoleIds(roleIds);
+        adminUserService.fillDeptAndPostInfo(adminUserVo);
         return R.success(adminUserVo);
     }
 
@@ -215,7 +219,9 @@ public class AdminUserController {
     @GetMapping("myself")
     public R<AdminUserVo> myselfDatails() {
         Long userId = SecurityUtils.getLoginUserId();
-        return R.success(work.soho.common.core.util.BeanUtils.copy(adminUserService.getById(userId), AdminUserVo.class));
+        AdminUserVo adminUserVo = work.soho.common.core.util.BeanUtils.copy(adminUserService.getById(userId), AdminUserVo.class);
+        adminUserService.fillDeptAndPostInfo(adminUserVo);
+        return R.success(adminUserVo);
     }
 
     @ApiOperation("更新自己信息")
