@@ -9,6 +9,7 @@ import work.soho.ai.biz.domain.AiProviderConfig;
 import work.soho.ai.biz.domain.AiProviderModelRel;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
+import work.soho.ai.biz.service.AiProviderRuntimeStateService;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,10 +26,12 @@ public class AiProviderConfigControllerTest {
     public void remove_deletesRelationsAndConfigs() {
         AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiProviderRuntimeStateService aiProviderRuntimeStateService = Mockito.mock(AiProviderRuntimeStateService.class);
         AiSysConfig aiSysConfig = Mockito.mock(AiSysConfig.class);
         AiProviderConfigController controller = new AiProviderConfigController(
                 aiProviderConfigService,
                 aiProviderModelRelService,
+                aiProviderRuntimeStateService,
                 aiSysConfig
         );
 
@@ -39,16 +42,19 @@ public class AiProviderConfigControllerTest {
 
         verify(aiProviderModelRelService).remove(any(LambdaQueryWrapper.class));
         verify(aiProviderConfigService).removeByIds(Arrays.asList(1L));
+        verify(aiProviderRuntimeStateService).clearState(1L);
     }
 
     @Test
     public void editByProviderUniqueId_updatesMatchedConfig() {
         AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiProviderRuntimeStateService aiProviderRuntimeStateService = Mockito.mock(AiProviderRuntimeStateService.class);
         AiSysConfig aiSysConfig = Mockito.mock(AiSysConfig.class);
         AiProviderConfigController controller = new AiProviderConfigController(
                 aiProviderConfigService,
                 aiProviderModelRelService,
+                aiProviderRuntimeStateService,
                 aiSysConfig
         );
 
@@ -66,16 +72,19 @@ public class AiProviderConfigControllerTest {
         verify(aiProviderConfigService).getOne(any(LambdaQueryWrapper.class));
         verify(aiProviderConfigService).updateById(any(AiProviderConfig.class));
         verify(aiProviderModelRelService, Mockito.never()).replaceRelations(eq(100L), any());
+        verify(aiProviderRuntimeStateService).clearState(100L);
     }
 
     @Test
     public void editByProviderUniqueId_createsDefaultConfigWhenMissing() {
         AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiProviderRuntimeStateService aiProviderRuntimeStateService = Mockito.mock(AiProviderRuntimeStateService.class);
         AiSysConfig aiSysConfig = Mockito.mock(AiSysConfig.class);
         AiProviderConfigController controller = new AiProviderConfigController(
                 aiProviderConfigService,
                 aiProviderModelRelService,
+                aiProviderRuntimeStateService,
                 aiSysConfig
         );
 
@@ -101,10 +110,12 @@ public class AiProviderConfigControllerTest {
     public void add_whenModelInfoIdsMissing_keepsEmptyList() {
         AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiProviderRuntimeStateService aiProviderRuntimeStateService = Mockito.mock(AiProviderRuntimeStateService.class);
         AiSysConfig aiSysConfig = Mockito.mock(AiSysConfig.class);
         AiProviderConfigController controller = new AiProviderConfigController(
                 aiProviderConfigService,
                 aiProviderModelRelService,
+                aiProviderRuntimeStateService,
                 aiSysConfig
         );
 
@@ -122,10 +133,12 @@ public class AiProviderConfigControllerTest {
     public void add_keepsIncomingModelInfoIds() {
         AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiProviderRuntimeStateService aiProviderRuntimeStateService = Mockito.mock(AiProviderRuntimeStateService.class);
         AiSysConfig aiSysConfig = Mockito.mock(AiSysConfig.class);
         AiProviderConfigController controller = new AiProviderConfigController(
                 aiProviderConfigService,
                 aiProviderModelRelService,
+                aiProviderRuntimeStateService,
                 aiSysConfig
         );
 
@@ -138,5 +151,30 @@ public class AiProviderConfigControllerTest {
         ArgumentCaptor<AiProviderConfig> captor = ArgumentCaptor.forClass(AiProviderConfig.class);
         verify(aiProviderConfigService).save(captor.capture());
         org.junit.Assert.assertEquals(Collections.singletonList(99L), captor.getValue().getModelInfoIds());
+    }
+
+    @Test
+    public void edit_clearsRuntimeStateAfterUpdate() {
+        AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
+        AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiProviderRuntimeStateService aiProviderRuntimeStateService = Mockito.mock(AiProviderRuntimeStateService.class);
+        AiSysConfig aiSysConfig = Mockito.mock(AiSysConfig.class);
+        AiProviderConfigController controller = new AiProviderConfigController(
+                aiProviderConfigService,
+                aiProviderModelRelService,
+                aiProviderRuntimeStateService,
+                aiSysConfig
+        );
+
+        when(aiProviderConfigService.updateById(any(AiProviderConfig.class))).thenReturn(true);
+
+        AiProviderConfig request = new AiProviderConfig();
+        request.setId(88L);
+        request.setStatus(0);
+        request.setWeight(0);
+
+        controller.edit(request);
+
+        verify(aiProviderRuntimeStateService).clearState(88L);
     }
 }

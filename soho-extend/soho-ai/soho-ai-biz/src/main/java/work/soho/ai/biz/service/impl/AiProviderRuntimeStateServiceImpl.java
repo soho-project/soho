@@ -167,6 +167,19 @@ public class AiProviderRuntimeStateServiceImpl implements AiProviderRuntimeState
     }
 
     /**
+     * 清理指定提供方的运行时状态。
+     *
+     * @param providerConfigId 提供方配置ID
+     */
+    @Override
+    public void clearState(Long providerConfigId) {
+        if (providerConfigId == null) {
+            return;
+        }
+        stateMap.remove(providerConfigId);
+    }
+
+    /**
      * 更新 EWMA 延迟值。
      *
      * @param current 当前值

@@ -18,6 +18,7 @@ import work.soho.ai.biz.domain.AiProviderConfig;
 import work.soho.ai.biz.domain.AiProviderModelRel;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
+import work.soho.ai.biz.service.AiProviderRuntimeStateService;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
@@ -59,6 +60,7 @@ public class AiProviderConfigController {
 
     private final AiProviderConfigService aiProviderConfigService;
     private final AiProviderModelRelService aiProviderModelRelService;
+    private final AiProviderRuntimeStateService aiProviderRuntimeStateService;
     private final AiSysConfig aiSysConfig;
 
     /**
@@ -136,6 +138,9 @@ public class AiProviderConfigController {
         if (updated && aiProviderConfig.getId() != null && aiProviderConfig.getModelInfoIds() != null) {
             aiProviderModelRelService.replaceRelations(aiProviderConfig.getId(), aiProviderConfig.getModelInfoIds());
         }
+        if (updated) {
+            clearProviderRuntimeState(aiProviderConfig.getId());
+        }
         return R.success(updated);
     }
 
@@ -171,9 +176,18 @@ public class AiProviderConfigController {
         if (updated && aiProviderConfig.getModelInfoIds() != null) {
             aiProviderModelRelService.replaceRelations(existed.getId(), aiProviderConfig.getModelInfoIds());
         }
+        if (updated) {
+            clearProviderRuntimeState(existed.getId());
+        }
         return R.success(updated);
     }
 
+    /**
+     * 构造默认的提供方配置。
+     *
+     * @param providerUniqueId 提供方唯一标识
+     * @return 默认配置
+     */
     private AiProviderConfig buildDefaultProviderConfig(String providerUniqueId) {
         AiProviderConfig config = new AiProviderConfig();
         config.setCode(DEFAULT_PROVIDER_CODE + IDGeneratorUtils.uuid());
@@ -194,6 +208,11 @@ public class AiProviderConfigController {
         return config;
     }
 
+    /**
+     * 构造默认配置JSON。
+     *
+     * @return 默认配置JSON
+     */
     private String buildDefaultConfigJson() {
         LinkedHashMap<String, Object> config = new LinkedHashMap<>();
         config.put("adapter", "codexResponses");
@@ -216,6 +235,12 @@ public class AiProviderConfigController {
         return JacksonUtils.toJson(config);
     }
 
+    /**
+     * 合并非空字段到目标配置。
+     *
+     * @param target 目标配置
+     * @param source 来源配置
+     */
     private void mergeNonNullFields(AiProviderConfig target, AiProviderConfig source) {
         if (target == null || source == null) {
             return;
@@ -265,6 +290,15 @@ public class AiProviderConfigController {
     }
 
     /**
+     * 清理提供方运行时状态，确保配置变更实时生效。
+     *
+     * @param providerConfigId 提供方配置ID
+     */
+    private void clearProviderRuntimeState(Long providerConfigId) {
+        aiProviderRuntimeStateService.clearState(providerConfigId);
+    }
+
+    /**
      * 删除AI提供方配置表
      */
     @DeleteMapping("/{ids}" )
@@ -274,7 +308,13 @@ public class AiProviderConfigController {
         List<Long> idList = Arrays.asList(ids);
         aiProviderModelRelService.remove(new LambdaQueryWrapper<AiProviderModelRel>()
                 .in(AiProviderModelRel::getProviderConfigId, idList));
-        return R.success(aiProviderConfigService.removeByIds(idList));
+        boolean removed = aiProviderConfigService.removeByIds(idList);
+        if (removed) {
+            for (Long id : idList) {
+                clearProviderRuntimeState(id);
+            }
+        }
+        return R.success(removed);
     }
 
     /**

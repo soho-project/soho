@@ -409,6 +409,13 @@
 
 ### 5.6 后台直连聊天
 
+### 5.7 会话路由策略
+
+- `ai_chat_session.provider_code` 不再作为实际路由依据
+- 聊天请求默认按本次请求的 `providerCode + model` 决定路由
+- 当本次请求未指定 `providerCode` 时，系统会按 `model` 重新执行动态权重选择
+- 历史会话中残留的 `provider_code` 建议执行 `docs/sql/20260411_ai_chat_session_clear_provider_code.sql` 清理
+
 - 路径：`POST /ai/admin/chat`
 - 路径：`POST /ai/admin/chat/stream`
 

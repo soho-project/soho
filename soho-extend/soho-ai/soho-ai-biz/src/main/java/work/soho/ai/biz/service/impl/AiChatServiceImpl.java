@@ -46,9 +46,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -341,21 +343,31 @@ public class AiChatServiceImpl implements AiChatService {
     private List<AiProviderConfig> loadOrderedEnabledCandidatesByModel(String model) {
         List<Long> providerConfigIds = aiProviderModelRelService.listEnabledProviderConfigIdsByModelName(model);
         log.debug("resolveProviderConfig by model={}, providerConfigIds={}", model, providerConfigIds);
-        if (providerConfigIds.isEmpty()) {
+        List<AiProviderConfig> enabledConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
+                .eq(AiProviderConfig::getStatus, 1));
+        if (enabledConfigs.isEmpty()) {
             return Collections.emptyList();
         }
-        List<AiProviderConfig> enabledConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
-                .in(AiProviderConfig::getId, providerConfigIds)
-                .eq(AiProviderConfig::getStatus, 1));
         Map<Long, AiProviderConfig> configMap = new HashMap<>();
         for (AiProviderConfig enabledConfig : enabledConfigs) {
             configMap.put(enabledConfig.getId(), enabledConfig);
         }
         List<AiProviderConfig> orderedCandidates = new ArrayList<>();
+        Set<Long> addedConfigIds = new LinkedHashSet<>();
         for (Long providerConfigId : providerConfigIds) {
             AiProviderConfig candidate = configMap.get(providerConfigId);
             if (candidate != null) {
                 orderedCandidates.add(candidate);
+                addedConfigIds.add(candidate.getId());
+            }
+        }
+        for (AiProviderConfig enabledConfig : enabledConfigs) {
+            if (enabledConfig.getId() == null || addedConfigIds.contains(enabledConfig.getId())) {
+                continue;
+            }
+            List<String> declaredModels = AiProviderModelUtils.extractModels(enabledConfig);
+            if (declaredModels.contains(model)) {
+                orderedCandidates.add(enabledConfig);
             }
         }
         return orderedCandidates;

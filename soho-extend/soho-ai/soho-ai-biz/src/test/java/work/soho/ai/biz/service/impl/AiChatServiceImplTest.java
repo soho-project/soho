@@ -148,6 +148,34 @@ public class AiChatServiceImplTest {
     }
 
     @Test
+    public void resolveProviderConfig_whenProviderHasNoRelationButDeclaresModel_shouldStillParticipate() {
+        AiProviderConfigService providerConfigService = Mockito.mock(AiProviderConfigService.class);
+        AiProviderModelRelService providerModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiFileService aiFileService = Mockito.mock(AiFileService.class);
+        AiProviderRuntimeStateService runtimeStateService = Mockito.mock(AiProviderRuntimeStateService.class);
+        when(runtimeStateService.isRequestAllowed(Mockito.any())).thenReturn(true);
+        when(runtimeStateService.getEffectiveWeight(Mockito.argThat(config -> config != null && Long.valueOf(9L).equals(config.getId()))))
+                .thenReturn(10);
+        AiChatServiceImpl service = new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService, runtimeStateService);
+
+        when(providerModelRelService.listEnabledProviderConfigIdsByModelName("gpt-4o-mini"))
+                .thenReturn(Arrays.asList());
+
+        AiProviderConfig config = new AiProviderConfig();
+        config.setId(9L);
+        config.setStatus(1);
+        config.setCode("fallback");
+        config.setWeight(10);
+        config.setDefaultModel("gpt-4o-mini");
+        config.setSupportedModels("gpt-4o-mini\ngpt-4.1");
+
+        when(providerConfigService.list(Mockito.any())).thenReturn(Arrays.asList(config));
+
+        AiProviderConfig selected = service.resolveProviderConfig(null, "gpt-4o-mini");
+        assertThat(selected.getId()).isEqualTo(9L);
+    }
+
+    @Test
     public void openAiResponsesRequest_whenRawRequestUsesParameters_shouldKeepParametersField() {
         String raw = "{"
                 + "\"model\":\"gpt-5.4\","

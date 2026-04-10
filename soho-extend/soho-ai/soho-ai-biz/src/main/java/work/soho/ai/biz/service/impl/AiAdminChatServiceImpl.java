@@ -89,10 +89,14 @@ public class AiAdminChatServiceImpl implements AiAdminChatService {
     @Override
     public List<AiChatSession> listSessions(Long adminId) {
         Long ownerId = buildAdminOwnerId(adminId);
-        return aiChatSessionService.list(new LambdaQueryWrapper<AiChatSession>()
+        List<AiChatSession> sessions = aiChatSessionService.list(new LambdaQueryWrapper<AiChatSession>()
                 .eq(AiChatSession::getUserId, ownerId)
                 .orderByDesc(AiChatSession::getUpdatedTime)
                 .orderByDesc(AiChatSession::getId));
+        for (AiChatSession session : sessions) {
+            sanitizeSessionProviderBinding(session);
+        }
+        return sessions;
     }
 
     /**
@@ -141,6 +145,7 @@ public class AiAdminChatServiceImpl implements AiAdminChatService {
         session.setTitle(title);
         session.setUpdatedTime(LocalDateTime.now());
         aiChatSessionService.updateById(session);
+        sanitizeSessionProviderBinding(session);
         return session;
     }
 
@@ -237,21 +242,17 @@ public class AiAdminChatServiceImpl implements AiAdminChatService {
         if (request.getSessionId() != null) {
             session = aiChatSessionService.requireSessionByOwnerId(ownerId, request.getSessionId());
         } else {
-            String resolvedProviderCode = resolveProviderCode(request);
             session = new AiChatSession();
             session.setUserId(ownerId);
-            session.setProviderCode(resolvedProviderCode);
+            session.setProviderCode(null);
             session.setModel(request.getModel());
             session.setTitle(resolveTitle(request));
             session.setCreatedTime(LocalDateTime.now());
             session.setUpdatedTime(LocalDateTime.now());
             aiChatSessionService.save(session);
         }
-        if (StringUtils.isNotBlank(request.getProviderCode())) {
-            session.setProviderCode(request.getProviderCode());
-        } else if (StringUtils.isBlank(session.getProviderCode()) && StringUtils.isNotBlank(request.getModel())) {
-            session.setProviderCode(resolveProviderCode(request));
-        }
+        // 供应商不再绑定到会话，每次请求都按当前参数重新路由。
+        session.setProviderCode(null);
         if (StringUtils.isNotBlank(request.getModel())) {
             session.setModel(request.getModel());
         }
@@ -289,22 +290,6 @@ public class AiAdminChatServiceImpl implements AiAdminChatService {
     }
 
     /**
-     * 解析提供方编码。
-     *
-     * @param request 请求参数
-     * @return 提供方编码
-     */
-    private String resolveProviderCode(UserAiChatRequest request) {
-        if (StringUtils.isNotBlank(request.getProviderCode())) {
-            return request.getProviderCode();
-        }
-        if (StringUtils.isBlank(request.getModel())) {
-            return null;
-        }
-        return aiChatService.resolveProviderConfig(null, request.getModel()).getCode();
-    }
-
-    /**
      * 解析会话标题。
      *
      * @param request 请求参数
@@ -337,7 +322,7 @@ public class AiAdminChatServiceImpl implements AiAdminChatService {
      */
     private AiChatRequest toAiChatRequest(UserAiChatRequest request, AiChatSession session) {
         AiChatRequest aiChatRequest = new AiChatRequest();
-        aiChatRequest.setProviderCode(session.getProviderCode());
+        aiChatRequest.setProviderCode(request.getProviderCode());
         aiChatRequest.setModel(StringUtils.isBlank(request.getModel()) ? session.getModel() : request.getModel());
         aiChatRequest.setInput(request.getInput());
         aiChatRequest.setMessages(request.getMessages());
@@ -351,6 +336,18 @@ public class AiAdminChatServiceImpl implements AiAdminChatService {
         aiChatRequest.setPromptVars(request.getPromptVars());
         aiChatRequest.setExtra(request.getExtra());
         return aiChatRequest;
+    }
+
+    /**
+     * 清理返回给前端的会话供应商绑定信息。
+     *
+     * @param session 会话
+     */
+    private void sanitizeSessionProviderBinding(AiChatSession session) {
+        if (session == null) {
+            return;
+        }
+        session.setProviderCode(null);
     }
 
     /**
