@@ -18,5 +18,8 @@ public class UserAiChatRequest {
     private Integer maxTokens;
     private Boolean stream;
     private String instructions;
+    private String sceneCode;
+    private String templateCode;
+    private Map<String, Object> promptVars;
     private Map<String, Object> extra;
 }

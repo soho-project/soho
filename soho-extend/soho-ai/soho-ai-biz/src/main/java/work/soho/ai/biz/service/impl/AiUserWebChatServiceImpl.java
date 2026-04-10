@@ -11,7 +11,9 @@ import work.soho.ai.biz.domain.AiChatSession;
 import work.soho.ai.biz.domain.AiChatSessionMessage;
 import work.soho.ai.biz.domain.AiModelInfo;
 import work.soho.ai.biz.domain.AiProviderConfig;
+import work.soho.ai.biz.domain.AiPromptRenderLog;
 import work.soho.ai.biz.dto.AiChatResponse;
+import work.soho.ai.biz.dto.AiPromptRenderResult;
 import work.soho.ai.biz.dto.AiUsageSummary;
 import work.soho.ai.biz.dto.AiUserModelView;
 import work.soho.ai.biz.enums.AiApiCallLogEnums;
@@ -24,6 +26,8 @@ import work.soho.ai.biz.service.AiChatSessionService;
 import work.soho.ai.biz.service.AiMemberRequestLimitService;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
+import work.soho.ai.biz.service.AiPromptRenderLogService;
+import work.soho.ai.biz.service.AiPromptRenderService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
 import work.soho.ai.biz.service.AiUserWebChatService;
 import work.soho.ai.biz.utils.AiProviderModelUtils;
@@ -61,6 +65,8 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
     private final WalletInfoApiService walletInfoApiService;
     private final AiMemberRequestLimitService aiMemberRequestLimitService;
     private final AiUserMemberCardService aiUserMemberCardService;
+    private final AiPromptRenderService aiPromptRenderService;
+    private final AiPromptRenderLogService aiPromptRenderLogService;
 
     @Override
     public List<AiUserModelView> listModels() {
@@ -133,11 +139,12 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
     @Transactional(rollbackFor = Exception.class)
     public AiChatResponse chat(Long userId, UserAiChatRequest request) {
         AiChatSession session = prepareSession(userId, request);
-        AiChatRequest aiChatRequest = toAiChatRequest(request, session);
+        String requestId = IDGeneratorUtils.uuid32();
+        AiChatRequest aiChatRequest = renderPromptRequest(toAiChatRequest(request, session));
         AiProviderConfig providerConfig = aiChatService.resolveProviderConfig(aiChatRequest.getProviderCode(), aiChatRequest.getModel());
         BillingPlan billingPlan = buildBillingPlan(userId, providerConfig, aiChatRequest);
         preCheckBalance(billingPlan);
-        String requestId = IDGeneratorUtils.uuid32();
+        savePromptRenderLog(requestId, userId, session.getId(), aiChatRequest);
         long startAt = System.currentTimeMillis();
         try {
             persistUserMessage(session.getId(), aiChatRequest);
@@ -163,11 +170,12 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
     @Override
     public Flux<String> streamChat(Long userId, UserAiChatRequest request) {
         AiChatSession session = prepareSession(userId, request);
-        AiChatRequest aiChatRequest = toAiChatRequest(request, session);
+        String requestId = IDGeneratorUtils.uuid32();
+        AiChatRequest aiChatRequest = renderPromptRequest(toAiChatRequest(request, session));
         AiProviderConfig providerConfig = aiChatService.resolveProviderConfig(aiChatRequest.getProviderCode(), aiChatRequest.getModel());
         BillingPlan billingPlan = buildBillingPlan(userId, providerConfig, aiChatRequest);
         preCheckBalance(billingPlan);
-        String requestId = IDGeneratorUtils.uuid32();
+        savePromptRenderLog(requestId, userId, session.getId(), aiChatRequest);
         persistUserMessage(session.getId(), aiChatRequest);
         StringBuilder assistantContent = new StringBuilder();
         long startAt = System.currentTimeMillis();
@@ -194,6 +202,19 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
                             StringUtils.isNotBlank(aiChatRequest.getModel()) ? aiChatRequest.getModel() : providerConfig.getDefaultModel(),
                             ex.getMessage(), USER_WEB_CHAT_ENDPOINT, totalMs, resolveFirstTokenMs(firstTokenAt, startAt));
                 });
+    }
+
+    /**
+     * 渲染提示词模板并返回最终聊天请求。
+     *
+     * @param aiChatRequest 原始聊天请求
+     * @return 渲染后的聊天请求
+     */
+    private AiChatRequest renderPromptRequest(AiChatRequest aiChatRequest) {
+        AiPromptRenderResult renderResult = aiPromptRenderService.render(aiChatRequest);
+        AiChatRequest renderedRequest = renderResult.getRenderedRequest();
+        attachPromptMeta(renderedRequest, renderResult);
+        return renderedRequest;
     }
 
     private AiChatSession prepareSession(Long userId, UserAiChatRequest request) {
@@ -268,8 +289,126 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
         aiChatRequest.setMaxTokens(request.getMaxTokens());
         aiChatRequest.setStream(request.getStream());
         aiChatRequest.setInstructions(request.getInstructions());
+        aiChatRequest.setSceneCode(request.getSceneCode());
+        aiChatRequest.setTemplateCode(request.getTemplateCode());
+        aiChatRequest.setPromptVars(request.getPromptVars());
         aiChatRequest.setExtra(request.getExtra());
         return aiChatRequest;
+    }
+
+    /**
+     * 把提示词元信息写回请求 extra，便于后续日志和排障。
+     *
+     * @param request 渲染后的请求
+     * @param renderResult 渲染结果
+     */
+    private void attachPromptMeta(AiChatRequest request, AiPromptRenderResult renderResult) {
+        if (request == null || renderResult == null || renderResult.getTemplateId() == null) {
+            return;
+        }
+        Map<String, Object> extra = request.getExtra() == null ? new HashMap<>() : new HashMap<>(request.getExtra());
+        extra.put("promptTemplateId", renderResult.getTemplateId());
+        extra.put("promptTemplateCode", renderResult.getTemplateCode());
+        extra.put("promptTemplateVersion", renderResult.getTemplateVersion());
+        extra.put("promptSceneCode", renderResult.getSceneCode());
+        request.setExtra(extra);
+    }
+
+    /**
+     * 保存提示词渲染快照。
+     *
+     * @param requestId 请求ID
+     * @param userId 用户ID
+     * @param sessionId 会话ID
+     * @param request 渲染后的请求
+     */
+    private void savePromptRenderLog(String requestId, Long userId, Long sessionId, AiChatRequest request) {
+        Map<String, Object> extra = request == null ? null : request.getExtra();
+        if (extra == null || extra.get("promptTemplateId") == null) {
+            return;
+        }
+        AiPromptRenderLog logRecord = new AiPromptRenderLog();
+        logRecord.setRequestId(requestId);
+        logRecord.setUserId(userId);
+        logRecord.setSessionId(sessionId);
+        logRecord.setProviderCode(request.getProviderCode());
+        logRecord.setModel(request.getModel());
+        logRecord.setSceneCode(request.getSceneCode());
+        logRecord.setTemplateId(longValue(extra.get("promptTemplateId")));
+        logRecord.setTemplateCode(stringValue(extra.get("promptTemplateCode")));
+        logRecord.setTemplateVersion(integerValue(extra.get("promptTemplateVersion")));
+        logRecord.setPromptVarsJson(JacksonUtils.toJson(request.getPromptVars()));
+        logRecord.setRenderedInstructions(request.getInstructions());
+        logRecord.setRenderedInput(resolveRenderedInput(request));
+        aiPromptRenderLogService.save(logRecord);
+    }
+
+    /**
+     * 获取最终用户输入快照。
+     *
+     * @param request 聊天请求
+     * @return 输入文本
+     */
+    private String resolveRenderedInput(AiChatRequest request) {
+        if (request == null) {
+            return null;
+        }
+        if (StringUtils.isNotBlank(request.getInput())) {
+            return request.getInput();
+        }
+        List<AiChatRequest.Message> messages = request.getMessages();
+        if (messages == null) {
+            return null;
+        }
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            AiChatRequest.Message message = messages.get(i);
+            if (message != null && "user".equalsIgnoreCase(message.getRole()) && StringUtils.isNotBlank(message.getContent())) {
+                return message.getContent();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 转换为 Long。
+     *
+     * @param value 原始值
+     * @return Long 值
+     */
+    private Long longValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        return Long.valueOf(String.valueOf(value));
+    }
+
+    /**
+     * 转换为 Integer。
+     *
+     * @param value 原始值
+     * @return Integer 值
+     */
+    private Integer integerValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        return Integer.valueOf(String.valueOf(value));
+    }
+
+    /**
+     * 转换为字符串。
+     *
+     * @param value 原始值
+     * @return 字符串
+     */
+    private String stringValue(Object value) {
+        return value == null ? null : String.valueOf(value);
     }
 
     private void persistUserMessage(Long sessionId, AiChatRequest request) {

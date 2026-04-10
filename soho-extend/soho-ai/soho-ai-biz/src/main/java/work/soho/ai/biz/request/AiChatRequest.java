@@ -41,6 +41,21 @@ public class AiChatRequest {
     private String instructions;
 
     /**
+     * 提示词场景编码
+     */
+    private String sceneCode;
+
+    /**
+     * 指定提示词模板编码
+     */
+    private String templateCode;
+
+    /**
+     * 提示词模板变量
+     */
+    private Map<String, Object> promptVars;
+
+    /**
      * 透传扩展参数（可选）
      */
     private Map<String, Object> extra;
@@ -55,6 +70,8 @@ public class AiChatRequest {
         @JsonSetter("content")
         public void setContent(Object rawContent) {
             this.content = null;
+            this.imageUrls = null;
+            this.fileUrls = null;
             if (rawContent == null) {
                 return;
             }
@@ -75,22 +92,23 @@ public class AiChatRequest {
                 if (map == null) {
                     continue;
                 }
-                Object type = map.get("type");
-                if ("text".equals(type) && map.get("text") != null) {
+                String type = map.get("type") == null ? "" : String.valueOf(map.get("type")).toLowerCase();
+                String text = extractText(map, type);
+                if (StringUtils.isNotBlank(text)) {
                     if (textBuilder.length() > 0) {
                         textBuilder.append("\n");
                     }
-                    textBuilder.append(map.get("text"));
-                } else if ("image_url".equals(type)) {
-                    String imageUrl = extractUrl(map.get("image_url"));
-                    if (StringUtils.isNotBlank(imageUrl)) {
-                        parsedImageUrls.add(imageUrl);
-                    }
-                } else if ("file_url".equals(type)) {
-                    String fileUrl = extractUrl(map.get("file_url"));
-                    if (StringUtils.isNotBlank(fileUrl)) {
-                        parsedFileUrls.add(fileUrl);
-                    }
+                    textBuilder.append(text);
+                }
+
+                String imageUrl = extractImageUrl(map, type);
+                if (StringUtils.isNotBlank(imageUrl)) {
+                    appendUnique(parsedImageUrls, imageUrl);
+                }
+
+                String fileUrl = extractFileUrl(map, type);
+                if (StringUtils.isNotBlank(fileUrl)) {
+                    appendUnique(parsedFileUrls, fileUrl);
                 }
             }
             if (textBuilder.length() > 0) {
@@ -101,6 +119,69 @@ public class AiChatRequest {
             }
             if (!parsedFileUrls.isEmpty()) {
                 this.fileUrls = parsedFileUrls;
+            }
+        }
+
+        private String extractText(Map<?, ?> map, String type) {
+            if ("text".equals(type) || "input_text".equals(type) || "output_text".equals(type)) {
+                Object textValue = map.get("text");
+                if (textValue == null) {
+                    textValue = map.get("input_text");
+                }
+                if (textValue != null) {
+                    return String.valueOf(textValue);
+                }
+            }
+            return null;
+        }
+
+        private String extractImageUrl(Map<?, ?> map, String type) {
+            if ("image_url".equals(type)) {
+                return extractUrl(map.get("image_url"));
+            }
+            if ("input_image".equals(type) || "image".equals(type)) {
+                String url = extractUrl(map.get("image_url"));
+                if (StringUtils.isNotBlank(url)) {
+                    return url;
+                }
+                url = extractUrl(map.get("url"));
+                if (StringUtils.isNotBlank(url)) {
+                    return url;
+                }
+                url = extractUrl(map.get("image"));
+                if (StringUtils.isNotBlank(url)) {
+                    return url;
+                }
+                return extractUrl(map.get("input_image"));
+            }
+            return null;
+        }
+
+        private String extractFileUrl(Map<?, ?> map, String type) {
+            if ("file_url".equals(type)) {
+                return extractUrl(map.get("file_url"));
+            }
+            if ("input_file".equals(type) || "file".equals(type)) {
+                String url = extractUrl(map.get("file_url"));
+                if (StringUtils.isNotBlank(url)) {
+                    return url;
+                }
+                url = extractUrl(map.get("url"));
+                if (StringUtils.isNotBlank(url)) {
+                    return url;
+                }
+                url = extractUrl(map.get("file"));
+                if (StringUtils.isNotBlank(url)) {
+                    return url;
+                }
+                return extractUrl(map.get("input_file"));
+            }
+            return null;
+        }
+
+        private void appendUnique(List<String> list, String value) {
+            if (!list.contains(value)) {
+                list.add(value);
             }
         }
 

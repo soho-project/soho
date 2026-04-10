@@ -1401,7 +1401,7 @@ public class AiChatServiceImpl implements AiChatService {
             return null;
         }
         List<String> imageUrls = normalizeImageUrls(message.getImageUrls());
-        String text = message.getContent() == null ? null : message.getContent().trim();
+        String text = buildOpenAiTextContent(message);
         if (imageUrls.isEmpty()) {
             return StringUtils.isBlank(text) ? null : text;
         }
@@ -1414,6 +1414,33 @@ public class AiChatServiceImpl implements AiChatService {
             blocks.add(Map.of("type", "image_url", "image_url", Map.of("url", imageUrl)));
         }
         return blocks.isEmpty() ? null : blocks;
+    }
+
+    /**
+     * 组装 OpenAI 文本内容，确保文件 URL 在抽取失败时仍可作为上下文兜底传递。
+     *
+     * @param message 消息对象
+     * @return 文本内容
+     */
+    private String buildOpenAiTextContent(AiChatRequest.Message message) {
+        if (message == null) {
+            return null;
+        }
+        StringBuilder builder = new StringBuilder();
+        if (StringUtils.isNotBlank(message.getContent())) {
+            builder.append(message.getContent().trim());
+        }
+        List<String> fileUrls = normalizeFileUrls(message.getFileUrls());
+        if (!fileUrls.isEmpty()) {
+            if (builder.length() > 0) {
+                builder.append("\n\n");
+            }
+            builder.append("File URLs:");
+            for (String fileUrl : fileUrls) {
+                builder.append("\n- ").append(fileUrl);
+            }
+        }
+        return builder.length() == 0 ? null : builder.toString();
     }
 
     private String buildTextOnlyMessageContent(AiChatRequest.Message message) {
