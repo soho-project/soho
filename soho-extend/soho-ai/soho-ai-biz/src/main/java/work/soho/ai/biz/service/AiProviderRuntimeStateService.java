@@ -1,6 +1,7 @@
 package work.soho.ai.biz.service;
 
 import work.soho.ai.biz.domain.AiProviderConfig;
+import work.soho.ai.biz.dto.AiProviderRuntimeStateSnapshotDTO;
 
 /**
  * AI 提供方运行时状态服务。
@@ -39,4 +40,12 @@ public interface AiProviderRuntimeStateService {
      * @param throwable 异常
      */
     void recordFailure(AiProviderConfig providerConfig, Throwable throwable);
+
+    /**
+     * 读取当前提供方运行时快照。
+     *
+     * @param providerConfig 提供方配置
+     * @return 运行时快照
+     */
+    AiProviderRuntimeStateSnapshotDTO getSnapshot(AiProviderConfig providerConfig);
 }
