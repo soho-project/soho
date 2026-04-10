@@ -141,14 +141,16 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
         AiChatSession session = prepareSession(userId, request);
         String requestId = IDGeneratorUtils.uuid32();
         AiChatRequest aiChatRequest = renderPromptRequest(toAiChatRequest(request, session));
-        AiProviderConfig providerConfig = aiChatService.resolveProviderConfig(aiChatRequest.getProviderCode(), aiChatRequest.getModel());
-        BillingPlan billingPlan = buildBillingPlan(userId, providerConfig, aiChatRequest);
+        AiProviderConfig selectedProviderConfig = aiChatService.resolveProviderConfig(aiChatRequest.getProviderCode(), aiChatRequest.getModel());
+        BillingPlan billingPlan = buildBillingPlan(userId, selectedProviderConfig, aiChatRequest);
         preCheckBalance(billingPlan);
         savePromptRenderLog(requestId, userId, session.getId(), aiChatRequest);
         long startAt = System.currentTimeMillis();
         try {
             persistUserMessage(session.getId(), aiChatRequest);
-            AiChatResponse response = aiChatService.chat(providerConfig, aiChatRequest);
+            AiChatResponse response = aiChatService.chat(aiChatRequest);
+            AiProviderConfig providerConfig = resolveActualProviderConfig(response, aiChatRequest, selectedProviderConfig);
+            refreshBillingPlanProviderConfig(billingPlan, providerConfig, response.getModel());
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, response.getModel());
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
@@ -159,9 +161,11 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
             persistAssistantMessage(session, response.getContent(), request);
             return response;
         } catch (RuntimeException ex) {
+            AiProviderConfig providerConfig = resolveActualProviderConfig(null, aiChatRequest, selectedProviderConfig);
+            refreshBillingPlanProviderConfig(billingPlan, providerConfig, resolveActualModel(aiChatRequest, providerConfig));
             long totalMs = System.currentTimeMillis() - startAt;
             saveFailedLog(requestId, userId, providerConfig,
-                    StringUtils.isNotBlank(aiChatRequest.getModel()) ? aiChatRequest.getModel() : providerConfig.getDefaultModel(),
+                    resolveActualModel(aiChatRequest, providerConfig),
                     ex.getMessage(), USER_WEB_CHAT_ENDPOINT, totalMs, null);
             throw ex;
         }
@@ -172,22 +176,24 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
         AiChatSession session = prepareSession(userId, request);
         String requestId = IDGeneratorUtils.uuid32();
         AiChatRequest aiChatRequest = renderPromptRequest(toAiChatRequest(request, session));
-        AiProviderConfig providerConfig = aiChatService.resolveProviderConfig(aiChatRequest.getProviderCode(), aiChatRequest.getModel());
-        BillingPlan billingPlan = buildBillingPlan(userId, providerConfig, aiChatRequest);
+        AiProviderConfig selectedProviderConfig = aiChatService.resolveProviderConfig(aiChatRequest.getProviderCode(), aiChatRequest.getModel());
+        BillingPlan billingPlan = buildBillingPlan(userId, selectedProviderConfig, aiChatRequest);
         preCheckBalance(billingPlan);
         savePromptRenderLog(requestId, userId, session.getId(), aiChatRequest);
         persistUserMessage(session.getId(), aiChatRequest);
         StringBuilder assistantContent = new StringBuilder();
         long startAt = System.currentTimeMillis();
         AtomicLong firstTokenAt = new AtomicLong(-1L);
-        return aiChatService.streamChat(providerConfig, aiChatRequest)
+        return aiChatService.streamChat(aiChatRequest)
                 .doOnNext(payload -> {
                     appendAssistantDelta(payload, assistantContent);
                     recordFirstTokenAt(firstTokenAt, startAt, extractAssistantDelta(payload));
                 })
                 .doOnComplete(() -> {
+                    AiProviderConfig providerConfig = resolveActualProviderConfig(null, aiChatRequest, selectedProviderConfig);
+                    String model = resolveActualModel(aiChatRequest, providerConfig);
+                    refreshBillingPlanProviderConfig(billingPlan, providerConfig, model);
                     AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, assistantContent.toString());
-                    String model = StringUtils.isNotBlank(aiChatRequest.getModel()) ? aiChatRequest.getModel() : providerConfig.getDefaultModel();
                     BigDecimal amount = calculateAmount(billingPlan, usage, model);
                     Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, model);
                     aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
@@ -197,9 +203,12 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
                     persistAssistantMessage(session, assistantContent.toString(), request);
                 })
                 .doOnError(ex -> {
+                    AiProviderConfig providerConfig = resolveActualProviderConfig(null, aiChatRequest, selectedProviderConfig);
+                    String model = resolveActualModel(aiChatRequest, providerConfig);
+                    refreshBillingPlanProviderConfig(billingPlan, providerConfig, model);
                     long totalMs = System.currentTimeMillis() - startAt;
                     saveFailedLog(requestId, userId, providerConfig,
-                            StringUtils.isNotBlank(aiChatRequest.getModel()) ? aiChatRequest.getModel() : providerConfig.getDefaultModel(),
+                            model,
                             ex.getMessage(), USER_WEB_CHAT_ENDPOINT, totalMs, resolveFirstTokenMs(firstTokenAt, startAt));
                 });
     }
@@ -725,6 +734,66 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
             }
         }
         return fallback;
+    }
+
+    /**
+     * 解析本次请求实际命中的提供方配置。
+     *
+     * @param response 响应对象
+     * @param request 请求对象
+     * @param fallback 兜底配置
+     * @return 实际命中的提供方配置
+     */
+    private AiProviderConfig resolveActualProviderConfig(AiChatResponse response, AiChatRequest request, AiProviderConfig fallback) {
+        String providerCode = response != null && StringUtils.isNotBlank(response.getProviderCode())
+                ? response.getProviderCode()
+                : request == null ? null : request.getProviderCode();
+        if (StringUtils.isBlank(providerCode)) {
+            return fallback;
+        }
+        AiProviderConfig providerConfig = aiProviderConfigService.getOne(new LambdaQueryWrapper<AiProviderConfig>()
+                .eq(AiProviderConfig::getCode, providerCode)
+                .last("limit 1"));
+        return providerConfig == null ? fallback : providerConfig;
+    }
+
+    /**
+     * 解析本次请求实际命中的模型。
+     *
+     * @param request 请求对象
+     * @param providerConfig 提供方配置
+     * @return 模型名
+     */
+    private String resolveActualModel(AiChatRequest request, AiProviderConfig providerConfig) {
+        if (request != null && StringUtils.isNotBlank(request.getModel())) {
+            return request.getModel();
+        }
+        return providerConfig == null ? null : providerConfig.getDefaultModel();
+    }
+
+    /**
+     * 用实际命中的提供方刷新计费配置。
+     *
+     * @param billingPlan 计费方案
+     * @param providerConfig 提供方配置
+     * @param model 模型
+     */
+    private void refreshBillingPlanProviderConfig(BillingPlan billingPlan, AiProviderConfig providerConfig, String model) {
+        if (billingPlan == null || providerConfig == null) {
+            return;
+        }
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        billingPlan.providerConfigId = providerConfig.getId();
+        billingPlan.walletTypeId = pickInteger(config, "billingWalletTypeId", 1);
+        billingPlan.promptPricePer1kTokens = pickBigDecimal(config, "promptPricePer1kTokens", BigDecimal.ZERO);
+        billingPlan.completionPricePer1kTokens = pickBigDecimal(config, "completionPricePer1kTokens", billingPlan.promptPricePer1kTokens);
+        billingPlan.estimatedModel = StringUtils.isNotBlank(model) ? model : providerConfig.getDefaultModel();
+        billingPlan.billingEnabled = pickBoolean(config, "billingEnabled", false);
+        if (billingPlan.memberLimitDecision != null
+                && billingPlan.memberLimitDecision.isMemberByRequest()
+                && !billingPlan.memberLimitDecision.isOverLimit()) {
+            billingPlan.billingEnabled = false;
+        }
     }
 
     private String truncate(String value, int maxLength) {

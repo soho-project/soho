@@ -20,8 +20,10 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.transport.ProxyProvider;
 import work.soho.ai.biz.domain.AiProviderConfig;
@@ -32,6 +34,7 @@ import work.soho.ai.biz.service.AiChatService;
 import work.soho.ai.biz.service.AiFileService;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
+import work.soho.ai.biz.service.AiProviderRuntimeStateService;
 import work.soho.ai.biz.utils.AiProviderModelUtils;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.common.core.util.StringUtils;
@@ -47,6 +50,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
@@ -59,10 +64,16 @@ public class AiChatServiceImpl implements AiChatService {
     private static final String DEFAULT_CODEX_INSTRUCTIONS = "You are a helpful coding assistant.";
     private static final String EXTRA_NATIVE_RESPONSES = "nativeResponses";
     private static final String EXTRA_RESPONSES_REQUEST_BODY = "responsesRequestBody";
+    private static final String EXTRA_ACTUAL_PROVIDER_CONFIG_ID = "actualProviderConfigId";
+    private static final String EXTRA_ACTUAL_PROVIDER_CODE = "actualProviderCode";
+    private static final String EXTRA_ACTUAL_PROVIDER = "actualProvider";
+    private static final String EXTRA_ACTUAL_MODEL = "actualModel";
+    private static final long DEFAULT_FIRST_PAYLOAD_TIMEOUT_MS = 8000L;
 
     private final AiProviderConfigService aiProviderConfigService;
     private final AiProviderModelRelService aiProviderModelRelService;
     private final AiFileService aiFileService;
+    private final AiProviderRuntimeStateService aiProviderRuntimeStateService;
 
     @Override
     public AiChatResponse chat(AiChatRequest request) {
@@ -94,6 +105,9 @@ public class AiChatServiceImpl implements AiChatService {
 
     @Override
     public AiChatResponse chat(AiProviderConfig providerConfig, AiChatRequest request) {
+        if (!aiProviderRuntimeStateService.isRequestAllowed(providerConfig)) {
+            throw new IllegalStateException("provider temporarily unavailable: " + providerConfig.getCode());
+        }
         Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
         String provider = pickProvider(providerConfig, config);
         String apiKey = pickApiKey(providerConfig, config);
@@ -106,33 +120,38 @@ public class AiChatServiceImpl implements AiChatService {
         }
         validateRequired(provider, apiKey, baseUrl, model, config);
         validateSupportedModel(providerConfig, model);
+        attachResolvedProviderMetadata(request, providerConfig, provider, model);
 
         if (isCodexResponsesAdapter(config)) {
-            return callCodexResponses(provider, baseUrl, apiKey, model, messages, request, config, timeoutMs);
+            return callCodexResponses(providerConfig, provider, baseUrl, apiKey, model, messages, request, config, timeoutMs);
         }
 
         switch (provider.toLowerCase(Locale.ROOT)) {
             case "anthropic":
-                return callAnthropic(provider, baseUrl, apiKey, model, messages, request, config, timeoutMs);
+                return callAnthropic(providerConfig, provider, baseUrl, apiKey, model, messages, request, config, timeoutMs);
             case "gemini":
-                return callGemini(provider, baseUrl, apiKey, model, messages, request, config, timeoutMs);
+                return callGemini(providerConfig, provider, baseUrl, apiKey, model, messages, request, config, timeoutMs);
             case "ollama":
-                return callOllama(provider, baseUrl, model, messages, request, config, timeoutMs);
+                return callOllama(providerConfig, provider, baseUrl, model, messages, request, config, timeoutMs);
             case "openai":
             case "deepseek":
             case "qwen":
             default:
-                return callOpenAiCompatible(provider, baseUrl, apiKey, model, messages, request, config, timeoutMs);
+                return callOpenAiCompatible(providerConfig, provider, baseUrl, apiKey, model, messages, request, config, timeoutMs);
         }
     }
 
     @Override
     public Flux<String> streamChat(AiProviderConfig providerConfig, AiChatRequest request) {
+        if (!aiProviderRuntimeStateService.isRequestAllowed(providerConfig)) {
+            return Flux.error(new IllegalStateException("provider temporarily unavailable: " + providerConfig.getCode()));
+        }
         Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
         String provider = pickProvider(providerConfig, config);
         String apiKey = pickApiKey(providerConfig, config);
         String baseUrl = pickBaseUrl(providerConfig, config);
         String model = normalizeModel(provider, pickModel(request, providerConfig, config));
+        Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
         Boolean streamSupported = pickBoolean(config, "streamSupported", true);
         List<AiChatRequest.Message> messages = enrichMessagesWithFiles(buildMessages(request));
         if (messages.isEmpty()) {
@@ -144,9 +163,12 @@ public class AiChatServiceImpl implements AiChatService {
         } catch (IllegalArgumentException ex) {
             return Flux.error(ex);
         }
+        attachResolvedProviderMetadata(request, providerConfig, provider, model);
 
         if (isCodexResponsesAdapter(config)) {
-            return streamCodexResponses(baseUrl, apiKey, model, messages, request, config);
+            Flux<String> stream = streamCodexResponses(baseUrl, apiKey, model, messages, request, config);
+            return withUpstreamStreamTimingLog(providerConfig, provider, "", model,
+                    applyFirstPayloadTimeout(stream, resolveFirstPayloadTimeoutMs(timeoutMs, config), providerConfig.getCode(), model));
         }
 
         if (Boolean.FALSE.equals(streamSupported)) {
@@ -154,19 +176,26 @@ public class AiChatServiceImpl implements AiChatService {
             return toOpenAiStream(resp.getContent());
         }
 
+        Flux<String> stream;
         switch (provider.toLowerCase(Locale.ROOT)) {
             case "anthropic":
-                return streamAnthropic(baseUrl, apiKey, model, messages, request, config);
+                stream = streamAnthropic(baseUrl, apiKey, model, messages, request, config);
+                break;
             case "gemini":
-                return streamGemini(baseUrl, apiKey, model, messages, request, config);
+                stream = streamGemini(baseUrl, apiKey, model, messages, request, config);
+                break;
             case "ollama":
-                return streamOllama(baseUrl, model, messages, request, config);
+                stream = streamOllama(baseUrl, model, messages, request, config);
+                break;
             case "openai":
             case "deepseek":
             case "qwen":
             default:
-                return streamOpenAiCompatible(baseUrl, apiKey, model, messages, request, config);
+                stream = streamOpenAiCompatible(baseUrl, apiKey, model, messages, request, config);
+                break;
         }
+        return withUpstreamStreamTimingLog(providerConfig, provider, "", model,
+                applyFirstPayloadTimeout(stream, resolveFirstPayloadTimeoutMs(timeoutMs, config), providerConfig.getCode(), model));
     }
 
     @Override
@@ -195,60 +224,11 @@ public class AiChatServiceImpl implements AiChatService {
 
     @Override
     public AiProviderConfig resolveProviderConfig(String providerCode, String model) {
-        log.debug("resolveProviderConfig start providerCode={}, model={}", providerCode, model);
-        if (StringUtils.isNotBlank(providerCode)) {
-            AiProviderConfig config = aiProviderConfigService.getOne(new LambdaQueryWrapper<AiProviderConfig>()
-                    .eq(AiProviderConfig::getCode, providerCode)
-                    .eq(AiProviderConfig::getStatus, 1)
-                    .last("limit 1"));
-            if (config == null) {
-                log.warn("resolveProviderConfig failed: providerCode not found or disabled, providerCode={}", providerCode);
-                throw new IllegalArgumentException("provider config not found");
-            }
-            log.debug("resolveProviderConfig matched by providerCode={}, configId={}, provider={}, status={}",
-                    providerCode, config.getId(), config.getProvider(), config.getStatus());
-            return config;
+        List<AiProviderConfig> candidates = resolveProviderConfigCandidates(providerCode, model);
+        if (candidates.isEmpty()) {
+            throw new IllegalArgumentException("provider config not found");
         }
-
-        if (StringUtils.isNotBlank(model)) {
-            List<Long> providerConfigIds = aiProviderModelRelService.listEnabledProviderConfigIdsByModelName(model);
-            log.debug("resolveProviderConfig by model={}, providerConfigIds={}", model, providerConfigIds);
-            if (!providerConfigIds.isEmpty()) {
-                List<AiProviderConfig> enabledConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
-                        .in(AiProviderConfig::getId, providerConfigIds)
-                        .eq(AiProviderConfig::getStatus, 1));
-                log.debug("resolveProviderConfig model={}, enabledConfigCount={}, enabledConfigIds={}",
-                        model,
-                        enabledConfigs.size(),
-                        enabledConfigs.stream().map(AiProviderConfig::getId).collect(java.util.stream.Collectors.toList()));
-                Map<Long, AiProviderConfig> configMap = new HashMap<>();
-                for (AiProviderConfig enabledConfig : enabledConfigs) {
-                    configMap.put(enabledConfig.getId(), enabledConfig);
-                }
-                List<AiProviderConfig> orderedCandidates = new ArrayList<>();
-                for (Long providerConfigId : providerConfigIds) {
-                    AiProviderConfig candidate = configMap.get(providerConfigId);
-                    if (candidate != null) {
-                        orderedCandidates.add(candidate);
-                    }
-                }
-                log.debug("resolveProviderConfig model={}, orderedCandidateCount={}, orderedCandidateCodes={}",
-                        model,
-                        orderedCandidates.size(),
-                        orderedCandidates.stream().map(AiProviderConfig::getCode).collect(java.util.stream.Collectors.toList()));
-                AiProviderConfig selected = selectByWeight(orderedCandidates);
-                if (selected != null) {
-                    log.debug("resolveProviderConfig selected model={}, selectedConfigId={}, selectedCode={}, selectedProvider={}",
-                            model, selected.getId(), selected.getCode(), selected.getProvider());
-                    return selected;
-                }
-            }
-            log.warn("resolveProviderConfig failed: no available provider for model={}, providerConfigIds={}", model, providerConfigIds);
-            throw new IllegalArgumentException("provider config not found for model: " + model);
-        }
-
-        log.warn("resolveProviderConfig failed: providerCode and model both empty");
-        throw new IllegalArgumentException("providerCode or model is required");
+        return candidates.get(0);
     }
 
     private AiProviderConfig selectByWeight(List<AiProviderConfig> candidates) {
@@ -257,7 +237,7 @@ public class AiChatServiceImpl implements AiChatService {
         }
         long totalWeight = 0L;
         for (AiProviderConfig candidate : candidates) {
-            int weight = normalizeWeight(candidate.getWeight());
+            int weight = aiProviderRuntimeStateService.getEffectiveWeight(candidate);
             if (weight > 0) {
                 totalWeight += weight;
             }
@@ -268,7 +248,7 @@ public class AiChatServiceImpl implements AiChatService {
         long random = ThreadLocalRandom.current().nextLong(totalWeight) + 1;
         long cursor = 0L;
         for (AiProviderConfig candidate : candidates) {
-            int weight = normalizeWeight(candidate.getWeight());
+            int weight = aiProviderRuntimeStateService.getEffectiveWeight(candidate);
             if (weight <= 0) {
                 continue;
             }
@@ -297,14 +277,72 @@ public class AiChatServiceImpl implements AiChatService {
      */
     private List<AiProviderConfig> resolveProviderConfigCandidates(String providerCode, String model) {
         if (StringUtils.isNotBlank(providerCode)) {
-            return Collections.singletonList(resolveProviderConfig(providerCode, model));
+            AiProviderConfig candidate = loadEnabledProviderConfigByCode(providerCode);
+            if (!aiProviderRuntimeStateService.isRequestAllowed(candidate)) {
+                throw new IllegalStateException("provider temporarily unavailable: " + providerCode);
+            }
+            return Collections.singletonList(candidate);
         }
         if (StringUtils.isBlank(model)) {
             throw new IllegalArgumentException("providerCode or model is required");
         }
-        List<Long> providerConfigIds = aiProviderModelRelService.listEnabledProviderConfigIdsByModelName(model);
-        if (providerConfigIds.isEmpty()) {
+        List<AiProviderConfig> orderedCandidates = loadOrderedEnabledCandidatesByModel(model);
+        if (orderedCandidates.isEmpty()) {
             throw new IllegalArgumentException("provider config not found for model: " + model);
+        }
+        List<AiProviderConfig> availableCandidates = new ArrayList<>();
+        for (AiProviderConfig orderedCandidate : orderedCandidates) {
+            if (aiProviderRuntimeStateService.isRequestAllowed(orderedCandidate)) {
+                availableCandidates.add(orderedCandidate);
+            }
+        }
+        if (availableCandidates.isEmpty()) {
+            throw new IllegalStateException("all upstream providers are temporarily unavailable for model: " + model);
+        }
+        AiProviderConfig first = selectByWeight(availableCandidates);
+        if (first == null) {
+            return availableCandidates;
+        }
+        List<AiProviderConfig> candidates = new ArrayList<>();
+        candidates.add(first);
+        for (AiProviderConfig candidate : availableCandidates) {
+            if (!first.getId().equals(candidate.getId())) {
+                candidates.add(candidate);
+            }
+        }
+        return candidates;
+    }
+
+    /**
+     * 按编码加载启用中的提供方配置。
+     *
+     * @param providerCode 提供方编码
+     * @return 提供方配置
+     */
+    private AiProviderConfig loadEnabledProviderConfigByCode(String providerCode) {
+        log.debug("resolveProviderConfig start providerCode={}", providerCode);
+        AiProviderConfig config = aiProviderConfigService.getOne(new LambdaQueryWrapper<AiProviderConfig>()
+                .eq(AiProviderConfig::getCode, providerCode)
+                .eq(AiProviderConfig::getStatus, 1)
+                .last("limit 1"));
+        if (config == null) {
+            log.warn("resolveProviderConfig failed: providerCode not found or disabled, providerCode={}", providerCode);
+            throw new IllegalArgumentException("provider config not found");
+        }
+        return config;
+    }
+
+    /**
+     * 按模型加载有序候选列表。
+     *
+     * @param model 模型名
+     * @return 候选列表
+     */
+    private List<AiProviderConfig> loadOrderedEnabledCandidatesByModel(String model) {
+        List<Long> providerConfigIds = aiProviderModelRelService.listEnabledProviderConfigIdsByModelName(model);
+        log.debug("resolveProviderConfig by model={}, providerConfigIds={}", model, providerConfigIds);
+        if (providerConfigIds.isEmpty()) {
+            return Collections.emptyList();
         }
         List<AiProviderConfig> enabledConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
                 .in(AiProviderConfig::getId, providerConfigIds)
@@ -320,21 +358,7 @@ public class AiChatServiceImpl implements AiChatService {
                 orderedCandidates.add(candidate);
             }
         }
-        if (orderedCandidates.isEmpty()) {
-            throw new IllegalArgumentException("provider config not found for model: " + model);
-        }
-        AiProviderConfig first = selectByWeight(orderedCandidates);
-        if (first == null) {
-            return orderedCandidates;
-        }
-        List<AiProviderConfig> candidates = new ArrayList<>();
-        candidates.add(first);
-        for (AiProviderConfig candidate : orderedCandidates) {
-            if (!first.getId().equals(candidate.getId())) {
-                candidates.add(candidate);
-            }
-        }
-        return candidates;
+        return orderedCandidates;
     }
 
     /**
@@ -539,7 +563,7 @@ public class AiChatServiceImpl implements AiChatService {
                 || "chatgptCodexResponses".equalsIgnoreCase(adapter);
     }
 
-    private AiChatResponse callOpenAiCompatible(String provider, String baseUrl, String apiKey, String model,
+    private AiChatResponse callOpenAiCompatible(AiProviderConfig providerConfig, String provider, String baseUrl, String apiKey, String model,
                                                 List<AiChatRequest.Message> messages, AiChatRequest request,
                                                 Map<String, Object> config, Integer timeoutMs) {
         String path = pickString(config, "openaiPath", "/v1/chat/completions");
@@ -556,18 +580,18 @@ public class AiChatServiceImpl implements AiChatService {
         if (StringUtils.isNotBlank(apiKey)) {
             headers.put("Authorization", "Bearer " + apiKey);
         }
-        return withUpstreamRequestTimingLog(provider, model, url, () -> {
+        return withUpstreamRequestTimingLog(providerConfig, provider, model, url, () -> {
             String raw = postJson(url, headers, body, timeoutMs, config);
             String content = extractOpenAiContent(raw);
             AiUsageSummary usage = extractUsage(provider, raw);
             if (usage.getTotalTokens() == 0) {
                 usage = estimateUsage(request, content);
             }
-            return buildResponse(provider, model, content, raw, usage);
+            return buildResponse(providerConfig, provider, model, content, raw, usage);
         });
     }
 
-    private AiChatResponse callAnthropic(String provider, String baseUrl, String apiKey, String model,
+    private AiChatResponse callAnthropic(AiProviderConfig providerConfig, String provider, String baseUrl, String apiKey, String model,
                                          List<AiChatRequest.Message> messages, AiChatRequest request,
                                          Map<String, Object> config, Integer timeoutMs) {
         String path = pickString(config, "anthropicPath", "/v1/messages");
@@ -588,18 +612,18 @@ public class AiChatServiceImpl implements AiChatService {
         Map<String, String> headers = new HashMap<>();
         headers.put("x-api-key", apiKey);
         headers.put("anthropic-version", version);
-        return withUpstreamRequestTimingLog(provider, model, url, () -> {
+        return withUpstreamRequestTimingLog(providerConfig, provider, model, url, () -> {
             String raw = postJson(url, headers, body, timeoutMs, config);
             String content = extractAnthropicContent(raw);
             AiUsageSummary usage = extractUsage(provider, raw);
             if (usage.getTotalTokens() == 0) {
                 usage = estimateUsage(request, content);
             }
-            return buildResponse(provider, model, content, raw, usage);
+            return buildResponse(providerConfig, provider, model, content, raw, usage);
         });
     }
 
-    private AiChatResponse callGemini(String provider, String baseUrl, String apiKey, String model,
+    private AiChatResponse callGemini(AiProviderConfig providerConfig, String provider, String baseUrl, String apiKey, String model,
                                       List<AiChatRequest.Message> messages, AiChatRequest request,
                                       Map<String, Object> config, Integer timeoutMs) {
         String apiVersion = pickString(config, "geminiApiVersion", "v1beta");
@@ -624,18 +648,18 @@ public class AiChatServiceImpl implements AiChatService {
             body.put("systemInstruction", Map.of("parts", List.of(Map.of("text", system))));
         }
 
-        return withUpstreamRequestTimingLog(provider, model, requestUrl, () -> {
+        return withUpstreamRequestTimingLog(providerConfig, provider, model, requestUrl, () -> {
             String raw = postJson(requestUrl, Collections.emptyMap(), body, timeoutMs, config);
             String content = extractGeminiContent(raw);
             AiUsageSummary usage = extractUsage(provider, raw);
             if (usage.getTotalTokens() == 0) {
                 usage = estimateUsage(request, content);
             }
-            return buildResponse(provider, model, content, raw, usage);
+            return buildResponse(providerConfig, provider, model, content, raw, usage);
         });
     }
 
-    private AiChatResponse callOllama(String provider, String baseUrl, String model,
+    private AiChatResponse callOllama(AiProviderConfig providerConfig, String provider, String baseUrl, String model,
                                       List<AiChatRequest.Message> messages, AiChatRequest request,
                                       Map<String, Object> config, Integer timeoutMs) {
         String path = pickString(config, "ollamaPath", "/api/chat");
@@ -645,25 +669,25 @@ public class AiChatServiceImpl implements AiChatService {
         body.put("messages", toOpenAiMessages(messages));
         putIfNotNull(body, "stream", request.getStream() != null ? request.getStream() : Boolean.FALSE);
 
-        return withUpstreamRequestTimingLog(provider, model, url, () -> {
+        return withUpstreamRequestTimingLog(providerConfig, provider, model, url, () -> {
             String raw = postJson(url, Collections.emptyMap(), body, timeoutMs, config);
             String content = extractOllamaContent(raw);
             AiUsageSummary usage = extractUsage(provider, raw);
             if (usage.getTotalTokens() == 0) {
                 usage = estimateUsage(request, content);
             }
-            return buildResponse(provider, model, content, raw, usage);
+            return buildResponse(providerConfig, provider, model, content, raw, usage);
         });
     }
 
-    private AiChatResponse callCodexResponses(String provider, String baseUrl, String apiKey, String model,
+    private AiChatResponse callCodexResponses(AiProviderConfig providerConfig, String provider, String baseUrl, String apiKey, String model,
                                               List<AiChatRequest.Message> messages, AiChatRequest request,
                                               Map<String, Object> config, Integer timeoutMs) {
         String path = pickString(config, "codexResponsesPath", "/backend-api/codex/responses");
         String url = joinUrl(baseUrl, path);
         Map<String, Object> body = resolveCodexRequestBody(model, messages, request, config, true);
 
-        return withUpstreamRequestTimingLog(provider, model, url, () -> {
+        return withUpstreamRequestTimingLog(providerConfig, provider, model, url, () -> {
             List<String> payloads = buildWebClient(config)
                     .post()
                     .uri(url)
@@ -702,7 +726,7 @@ public class AiChatServiceImpl implements AiChatService {
             if (usage.getTotalTokens() == 0) {
                 usage = estimateUsage(request, content);
             }
-            return buildResponse(provider, model, content, raw, usage);
+            return buildResponse(providerConfig, provider, model, content, raw, usage);
         });
     }
 
@@ -735,7 +759,7 @@ public class AiChatServiceImpl implements AiChatService {
                 .transform(this::sseToPayloadFlux)
                 .doOnError(ex -> log.error("openai stream upstream request failed, url={}, error={}",
                         url, extractUpstreamErrorMessage(ex), ex));
-        return withUpstreamStreamTimingLog("openai", url, model, stream);
+        return stream;
     }
 
     private Flux<String> streamAnthropic(String baseUrl, String apiKey, String model,
@@ -772,7 +796,7 @@ public class AiChatServiceImpl implements AiChatService {
                 .transform(this::sseToPayloadFlux)
                 .doOnError(ex -> log.error("anthropic stream upstream request failed, url={}, error={}",
                         url, extractUpstreamErrorMessage(ex), ex));
-        return withUpstreamStreamTimingLog("anthropic", url, model, stream);
+        return stream;
     }
 
     private Flux<String> streamGemini(String baseUrl, String apiKey, String model,
@@ -813,7 +837,7 @@ public class AiChatServiceImpl implements AiChatService {
                 .transform(this::sseToPayloadFlux)
                 .doOnError(ex -> log.error("gemini stream upstream request failed, url={}, error={}",
                         requestUrl, extractUpstreamErrorMessage(ex), ex));
-        return withUpstreamStreamTimingLog("gemini", requestUrl, model, stream);
+        return stream;
     }
 
     private Flux<String> streamOllama(String baseUrl, String model,
@@ -838,7 +862,7 @@ public class AiChatServiceImpl implements AiChatService {
                 .transform(this::linesToFlux)
                 .doOnError(ex -> log.error("ollama stream upstream request failed, url={}, error={}",
                         url, extractUpstreamErrorMessage(ex), ex));
-        return withUpstreamStreamTimingLog("ollama", url, model, stream);
+        return stream;
     }
 
     private Flux<String> streamCodexResponses(String baseUrl, String apiKey, String model,
@@ -869,10 +893,10 @@ public class AiChatServiceImpl implements AiChatService {
                 .transform(this::sseToPayloadFlux);
 
         if (nativeResponses) {
-            return withUpstreamStreamTimingLog("codex-responses", url, model, payloadFlux);
+            return payloadFlux;
         }
         Flux<String> openAiStream = payloadFlux.flatMap(payload -> codexPayloadToOpenAiPayload(payload, model));
-        return withUpstreamStreamTimingLog("codex-responses", url, model, openAiStream);
+        return openAiStream;
     }
 
     /**
@@ -884,7 +908,7 @@ public class AiChatServiceImpl implements AiChatService {
      * @param source   原始流
      * @return 带日志打点的流
      */
-    private Flux<String> withUpstreamStreamTimingLog(String provider, String url, String model, Flux<String> source) {
+    private Flux<String> withUpstreamStreamTimingLog(AiProviderConfig providerConfig, String provider, String url, String model, Flux<String> source) {
         long startAt = System.currentTimeMillis();
         AtomicLong firstTokenAt = new AtomicLong(-1L);
         return source
@@ -903,12 +927,14 @@ public class AiChatServiceImpl implements AiChatService {
                 .doOnComplete(() -> {
                     long totalMs = System.currentTimeMillis() - startAt;
                     long firstTokenMs = firstTokenAt.get() < 0 ? -1L : firstTokenAt.get() - startAt;
+                    aiProviderRuntimeStateService.recordSuccess(providerConfig, totalMs, firstTokenMs > 0 ? firstTokenMs : null);
                     log.info("ai upstream stream completed, provider={}, model={}, url={}, total_ms={}, first_token_ms={}",
                             provider, model, url, totalMs, firstTokenMs);
                 })
                 .doOnError(ex -> {
                     long totalMs = System.currentTimeMillis() - startAt;
                     long firstTokenMs = firstTokenAt.get() < 0 ? -1L : firstTokenAt.get() - startAt;
+                    aiProviderRuntimeStateService.recordFailure(providerConfig, ex);
                     log.warn("ai upstream stream failed, provider={}, model={}, url={}, total_ms={}, first_token_ms={}, error={}",
                             provider, model, url, totalMs, firstTokenMs, ex.getMessage());
                 });
@@ -923,22 +949,85 @@ public class AiChatServiceImpl implements AiChatService {
      * @param call     请求执行逻辑
      * @return 上游响应
      */
-    private AiChatResponse withUpstreamRequestTimingLog(String provider, String model, String url,
+    private AiChatResponse withUpstreamRequestTimingLog(AiProviderConfig providerConfig, String provider, String model, String url,
                                                         Supplier<AiChatResponse> call) {
         long startAt = System.currentTimeMillis();
         log.info("ai upstream request start, provider={}, model={}, url={}", provider, model, url);
         try {
             AiChatResponse response = call.get();
             long totalMs = System.currentTimeMillis() - startAt;
+            aiProviderRuntimeStateService.recordSuccess(providerConfig, totalMs, null);
             log.info("ai upstream request completed, provider={}, model={}, url={}, total_ms={}",
                     provider, model, url, totalMs);
             return response;
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
+            aiProviderRuntimeStateService.recordFailure(providerConfig, ex);
             log.warn("ai upstream request failed, provider={}, model={}, url={}, total_ms={}, error={}",
                     provider, model, url, totalMs, ex.getMessage());
             throw ex;
         }
+    }
+
+    /**
+     * 应用首包超时保护，避免慢代理长期占住请求。
+     *
+     * @param source 原始流
+     * @param timeoutMs 超时毫秒
+     * @param providerCode 提供方编码
+     * @param model 模型
+     * @return 处理后的流
+     */
+    private Flux<String> applyFirstPayloadTimeout(Flux<String> source, long timeoutMs, String providerCode, String model) {
+        if (timeoutMs <= 0) {
+            return source;
+        }
+        return Flux.create(sink -> {
+            AtomicBoolean firstPayloadReceived = new AtomicBoolean(false);
+            Disposable timeoutTask = Schedulers.parallel().schedule(() -> {
+                if (firstPayloadReceived.compareAndSet(false, true)) {
+                    sink.error(new IllegalStateException("upstream first token timeout, provider=" + providerCode + ", model=" + model));
+                }
+            }, timeoutMs, TimeUnit.MILLISECONDS);
+            Disposable subscription = source.subscribe(
+                    payload -> {
+                        if (firstPayloadReceived.compareAndSet(false, true)) {
+                            timeoutTask.dispose();
+                        }
+                        sink.next(payload);
+                    },
+                    error -> {
+                        timeoutTask.dispose();
+                        sink.error(error);
+                    },
+                    () -> {
+                        timeoutTask.dispose();
+                        sink.complete();
+                    }
+            );
+            sink.onDispose(() -> {
+                timeoutTask.dispose();
+                subscription.dispose();
+            });
+        });
+    }
+
+    /**
+     * 解析首包超时时间。
+     *
+     * @param timeoutMs 请求总超时
+     * @param config 配置
+     * @return 首包超时时间
+     */
+    private long resolveFirstPayloadTimeoutMs(Integer timeoutMs, Map<String, Object> config) {
+        Integer configured = pickInteger(config, "firstTokenTimeoutMs", null);
+        if (configured != null && configured > 0) {
+            return configured;
+        }
+        if (timeoutMs != null && timeoutMs > 0) {
+            return Math.min(timeoutMs, (int) Math.max(DEFAULT_FIRST_PAYLOAD_TIMEOUT_MS, timeoutMs / 2L));
+        }
+        return DEFAULT_FIRST_PAYLOAD_TIMEOUT_MS;
     }
 
     /**
@@ -1361,8 +1450,10 @@ public class AiChatServiceImpl implements AiChatService {
         return summary;
     }
 
-    private AiChatResponse buildResponse(String provider, String model, String content, String raw, AiUsageSummary usage) {
+    private AiChatResponse buildResponse(AiProviderConfig providerConfig, String provider, String model, String content, String raw, AiUsageSummary usage) {
         AiChatResponse response = new AiChatResponse();
+        response.setProviderConfigId(providerConfig == null ? null : providerConfig.getId());
+        response.setProviderCode(providerConfig == null ? null : providerConfig.getCode());
         response.setProvider(provider);
         response.setModel(model);
         response.setContent(content);
@@ -1371,6 +1462,30 @@ public class AiChatServiceImpl implements AiChatService {
         response.setCompletionTokens(usage.getCompletionTokens());
         response.setTotalTokens(usage.getTotalTokens());
         return response;
+    }
+
+    /**
+     * 回写本次请求实际命中的提供方信息。
+     *
+     * @param request 请求对象
+     * @param providerConfig 提供方配置
+     * @param provider 提供方类型
+     * @param model 模型
+     */
+    private void attachResolvedProviderMetadata(AiChatRequest request, AiProviderConfig providerConfig, String provider, String model) {
+        if (request == null || providerConfig == null) {
+            return;
+        }
+        request.setProviderCode(providerConfig.getCode());
+        if (StringUtils.isBlank(request.getModel())) {
+            request.setModel(model);
+        }
+        Map<String, Object> extra = request.getExtra() == null ? new HashMap<>() : new HashMap<>(request.getExtra());
+        extra.put(EXTRA_ACTUAL_PROVIDER_CONFIG_ID, providerConfig.getId());
+        extra.put(EXTRA_ACTUAL_PROVIDER_CODE, providerConfig.getCode());
+        extra.put(EXTRA_ACTUAL_PROVIDER, provider);
+        extra.put(EXTRA_ACTUAL_MODEL, model);
+        request.setExtra(extra);
     }
 
     private String joinUrl(String baseUrl, String path) {

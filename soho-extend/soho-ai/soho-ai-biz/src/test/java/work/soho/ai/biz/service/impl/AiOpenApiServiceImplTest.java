@@ -221,7 +221,7 @@ public class AiOpenApiServiceImplTest {
         response.setPromptTokens(1);
         response.setCompletionTokens(1);
         response.setTotalTokens(2);
-        when(aiChatService.chat(Mockito.eq(providerConfig), Mockito.any())).thenReturn(response);
+        when(aiChatService.chat(Mockito.any())).thenReturn(response);
         AiUsageSummary estimatedUsage = new AiUsageSummary();
         estimatedUsage.setPromptTokens(1);
         estimatedUsage.setCompletionTokens(1);
@@ -300,7 +300,7 @@ public class AiOpenApiServiceImplTest {
         response.setPromptTokens(10);
         response.setCompletionTokens(20);
         response.setTotalTokens(30);
-        when(aiChatService.chat(Mockito.eq(providerConfig), Mockito.any())).thenReturn(response);
+        when(aiChatService.chat(Mockito.any())).thenReturn(response);
 
         when(walletInfoApiService.changeWalletAmount(
                 Mockito.eq(7L),
@@ -325,7 +325,7 @@ public class AiOpenApiServiceImplTest {
                 Mockito.eq(1),
                 Mockito.anyInt(),
                 Mockito.anyString(),
-                Mockito.argThat(amount -> amount != null && amount.compareTo(new BigDecimal("-0.0250")) == 0),
+                Mockito.argThat(amount -> amount != null && amount.compareTo(new BigDecimal("-0.500000")) == 0),
                 Mockito.argThat(notes ->
                         notes != null
                                 && notes.contains("AI调用扣费 model=gpt-4o-mini")
