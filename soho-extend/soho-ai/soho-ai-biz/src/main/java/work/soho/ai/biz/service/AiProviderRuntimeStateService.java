@@ -48,4 +48,11 @@ public interface AiProviderRuntimeStateService {
      * @return 运行时快照
      */
     AiProviderRuntimeStateSnapshotDTO getSnapshot(AiProviderConfig providerConfig);
+
+    /**
+     * 清理指定提供方的运行时状态。
+     *
+     * @param providerConfigId 提供方配置ID
+     */
+    void clearState(Long providerConfigId);
 }

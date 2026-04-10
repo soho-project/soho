@@ -43,6 +43,20 @@ public class AiProviderRuntimeStateServiceImplTest {
         assertThat(service.getEffectiveWeight(providerConfig)).isBetween(1, 9);
     }
 
+    @Test
+    public void clearState_whenProviderHasRuntimePenalty_shouldRestoreBaseWeight() {
+        AiProviderRuntimeStateServiceImpl service = new AiProviderRuntimeStateServiceImpl();
+        AiProviderConfig providerConfig = buildProviderConfig(4L, 6);
+
+        service.recordFailure(providerConfig, new IllegalStateException("upstream first token timeout"));
+        assertThat(service.isRequestAllowed(providerConfig)).isFalse();
+
+        service.clearState(providerConfig.getId());
+
+        assertThat(service.isRequestAllowed(providerConfig)).isTrue();
+        assertThat(service.getEffectiveWeight(providerConfig)).isEqualTo(6);
+    }
+
     /**
      * 构造测试用提供方配置。
      *
