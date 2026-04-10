@@ -2,6 +2,7 @@ package work.soho.ai.biz.service.impl;
 
 import org.springframework.stereotype.Service;
 import work.soho.ai.biz.domain.AiProviderConfig;
+import work.soho.ai.biz.dto.AiProviderRuntimeStateSnapshotDTO;
 import work.soho.ai.biz.service.AiProviderRuntimeStateService;
 
 import java.util.Map;
@@ -125,6 +126,44 @@ public class AiProviderRuntimeStateServiceImpl implements AiProviderRuntimeState
                 state.openUntilMs = System.currentTimeMillis() + DEFAULT_CIRCUIT_OPEN_MS;
             }
         }
+    }
+
+    /**
+     * 读取当前提供方运行时快照。
+     *
+     * @param providerConfig 提供方配置
+     * @return 运行时快照
+     */
+    @Override
+    public AiProviderRuntimeStateSnapshotDTO getSnapshot(AiProviderConfig providerConfig) {
+        AiProviderRuntimeStateSnapshotDTO snapshot = new AiProviderRuntimeStateSnapshotDTO();
+        if (providerConfig == null || providerConfig.getId() == null) {
+            snapshot.setRequestAllowed(false);
+            snapshot.setEffectiveWeight(0);
+            snapshot.setConsecutiveFailures(0);
+            snapshot.setConsecutiveSlowRequests(0);
+            return snapshot;
+        }
+        snapshot.setProviderConfigId(providerConfig.getId());
+        snapshot.setRequestAllowed(isRequestAllowed(providerConfig));
+        snapshot.setEffectiveWeight(getEffectiveWeight(providerConfig));
+        ProviderRuntimeState state = stateMap.get(providerConfig.getId());
+        if (state == null) {
+            snapshot.setConsecutiveFailures(0);
+            snapshot.setConsecutiveSlowRequests(0);
+            return snapshot;
+        }
+        synchronized (state) {
+            snapshot.setCircuitOpenUntilMs(state.openUntilMs > 0 ? state.openUntilMs : null);
+            snapshot.setLastSuccessAtMs(state.lastSuccessAtMs > 0 ? state.lastSuccessAtMs : null);
+            snapshot.setLastFailureAtMs(state.lastFailureAtMs > 0 ? state.lastFailureAtMs : null);
+            snapshot.setEwmaTotalMs(state.ewmaTotalMs > 0 ? state.ewmaTotalMs : null);
+            snapshot.setEwmaFirstTokenMs(state.ewmaFirstTokenMs > 0 ? state.ewmaFirstTokenMs : null);
+            snapshot.setConsecutiveFailures(state.consecutiveFailures);
+            snapshot.setConsecutiveSlowRequests(state.consecutiveSlowRequests);
+            snapshot.setLastErrorMessage(state.lastErrorMessage);
+        }
+        return snapshot;
     }
 
     /**
