@@ -173,15 +173,17 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     @Override
     public Map<String, Object> chatCompletions(String authorization, OpenAiChatCompletionRequest request) {
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
-        AiProviderConfig providerConfig = requireProviderConfig(request.getModel());
-        AiChatRequest aiChatRequest = convertRequest(providerConfig.getCode(), request);
-        BillingPlan billingPlan = buildBillingPlan(apiKey, providerConfig, aiChatRequest, request);
+        AiProviderConfig selectedProviderConfig = requireProviderConfig(request.getModel());
+        AiChatRequest aiChatRequest = convertRequest(null, request);
+        BillingPlan billingPlan = buildBillingPlan(apiKey, selectedProviderConfig, aiChatRequest, request);
         preCheckBalance(billingPlan);
 
         String requestId = IDGeneratorUtils.uuid32();
         long startAt = System.currentTimeMillis();
         try {
-            AiChatResponse response = aiChatService.chat(providerConfig, aiChatRequest);
+            AiChatResponse response = aiChatService.chat(aiChatRequest);
+            AiProviderConfig providerConfig = resolveActualProviderConfig(response, aiChatRequest, selectedProviderConfig);
+            refreshBillingPlanProviderConfig(billingPlan, providerConfig, response.getModel());
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
             BigDecimal amount = calculateAmount(billingPlan, usage, response.getModel());
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, response.getModel());
@@ -192,8 +194,11 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                     "/ai/guest/openai/v1/chat/completions", totalMs, null);
             return buildOpenAiResponse(requestId, response.getModel(), response.getContent(), usage);
         } catch (RuntimeException ex) {
+            AiProviderConfig providerConfig = resolveActualProviderConfig(null, aiChatRequest, selectedProviderConfig);
+            String model = resolveActualModel(aiChatRequest, providerConfig);
+            refreshBillingPlanProviderConfig(billingPlan, providerConfig, model);
             long totalMs = System.currentTimeMillis() - startAt;
-            saveFailedLog(requestId, apiKey, providerConfig, request.getModel(), ex.getMessage(),
+            saveFailedLog(requestId, apiKey, providerConfig, model, ex.getMessage(),
                     "/ai/guest/openai/v1/chat/completions", totalMs, null);
             throw ex;
         }
@@ -202,36 +207,42 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     @Override
     public Flux<String> streamChatCompletions(String authorization, OpenAiChatCompletionRequest request) {
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
-        AiProviderConfig providerConfig = requireProviderConfig(request.getModel());
-        AiChatRequest aiChatRequest = convertRequest(providerConfig.getCode(), request);
-        BillingPlan billingPlan = buildBillingPlan(apiKey, providerConfig, aiChatRequest, request);
+        AiProviderConfig selectedProviderConfig = requireProviderConfig(request.getModel());
+        AiChatRequest aiChatRequest = convertRequest(null, request);
+        BillingPlan billingPlan = buildBillingPlan(apiKey, selectedProviderConfig, aiChatRequest, request);
         preCheckBalance(billingPlan);
 
         String requestId = IDGeneratorUtils.uuid32();
         StringBuilder contentBuilder = new StringBuilder();
-        String targetModel = StringUtils.isBlank(request.getModel()) ? providerConfig.getDefaultModel() : request.getModel();
+        String targetModel = StringUtils.isBlank(request.getModel()) ? selectedProviderConfig.getDefaultModel() : request.getModel();
         long startAt = System.currentTimeMillis();
         AtomicLong firstTokenAt = new AtomicLong(-1L);
 
         log.info("streamChatCompletions: {}",  aiChatRequest);
-        return aiChatService.streamChat(providerConfig, aiChatRequest)
+        return aiChatService.streamChat(aiChatRequest)
                 .doOnNext(payload -> {
                     appendContent(payload, contentBuilder);
                     recordFirstTokenAt(firstTokenAt, startAt, extractDeltaFromChatStreamPayload(payload));
                 })
                 .doOnComplete(() -> {
+                    AiProviderConfig providerConfig = resolveActualProviderConfig(null, aiChatRequest, selectedProviderConfig);
+                    String model = resolveActualModel(aiChatRequest, providerConfig);
+                    refreshBillingPlanProviderConfig(billingPlan, providerConfig, model);
                     AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, contentBuilder.toString());
-                    BigDecimal amount = calculateAmount(billingPlan, usage, targetModel);
-                    Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, targetModel);
+                    BigDecimal amount = calculateAmount(billingPlan, usage, model);
+                    Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
                     aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
                     aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
                     long totalMs = System.currentTimeMillis() - startAt;
-                    saveSuccessLog(requestId, apiKey, providerConfig, targetModel, usage, amount, walletLogId,
+                    saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId,
                             "/ai/guest/openai/v1/chat/completions", totalMs, resolveFirstTokenMs(firstTokenAt, startAt));
                 })
                 .doOnError(ex -> {
+                    AiProviderConfig providerConfig = resolveActualProviderConfig(null, aiChatRequest, selectedProviderConfig);
+                    String model = resolveActualModel(aiChatRequest, providerConfig);
+                    refreshBillingPlanProviderConfig(billingPlan, providerConfig, model);
                     long totalMs = System.currentTimeMillis() - startAt;
-                    saveFailedLog(requestId, apiKey, providerConfig, targetModel, ex.getMessage(),
+                    saveFailedLog(requestId, apiKey, providerConfig, model, ex.getMessage(),
                             "/ai/guest/openai/v1/chat/completions", totalMs, resolveFirstTokenMs(firstTokenAt, startAt));
                 });
     }
@@ -247,7 +258,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         }
 
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
-        AiChatRequest aiChatRequest = convertNativeResponsesRequest(providerConfig.getCode(), request, false);
+        AiChatRequest aiChatRequest = convertNativeResponsesRequest(null, request, false);
         OpenAiChatCompletionRequest pricingRequest = convertResponsesRequest(request);
         BillingPlan billingPlan = buildBillingPlan(apiKey, providerConfig, aiChatRequest, pricingRequest);
         preCheckBalance(billingPlan);
@@ -255,7 +266,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         String requestId = IDGeneratorUtils.uuid32();
         long startAt = System.currentTimeMillis();
         try {
-            AiChatResponse response = aiChatService.chat(providerConfig, aiChatRequest);
+            AiChatResponse response = aiChatService.chat(aiChatRequest);
+            providerConfig = resolveActualProviderConfig(response, aiChatRequest, providerConfig);
+            refreshBillingPlanProviderConfig(billingPlan, providerConfig, response.getModel());
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
             BigDecimal amount = calculateAmount(billingPlan, usage, response.getModel());
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, response.getModel());
@@ -273,8 +286,11 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             log.info("responses 最终返回: {}", JacksonUtils.toJson(result));
             return result;
         } catch (RuntimeException ex) {
+            providerConfig = resolveActualProviderConfig(null, aiChatRequest, providerConfig);
+            String model = resolveActualModel(aiChatRequest, providerConfig);
+            refreshBillingPlanProviderConfig(billingPlan, providerConfig, model);
             long totalMs = System.currentTimeMillis() - startAt;
-            saveFailedLog(requestId, apiKey, providerConfig, request.getModel(), ex.getMessage(),
+            saveFailedLog(requestId, apiKey, providerConfig, model, ex.getMessage(),
                     "/ai/guest/openai/v1/responses", totalMs, null);
             throw ex;
         }
@@ -289,7 +305,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         }
 
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
-        AiChatRequest aiChatRequest = convertNativeResponsesRequest(providerConfig.getCode(), request, true);
+        AiChatRequest aiChatRequest = convertNativeResponsesRequest(null, request, true);
         OpenAiChatCompletionRequest pricingRequest = convertResponsesRequest(request);
         pricingRequest.setStream(true);
         BillingPlan billingPlan = buildBillingPlan(apiKey, providerConfig, aiChatRequest, pricingRequest);
@@ -302,7 +318,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         long startAt = System.currentTimeMillis();
         AtomicLong firstTokenAt = new AtomicLong(-1L);
 
-        return aiChatService.streamChat(providerConfig, aiChatRequest)
+        return aiChatService.streamChat(aiChatRequest)
                 .filter(payload -> StringUtils.isNotBlank(payload) && !"[DONE]".equals(payload))
                 .doOnNext(payload -> {
                     appendResponsesTextDelta(payload, contentBuilder);
@@ -310,23 +326,29 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                     recordFirstTokenAt(firstTokenAt, startAt, extractDeltaFromResponsesPayload(payload));
                 })
                 .doOnComplete(() -> {
+                    AiProviderConfig actualProviderConfig = resolveActualProviderConfig(null, aiChatRequest, providerConfig);
+                    String model = resolveActualModel(aiChatRequest, actualProviderConfig);
+                    refreshBillingPlanProviderConfig(billingPlan, actualProviderConfig, model);
                     AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, contentBuilder.toString());
-                    BigDecimal amount = calculateAmount(billingPlan, usage, targetModel);
-                    Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, targetModel);
+                    BigDecimal amount = calculateAmount(billingPlan, usage, model);
+                    Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
                     aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
                     aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
                     long totalMs = System.currentTimeMillis() - startAt;
-                    saveSuccessLog(requestId, apiKey, providerConfig, targetModel, usage, amount, walletLogId,
+                    saveSuccessLog(requestId, apiKey, actualProviderConfig, model, usage, amount, walletLogId,
                             "/ai/guest/openai/v1/responses", totalMs, resolveFirstTokenMs(firstTokenAt, startAt));
                     if (StringUtils.isNotBlank(completedPayloadRef.get())) {
                         log.info("responses(stream) 最终返回(完成): {}", completedPayloadRef.get());
                     } else {
-                        log.info("responses(stream) 最终返回(完成): {}", buildStreamCompletedSummary(targetModel, contentBuilder.toString()));
+                        log.info("responses(stream) 最终返回(完成): {}", buildStreamCompletedSummary(model, contentBuilder.toString()));
                     }
                 })
                 .doOnError(ex -> {
+                    AiProviderConfig actualProviderConfig = resolveActualProviderConfig(null, aiChatRequest, providerConfig);
+                    String model = resolveActualModel(aiChatRequest, actualProviderConfig);
+                    refreshBillingPlanProviderConfig(billingPlan, actualProviderConfig, model);
                     long totalMs = System.currentTimeMillis() - startAt;
-                    saveFailedLog(requestId, apiKey, providerConfig, targetModel, ex.getMessage(),
+                    saveFailedLog(requestId, apiKey, actualProviderConfig, model, ex.getMessage(),
                             "/ai/guest/openai/v1/responses", totalMs, resolveFirstTokenMs(firstTokenAt, startAt));
                     String failedPayload = JacksonUtils.toJson(buildResponsesFailedEvent("resp_" + requestId, CLIENT_ERROR_MESSAGE));
                     log.warn("responses(stream) 最终返回(失败): {}", failedPayload);
@@ -2078,6 +2100,70 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             }
         }
         return fallback;
+    }
+
+    /**
+     * 解析本次请求实际命中的提供方配置。
+     *
+     * @param response 响应对象
+     * @param request 请求对象
+     * @param fallback 兜底配置
+     * @return 实际命中的提供方配置
+     */
+    private AiProviderConfig resolveActualProviderConfig(AiChatResponse response, AiChatRequest request, AiProviderConfig fallback) {
+        String providerCode = response != null && StringUtils.isNotBlank(response.getProviderCode())
+                ? response.getProviderCode()
+                : request == null ? null : request.getProviderCode();
+        if (StringUtils.isBlank(providerCode)) {
+            return fallback;
+        }
+        AiProviderConfig providerConfig = aiProviderConfigService.getOne(new LambdaQueryWrapper<AiProviderConfig>()
+                .eq(AiProviderConfig::getCode, providerCode)
+                .last("limit 1"));
+        return providerConfig == null ? fallback : providerConfig;
+    }
+
+    /**
+     * 解析本次请求实际命中的模型。
+     *
+     * @param request 请求对象
+     * @param providerConfig 提供方配置
+     * @return 模型名
+     */
+    private String resolveActualModel(AiChatRequest request, AiProviderConfig providerConfig) {
+        if (request != null && StringUtils.isNotBlank(request.getModel())) {
+            return request.getModel();
+        }
+        return providerConfig == null ? null : providerConfig.getDefaultModel();
+    }
+
+    /**
+     * 用实际命中的提供方刷新计费配置。
+     *
+     * @param billingPlan 计费方案
+     * @param providerConfig 提供方配置
+     * @param model 模型
+     */
+    private void refreshBillingPlanProviderConfig(BillingPlan billingPlan, AiProviderConfig providerConfig, String model) {
+        if (billingPlan == null || providerConfig == null) {
+            return;
+        }
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model);
+        billingPlan.providerConfigId = providerConfig.getId();
+        billingPlan.walletTypeId = pickInteger(config, "billingWalletTypeId", 1);
+        billingPlan.promptPricePer1kTokens = pickBigDecimal(config, "promptPricePer1kTokens", BigDecimal.ZERO);
+        billingPlan.completionPricePer1kTokens = pickBigDecimal(config, "completionPricePer1kTokens", billingPlan.promptPricePer1kTokens);
+        billingPlan.fixedRequestPrice = modelPricing.fixedRequestPrice();
+        billingPlan.fixedRequestBilling = billingPlan.fixedRequestPrice.compareTo(BigDecimal.ZERO) > 0;
+        billingPlan.estimatedModel = StringUtils.isNotBlank(model) ? model : providerConfig.getDefaultModel();
+        billingPlan.modelPricing = modelPricing;
+        billingPlan.billingEnabled = modelPricing.hasSplitPrice() || billingPlan.fixedRequestBilling || pickBoolean(config, "billingEnabled", false);
+        if (billingPlan.memberLimitDecision != null
+                && billingPlan.memberLimitDecision.isMemberByRequest()
+                && !billingPlan.memberLimitDecision.isOverLimit()) {
+            billingPlan.billingEnabled = false;
+        }
     }
 
     /**

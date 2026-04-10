@@ -157,10 +157,9 @@ public class AiAdminChatServiceImpl implements AiAdminChatService {
         AiChatSession session = prepareSession(adminId, request);
         String requestId = IDGeneratorUtils.uuid32();
         AiChatRequest aiChatRequest = renderPromptRequest(toAiChatRequest(request, session));
-        AiProviderConfig providerConfig = aiChatService.resolveProviderConfig(aiChatRequest.getProviderCode(), aiChatRequest.getModel());
         savePromptRenderLog(requestId, buildAdminOwnerId(adminId), session.getId(), aiChatRequest);
         persistUserMessage(session.getId(), aiChatRequest);
-        AiChatResponse response = aiChatService.chat(providerConfig, aiChatRequest);
+        AiChatResponse response = aiChatService.chat(aiChatRequest);
         persistAssistantMessage(session, response.getContent(), request);
         return response;
     }
@@ -177,13 +176,12 @@ public class AiAdminChatServiceImpl implements AiAdminChatService {
         AiChatSession session = prepareSession(adminId, request);
         String requestId = IDGeneratorUtils.uuid32();
         AiChatRequest aiChatRequest = renderPromptRequest(toAiChatRequest(request, session));
-        AiProviderConfig providerConfig = aiChatService.resolveProviderConfig(aiChatRequest.getProviderCode(), aiChatRequest.getModel());
         savePromptRenderLog(requestId, buildAdminOwnerId(adminId), session.getId(), aiChatRequest);
         persistUserMessage(session.getId(), aiChatRequest);
         StringBuilder assistantContent = new StringBuilder();
         long startAt = System.currentTimeMillis();
         AtomicLong firstTokenAt = new AtomicLong(-1L);
-        return aiChatService.streamChat(providerConfig, aiChatRequest)
+        return aiChatService.streamChat(aiChatRequest)
                 .doOnNext(payload -> {
                     appendAssistantDelta(payload, assistantContent);
                     recordFirstTokenAt(firstTokenAt, startAt, extractAssistantDelta(payload));

@@ -1,6 +1,7 @@
 package work.soho.common.core.util;
 
 import lombok.experimental.UtilityClass;
+import lombok.extern.log4j.Log4j2;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigInteger;
@@ -13,6 +14,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
+@Log4j2
 @UtilityClass
 public class IpUtils {
         /**
@@ -115,6 +117,9 @@ public class IpUtils {
         List<String> ipList = new ArrayList<>();
         try {
             Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+            if (networkInterfaces == null) {
+                return ipList;
+            }
             NetworkInterface networkInterface;
             Enumeration<InetAddress> inetAddresses;
             InetAddress inetAddress;
@@ -131,7 +136,7 @@ public class IpUtils {
                 }
             }
         } catch (SocketException e) {
-            e.printStackTrace();
+            log.warn("获取本地IP列表失败，将回退为默认节点标识: {}", e.getMessage());
         }
         return ipList;
     }

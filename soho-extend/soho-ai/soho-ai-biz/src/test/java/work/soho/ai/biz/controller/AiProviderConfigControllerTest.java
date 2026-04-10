@@ -98,7 +98,7 @@ public class AiProviderConfigControllerTest {
     }
 
     @Test
-    public void add_usesDefaultModelInfoIdsWhenMissing() {
+    public void add_whenModelInfoIdsMissing_keepsEmptyList() {
         AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
         AiSysConfig aiSysConfig = Mockito.mock(AiSysConfig.class);
@@ -115,7 +115,7 @@ public class AiProviderConfigControllerTest {
 
         ArgumentCaptor<AiProviderConfig> captor = ArgumentCaptor.forClass(AiProviderConfig.class);
         verify(aiProviderConfigService).save(captor.capture());
-        org.junit.Assert.assertEquals(Arrays.asList(4L, 5L, 7L, 11L, 12L, 13L, 14L), captor.getValue().getModelInfoIds());
+        org.junit.Assert.assertEquals(Collections.emptyList(), captor.getValue().getModelInfoIds());
     }
 
     @Test
