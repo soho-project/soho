@@ -1,0 +1,41 @@
+CREATE TABLE IF NOT EXISTS `ai_prompt_template` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `code` varchar(128) NOT NULL COMMENT '模板编码',
+  `name` varchar(128) NOT NULL COMMENT '模板名称',
+  `scene_code` varchar(128) DEFAULT NULL COMMENT '场景编码',
+  `system_prompt` text COMMENT '系统提示词模板',
+  `user_prompt_template` text COMMENT '用户提示词模板',
+  `description` varchar(500) DEFAULT NULL COMMENT '说明',
+  `provider_code` varchar(128) DEFAULT NULL COMMENT '提供方编码',
+  `model_pattern` varchar(128) DEFAULT NULL COMMENT '模型匹配规则',
+  `version` int NOT NULL DEFAULT '1' COMMENT '版本号',
+  `status` tinyint NOT NULL DEFAULT '0' COMMENT '状态: 0草稿 1发布',
+  `updated_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `created_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ai_prompt_template_code_version` (`code`,`version`),
+  KEY `idx_ai_prompt_template_scene_status` (`scene_code`,`status`),
+  KEY `idx_ai_prompt_template_provider_model` (`provider_code`,`model_pattern`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='AI提示词模板';
+
+CREATE TABLE IF NOT EXISTS `ai_prompt_render_log` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `request_id` varchar(64) NOT NULL COMMENT '请求ID',
+  `user_id` bigint DEFAULT NULL COMMENT '用户ID',
+  `session_id` bigint DEFAULT NULL COMMENT '会话ID',
+  `provider_code` varchar(128) DEFAULT NULL COMMENT '提供方编码',
+  `model` varchar(128) DEFAULT NULL COMMENT '模型',
+  `scene_code` varchar(128) DEFAULT NULL COMMENT '场景编码',
+  `template_id` bigint DEFAULT NULL COMMENT '模板ID',
+  `template_code` varchar(128) DEFAULT NULL COMMENT '模板编码',
+  `template_version` int DEFAULT NULL COMMENT '模板版本',
+  `prompt_vars_json` text COMMENT '变量快照',
+  `rendered_instructions` mediumtext COMMENT '渲染后的系统提示词',
+  `rendered_input` mediumtext COMMENT '渲染后的用户输入',
+  `updated_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `created_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_ai_prompt_render_log_request_id` (`request_id`),
+  KEY `idx_ai_prompt_render_log_user_id` (`user_id`),
+  KEY `idx_ai_prompt_render_log_session_id` (`session_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='AI提示词渲染日志';

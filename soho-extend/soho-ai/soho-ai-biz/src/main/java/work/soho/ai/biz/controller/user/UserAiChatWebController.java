@@ -121,6 +121,19 @@ public class UserAiChatWebController {
         return R.success(aiFileService.uploadUserFile(file));
     }
 
+    /**
+     * 上传 AI 聊天图片（与文件上传复用同一存储能力）。
+     *
+     * @param file 图片文件
+     * @return 图片地址
+     */
+    @PostMapping(value = "/image/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Node(value = "user::ai::image::upload", name = "AI 图片上传")
+    @ApiOperation("AI 图片上传")
+    public R<String> uploadImage(@RequestParam("file") MultipartFile file) {
+        return R.success(aiFileService.uploadUserFile(file));
+    }
+
     private String buildFriendlyMessage(Throwable ex) {
         String message = ex == null ? null : ex.getMessage();
         if (StringUtils.isBlank(message)) {

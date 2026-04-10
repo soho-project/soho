@@ -12,12 +12,17 @@ import work.soho.ai.biz.service.AiChatSessionService;
 public class AiChatSessionServiceImpl extends ServiceImpl<AiChatSessionMapper, AiChatSession>
         implements AiChatSessionService {
     @Override
-    public AiChatSession requireOwnedSession(Long userId, Long sessionId) {
+    public AiChatSession requireSessionByOwnerId(Long ownerId, Long sessionId) {
         AiChatSession session = getOne(new LambdaQueryWrapper<AiChatSession>()
                 .eq(AiChatSession::getId, sessionId)
-                .eq(AiChatSession::getUserId, userId)
+                .eq(AiChatSession::getUserId, ownerId)
                 .last("limit 1"));
         Assert.notNull(session, "session不存在");
         return session;
+    }
+
+    @Override
+    public AiChatSession requireOwnedSession(Long userId, Long sessionId) {
+        return requireSessionByOwnerId(userId, sessionId);
     }
 }
