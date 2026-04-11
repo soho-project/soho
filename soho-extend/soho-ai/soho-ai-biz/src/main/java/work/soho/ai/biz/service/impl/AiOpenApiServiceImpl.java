@@ -51,6 +51,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.LocalDateTime;
@@ -62,6 +64,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
+import java.util.Set;
+import java.util.LinkedHashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -71,6 +75,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @RequiredArgsConstructor
 public class AiOpenApiServiceImpl implements AiOpenApiService {
     private static final String CLIENT_ERROR_MESSAGE = "临时错误，如果长期错误请联系管理员";
+    private static final String GEMINI_MOCK_RESPONSE_FILE = "/home/fang/testgemini/test.txt";
     private final AiUserApiKeyService aiUserApiKeyService;
     private final AiProviderConfigService aiProviderConfigService;
     private final AiProviderModelRelService aiProviderModelRelService;
@@ -168,6 +173,108 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         response.put("object", "list");
         response.put("data", new ArrayList<>(modelMap.values()));
         return response;
+    }
+
+    /**
+     * 查询 Gemini 原生模型列表。
+     * 仅允许返回 provider 字段为 gemini 的配置，并复用现有 OpenAI 鉴权与路由选择规则。
+     */
+    @Override
+    public Map<String, Object> geminiModels(String authorization) {
+        AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
+        aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+
+        List<AiProviderConfig> providerConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
+                .eq(AiProviderConfig::getStatus, 1)
+                .eq(AiProviderConfig::getProvider, "gemini")
+                .orderByAsc(AiProviderConfig::getId));
+
+        Set<String> modelNames = new LinkedHashSet<>();
+        for (AiProviderConfig providerConfig : providerConfigs) {
+            List<AiModelInfo> relModels = aiProviderModelRelService.listEnabledModelsByProviderConfigId(providerConfig.getId());
+            if (!relModels.isEmpty()) {
+                relModels.sort(Comparator.comparing(AiModelInfo::getSort, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(AiModelInfo::getId, Comparator.nullsLast(Long::compareTo)));
+                for (AiModelInfo relModel : relModels) {
+                    if (StringUtils.isNotBlank(relModel.getModelName())) {
+                        modelNames.add(relModel.getModelName());
+                    }
+                }
+                continue;
+            }
+            modelNames.addAll(AiProviderModelUtils.extractModels(providerConfig));
+        }
+
+        List<Map<String, Object>> models = new ArrayList<>();
+        for (String modelName : modelNames) {
+            if (StringUtils.isBlank(modelName)) {
+                continue;
+            }
+            try {
+                AiProviderConfig selectedConfig = aiChatService.resolveProviderConfig(null, modelName);
+                if (selectedConfig == null || !"gemini".equalsIgnoreCase(selectedConfig.getProvider())) {
+                    continue;
+                }
+                models.add(buildGeminiModelItem(modelName));
+            } catch (RuntimeException ex) {
+                log.debug("skip unavailable gemini model, model={}, msg={}", modelName, ex.getMessage());
+            }
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("models", models);
+        return result;
+    }
+
+    /**
+     * 转发 Gemini 原生 generateContent 请求，并复用现有鉴权、路由与 token 计费能力。
+     */
+    @Override
+    public Map<String, Object> geminiGenerateContent(String key, String model, Map<String, Object> request) {
+        Assert.hasText(key, "key不能为空");
+        Assert.hasText(model, "model不能为空");
+
+        AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(key);
+        AiProviderConfig providerConfig = requireProviderConfig(model);
+        assertGeminiProvider(providerConfig, model);
+        BillingPlan billingPlan = buildGeminiGenerateBillingPlan(apiKey, providerConfig, model, request);
+        preCheckBalance(billingPlan);
+
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        String apiVersion = pickString(config, "geminiApiVersion", "v1beta");
+        String path = "/" + apiVersion + "/models/" + model + ":generateContent";
+        String url = appendQueryParam(joinUrl(pickBaseUrl(providerConfig, config), path), "key",
+                pickApiKey(providerConfig, config));
+        Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
+        String requestId = IDGeneratorUtils.uuid32();
+        String endpoint = "/ai/guest/openai/v1beta/models/" + model + ":generateContent";
+        long startAt = System.currentTimeMillis();
+
+        try {
+            // 临时回放模式：禁用真实上游调用，改为读取本地文件中的 Gemini 原始响应体。
+             RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+             HttpHeaders headers = new HttpHeaders();
+             headers.setContentType(MediaType.APPLICATION_JSON);
+             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,
+                     new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+            Map<String, Object> result = parseJsonMap(response.getBody());
+
+//            String rawBody = readGeminiMockResponseBody();
+//            Map<String, Object> result = parseJsonMap(rawBody);
+
+            AiUsageSummary usage = extractGeminiUsage(result, request);
+            BigDecimal amount = calculateAmount(billingPlan, usage, model);
+            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null);
+            return result;
+        } catch (RuntimeException ex) {
+            long totalMs = System.currentTimeMillis() - startAt;
+            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null);
+            throw ex;
+        }
     }
 
     @Override
@@ -880,6 +987,23 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     }
 
     /**
+     * 构造 Gemini models 接口返回模型项。
+     *
+     * @param modelName 模型名
+     * @return 模型数据
+     */
+    private Map<String, Object> buildGeminiModelItem(String modelName) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("name", "models/" + modelName);
+        item.put("displayName", modelName);
+        item.put("description", "Gemini model routed by Soho AI");
+        item.put("inputTokenLimit", 0);
+        item.put("outputTokenLimit", 0);
+        item.put("supportedGenerationMethods", List.of("generateContent", "streamGenerateContent"));
+        return item;
+    }
+
+    /**
      * 解析套餐额度快照。
      */
     private PackageQuotaSnapshot resolvePackageQuotaSnapshot(AiUserMemberCardView currentCard) {
@@ -1504,6 +1628,35 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     }
 
     /**
+     * 构建 Gemini generateContent 的计费方案，按 token 规则计费。
+     */
+    private BillingPlan buildGeminiGenerateBillingPlan(AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
+                                                       Map<String, Object> request) {
+        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model);
+        BillingPlan billingPlan = new BillingPlan();
+        billingPlan.userId = apiKey.getUserId();
+        billingPlan.apiKeyId = apiKey.getId();
+        billingPlan.providerConfigId = providerConfig.getId();
+        billingPlan.billingEnabled = modelPricing.hasSplitPrice() || pickBoolean(config, "billingEnabled", false);
+        billingPlan.walletTypeId = pickInteger(config, "billingWalletTypeId", 1);
+        billingPlan.promptPricePer1kTokens = pickBigDecimal(config, "promptPricePer1kTokens", BigDecimal.ZERO);
+        billingPlan.completionPricePer1kTokens = pickBigDecimal(config, "completionPricePer1kTokens", billingPlan.promptPricePer1kTokens);
+        billingPlan.estimatedModel = model;
+        billingPlan.modelPricing = modelPricing;
+        billingPlan.memberLimitDecision = aiMemberRequestLimitService.evaluate(
+                billingPlan.userId,
+                aiUserMemberCardService.resolveActiveMemberCard(billingPlan.userId)
+        );
+        // TODO 暂时gemini类型请求不支持会员卡， 只能按量扣费
+        if (billingPlan.memberLimitDecision.isMemberByRequest() && !billingPlan.memberLimitDecision.isOverLimit()) {
+//            billingPlan.billingEnabled = false;
+        }
+        billingPlan.estimatedUsage = estimateGeminiUsage(request);
+        return billingPlan;
+    }
+
+    /**
      * 构建固定单价计费方案，按次扣费。
      */
     private BillingPlan buildFixedPriceBillingPlan(AiUserApiKey apiKey, AiProviderConfig providerConfig, String model) {
@@ -1570,6 +1723,17 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 + ", inputTokens=" + promptTokens
                 + ", outputTokens=" + completionTokens
                 + ", totalTokens=" + totalTokens;
+    }
+
+    /**
+     * 读取 Gemini 回放响应体文件。
+     */
+    private String readGeminiMockResponseBody() {
+        try {
+            return Files.readString(Path.of(GEMINI_MOCK_RESPONSE_FILE));
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("读取 Gemini 回放文件失败: " + GEMINI_MOCK_RESPONSE_FILE, ex);
+        }
     }
 
     private BigDecimal calculateAmount(BillingPlan billingPlan, AiUsageSummary usage, String model) {
@@ -1657,6 +1821,53 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         if (usage.getTotalTokens() == 0) {
             return estimateEmbeddingUsage(request);
         }
+        return usage;
+    }
+
+    /**
+     * 从 Gemini generateContent 响应中提取 usage。
+     */
+    @SuppressWarnings("unchecked")
+    private AiUsageSummary extractGeminiUsage(Map<String, Object> response, Map<String, Object> request) {
+        AiUsageSummary usage = new AiUsageSummary();
+        if (response != null && response.get("usageMetadata") instanceof Map) {
+            Map<String, Object> usageMetadata = (Map<String, Object>) response.get("usageMetadata");
+            int promptTokens = toNumber(usageMetadata.get("promptTokenCount")).intValue();
+            int completionTokens = toNumber(usageMetadata.get("candidatesTokenCount")).intValue()
+                    + toNumber(usageMetadata.get("thoughtsTokenCount")).intValue();
+            int totalTokens = toNumber(usageMetadata.get("totalTokenCount")).intValue();
+            usage.setPromptTokens(promptTokens);
+            usage.setCompletionTokens(completionTokens);
+            usage.setTotalTokens(totalTokens > 0 ? totalTokens : (promptTokens + completionTokens));
+        }
+        if (usage.getTotalTokens() == 0) {
+            return estimateGeminiUsage(request);
+        }
+        return usage;
+    }
+
+    /**
+     * 估算 Gemini generateContent 请求的 token 用量。
+     */
+    @SuppressWarnings("unchecked")
+    private AiUsageSummary estimateGeminiUsage(Map<String, Object> request) {
+        AiUsageSummary usage = new AiUsageSummary();
+        if (request == null) {
+            usage.setPromptTokens(0);
+            usage.setCompletionTokens(0);
+            usage.setTotalTokens(0);
+            return usage;
+        }
+        int promptTokens = estimateTokensByObject(request.get("contents"));
+        int completionTokens = 0;
+        Object generationConfigObj = request.get("generationConfig");
+        if (generationConfigObj instanceof Map) {
+            Map<String, Object> generationConfig = (Map<String, Object>) generationConfigObj;
+            completionTokens = Math.max(0, toNumber(generationConfig.get("maxOutputTokens")).intValue());
+        }
+        usage.setPromptTokens(promptTokens);
+        usage.setCompletionTokens(completionTokens);
+        usage.setTotalTokens(promptTokens + completionTokens);
         return usage;
     }
 
@@ -2064,6 +2275,28 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             return baseUrl + "/" + path;
         }
         return baseUrl + path;
+    }
+
+    /**
+     * 追加 URL 查询参数，避免手工拼接导致格式错误。
+     */
+    private String appendQueryParam(String url, String key, String value) {
+        if (StringUtils.isBlank(url) || StringUtils.isBlank(key) || StringUtils.isBlank(value)) {
+            return url;
+        }
+        return org.springframework.web.util.UriComponentsBuilder.fromUriString(url)
+                .queryParam(key, value)
+                .build(true)
+                .toUriString();
+    }
+
+    /**
+     * 校验当前路由命中的配置必须是 Gemini。
+     */
+    private void assertGeminiProvider(AiProviderConfig providerConfig, String model) {
+        Assert.notNull(providerConfig, "providerConfig不能为空");
+        Assert.isTrue("gemini".equalsIgnoreCase(providerConfig.getProvider()),
+                "模型[" + model + "]当前路由提供方不是gemini");
     }
 
     private Integer pickInteger(Map<String, Object> config, String key, Integer fallback) {
