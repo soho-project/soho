@@ -113,3 +113,20 @@ curl -sS -X POST "${BASE_URL}${PATH_ONLY}" \
 -d "${BODY}"
 echo
 '
+
+# 测试谷歌图片生成
+curl -s -X POST \
+"http://127.0.0.1:6677/ai/guest/openai/v1beta/models/gemini-3.1-flash-image:generateContent?key=sk-ai-6ba06fa2f342417db6755273110131b2" \
+-H "Content-Type: application/json" \
+-d '{
+"contents":[{"parts":[{"text":"生成一张月亮图片，大小100*100像素"}]}],
+"generationConfig":{"responseModalities":["TEXT","IMAGE"]}
+}'
+
+curl -s -X POST \
+"http://127.0.0.1:6677/ai/guest/openai/v1beta/models/gemini-2.5-flash:generateContent?key=sk-ai-6ba06fa2f342417db6755273110131b2" \
+-H "Content-Type: application/json" \
+-d '{
+"contents":[{"parts":[{"text":"生成一张月亮图片，大小100*100像素"}]}],
+"generationConfig":{"responseModalities":["TEXT","IMAGE"]}
+}'

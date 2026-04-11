@@ -35,6 +35,24 @@ public interface AiOpenApiService {
     Map<String, Object> models(String authorization);
 
     /**
+     * 查询 Gemini 原生模型列表。
+     *
+     * @param authorization Bearer Token
+     * @return Gemini 模型数据
+     */
+    Map<String, Object> geminiModels(String authorization);
+
+    /**
+     * 发起 Gemini 原生 generateContent 请求。
+     *
+     * @param key 平台 API Key（query 参数）
+     * @param model Gemini 模型名
+     * @param request 请求体
+     * @return Gemini 原生响应
+     */
+    Map<String, Object> geminiGenerateContent(String key, String model, Map<String, Object> request);
+
+    /**
      * 发起 chat completions 请求。
      *
      * @param authorization Bearer Token
