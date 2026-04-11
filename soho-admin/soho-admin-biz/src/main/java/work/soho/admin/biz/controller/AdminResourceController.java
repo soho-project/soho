@@ -52,7 +52,7 @@ public class AdminResourceController {
          if(!StringUtils.isEmpty(adminResource.getIconName())) {
             lqw.like(AdminResource::getIconName, adminResource.getIconName());
         }
-         lqw.orderByDesc(AdminResource::getId);
+         lqw.orderByAsc(AdminResource::getSort).orderByAsc(AdminResource::getId);
         PageUtils.startPage();
         return R.success(new PageSerializable<>(adminResourceService.list(lqw)));
     }
@@ -82,6 +82,7 @@ public class AdminResourceController {
         if(visible>=0) {
             lqw.eq(AdminResource::getVisible, visible);
         }
+        lqw.orderByAsc(AdminResource::getSort).orderByAsc(AdminResource::getId);
         List<AdminResource> list = adminResourceService.list(
                 lqw
         );
@@ -139,7 +140,10 @@ public class AdminResourceController {
         }
 
         // 排序
-        return routeDTOList.stream().sorted(Comparator.comparingInt(RouteVo::getSort)).collect(Collectors.toList());
+        return routeDTOList.stream()
+                .sorted(Comparator.comparing(RouteVo::getSort, Comparator.nullsFirst(Integer::compareTo))
+                        .thenComparing(RouteVo::getId, Comparator.nullsFirst(Long::compareTo)))
+                .collect(Collectors.toList());
     }
 
     private void treeToList (List<RouteVo> tree, List<RouteVo> result){
@@ -218,7 +222,7 @@ public class AdminResourceController {
     @GetMapping("/tree")
     public R<TreeResourceVo> getResourceTree(String language) {
         LambdaQueryWrapper<AdminResource> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.orderByAsc(AdminResource::getSort);
+        lambdaQueryWrapper.orderByAsc(AdminResource::getSort).orderByAsc(AdminResource::getId);
         List<AdminResource> list = adminResourceService.list(lambdaQueryWrapper);
         Map<Long, List<AdminResource>> parentList = new HashMap<>();
         //检查language, 默认为中文
