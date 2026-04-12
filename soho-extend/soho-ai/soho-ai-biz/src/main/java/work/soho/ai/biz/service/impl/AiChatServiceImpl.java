@@ -233,6 +233,38 @@ public class AiChatServiceImpl implements AiChatService {
         return candidates.get(0);
     }
 
+    /**
+     * 按 provider 类型与模型解析可用配置，避免不同 provider 协议串线。
+     *
+     * @param provider 提供方类型，例如 openai/gemini
+     * @param model 模型名
+     * @return 提供方配置
+     */
+    @Override
+    public AiProviderConfig resolveProviderConfigByProvider(String provider, String model) {
+        if (StringUtils.isBlank(provider) || StringUtils.isBlank(model)) {
+            throw new IllegalArgumentException("provider or model is required");
+        }
+        List<AiProviderConfig> orderedCandidates = loadOrderedEnabledCandidatesByModel(model);
+        if (orderedCandidates.isEmpty()) {
+            throw new IllegalArgumentException("provider config not found for model: " + model);
+        }
+        List<AiProviderConfig> availableCandidates = new ArrayList<>();
+        for (AiProviderConfig orderedCandidate : orderedCandidates) {
+            if (!provider.equalsIgnoreCase(orderedCandidate.getProvider())) {
+                continue;
+            }
+            if (aiProviderRuntimeStateService.isRequestAllowed(orderedCandidate)) {
+                availableCandidates.add(orderedCandidate);
+            }
+        }
+        if (availableCandidates.isEmpty()) {
+            throw new IllegalArgumentException("provider config not found for provider: " + provider + ", model: " + model);
+        }
+        AiProviderConfig selected = selectByWeight(availableCandidates);
+        return selected == null ? availableCandidates.get(0) : selected;
+    }
+
     private AiProviderConfig selectByWeight(List<AiProviderConfig> candidates) {
         if (candidates == null || candidates.isEmpty()) {
             return null;
