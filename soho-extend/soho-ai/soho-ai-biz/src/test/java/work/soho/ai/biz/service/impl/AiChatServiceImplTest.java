@@ -176,6 +176,45 @@ public class AiChatServiceImplTest {
     }
 
     @Test
+    public void resolveProviderConfigByProvider_whenSameModelHasMultipleProviders_shouldOnlySelectSpecifiedProvider() {
+        AiProviderConfigService providerConfigService = Mockito.mock(AiProviderConfigService.class);
+        AiProviderModelRelService providerModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiFileService aiFileService = Mockito.mock(AiFileService.class);
+        AiProviderRuntimeStateService runtimeStateService = Mockito.mock(AiProviderRuntimeStateService.class);
+        when(runtimeStateService.isRequestAllowed(Mockito.any())).thenReturn(true);
+        when(runtimeStateService.getEffectiveWeight(Mockito.any())).thenReturn(10);
+        AiChatServiceImpl service = new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService, runtimeStateService);
+
+        when(providerModelRelService.listEnabledProviderConfigIdsByModelName("gpt-4o-mini"))
+                .thenReturn(Arrays.asList(1L, 2L));
+
+        AiProviderConfig openaiConfig = new AiProviderConfig();
+        openaiConfig.setId(1L);
+        openaiConfig.setStatus(1);
+        openaiConfig.setCode("openai-prod");
+        openaiConfig.setProvider("openai");
+        openaiConfig.setWeight(10);
+
+        AiProviderConfig geminiConfig = new AiProviderConfig();
+        geminiConfig.setId(2L);
+        geminiConfig.setStatus(1);
+        geminiConfig.setCode("gemini-prod");
+        geminiConfig.setProvider("gemini");
+        geminiConfig.setWeight(10);
+
+        when(providerConfigService.list(Mockito.any())).thenReturn(Arrays.asList(openaiConfig, geminiConfig));
+
+        AiProviderConfig selected = service.resolveProviderConfigByProvider("gemini", "gpt-4o-mini");
+        assertThat(selected.getId()).isEqualTo(2L);
+        assertThat(selected.getProvider()).isEqualTo("gemini");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                        service.resolveProviderConfigByProvider("anthropic", "gpt-4o-mini"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("provider config not found for provider: anthropic, model: gpt-4o-mini");
+    }
+
+    @Test
     public void openAiResponsesRequest_whenRawRequestUsesParameters_shouldKeepParametersField() {
         String raw = "{"
                 + "\"model\":\"gpt-5.4\","

@@ -160,7 +160,7 @@ public class AiOpenApiServiceImplTest {
 
         AiUserApiKey apiKey = new AiUserApiKey();
         when(aiUserApiKeyService.requireByPlaintextKey("token")).thenReturn(apiKey);
-        when(aiChatService.resolveProviderConfig(null, "gpt-4o-mini"))
+        when(aiChatService.resolveProviderConfigByProvider("openai", "gpt-4o-mini"))
                 .thenThrow(new IllegalArgumentException("provider config not found for model: gpt-4o-mini"));
 
         OpenAiChatCompletionRequest request = new OpenAiChatCompletionRequest();
@@ -213,7 +213,7 @@ public class AiOpenApiServiceImplTest {
         providerConfig.setProvider("openai");
         providerConfig.setBaseUrl("https://example.com");
         providerConfig.setApiKeyRef("token");
-        when(aiChatService.resolveProviderConfig(null, "gpt-4o-mini")).thenReturn(providerConfig);
+        when(aiChatService.resolveProviderConfigByProvider("openai", "gpt-4o-mini")).thenReturn(providerConfig);
 
         AiChatResponse response = new AiChatResponse();
         response.setModel("gpt-4o-mini");
@@ -236,7 +236,45 @@ public class AiOpenApiServiceImplTest {
         request.setMessages(java.util.List.of(message));
 
         service.chatCompletions("Bearer token", request);
-        Mockito.verify(aiChatService).resolveProviderConfig(null, "gpt-4o-mini");
+        Mockito.verify(aiChatService).resolveProviderConfigByProvider("openai", "gpt-4o-mini");
+    }
+
+    @Test
+    public void geminiGenerateContent_shouldResolveProviderFromGeminiOnly() {
+        AiUserApiKeyService aiUserApiKeyService = Mockito.mock(AiUserApiKeyService.class);
+        AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
+        AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiChatService aiChatService = Mockito.mock(AiChatService.class);
+        AiApiCallLogService aiApiCallLogService = Mockito.mock(AiApiCallLogService.class);
+        WalletInfoService walletInfoService = Mockito.mock(WalletInfoService.class);
+        WalletInfoApiService walletInfoApiService = Mockito.mock(WalletInfoApiService.class);
+        AiMemberRequestLimitService aiMemberRequestLimitService = Mockito.mock(AiMemberRequestLimitService.class);
+        AiUserMemberCardService aiUserMemberCardService = Mockito.mock(AiUserMemberCardService.class);
+
+        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+                aiUserApiKeyService,
+                aiProviderConfigService,
+                aiProviderModelRelService,
+                aiChatService,
+                aiApiCallLogService,
+                walletInfoService,
+                walletInfoApiService,
+                aiMemberRequestLimitService,
+                aiUserMemberCardService
+        );
+
+        AiUserApiKey apiKey = new AiUserApiKey();
+        apiKey.setId(10L);
+        apiKey.setUserId(7L);
+        when(aiUserApiKeyService.requireByPlaintextKey("token")).thenReturn(apiKey);
+        when(aiChatService.resolveProviderConfigByProvider("gemini", "gemini-2.5-pro"))
+                .thenThrow(new IllegalArgumentException("provider config not found for model: gemini-2.5-pro"));
+
+        assertThatThrownBy(() -> service.geminiGenerateContent("token", "gemini-2.5-pro", Collections.emptyMap()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("provider config not found for model: gemini-2.5-pro");
+
+        Mockito.verify(aiChatService).resolveProviderConfigByProvider("gemini", "gemini-2.5-pro");
     }
 
     @Test
@@ -273,9 +311,10 @@ public class AiOpenApiServiceImplTest {
         AiProviderConfig providerConfig = new AiProviderConfig();
         providerConfig.setId(42L);
         providerConfig.setCode("openai-prod");
+        providerConfig.setProvider("openai");
         providerConfig.setDefaultModel("gpt-4o-mini");
         providerConfig.setConfigJson("{\"billingEnabled\":false,\"billingWalletTypeId\":1}");
-        when(aiChatService.resolveProviderConfig(null, "gpt-4o-mini")).thenReturn(providerConfig);
+        when(aiChatService.resolveProviderConfigByProvider("openai", "gpt-4o-mini")).thenReturn(providerConfig);
 
         AiModelInfo modelInfo = new AiModelInfo();
         modelInfo.setModelName("gpt-4o-mini");
@@ -369,9 +408,10 @@ public class AiOpenApiServiceImplTest {
         AiProviderConfig providerConfig = new AiProviderConfig();
         providerConfig.setId(42L);
         providerConfig.setCode("openai-prod");
+        providerConfig.setProvider("openai");
         providerConfig.setDefaultModel("gpt-4o-mini");
         providerConfig.setConfigJson("{\"billingEnabled\":true,\"billingWalletTypeId\":1,\"promptPricePer1kTokens\":1}");
-        when(aiChatService.resolveProviderConfig(null, "gpt-4o-mini")).thenReturn(providerConfig);
+        when(aiChatService.resolveProviderConfigByProvider("openai", "gpt-4o-mini")).thenReturn(providerConfig);
         when(aiProviderModelRelService.listEnabledModelsByProviderConfigId(42L))
                 .thenReturn(java.util.List.of());
 

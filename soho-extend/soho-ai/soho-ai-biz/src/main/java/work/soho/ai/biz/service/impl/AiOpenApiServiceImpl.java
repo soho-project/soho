@@ -210,15 +210,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             if (StringUtils.isBlank(modelName)) {
                 continue;
             }
-            try {
-                AiProviderConfig selectedConfig = aiChatService.resolveProviderConfig(null, modelName);
-                if (selectedConfig == null || !"gemini".equalsIgnoreCase(selectedConfig.getProvider())) {
-                    continue;
-                }
-                models.add(buildGeminiModelItem(modelName));
-            } catch (RuntimeException ex) {
-                log.debug("skip unavailable gemini model, model={}, msg={}", modelName, ex.getMessage());
-            }
+            models.add(buildGeminiModelItem(modelName));
         }
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -235,7 +227,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         Assert.hasText(model, "model不能为空");
 
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(key);
-        AiProviderConfig providerConfig = requireProviderConfig(model);
+        AiProviderConfig providerConfig = requireProviderConfig("gemini", model);
         assertGeminiProvider(providerConfig, model);
         BillingPlan billingPlan = buildGeminiGenerateBillingPlan(apiKey, providerConfig, model, request);
         preCheckBalance(billingPlan);
@@ -1205,15 +1197,34 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         }
     }
 
+    /**
+     * 按模型解析可用的提供方配置。
+     * 默认按 openai 提供方进行路由。
+     *
+     * @param model 模型名称
+     * @return 已启用的提供方配置
+     */
     private AiProviderConfig requireProviderConfig(String model) {
+        return requireProviderConfig("openai", model);
+    }
+
+    /**
+     * 按提供方类型和模型解析可用配置，防止 provider 类型与上游协议错配。
+     *
+     * @param provider 提供方类型，例如 openai/gemini
+     * @param model 模型名称
+     * @return 已启用的提供方配置
+     */
+    private AiProviderConfig requireProviderConfig(String provider, String model) {
+        Assert.hasText(provider, "provider不能为空");
         Assert.hasText(model, "model不能为空");
         try {
-            AiProviderConfig providerConfig = aiChatService.resolveProviderConfig(null, model);
-            log.debug("requireProviderConfig success model={}, configId={}, code={}, provider={}",
-                    model, providerConfig.getId(), providerConfig.getCode(), providerConfig.getProvider());
+            AiProviderConfig providerConfig = aiChatService.resolveProviderConfigByProvider(provider, model);
+            log.debug("requireProviderConfig success, provider={}, model={}, configId={}, code={}, providerType={}",
+                    provider, model, providerConfig.getId(), providerConfig.getCode(), providerConfig.getProvider());
             return providerConfig;
         } catch (IllegalArgumentException ex) {
-            log.warn("requireProviderConfig failed model={}", model, ex);
+            log.warn("requireProviderConfig failed, provider={}, model={}", provider, model, ex);
             throw ex;
         }
     }
