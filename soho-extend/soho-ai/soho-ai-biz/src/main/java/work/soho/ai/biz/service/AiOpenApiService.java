@@ -43,6 +43,14 @@ public interface AiOpenApiService {
     Map<String, Object> geminiModels(String authorization);
 
     /**
+     * 按登录用户查询 Gemini 原生模型列表。
+     *
+     * @param userId 登录用户ID
+     * @return Gemini 模型数据
+     */
+    Map<String, Object> geminiModelsByUserId(Long userId);
+
+    /**
      * 发起 Gemini 原生 generateContent 请求。
      *
      * @param key 平台 API Key（query 参数）
@@ -51,6 +59,16 @@ public interface AiOpenApiService {
      * @return Gemini 原生响应
      */
     Map<String, Object> geminiGenerateContent(String key, String model, Map<String, Object> request);
+
+    /**
+     * 按登录用户发起 Gemini 原生 generateContent 请求。
+     *
+     * @param userId 登录用户ID
+     * @param model Gemini 模型名
+     * @param request 请求体
+     * @return Gemini 原生响应
+     */
+    Map<String, Object> geminiGenerateContentByUserId(Long userId, String model, Map<String, Object> request);
 
     /**
      * 发起 chat completions 请求。

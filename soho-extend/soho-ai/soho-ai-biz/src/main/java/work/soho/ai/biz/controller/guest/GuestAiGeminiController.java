@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import work.soho.ai.biz.controller.AiClientErrorSupport;
 import work.soho.ai.biz.service.AiOpenApiService;
 
 import java.util.Map;
@@ -40,7 +41,7 @@ public class GuestAiGeminiController {
             return aiOpenApiService.geminiModels(authorization);
         } catch (RuntimeException ex) {
             log.error("Gemini 兼容 models 失败, msg={}", ex.getMessage(), ex);
-            return buildGeminiErrorResponse();
+            return buildGeminiErrorResponse(ex);
         }
     }
 
@@ -57,17 +58,18 @@ public class GuestAiGeminiController {
             return aiOpenApiService.geminiGenerateContent(key, model, request);
         } catch (RuntimeException ex) {
             log.error("Gemini 兼容 generateContent 失败, model={}, msg={}", model, ex.getMessage(), ex);
-            return buildGeminiErrorResponse();
+            return buildGeminiErrorResponse(ex);
         }
     }
 
     /**
      * 构建 Gemini 兼容错误响应。
      */
-    private Object buildGeminiErrorResponse() {
+    private Object buildGeminiErrorResponse(RuntimeException ex) {
+        String message = AiClientErrorSupport.resolveClientMessage(ex, CLIENT_ERROR_MESSAGE);
         return java.util.Map.of(
                 "error", java.util.Map.of(
-                        "message", CLIENT_ERROR_MESSAGE,
+                        "message", message,
                         "code", 500
                 )
         );

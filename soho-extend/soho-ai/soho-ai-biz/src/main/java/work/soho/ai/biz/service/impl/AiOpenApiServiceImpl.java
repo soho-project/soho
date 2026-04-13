@@ -2,6 +2,7 @@ package work.soho.ai.biz.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.io.ByteArrayResource;
@@ -16,6 +17,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
@@ -183,7 +185,23 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     public Map<String, Object> geminiModels(String authorization) {
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
         aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+        return buildGeminiModelsResponse();
+    }
 
+    /**
+     * 按登录用户查询 Gemini 原生模型列表。
+     */
+    @Override
+    public Map<String, Object> geminiModelsByUserId(Long userId) {
+        AiUserApiKey apiKey = aiUserApiKeyService.requireEnabledByUserId(userId);
+        aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
+        return buildGeminiModelsResponse();
+    }
+
+    /**
+     * 构建 Gemini 模型列表响应。
+     */
+    private Map<String, Object> buildGeminiModelsResponse() {
         List<AiProviderConfig> providerConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
                 .eq(AiProviderConfig::getStatus, 1)
                 .eq(AiProviderConfig::getProvider, "gemini")
@@ -225,8 +243,28 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     public Map<String, Object> geminiGenerateContent(String key, String model, Map<String, Object> request) {
         Assert.hasText(key, "key不能为空");
         Assert.hasText(model, "model不能为空");
-
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(key);
+        return doGeminiGenerateContent(apiKey, model, request, "/ai/guest/openai/v1beta/models/" + model + ":generateContent");
+    }
+
+    /**
+     * 按登录用户发起 Gemini 原生 generateContent 请求。
+     */
+    @Override
+    public Map<String, Object> geminiGenerateContentByUserId(Long userId, String model, Map<String, Object> request) {
+        Assert.notNull(userId, "userId不能为空");
+        Assert.hasText(model, "model不能为空");
+        AiUserApiKey apiKey = aiUserApiKeyService.requireEnabledByUserId(userId);
+        return doGeminiGenerateContent(apiKey, model, request, "/ai/admin/openai/v1beta/models/" + model + ":generateContent");
+    }
+
+    /**
+     * 统一执行 Gemini generateContent 调用。
+     */
+    private Map<String, Object> doGeminiGenerateContent(AiUserApiKey apiKey, String model, Map<String, Object> request, String endpoint) {
+        Assert.notNull(apiKey, "api key不能为空");
+        Assert.hasText(model, "model不能为空");
+
         AiProviderConfig providerConfig = requireProviderConfig("gemini", model);
         assertGeminiProvider(providerConfig, model);
         BillingPlan billingPlan = buildGeminiGenerateBillingPlan(apiKey, providerConfig, model, request);
@@ -239,17 +277,10 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 pickApiKey(providerConfig, config));
         Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
         String requestId = IDGeneratorUtils.uuid32();
-        String endpoint = "/ai/guest/openai/v1beta/models/" + model + ":generateContent";
         long startAt = System.currentTimeMillis();
 
         try {
-            // 临时回放模式：禁用真实上游调用，改为读取本地文件中的 Gemini 原始响应体。
-             RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
-             HttpHeaders headers = new HttpHeaders();
-             headers.setContentType(MediaType.APPLICATION_JSON);
-             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,
-                     new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
-            Map<String, Object> result = parseJsonMap(response.getBody());
+            Map<String, Object> result = invokeGeminiGenerateWithRetry(url, request, timeoutMs, buildProxy(config));
 
 //            String rawBody = readGeminiMockResponseBody();
 //            Map<String, Object> result = parseJsonMap(rawBody);
@@ -267,6 +298,86 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null);
             throw ex;
         }
+    }
+
+    /**
+     * 调用 Gemini generateContent，并在网络抖动场景进行一次重试。
+     *
+     * @param url 上游请求地址
+     * @param request 请求体
+     * @param timeoutMs 超时时间
+     * @param proxy 代理配置
+     * @return Gemini 响应体
+     */
+    private Map<String, Object> invokeGeminiGenerateWithRetry(String url,
+                                                              Map<String, Object> request,
+                                                              Integer timeoutMs,
+                                                              Proxy proxy) {
+        try {
+            return invokeGeminiGenerate(url, request, timeoutMs, proxy, false);
+        } catch (ResourceAccessException ex) {
+            if (!isRetryableGeminiNetworkError(ex)) {
+                throw ex;
+            }
+            Integer retryTimeoutMs = resolveGeminiRetryTimeoutMs(timeoutMs);
+            log.warn("gemini generateContent first attempt failed, retry once with Connection: close, url={}, message={}",
+                    url, ex.getMessage());
+            return invokeGeminiGenerate(url, request, retryTimeoutMs, proxy, true);
+        }
+    }
+
+    /**
+     * 执行一次 Gemini generateContent 调用。
+     *
+     * @param url 上游请求地址
+     * @param request 请求体
+     * @param timeoutMs 超时时间
+     * @param proxy 代理配置
+     * @param forceCloseConnection 是否强制关闭连接
+     * @return Gemini 响应体
+     */
+    private Map<String, Object> invokeGeminiGenerate(String url,
+                                                     Map<String, Object> request,
+                                                     Integer timeoutMs,
+                                                     Proxy proxy,
+                                                     boolean forceCloseConnection) {
+        RestTemplate restTemplate = buildRestTemplate(timeoutMs, proxy);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        if (forceCloseConnection) {
+            headers.set(HttpHeaders.CONNECTION, "close");
+        }
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,
+                new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+        return parseJsonMap(response.getBody());
+    }
+
+    /**
+     * 判断是否属于可重试的 Gemini 网络错误。
+     *
+     * @param ex 异常
+     * @return true 表示建议重试
+     */
+    private boolean isRetryableGeminiNetworkError(ResourceAccessException ex) {
+        String message = ex == null ? "" : String.valueOf(ex.getMessage()).toLowerCase(Locale.ROOT);
+        return message.contains("unexpected end of file")
+                || message.contains("connection reset")
+                || message.contains("broken pipe")
+                || message.contains("timed out");
+    }
+
+    /**
+     * 计算 Gemini 重试请求的超时时间。
+     * 图片模型返回体较大且耗时更长，重试时适当放大超时时间以减少误判失败。
+     *
+     * @param timeoutMs 首次请求超时时间
+     * @return 重试请求超时时间
+     */
+    private Integer resolveGeminiRetryTimeoutMs(Integer timeoutMs) {
+        int baseTimeout = timeoutMs == null || timeoutMs <= 0 ? 60000 : timeoutMs;
+        int multipliedTimeout = baseTimeout * 3;
+        int retryTimeout = Math.max(multipliedTimeout, 180000);
+        return Math.min(retryTimeout, 600000);
     }
 
     @Override
@@ -321,7 +432,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         return aiChatService.streamChat(aiChatRequest)
                 .doOnNext(payload -> {
                     appendContent(payload, contentBuilder);
-                    recordFirstTokenAt(firstTokenAt, startAt, extractDeltaFromChatStreamPayload(payload));
+                    recordFirstTokenAt(firstTokenAt, startAt, payload, extractDeltaFromChatStreamPayload(payload));
                 })
                 .doOnComplete(() -> {
                     AiProviderConfig providerConfig = resolveActualProviderConfig(null, aiChatRequest, selectedProviderConfig);
@@ -422,7 +533,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 .doOnNext(payload -> {
                     appendResponsesTextDelta(payload, contentBuilder);
                     captureCompletedPayload(payload, completedPayloadRef);
-                    recordFirstTokenAt(firstTokenAt, startAt, extractDeltaFromResponsesPayload(payload));
+                    recordFirstTokenAt(firstTokenAt, startAt, payload, extractDeltaFromResponsesPayload(payload));
                 })
                 .doOnComplete(() -> {
                     AiProviderConfig actualProviderConfig = resolveActualProviderConfig(null, aiChatRequest, providerConfig);
@@ -1970,12 +2081,48 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     /**
      * 记录首字时间戳。
      */
-    private void recordFirstTokenAt(AtomicLong firstTokenAt, long startAt, String delta) {
-        if (firstTokenAt.get() >= 0 || StringUtils.isBlank(delta)) {
+    private void recordFirstTokenAt(AtomicLong firstTokenAt, long startAt, String payload, String delta) {
+        if (firstTokenAt.get() >= 0) {
+            return;
+        }
+        if (StringUtils.isBlank(delta) && !isMeaningfulStreamPayload(payload)) {
             return;
         }
         if (firstTokenAt.compareAndSet(-1L, System.currentTimeMillis())) {
             log.info("ai openapi first token captured, first_token_ms={}", firstTokenAt.get() - startAt);
+        }
+    }
+
+    /**
+     * 判断流式 payload 是否可视为“首字/首块”。
+     * 优先使用文本 delta；若首包是工具调用/非文本块，也记录首包耗时避免首字为空。
+     */
+    private boolean isMeaningfulStreamPayload(String payload) {
+        if (StringUtils.isBlank(payload) || "[DONE]".equals(payload)) {
+            return false;
+        }
+        try {
+            JsonNode root = JacksonUtils.getObjectMapper().readTree(payload);
+            JsonNode choice = root.path("choices").path(0);
+            if (!choice.isMissingNode()) {
+                JsonNode delta = choice.path("delta");
+                if (delta.isObject() && delta.size() > 0) {
+                    return true;
+                }
+                JsonNode message = choice.path("message");
+                if (message.isObject() && message.size() > 0) {
+                    return true;
+                }
+            }
+            String type = root.path("type").asText("");
+            if (StringUtils.isBlank(type)) {
+                return false;
+            }
+            return !"response.created".equals(type)
+                    && !"response.in_progress".equals(type)
+                    && !"response.completed".equals(type);
+        } catch (Exception ex) {
+            return false;
         }
     }
 

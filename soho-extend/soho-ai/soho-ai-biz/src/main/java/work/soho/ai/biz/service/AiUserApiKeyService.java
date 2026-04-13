@@ -10,6 +10,14 @@ public interface AiUserApiKeyService extends IService<AiUserApiKey> {
 
     AiUserApiKey requireByPlaintextKey(String plaintextKey);
 
+    /**
+     * 按用户ID获取一个可用的 API Key。
+     *
+     * @param userId 用户ID
+     * @return 启用状态的 API Key
+     */
+    AiUserApiKey requireEnabledByUserId(Long userId);
+
     boolean disableKey(Long userId, Long id);
 
     boolean enableKey(Long userId, Long id);
