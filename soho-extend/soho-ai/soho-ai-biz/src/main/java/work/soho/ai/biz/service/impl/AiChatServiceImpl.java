@@ -1482,6 +1482,12 @@ public class AiChatServiceImpl implements AiChatService {
                     summary.setPromptTokens(root.path("usage").path("prompt_tokens").asInt(0));
                     summary.setCompletionTokens(root.path("usage").path("completion_tokens").asInt(0));
                     summary.setTotalTokens(root.path("usage").path("total_tokens").asInt(0));
+                    // fixed 请求上游的是 codex接口
+                    if (summary.getTotalTokens() == null || summary.getTotalTokens() == 0) {
+                        summary.setPromptTokens(root.path("usage").path("input_tokens").asInt(0));
+                        summary.setCompletionTokens(root.path("usage").path("output_tokens").asInt(0));
+                        summary.setTotalTokens(root.path("usage").path("total_tokens").asInt(0));
+                    }
                     break;
             }
             if (summary.getTotalTokens() == null || summary.getTotalTokens() == 0) {
