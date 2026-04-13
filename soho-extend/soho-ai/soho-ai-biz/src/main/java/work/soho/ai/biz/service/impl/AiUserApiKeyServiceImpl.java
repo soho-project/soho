@@ -57,6 +57,25 @@ public class AiUserApiKeyServiceImpl extends ServiceImpl<AiUserApiKeyMapper, AiU
         return apiKey;
     }
 
+    /**
+     * 按用户ID获取一个启用状态的 API Key。
+     *
+     * @param userId 用户ID
+     * @return 启用状态的 API Key
+     */
+    @Override
+    public AiUserApiKey requireEnabledByUserId(Long userId) {
+        Assert.notNull(userId, "userId不能为空");
+        AiUserApiKey apiKey = getOne(new LambdaQueryWrapper<AiUserApiKey>()
+                .eq(AiUserApiKey::getUserId, userId)
+                .eq(AiUserApiKey::getStatus, AiUserApiKeyEnums.Status.ENABLED.getId())
+                .orderByDesc(AiUserApiKey::getLastUsedTime)
+                .orderByDesc(AiUserApiKey::getId)
+                .last("limit 1"));
+        Assert.notNull(apiKey, "当前用户没有可用的api key");
+        return apiKey;
+    }
+
     @Override
     public boolean disableKey(Long userId, Long id) {
         AiUserApiKey entity = getOne(new LambdaQueryWrapper<AiUserApiKey>()

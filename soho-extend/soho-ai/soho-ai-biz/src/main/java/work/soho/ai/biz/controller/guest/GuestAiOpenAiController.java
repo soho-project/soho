@@ -14,6 +14,7 @@ import reactor.core.publisher.Flux;
 import work.soho.ai.biz.request.OpenAiChatCompletionRequest;
 import work.soho.ai.biz.request.OpenAiResponsesRequest;
 import work.soho.ai.biz.service.AiOpenApiService;
+import work.soho.ai.biz.controller.AiClientErrorSupport;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.common.security.userdetails.SohoUserDetails;
 
@@ -61,7 +62,7 @@ public class GuestAiOpenAiController {
             return aiOpenApiService.selfPackage(userDetails == null ? null : userDetails.getId(), newApiUserHeader);
         } catch (RuntimeException ex) {
             log.error("OpenAI/Codex 兼容套餐查询失败, msg={}", ex.getMessage(), ex);
-            return buildSelfPackageErrorResponse();
+            return buildSelfPackageErrorResponse(ex);
         }
     }
 
@@ -93,7 +94,7 @@ public class GuestAiOpenAiController {
             return aiOpenApiService.chatCompletions(authorization, request);
         } catch (RuntimeException ex) {
             log.error("OpenAI 兼容 chat completions 失败, msg={}", ex.getMessage(), ex);
-            return buildOpenAiErrorResponse();
+            return buildOpenAiErrorResponse(ex);
         }
     }
 
@@ -115,7 +116,7 @@ public class GuestAiOpenAiController {
             return aiOpenApiService.responses(authorization, request);
         } catch (RuntimeException ex) {
             log.error("OpenAI 兼容 responses 失败, msg={}", ex.getMessage(), ex);
-            return buildOpenAiErrorResponse();
+            return buildOpenAiErrorResponse(ex);
         }
     }
 
@@ -131,7 +132,7 @@ public class GuestAiOpenAiController {
             return aiOpenApiService.imageGenerations(authorization, request);
         } catch (RuntimeException ex) {
             log.error("OpenAI 兼容 images generations 失败, msg={}", ex.getMessage(), ex);
-            return buildOpenAiErrorResponse();
+            return buildOpenAiErrorResponse(ex);
         }
     }
 
@@ -147,7 +148,7 @@ public class GuestAiOpenAiController {
             return aiOpenApiService.embeddings(authorization, request);
         } catch (RuntimeException ex) {
             log.error("OpenAI 兼容 embeddings 失败, msg={}", ex.getMessage(), ex);
-            return buildOpenAiErrorResponse();
+            return buildOpenAiErrorResponse(ex);
         }
     }
 
@@ -164,7 +165,7 @@ public class GuestAiOpenAiController {
             return aiOpenApiService.audioTranscriptions(authorization, request, file);
         } catch (RuntimeException ex) {
             log.error("OpenAI 兼容 audio transcriptions 失败, msg={}", ex.getMessage(), ex);
-            return buildOpenAiErrorResponse();
+            return buildOpenAiErrorResponse(ex);
         }
     }
 
@@ -181,7 +182,7 @@ public class GuestAiOpenAiController {
             return aiOpenApiService.audioTranslations(authorization, request, file);
         } catch (RuntimeException ex) {
             log.error("OpenAI 兼容 audio translations 失败, msg={}", ex.getMessage(), ex);
-            return buildOpenAiErrorResponse();
+            return buildOpenAiErrorResponse(ex);
         }
     }
 
@@ -252,7 +253,9 @@ public class GuestAiOpenAiController {
         Disposable disposable = flux.subscribe(payload -> sendEvent(emitter, payload),
                 ex -> {
                     log.error("OpenAI SSE 请求失败, msg={}", ex.getMessage(), ex);
-                    sendEvent(emitter, JacksonUtils.toJson(buildOpenAiErrorResponse()));
+                    sendEvent(emitter, JacksonUtils.toJson(buildOpenAiErrorResponse(ex instanceof RuntimeException
+                            ? (RuntimeException) ex
+                            : new RuntimeException(ex))));
                     emitter.complete();
                 },
                 emitter::complete);
@@ -287,19 +290,20 @@ public class GuestAiOpenAiController {
     /**
      * 构建套餐查询失败兜底响应。
      */
-    private Map<String, Object> buildSelfPackageErrorResponse() {
+    private Map<String, Object> buildSelfPackageErrorResponse(RuntimeException ex) {
         Map<String, Object> result = new HashMap<>();
         result.put("success", false);
-        result.put("message", CLIENT_ERROR_MESSAGE);
+        result.put("message", AiClientErrorSupport.resolveClientMessage(ex, CLIENT_ERROR_MESSAGE));
         return result;
     }
 
     /**
      * 构建 OpenAI 兼容错误响应，避免向客户端暴露上游原始错误信息。
      */
-    private Map<String, Object> buildOpenAiErrorResponse() {
+    private Map<String, Object> buildOpenAiErrorResponse(RuntimeException ex) {
+        String message = AiClientErrorSupport.resolveClientMessage(ex, CLIENT_ERROR_MESSAGE);
         Map<String, Object> error = new HashMap<>();
-        error.put("message", CLIENT_ERROR_MESSAGE);
+        error.put("message", message);
         error.put("type", "server_error");
         error.put("code", "server_error");
         Map<String, Object> result = new HashMap<>();
