@@ -38,8 +38,11 @@ import work.soho.ai.biz.service.AiMemberRequestLimitService;
 import work.soho.ai.biz.service.AiOpenApiService;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
+import work.soho.ai.biz.service.AiProxyConfigService;
+import work.soho.ai.biz.service.AiProxyRelayService;
 import work.soho.ai.biz.service.AiUserApiKeyService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
+import work.soho.ai.biz.utils.AiProxyLayerUtils;
 import work.soho.ai.biz.utils.AiProviderModelUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
@@ -51,7 +54,6 @@ import work.soho.wallet.biz.service.WalletInfoService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -78,10 +80,13 @@ import java.util.concurrent.atomic.AtomicReference;
 public class AiOpenApiServiceImpl implements AiOpenApiService {
     private static final String CLIENT_ERROR_MESSAGE = "临时错误，如果长期错误请联系管理员";
     private static final String GEMINI_MOCK_RESPONSE_FILE = "/home/fang/testgemini/test.txt";
+    private static final String INTERNAL_PROVIDER_KEY = "__resolvedProvider";
     private final AiUserApiKeyService aiUserApiKeyService;
     private final AiProviderConfigService aiProviderConfigService;
     private final AiProviderModelRelService aiProviderModelRelService;
     private final AiChatService aiChatService;
+    private final AiProxyConfigService aiProxyConfigService;
+    private final AiProxyRelayService aiProxyRelayService;
     private final AiApiCallLogService aiApiCallLogService;
     private final WalletInfoService walletInfoService;
     private final WalletInfoApiService walletInfoApiService;
@@ -270,7 +275,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         BillingPlan billingPlan = buildGeminiGenerateBillingPlan(apiKey, providerConfig, model, request);
         preCheckBalance(billingPlan);
 
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         String apiVersion = pickString(config, "geminiApiVersion", "v1beta");
         String path = "/" + apiVersion + "/models/" + model + ":generateContent";
         String url = appendQueryParam(joinUrl(pickBaseUrl(providerConfig, config), path), "key",
@@ -680,7 +685,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
         AiProviderConfig providerConfig = requireProviderConfig(model);
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
         String upstreamApiKey = pickApiKey(providerConfig, config);
         Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
@@ -719,7 +724,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         BillingPlan billingPlan = buildEmbeddingBillingPlan(apiKey, providerConfig, model, request);
         preCheckBalance(billingPlan);
 
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
         String upstreamApiKey = pickApiKey(providerConfig, config);
         Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
@@ -762,7 +767,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         BillingPlan billingPlan = buildFixedPriceBillingPlan(apiKey, providerConfig, model);
         preCheckBalance(billingPlan);
 
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
         String upstreamApiKey = pickApiKey(providerConfig, config);
         Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
@@ -802,7 +807,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
         AiProviderConfig providerConfig = requireProviderConfig(model);
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
         String upstreamApiKey = pickApiKey(providerConfig, config);
         Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
@@ -842,7 +847,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         BillingPlan billingPlan = buildFixedPriceBillingPlan(apiKey, providerConfig, model);
         preCheckBalance(billingPlan);
 
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
         String upstreamApiKey = pickApiKey(providerConfig, config);
         Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
@@ -881,7 +886,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
         AiProviderConfig providerConfig = requireProviderConfig(model);
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
         String upstreamApiKey = pickApiKey(providerConfig, config);
         Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
@@ -922,7 +927,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         BillingPlan billingPlan = buildFixedPriceBillingPlan(apiKey, providerConfig, model);
         preCheckBalance(billingPlan);
 
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
         String upstreamApiKey = pickApiKey(providerConfig, config);
         Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
@@ -1141,7 +1146,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 .orderByAsc(AiProviderConfig::getId));
         List<Integer> walletTypeIds = new ArrayList<>();
         for (AiProviderConfig providerConfig : providerConfigs) {
-            Integer walletTypeId = pickInteger(parseConfig(providerConfig.getConfigJson()), "billingWalletTypeId", 1);
+            Integer walletTypeId = pickInteger(parseConfig(providerConfig), "billingWalletTypeId", 1);
             if (!walletTypeIds.contains(walletTypeId)) {
                 walletTypeIds.add(walletTypeId);
             }
@@ -1421,7 +1426,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     }
 
     private boolean isCodexResponsesProvider(AiProviderConfig providerConfig) {
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         String adapter = String.valueOf(config.getOrDefault("adapter", ""));
         return "codexResponses".equalsIgnoreCase(adapter) || "chatgptCodexResponses".equalsIgnoreCase(adapter);
     }
@@ -1690,7 +1695,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
     private BillingPlan buildBillingPlan(AiUserApiKey apiKey, AiProviderConfig providerConfig, AiChatRequest aiChatRequest,
                                          OpenAiChatCompletionRequest request) {
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         String requestedModel = StringUtils.isNotBlank(request.getModel()) ? request.getModel() : providerConfig.getDefaultModel();
         ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), requestedModel);
         BillingPlan billingPlan = new BillingPlan();
@@ -1726,7 +1731,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      */
     private BillingPlan buildEmbeddingBillingPlan(AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
                                                   Map<String, Object> request) {
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model);
         BillingPlan billingPlan = new BillingPlan();
         billingPlan.userId = apiKey.getUserId();
@@ -1754,7 +1759,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      */
     private BillingPlan buildGeminiGenerateBillingPlan(AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
                                                        Map<String, Object> request) {
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model);
         BillingPlan billingPlan = new BillingPlan();
         billingPlan.userId = apiKey.getUserId();
@@ -1782,7 +1787,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      * 构建固定单价计费方案，按次扣费。
      */
     private BillingPlan buildFixedPriceBillingPlan(AiUserApiKey apiKey, AiProviderConfig providerConfig, String model) {
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model);
         BillingPlan billingPlan = new BillingPlan();
         billingPlan.userId = apiKey.getUserId();
@@ -2404,6 +2409,20 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     }
 
     /**
+     * 解析提供方配置并注入供应商上下文。
+     *
+     * @param providerConfig 提供方配置
+     * @return 解析后的配置
+     */
+    private Map<String, Object> parseConfig(AiProviderConfig providerConfig) {
+        Map<String, Object> config = parseConfig(providerConfig == null ? null : providerConfig.getConfigJson());
+        if (providerConfig != null && StringUtils.isNotBlank(providerConfig.getProvider())) {
+            config.put(INTERNAL_PROVIDER_KEY, providerConfig.getProvider().trim().toLowerCase(Locale.ROOT));
+        }
+        return config;
+    }
+
+    /**
      * 读取上游 API Key。
      */
     private String pickApiKey(AiProviderConfig providerConfig, Map<String, Object> config) {
@@ -2539,7 +2558,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         if (billingPlan == null || providerConfig == null) {
             return;
         }
-        Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
+        Map<String, Object> config = parseConfig(providerConfig);
         ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model);
         billingPlan.providerConfigId = providerConfig.getId();
         billingPlan.walletTypeId = pickInteger(config, "billingWalletTypeId", 1);
@@ -2583,26 +2602,98 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      * 构建上游代理配置。
      */
     private Proxy buildProxy(Map<String, Object> config) {
-        String proxyType = pickString(config, "proxyType", "");
-        String proxyHost = pickString(config, "proxyHost", "");
-        Integer proxyPort = pickInteger(config, "proxyPort", null);
-        if (StringUtils.isBlank(proxyType) || StringUtils.isBlank(proxyHost) || proxyPort == null || proxyPort <= 0) {
-            return null;
+        String provider = pickString(config, INTERNAL_PROVIDER_KEY, pickString(config, "provider", ""));
+        if (aiProxyRelayService == null) {
+            throw new IllegalStateException("aiProxyRelayService is null, provider=" + provider
+                    + ", config=" + summarizeProxyConfig(config));
         }
-        Proxy.Type type;
-        switch (proxyType.toLowerCase(Locale.ROOT)) {
-            case "http":
-            case "https":
-                type = Proxy.Type.HTTP;
-                break;
-            case "socks":
-            case "socks5":
-                type = Proxy.Type.SOCKS;
-                break;
-            default:
-                throw new IllegalArgumentException("unsupported proxyType: " + proxyType);
+        AiProxyLayerUtils.ProxySettings settings = aiProxyConfigService.resolveProxySettings(provider);
+        if (settings != null) {
+            try {
+                settings = aiProxyRelayService.ensureRelay(settings, provider);
+            } catch (Exception ex) {
+                throw new IllegalStateException("proxy relay resolve failed from aiProxyConfig, provider=" + provider
+                        + ", settings=" + summarizeProxySettings(settings)
+                        + ", config=" + summarizeProxyConfig(config)
+                        + ", error=" + ex.getMessage(), ex);
+            }
+            log.info("proxy node selected, provider={}, settings={}", provider, summarizeProxySettings(settings));
+            return AiProxyLayerUtils.buildJavaProxy(settings);
         }
-        return new Proxy(type, new InetSocketAddress(proxyHost, proxyPort));
+        AiProxyLayerUtils.ProxySettings fallback = AiProxyLayerUtils.resolve(config);
+        try {
+            fallback = aiProxyRelayService.ensureRelay(fallback, provider);
+        } catch (Exception ex) {
+            throw new IllegalStateException("proxy relay resolve failed from fallback config, provider=" + provider
+                    + ", settings=" + summarizeProxySettings(fallback)
+                    + ", config=" + summarizeProxyConfig(config)
+                    + ", error=" + ex.getMessage(), ex);
+        }
+        if (fallback != null) {
+            log.info("proxy node selected from fallback, provider={}, settings={}", provider, summarizeProxySettings(fallback));
+        }
+        return AiProxyLayerUtils.buildJavaProxy(fallback);
+    }
+
+    /**
+     * 汇总代理配置，用于异常日志快速定位问题。
+     *
+     * @param config 请求配置
+     * @return 摘要字符串
+     */
+    private String summarizeProxyConfig(Map<String, Object> config) {
+        if (config == null || config.isEmpty()) {
+            return "{}";
+        }
+        StringBuilder sb = new StringBuilder("{");
+        appendDebugField(sb, "provider", pickString(config, "provider", ""));
+        appendDebugField(sb, "proxyType", pickString(config, "proxyType", ""));
+        appendDebugField(sb, "proxyNodeId", pickString(config, "proxyNodeId", ""));
+        appendDebugField(sb, "proxyNodeName", pickString(config, "proxyNodeName", ""));
+        appendDebugField(sb, "proxyNodeProvider", pickString(config, "proxyNodeProvider", ""));
+        appendDebugField(sb, "proxyHost", pickString(config, "proxyHost", ""));
+        appendDebugField(sb, "proxyPort", String.valueOf(pickInteger(config, "proxyPort", null)));
+        appendDebugField(sb, "proxyUrl", pickString(config, "proxyUrl", ""));
+        appendDebugField(sb, "proxyUsername", pickString(config, "proxyUsername", ""));
+        if (sb.charAt(sb.length() - 1) == ',') {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        sb.append('}');
+        return sb.toString();
+    }
+
+    /**
+     * 汇总代理设置，用于异常日志快速定位问题。
+     *
+     * @param settings 代理设置
+     * @return 摘要字符串
+     */
+    private String summarizeProxySettings(AiProxyLayerUtils.ProxySettings settings) {
+        if (settings == null) {
+            return "null";
+        }
+        return "{protocol=" + settings.getProtocol()
+                + ",localRelayRequired=" + settings.isLocalRelayRequired()
+                + ",httpProxy=" + settings.isHttpProxy()
+                + ",host=" + settings.getHost()
+                + ",port=" + settings.getPort()
+                + ",username=" + settings.getUsername()
+                + ",proxyUrl=" + settings.getProxyUrl()
+                + "}";
+    }
+
+    /**
+     * 追加调试字段到摘要字符串。
+     *
+     * @param sb 字符串构建器
+     * @param key 字段名
+     * @param value 字段值
+     */
+    private void appendDebugField(StringBuilder sb, String key, String value) {
+        if (StringUtils.isBlank(value) || "null".equalsIgnoreCase(value)) {
+            return;
+        }
+        sb.append(key).append('=').append(value).append(',');
     }
 
     /**

@@ -34,7 +34,7 @@ public class AiSysConfig implements InitializingBean {
                 .key(SYS_AI_CODEX_PROXY_TYPE_KEY)
                 .value(SYS_AI_CODEX_PROXY_TYPE)
                 .type(AdminConfigInitRequest.ItemType.TEXT.getType())
-                .explain("Codex代理类型: http/socks")
+                .explain("Codex代理类型: http/socks/ss/vmess")
                 .build());
         items.add(AdminConfigInitRequest.Item.builder()
                 .groupKey(SYS_AI_CONFIG_GROUP)

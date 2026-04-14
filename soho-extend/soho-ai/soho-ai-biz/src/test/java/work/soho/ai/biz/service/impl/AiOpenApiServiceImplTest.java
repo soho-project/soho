@@ -13,6 +13,8 @@ import work.soho.ai.biz.service.AiChatService;
 import work.soho.ai.biz.service.AiMemberRequestLimitService;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
+import work.soho.ai.biz.service.AiProxyConfigService;
+import work.soho.ai.biz.service.AiProxyRelayService;
 import work.soho.ai.biz.service.AiUserApiKeyService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
 import work.soho.wallet.biz.domain.WalletInfo;
@@ -46,6 +48,8 @@ public class AiOpenApiServiceImplTest {
                 aiProviderConfigService,
                 aiProviderModelRelService,
                 aiChatService,
+                Mockito.mock(AiProxyConfigService.class),
+                Mockito.mock(AiProxyRelayService.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -105,6 +109,8 @@ public class AiOpenApiServiceImplTest {
                 aiProviderConfigService,
                 aiProviderModelRelService,
                 aiChatService,
+                Mockito.mock(AiProxyConfigService.class),
+                Mockito.mock(AiProxyRelayService.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -151,6 +157,8 @@ public class AiOpenApiServiceImplTest {
                 aiProviderConfigService,
                 aiProviderModelRelService,
                 aiChatService,
+                Mockito.mock(AiProxyConfigService.class),
+                Mockito.mock(AiProxyRelayService.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -194,6 +202,8 @@ public class AiOpenApiServiceImplTest {
                 aiProviderConfigService,
                 aiProviderModelRelService,
                 aiChatService,
+                Mockito.mock(AiProxyConfigService.class),
+                Mockito.mock(AiProxyRelayService.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -256,6 +266,8 @@ public class AiOpenApiServiceImplTest {
                 aiProviderConfigService,
                 aiProviderModelRelService,
                 aiChatService,
+                Mockito.mock(AiProxyConfigService.class),
+                Mockito.mock(AiProxyRelayService.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -296,6 +308,8 @@ public class AiOpenApiServiceImplTest {
                 aiProviderConfigService,
                 aiProviderModelRelService,
                 aiChatService,
+                Mockito.mock(AiProxyConfigService.class),
+                Mockito.mock(AiProxyRelayService.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -393,6 +407,8 @@ public class AiOpenApiServiceImplTest {
                 aiProviderConfigService,
                 aiProviderModelRelService,
                 aiChatService,
+                Mockito.mock(AiProxyConfigService.class),
+                Mockito.mock(AiProxyRelayService.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
