@@ -5,6 +5,7 @@
 `soho-ai-biz` 是 AI 聚合网关模块，负责：
 
 - 管理上游 AI 提供方配置 `ai_provider_config`
+- 管理代理配置 `ai_proxy_config`
 - 管理模型信息 `ai_model_info`
 - 管理 provider 与模型关联 `ai_provider_model_rel`
 - 用户创建自己的调用 Key `ai_user_api_key`
@@ -518,26 +519,35 @@
 
 ## 8. 代理配置
 
-从 `ai_provider_config.config_json` 读取：
+从独立表 `ai_proxy_config` 读取代理信息（不再依赖 `ai_provider_config.config_json`）：
 
-```json
-{
-  "proxyType": "http",
-  "proxyHost": "127.0.0.1",
-  "proxyPort": 7890
-}
-```
+- `provider`: 绑定供应商（如 `openai` / `gemini`），为空表示全局代理
+- `weight`: 代理权重（值越大越容易命中）
+- `status`: 代理状态（`1` 可用）
+- 代理连接字段可二选一：
+  - `proxy_type + proxy_host + proxy_port (+ proxy_username/proxy_password)`
+  - `proxy_url`（`protocol://[user:pass@]host:port`）
 
-支持值：
+供应商优先绑定规则：
 
-- `proxyType: http`
-- `proxyType: https`
-- `proxyType: socks5`
+1. 先查 `provider=当前供应商` 且 `status=1` 的代理，按权重随机。
+2. 若未命中，再查 `provider` 为空的全局代理，按权重随机。
+3. 若仍未命中，回退历史兼容逻辑（读取 `config_json` 内代理字段）。
+
+支持协议：
+
+- `http`
+- `https`
+- `socks5`
+- `ss`
+- `vmess`
+- `vless`
+- `trojan`
 
 说明：
 
-- Clash / Mihomo 常见端口通常配置成 `http`
-- 只有代理本身真的是 SOCKS5 监听端口时才配置 `socks5`
+- `ss/vmess/vless/trojan` 在代理层统一按 SOCKS5 出口处理。
+- 这类协议通常需要先由本机中继工具（如 clash/sing-box/xray）暴露本地端口。
 
 ## 9. 计费
 
@@ -565,6 +575,7 @@
 主要数据表：
 
 - `ai_provider_config`
+- `ai_proxy_config`
 - `ai_model_info`
 - `ai_provider_model_rel`
 - `ai_user_api_key`

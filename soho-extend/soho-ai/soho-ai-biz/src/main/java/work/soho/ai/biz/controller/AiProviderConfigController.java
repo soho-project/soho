@@ -224,14 +224,6 @@ public class AiProviderConfigController {
         config.put("promptPricePer1kTokens", 0.02);
         config.put("completionPricePer1kTokens", 0.08);
 
-        String proxyType = aiSysConfig.getCodexProxyType();
-        String proxyHost = aiSysConfig.getCodexProxyHost();
-        Integer proxyPort = aiSysConfig.getCodexProxyPort();
-        if (StringUtils.isNotBlank(proxyType) && StringUtils.isNotBlank(proxyHost) && proxyPort != null) {
-            config.put("proxyType", proxyType.trim());
-            config.put("proxyHost", proxyHost.trim());
-            config.put("proxyPort", proxyPort);
-        }
         return JacksonUtils.toJson(config);
     }
 

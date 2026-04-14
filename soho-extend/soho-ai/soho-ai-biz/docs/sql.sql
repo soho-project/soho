@@ -94,6 +94,26 @@ CREATE TABLE `ai_provider_model_rel` (
   KEY `idx_ai_provider_model_rel_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `ai_proxy_config` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) DEFAULT NULL COMMENT '代理名称',
+  `provider` varchar(64) DEFAULT NULL COMMENT '绑定供应商（如 openai/gemini；为空表示全局）',
+  `proxy_type` varchar(32) DEFAULT NULL COMMENT '代理类型: http/https/socks5/ss/vmess/vless/trojan',
+  `proxy_host` varchar(255) DEFAULT NULL COMMENT '代理主机',
+  `proxy_port` int DEFAULT NULL COMMENT '代理端口',
+  `proxy_url` varchar(500) DEFAULT NULL COMMENT '代理URL: protocol://[user:pass@]host:port',
+  `proxy_username` varchar(128) DEFAULT NULL COMMENT '代理用户名',
+  `proxy_password` varchar(255) DEFAULT NULL COMMENT '代理密码',
+  `weight` int NOT NULL DEFAULT 1 COMMENT '权重（值越大越容易命中）',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态:0禁用,1启用',
+  `remark` varchar(255) DEFAULT NULL COMMENT '备注',
+  `updated_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ai_proxy_config_provider_status` (`provider`, `status`),
+  KEY `idx_ai_proxy_config_status_weight` (`status`, `weight`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 ALTER TABLE `ai_provider_config`
   ADD COLUMN `supported_models` text COMMENT '支持模型列表，建议按逗号/换行或JSON数组存储' AFTER `default_model`;
 

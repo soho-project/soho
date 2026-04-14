@@ -3,6 +3,7 @@ package work.soho.ai.biz.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.netty.channel.ChannelOption;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -34,15 +35,20 @@ import work.soho.ai.biz.service.AiChatService;
 import work.soho.ai.biz.service.AiFileService;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
+import work.soho.ai.biz.service.AiProxyConfigService;
+import work.soho.ai.biz.service.AiProxyRelayService;
 import work.soho.ai.biz.service.AiProviderRuntimeStateService;
+import work.soho.ai.biz.utils.AiProxyLayerUtils;
 import work.soho.ai.biz.utils.AiProviderModelUtils;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.common.core.util.StringUtils;
 
-import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.net.Socket;
+import java.net.InetSocketAddress;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,6 +57,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,10 +79,16 @@ public class AiChatServiceImpl implements AiChatService {
     private static final String EXTRA_ACTUAL_PROVIDER = "actualProvider";
     private static final String EXTRA_ACTUAL_MODEL = "actualModel";
     private static final long DEFAULT_FIRST_PAYLOAD_TIMEOUT_MS = 8000L;
+    private static final String INTERNAL_PROVIDER_KEY = "__resolvedProvider";
+    private static final int RELAY_PROBE_TIMEOUT_MS = 1200;
+    private static final long RELAY_PROBE_CACHE_TTL_MS = 15_000L;
+    private static final ConcurrentMap<String, RelayProbeSnapshot> RELAY_PROBE_CACHE = new ConcurrentHashMap<>();
 
     private final AiProviderConfigService aiProviderConfigService;
     private final AiProviderModelRelService aiProviderModelRelService;
     private final AiFileService aiFileService;
+    private final AiProxyConfigService aiProxyConfigService;
+    private final AiProxyRelayService aiProxyRelayService;
     private final AiProviderRuntimeStateService aiProviderRuntimeStateService;
 
     @Override
@@ -112,6 +126,7 @@ public class AiChatServiceImpl implements AiChatService {
         }
         Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
         String provider = pickProvider(providerConfig, config);
+        config.put(INTERNAL_PROVIDER_KEY, provider);
         String apiKey = pickApiKey(providerConfig, config);
         String baseUrl = pickBaseUrl(providerConfig, config);
         String model = normalizeModel(provider, pickModel(request, providerConfig, config));
@@ -150,6 +165,7 @@ public class AiChatServiceImpl implements AiChatService {
         }
         Map<String, Object> config = parseConfig(providerConfig.getConfigJson());
         String provider = pickProvider(providerConfig, config);
+        config.put(INTERNAL_PROVIDER_KEY, provider);
         String apiKey = pickApiKey(providerConfig, config);
         String baseUrl = pickBaseUrl(providerConfig, config);
         String model = normalizeModel(provider, pickModel(request, providerConfig, config));
@@ -166,10 +182,12 @@ public class AiChatServiceImpl implements AiChatService {
             return Flux.error(ex);
         }
         attachResolvedProviderMetadata(request, providerConfig, provider, model);
+        String upstreamUrl = resolveStreamUpstreamUrl(provider, baseUrl, model, config);
+        String proxySummary = summarizeProxyConfig(config);
 
         if (isCodexResponsesAdapter(config)) {
             Flux<String> stream = streamCodexResponses(baseUrl, apiKey, model, messages, request, config);
-            return withUpstreamStreamTimingLog(providerConfig, provider, "", model,
+            return withUpstreamStreamTimingLog(providerConfig, provider, upstreamUrl, model, proxySummary,
                     applyFirstPayloadTimeout(stream, resolveFirstPayloadTimeoutMs(timeoutMs, config), providerConfig.getCode(), model));
         }
 
@@ -196,8 +214,39 @@ public class AiChatServiceImpl implements AiChatService {
                 stream = streamOpenAiCompatible(baseUrl, apiKey, model, messages, request, config);
                 break;
         }
-        return withUpstreamStreamTimingLog(providerConfig, provider, "", model,
+        return withUpstreamStreamTimingLog(providerConfig, provider, upstreamUrl, model, proxySummary,
                 applyFirstPayloadTimeout(stream, resolveFirstPayloadTimeoutMs(timeoutMs, config), providerConfig.getCode(), model));
+    }
+
+    /**
+     * 解析流式调用上游 URL，用于统一日志定位。
+     *
+     * @param provider 提供方
+     * @param baseUrl 基础地址
+     * @param model 模型
+     * @param config 提供方配置
+     * @return 上游 URL
+     */
+    private String resolveStreamUpstreamUrl(String provider, String baseUrl, String model, Map<String, Object> config) {
+        if (isCodexResponsesAdapter(config)) {
+            return joinUrl(baseUrl, pickString(config, "codexResponsesPath", "/backend-api/codex/responses"));
+        }
+        if ("anthropic".equalsIgnoreCase(provider)) {
+            return joinUrl(baseUrl, pickString(config, "anthropicPath", "/v1/messages"));
+        }
+        if ("gemini".equalsIgnoreCase(provider)) {
+            String apiVersion = pickString(config, "geminiApiVersion", "v1beta");
+            String url = joinUrl(baseUrl, "/" + apiVersion + "/models/" + model + ":streamGenerateContent");
+            String apiKey = pickString(config, "apiKey", "");
+            if (StringUtils.isNotBlank(apiKey)) {
+                return url + "?key=" + apiKey;
+            }
+            return url;
+        }
+        if ("ollama".equalsIgnoreCase(provider)) {
+            return joinUrl(baseUrl, pickString(config, "ollamaPath", "/api/chat"));
+        }
+        return joinUrl(baseUrl, pickString(config, "openaiPath", "/v1/chat/completions"));
     }
 
     @Override
@@ -952,35 +1001,36 @@ public class AiChatServiceImpl implements AiChatService {
      * @param source   原始流
      * @return 带日志打点的流
      */
-    private Flux<String> withUpstreamStreamTimingLog(AiProviderConfig providerConfig, String provider, String url, String model, Flux<String> source) {
+    private Flux<String> withUpstreamStreamTimingLog(AiProviderConfig providerConfig, String provider, String url,
+                                                     String model, String proxySummary, Flux<String> source) {
         long startAt = System.currentTimeMillis();
         AtomicLong firstTokenAt = new AtomicLong(-1L);
         return source
-                .doOnSubscribe(s -> log.info("ai upstream stream request start, provider={}, model={}, url={}",
-                        provider, model, url))
+                .doOnSubscribe(s -> log.info("ai upstream stream request start, provider={}, model={}, url={}, proxy={}",
+                        provider, model, url, proxySummary))
                 .doOnNext(payload -> {
                     if (firstTokenAt.get() >= 0) {
                         return;
                     }
                     if (hasTextDelta(payload) && firstTokenAt.compareAndSet(-1L, System.currentTimeMillis())) {
                         long firstTokenMs = firstTokenAt.get() - startAt;
-                        log.info("ai upstream stream first token, provider={}, model={}, url={}, first_token_ms={}",
-                                provider, model, url, firstTokenMs);
+                        log.info("ai upstream stream first token, provider={}, model={}, url={}, proxy={}, first_token_ms={}",
+                                provider, model, url, proxySummary, firstTokenMs);
                     }
                 })
                 .doOnComplete(() -> {
                     long totalMs = System.currentTimeMillis() - startAt;
                     long firstTokenMs = firstTokenAt.get() < 0 ? -1L : firstTokenAt.get() - startAt;
                     aiProviderRuntimeStateService.recordSuccess(providerConfig, totalMs, firstTokenMs > 0 ? firstTokenMs : null);
-                    log.info("ai upstream stream completed, provider={}, model={}, url={}, total_ms={}, first_token_ms={}",
-                            provider, model, url, totalMs, firstTokenMs);
+                    log.info("ai upstream stream completed, provider={}, model={}, url={}, proxy={}, total_ms={}, first_token_ms={}",
+                            provider, model, url, proxySummary, totalMs, firstTokenMs);
                 })
                 .doOnError(ex -> {
                     long totalMs = System.currentTimeMillis() - startAt;
                     long firstTokenMs = firstTokenAt.get() < 0 ? -1L : firstTokenAt.get() - startAt;
                     aiProviderRuntimeStateService.recordFailure(providerConfig, ex);
-                    log.warn("ai upstream stream failed, provider={}, model={}, url={}, total_ms={}, first_token_ms={}, error={}",
-                            provider, model, url, totalMs, firstTokenMs, ex.getMessage());
+                    log.warn("ai upstream stream failed, provider={}, model={}, url={}, proxy={}, total_ms={}, first_token_ms={}, error={}",
+                            provider, model, url, proxySummary, totalMs, firstTokenMs, ex.getMessage());
                 });
     }
 
@@ -1227,21 +1277,64 @@ public class AiChatServiceImpl implements AiChatService {
         return WebClient.builder().build();
     }
 
+    /**
+     * 基于配置构建 WebClient，并按代理配置挂载 Reactor Netty 代理能力。
+     *
+     * 说明：
+     * 1. proxyType=ss/vmess/vless/trojan 时，要求先通过本地中继程序暴露 socks5/http 出口；
+     * 2. 该方法只负责接入标准 HTTP/SOCKS5 代理，不直接实现 ss/vmess 协议握手；
+     * 3. 自动附带连接/响应超时以及代理用户名密码认证配置。
+     *
+     * @param config 提供方配置
+     * @return 可用的WebClient
+     */
     WebClient buildWebClient(Map<String, Object> config) {
-        Proxy proxy = buildProxy(config);
-        if (proxy == null) {
+        AiProxyLayerUtils.ProxySettings settings = resolveProxySettings(config);
+        if (settings == null) {
             return buildWebClient();
         }
-        InetSocketAddress address = (InetSocketAddress) proxy.address();
-        HttpClient httpClient = HttpClient.create().proxy(spec -> {
-            if (proxy.type() == Proxy.Type.SOCKS) {
-                spec.type(ProxyProvider.Proxy.SOCKS5)
-                        .host(address.getHostString())
-                        .port(address.getPort());
+        String provider = pickString(config, INTERNAL_PROVIDER_KEY, pickString(config, "provider", ""));
+        if (aiProxyRelayService == null) {
+            throw new IllegalStateException("aiProxyRelayService is null, provider=" + provider
+                    + ", settings=" + summarizeProxySettings(settings)
+                    + ", config=" + summarizeProxyConfig(config));
+        }
+        final AiProxyLayerUtils.ProxySettings resolvedSettings;
+        try {
+            resolvedSettings = aiProxyRelayService.ensureRelay(settings, provider);
+        } catch (Exception ex) {
+            throw new IllegalStateException("proxy relay resolve failed, provider=" + provider
+                    + ", settings=" + summarizeProxySettings(settings)
+                    + ", config=" + summarizeProxyConfig(config)
+                    + ", error=" + ex.getMessage(), ex);
+        }
+        log.info("proxy node selected, provider={}, settings={}", provider, summarizeProxySettings(resolvedSettings));
+        ensureRelayEndpointAvailable(resolvedSettings, config);
+        int timeoutMs = pickInteger(config, "timeoutMs", DEFAULT_TIMEOUT_MS);
+        HttpClient httpClient = HttpClient.create()
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMs)
+                .responseTimeout(Duration.ofMillis(timeoutMs))
+                .proxy(spec -> {
+            ProxyProvider.Builder builder;
+            if (resolvedSettings.isLocalRelayRequired()) {
+                log.info("proxy protocol requires local relay endpoint, provider={}, relay={}:{}",
+                        pickString(config, INTERNAL_PROVIDER_KEY, pickString(config, "provider", "")),
+                        resolvedSettings.getHost(), resolvedSettings.getPort());
+            }
+            if (resolvedSettings.isHttpProxy()) {
+                builder = spec.type(ProxyProvider.Proxy.HTTP)
+                        .host(resolvedSettings.getHost())
+                        .port(resolvedSettings.getPort());
             } else {
-                spec.type(ProxyProvider.Proxy.HTTP)
-                        .host(address.getHostString())
-                        .port(address.getPort());
+                builder = spec.type(ProxyProvider.Proxy.SOCKS5)
+                        .host(resolvedSettings.getHost())
+                        .port(resolvedSettings.getPort());
+            }
+            if (StringUtils.isNotBlank(resolvedSettings.getUsername())) {
+                builder.username(resolvedSettings.getUsername());
+            }
+            if (StringUtils.isNotBlank(resolvedSettings.getPassword())) {
+                builder.password(ignored -> resolvedSettings.getPassword());
             }
         });
         return WebClient.builder()
@@ -1249,27 +1342,222 @@ public class AiChatServiceImpl implements AiChatService {
                 .build();
     }
 
+    /**
+     * 对代理出口进行短路探活，避免连接不可达时进入长时间 TLS/代理超时。
+     *
+     * @param settings 代理设置
+     * @param config 提供方配置
+     */
+    private void ensureRelayEndpointAvailable(AiProxyLayerUtils.ProxySettings settings, Map<String, Object> config) {
+        if (settings == null) {
+            return;
+        }
+        String cacheKey = buildRelayProbeKey(settings);
+        long now = System.currentTimeMillis();
+        RelayProbeSnapshot cached = RELAY_PROBE_CACHE.get(cacheKey);
+        if (cached != null && cached.getExpireAtMs() > now) {
+            if (!cached.isAvailable()) {
+                throw new IllegalStateException(cached.getErrorMessage());
+            }
+            return;
+        }
+        String provider = pickString(config, INTERNAL_PROVIDER_KEY, pickString(config, "provider", ""));
+        RelayProbeSnapshot latest = probeRelayEndpoint(settings, provider, now);
+        RELAY_PROBE_CACHE.put(cacheKey, latest);
+        if (!latest.isAvailable()) {
+            throw new IllegalStateException(latest.getErrorMessage());
+        }
+    }
+
+    /**
+     * 执行一次代理出口 TCP 探活。
+     *
+     * @param settings 代理设置
+     * @param provider 供应商编码
+     * @param now 当前时间戳
+     * @return 探活快照
+     */
+    private RelayProbeSnapshot probeRelayEndpoint(AiProxyLayerUtils.ProxySettings settings, String provider, long now) {
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(settings.getHost(), settings.getPort()), RELAY_PROBE_TIMEOUT_MS);
+            return RelayProbeSnapshot.available(now + RELAY_PROBE_CACHE_TTL_MS);
+        } catch (Exception ex) {
+            String protocolHint = settings.isLocalRelayRequired()
+                    ? "当前代理协议为 ss/vmess/vless/trojan/hysteria2，需要先启动本地中继并提供 socks5/http 出口。"
+                    : "请检查代理主机、端口及认证是否正确。";
+            String message = String.format(
+                    "proxy endpoint unavailable: provider=%s, relay=%s:%d, reason=%s, hint=%s",
+                    provider, settings.getHost(), settings.getPort(), ex.getMessage(), protocolHint);
+            log.warn(message);
+            return RelayProbeSnapshot.unavailable(now + RELAY_PROBE_CACHE_TTL_MS, message);
+        }
+    }
+
+    /**
+     * 生成代理探活缓存键。
+     *
+     * @param settings 代理设置
+     * @return 缓存键
+     */
+    private String buildRelayProbeKey(AiProxyLayerUtils.ProxySettings settings) {
+        return settings.getJavaProxyType() + "|" + settings.getHost() + ":" + settings.getPort();
+    }
+
+    /**
+     * 汇总代理配置，用于异常日志快速定位问题。
+     *
+     * @param config 请求配置
+     * @return 摘要字符串
+     */
+    private String summarizeProxyConfig(Map<String, Object> config) {
+        if (config == null || config.isEmpty()) {
+            return "{}";
+        }
+        StringBuilder sb = new StringBuilder("{");
+        appendDebugField(sb, "provider", pickString(config, "provider", ""));
+        appendDebugField(sb, "proxyType", pickString(config, "proxyType", ""));
+        appendDebugField(sb, "proxyNodeId", pickString(config, "proxyNodeId", ""));
+        appendDebugField(sb, "proxyNodeName", pickString(config, "proxyNodeName", ""));
+        appendDebugField(sb, "proxyNodeProvider", pickString(config, "proxyNodeProvider", ""));
+        appendDebugField(sb, "proxyHost", pickString(config, "proxyHost", ""));
+        appendDebugField(sb, "proxyPort", String.valueOf(pickInteger(config, "proxyPort", null)));
+        appendDebugField(sb, "proxyUrl", pickString(config, "proxyUrl", ""));
+        appendDebugField(sb, "proxyUsername", pickString(config, "proxyUsername", ""));
+        appendDebugField(sb, "timeoutMs", String.valueOf(pickInteger(config, "timeoutMs", null)));
+        if (sb.charAt(sb.length() - 1) == ',') {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        sb.append('}');
+        return sb.toString();
+    }
+
+    /**
+     * 汇总代理设置，用于异常日志快速定位问题。
+     *
+     * @param settings 代理设置
+     * @return 摘要字符串
+     */
+    private String summarizeProxySettings(AiProxyLayerUtils.ProxySettings settings) {
+        if (settings == null) {
+            return "null";
+        }
+        return "{protocol=" + settings.getProtocol()
+                + ",localRelayRequired=" + settings.isLocalRelayRequired()
+                + ",httpProxy=" + settings.isHttpProxy()
+                + ",host=" + settings.getHost()
+                + ",port=" + settings.getPort()
+                + ",username=" + settings.getUsername()
+                + ",proxyUrl=" + settings.getProxyUrl()
+                + "}";
+    }
+
+    /**
+     * 追加调试字段到摘要字符串。
+     *
+     * @param sb 字符串构建器
+     * @param key 字段名
+     * @param value 字段值
+     */
+    private void appendDebugField(StringBuilder sb, String key, String value) {
+        if (StringUtils.isBlank(value) || "null".equalsIgnoreCase(value)) {
+            return;
+        }
+        sb.append(key).append('=').append(value).append(',');
+    }
+
+    /**
+     * 代理探活缓存快照。
+     */
+    private static final class RelayProbeSnapshot {
+        private final boolean available;
+        private final long expireAtMs;
+        private final String errorMessage;
+
+        /**
+         * 创建探活快照。
+         *
+         * @param available 是否可用
+         * @param expireAtMs 失效时间戳
+         * @param errorMessage 错误信息
+         */
+        private RelayProbeSnapshot(boolean available, long expireAtMs, String errorMessage) {
+            this.available = available;
+            this.expireAtMs = expireAtMs;
+            this.errorMessage = errorMessage;
+        }
+
+        /**
+         * 构建可用快照。
+         *
+         * @param expireAtMs 失效时间戳
+         * @return 快照
+         */
+        private static RelayProbeSnapshot available(long expireAtMs) {
+            return new RelayProbeSnapshot(true, expireAtMs, null);
+        }
+
+        /**
+         * 构建不可用快照。
+         *
+         * @param expireAtMs 失效时间戳
+         * @param errorMessage 错误信息
+         * @return 快照
+         */
+        private static RelayProbeSnapshot unavailable(long expireAtMs, String errorMessage) {
+            return new RelayProbeSnapshot(false, expireAtMs, errorMessage);
+        }
+
+        /**
+         * 判断是否可用。
+         *
+         * @return true 表示可用
+         */
+        private boolean isAvailable() {
+            return available;
+        }
+
+        /**
+         * 获取过期时间戳。
+         *
+         * @return 时间戳
+         */
+        private long getExpireAtMs() {
+            return expireAtMs;
+        }
+
+        /**
+         * 获取错误消息。
+         *
+         * @return 错误消息
+         */
+        private String getErrorMessage() {
+            return errorMessage;
+        }
+    }
+
     private Proxy buildProxy(Map<String, Object> config) {
-        String proxyType = pickString(config, "proxyType", "");
-        String proxyHost = pickString(config, "proxyHost", "");
-        Integer proxyPort = pickInteger(config, "proxyPort", null);
-        if (StringUtils.isBlank(proxyType) || StringUtils.isBlank(proxyHost) || proxyPort == null || proxyPort <= 0) {
-            return null;
+        return AiProxyLayerUtils.buildJavaProxy(resolveProxySettings(config));
+    }
+
+    /**
+     * 按供应商优先绑定代理规则解析代理设置。
+     *
+     * 优先级：
+     * 1. 新代理表（按供应商优先 + 权重）；
+     * 2. 旧 config_json 中的代理字段（兼容历史数据）。
+     *
+     * @param config 请求配置
+     * @return 代理设置
+     */
+    private AiProxyLayerUtils.ProxySettings resolveProxySettings(Map<String, Object> config) {
+        String provider = pickString(config, INTERNAL_PROVIDER_KEY, pickString(config, "provider", ""));
+        AiProxyLayerUtils.ProxySettings settings = aiProxyConfigService.resolveProxySettings(provider);
+        if (settings != null) {
+            log.info("proxy node selected by provider binding, provider={}, settings={}",
+                    provider, summarizeProxySettings(settings));
+            return settings;
         }
-        Proxy.Type type;
-        switch (proxyType.toLowerCase(Locale.ROOT)) {
-            case "http":
-            case "https":
-                type = Proxy.Type.HTTP;
-                break;
-            case "socks":
-            case "socks5":
-                type = Proxy.Type.SOCKS;
-                break;
-            default:
-                throw new IllegalArgumentException("unsupported proxyType: " + proxyType);
-        }
-        return new Proxy(type, new InetSocketAddress(proxyHost, proxyPort));
+        return AiProxyLayerUtils.resolve(config);
     }
 
     private List<Map<String, Object>> toOpenAiMessages(List<AiChatRequest.Message> messages) {

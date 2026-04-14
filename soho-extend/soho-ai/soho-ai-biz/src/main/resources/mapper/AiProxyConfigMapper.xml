@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="work.soho.ai.biz.mapper.AiProxyConfigMapper">
+    <resultMap id="BaseResultMap" type="work.soho.ai.biz.domain.AiProxyConfig">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="provider" column="provider" jdbcType="VARCHAR"/>
+        <result property="proxyType" column="proxy_type" jdbcType="VARCHAR"/>
+        <result property="proxyHost" column="proxy_host" jdbcType="VARCHAR"/>
+        <result property="proxyPort" column="proxy_port" jdbcType="INTEGER"/>
+        <result property="proxyUrl" column="proxy_url" jdbcType="VARCHAR"/>
+        <result property="proxyUsername" column="proxy_username" jdbcType="VARCHAR"/>
+        <result property="proxyPassword" column="proxy_password" jdbcType="VARCHAR"/>
+        <result property="weight" column="weight" jdbcType="INTEGER"/>
+        <result property="status" column="status" jdbcType="TINYINT"/>
+        <result property="remark" column="remark" jdbcType="VARCHAR"/>
+        <result property="updatedTime" column="updated_time" jdbcType="TIMESTAMP"/>
+        <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,name,provider,proxy_type,proxy_host,proxy_port,proxy_url,proxy_username,proxy_password,weight,status,remark,updated_time,created_time
+    </sql>
+</mapper>
