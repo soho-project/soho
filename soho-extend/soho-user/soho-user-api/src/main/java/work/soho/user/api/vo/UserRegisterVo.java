@@ -10,6 +10,7 @@ public class UserRegisterVo {
     private String email;
     private String phone;
     private String verifyCode;
+    private String emailVerifyCode;
     private Long inviteCode;
     private String codeId;
 }
