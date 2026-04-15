@@ -42,11 +42,16 @@ public interface AiUserMemberCardService extends IService<AiUserMemberCard> {
         private final Boolean rateLimit7dEnabled;
         private final Integer rateLimitWindow5h;
         private final Integer rateLimitWindow7d;
+        private final Integer weeklyPromptTokenLimit;
+        private final Integer weeklyCompletionTokenLimit;
+        private final Integer weeklyTotalTokenLimit;
 
         public ActiveMemberCard(Long userCardId, String limitMode,
                                 Integer rateLimit5h, Integer rateLimit7d,
                                 Boolean rateLimit5hEnabled, Boolean rateLimit7dEnabled,
-                                Integer rateLimitWindow5h, Integer rateLimitWindow7d) {
+                                Integer rateLimitWindow5h, Integer rateLimitWindow7d,
+                                Integer weeklyPromptTokenLimit, Integer weeklyCompletionTokenLimit,
+                                Integer weeklyTotalTokenLimit) {
             this.userCardId = userCardId;
             this.limitMode = limitMode;
             this.rateLimit5h = rateLimit5h;
@@ -55,6 +60,9 @@ public interface AiUserMemberCardService extends IService<AiUserMemberCard> {
             this.rateLimit7dEnabled = rateLimit7dEnabled;
             this.rateLimitWindow5h = rateLimitWindow5h;
             this.rateLimitWindow7d = rateLimitWindow7d;
+            this.weeklyPromptTokenLimit = weeklyPromptTokenLimit;
+            this.weeklyCompletionTokenLimit = weeklyCompletionTokenLimit;
+            this.weeklyTotalTokenLimit = weeklyTotalTokenLimit;
         }
 
         public Long getUserCardId() {
@@ -87,6 +95,18 @@ public interface AiUserMemberCardService extends IService<AiUserMemberCard> {
 
         public Integer getRateLimitWindow7d() {
             return rateLimitWindow7d;
+        }
+
+        public Integer getWeeklyPromptTokenLimit() {
+            return weeklyPromptTokenLimit;
+        }
+
+        public Integer getWeeklyCompletionTokenLimit() {
+            return weeklyCompletionTokenLimit;
+        }
+
+        public Integer getWeeklyTotalTokenLimit() {
+            return weeklyTotalTokenLimit;
         }
     }
 }

@@ -80,6 +80,7 @@ public class AiChatServiceImpl implements AiChatService {
     private static final String EXTRA_ACTUAL_MODEL = "actualModel";
     private static final long DEFAULT_FIRST_PAYLOAD_TIMEOUT_MS = 8000L;
     private static final String INTERNAL_PROVIDER_KEY = "__resolvedProvider";
+    private static final String INTERNAL_PROXY_SUMMARY_KEY = "__resolvedProxySummary";
     private static final int RELAY_PROBE_TIMEOUT_MS = 1200;
     private static final long RELAY_PROBE_CACHE_TTL_MS = 15_000L;
     private static final ConcurrentMap<String, RelayProbeSnapshot> RELAY_PROBE_CACHE = new ConcurrentHashMap<>();
@@ -183,10 +184,10 @@ public class AiChatServiceImpl implements AiChatService {
         }
         attachResolvedProviderMetadata(request, providerConfig, provider, model);
         String upstreamUrl = resolveStreamUpstreamUrl(provider, baseUrl, model, config);
-        String proxySummary = summarizeProxyConfig(config);
 
         if (isCodexResponsesAdapter(config)) {
             Flux<String> stream = streamCodexResponses(baseUrl, apiKey, model, messages, request, config);
+            String proxySummary = summarizeProxyForLog(config);
             return withUpstreamStreamTimingLog(providerConfig, provider, upstreamUrl, model, proxySummary,
                     applyFirstPayloadTimeout(stream, resolveFirstPayloadTimeoutMs(timeoutMs, config), providerConfig.getCode(), model));
         }
@@ -214,6 +215,7 @@ public class AiChatServiceImpl implements AiChatService {
                 stream = streamOpenAiCompatible(baseUrl, apiKey, model, messages, request, config);
                 break;
         }
+        String proxySummary = summarizeProxyForLog(config);
         return withUpstreamStreamTimingLog(providerConfig, provider, upstreamUrl, model, proxySummary,
                 applyFirstPayloadTimeout(stream, resolveFirstPayloadTimeoutMs(timeoutMs, config), providerConfig.getCode(), model));
     }
@@ -1291,6 +1293,7 @@ public class AiChatServiceImpl implements AiChatService {
     WebClient buildWebClient(Map<String, Object> config) {
         AiProxyLayerUtils.ProxySettings settings = resolveProxySettings(config);
         if (settings == null) {
+            cacheResolvedProxySummary(config, null);
             return buildWebClient();
         }
         String provider = pickString(config, INTERNAL_PROVIDER_KEY, pickString(config, "provider", ""));
@@ -1309,6 +1312,7 @@ public class AiChatServiceImpl implements AiChatService {
                     + ", error=" + ex.getMessage(), ex);
         }
         log.info("proxy node selected, provider={}, settings={}", provider, summarizeProxySettings(resolvedSettings));
+        cacheResolvedProxySummary(config, resolvedSettings);
         ensureRelayEndpointAvailable(resolvedSettings, config);
         int timeoutMs = pickInteger(config, "timeoutMs", DEFAULT_TIMEOUT_MS);
         HttpClient httpClient = HttpClient.create()
@@ -1340,6 +1344,37 @@ public class AiChatServiceImpl implements AiChatService {
         return WebClient.builder()
                 .clientConnector(new org.springframework.http.client.reactive.ReactorClientHttpConnector(httpClient))
                 .build();
+    }
+
+    /**
+     * 记录本次请求最终生效的代理摘要，避免日志误用原始配置中的静态代理字段。
+     *
+     * @param config 请求配置
+     * @param settings 实际生效的代理设置，null 表示直连
+     */
+    private void cacheResolvedProxySummary(Map<String, Object> config, AiProxyLayerUtils.ProxySettings settings) {
+        if (config == null) {
+            return;
+        }
+        if (settings == null) {
+            config.put(INTERNAL_PROXY_SUMMARY_KEY, "{mode=direct}");
+            return;
+        }
+        config.put(INTERNAL_PROXY_SUMMARY_KEY, summarizeProxySettings(settings));
+    }
+
+    /**
+     * 获取用于日志展示的代理摘要，优先使用本次请求实际生效的代理设置。
+     *
+     * @param config 请求配置
+     * @return 代理摘要
+     */
+    private String summarizeProxyForLog(Map<String, Object> config) {
+        String resolvedSummary = pickString(config, INTERNAL_PROXY_SUMMARY_KEY, "");
+        if (StringUtils.isNotBlank(resolvedSummary)) {
+            return resolvedSummary;
+        }
+        return summarizeProxyConfig(config);
     }
 
     /**

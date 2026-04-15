@@ -293,7 +293,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             AiUsageSummary usage = extractGeminiUsage(result, request);
             BigDecimal amount = calculateAmount(billingPlan, usage, model);
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
-            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null);
@@ -402,7 +402,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
             BigDecimal amount = calculateAmount(billingPlan, usage, response.getModel());
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, response.getModel());
-            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             saveSuccessLog(requestId, apiKey, providerConfig, response.getModel(), usage, amount, walletLogId,
@@ -446,7 +446,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                     AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, contentBuilder.toString());
                     BigDecimal amount = calculateAmount(billingPlan, usage, model);
                     Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
-                    aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+                    aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
                     aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
                     long totalMs = System.currentTimeMillis() - startAt;
                     saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId,
@@ -487,7 +487,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
             BigDecimal amount = calculateAmount(billingPlan, usage, response.getModel());
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, response.getModel());
-            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             saveSuccessLog(requestId, apiKey, providerConfig, response.getModel(), usage, amount, walletLogId,
@@ -547,7 +547,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                     AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, contentBuilder.toString());
                     BigDecimal amount = calculateAmount(billingPlan, usage, model);
                     Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
-                    aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+                    aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
                     aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
                     long totalMs = System.currentTimeMillis() - startAt;
                     saveSuccessLog(requestId, apiKey, actualProviderConfig, model, usage, amount, walletLogId,
@@ -742,7 +742,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             AiUsageSummary usage = extractEmbeddingUsage(result, request);
             BigDecimal amount = calculateAmount(billingPlan, usage, model);
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
-            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null);
@@ -784,7 +784,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             AiUsageSummary usage = emptyUsage();
             BigDecimal amount = calculateAmount(billingPlan, usage, model);
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
-            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null);
@@ -864,7 +864,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             AiUsageSummary usage = emptyUsage();
             BigDecimal amount = calculateAmount(billingPlan, usage, model);
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
-            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null);
@@ -944,7 +944,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             AiUsageSummary usage = emptyUsage();
             BigDecimal amount = calculateAmount(billingPlan, usage, model);
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
-            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null);

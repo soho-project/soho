@@ -158,7 +158,7 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
             refreshBillingPlanProviderConfig(billingPlan, providerConfig, response.getModel());
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
             Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, response.getModel());
-            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+            aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             long totalMs = System.currentTimeMillis() - startAt;
             saveSuccessLog(requestId, userId, providerConfig, response.getModel(), usage,
                     calculateAmount(billingPlan, usage, response.getModel()), walletLogId, USER_WEB_CHAT_ENDPOINT,
@@ -201,7 +201,7 @@ public class AiUserWebChatServiceImpl implements AiUserWebChatService {
                     AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, assistantContent.toString());
                     BigDecimal amount = calculateAmount(billingPlan, usage, model);
                     Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, model);
-                    aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId);
+                    aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
                     long totalMs = System.currentTimeMillis() - startAt;
                     saveSuccessLog(requestId, userId, providerConfig, model, usage, amount, walletLogId, USER_WEB_CHAT_ENDPOINT,
                             totalMs, resolveFirstTokenMs(firstTokenAt, startAt));
