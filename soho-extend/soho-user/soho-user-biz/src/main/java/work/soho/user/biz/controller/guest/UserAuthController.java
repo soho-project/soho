@@ -15,17 +15,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import work.soho.admin.api.service.AdminConfigApiService;
 import work.soho.common.core.result.R;
+import work.soho.common.core.util.StringUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.data.captcha.utils.CaptchaUtils;
 import work.soho.common.security.service.SohoUserDetailsService;
 import work.soho.common.security.service.impl.TokenServiceImpl;
 import work.soho.common.security.userdetails.SohoUserDetails;
+import work.soho.user.api.request.SendRegisterEmailCodeRequest;
 import work.soho.user.api.request.SendNewPhoneSmsRequest;
 import work.soho.user.api.vo.UserLoginVo;
 import work.soho.user.api.vo.UserRegisterVo;
 import work.soho.user.biz.config.UserSysConfig;
 import work.soho.user.biz.domain.UserInfo;
 import work.soho.user.biz.enums.UserInfoEnums;
+import work.soho.user.biz.service.UserEmailCodeService;
 import work.soho.user.biz.service.UserInfoService;
 import work.soho.user.biz.service.UserSmsService;
 import work.soho.user.biz.vo.UserSimpleRegisterVo;
@@ -48,6 +51,7 @@ public class UserAuthController {
     private final StringRedisTemplate redisTemplate;
     private final UserSysConfig userSysConfig;
     private final UserSmsService userSmsService;
+    private final UserEmailCodeService userEmailCodeService;
 
     @Autowired
     private Map<String, SohoUserDetailsService> detailsServiceMap;
@@ -169,6 +173,22 @@ public class UserAuthController {
     }
 
     /**
+     * 发送注册邮箱验证码。
+     *
+     * @param request 邮箱请求
+     * @return 发送结果
+     */
+    @ApiOperation("发送注册邮箱验证码")
+    @PostMapping(value = "sendEmailCode")
+    public R sendEmailCode(@RequestBody SendRegisterEmailCodeRequest request) {
+        if (request == null || StringUtils.isBlank(request.getEmail())) {
+            return R.error("邮箱不能为空");
+        }
+        userEmailCodeService.sendRegisterEmailCode(request.getEmail());
+        return R.success();
+    }
+
+    /**
      * 获取图形验证码
      *
      * 返回一个图片
@@ -195,6 +215,9 @@ public class UserAuthController {
      */
     @PostMapping("register")
     public R<UserInfo> register(@RequestBody UserRegisterVo userRegisterVo) {
+        String email = StringUtils.isBlank(userRegisterVo.getEmail()) ? null : userRegisterVo.getEmail().trim();
+        userRegisterVo.setEmail(email);
+
         // 检查用户是否存在
         UserInfo oldUser = userInfoService.getOne(new LambdaQueryWrapper<UserInfo>().eq(UserInfo::getPhone, userRegisterVo.getPhone()));
         if(oldUser != null) {
@@ -213,6 +236,19 @@ public class UserAuthController {
         // 验证验证码是否正确
         if(!userSmsService.verifySmsCaptchaByPhone(userRegisterVo.getPhone(), code)) {
             return R.error("验证码错误");
+        }
+
+        // 如果传递了邮箱，必须同时校验邮箱验证码
+        if (StringUtils.isNotBlank(userRegisterVo.getEmail())) {
+            if (isEmailExists(userRegisterVo.getEmail())) {
+                return R.error("邮箱已存在");
+            }
+            if (StringUtils.isBlank(userRegisterVo.getEmailVerifyCode())) {
+                return R.error("请输入邮箱验证码");
+            }
+            if (!userEmailCodeService.verifyRegisterEmailCode(userRegisterVo.getEmail(), userRegisterVo.getEmailVerifyCode())) {
+                return R.error("邮箱验证码错误");
+            }
         }
 
 
@@ -274,6 +310,9 @@ public class UserAuthController {
     @ApiOperation("用户名密码注册")
     @PostMapping("simpleRegister")
     public R<UserInfo> simpleRegister(@RequestBody UserSimpleRegisterVo userSimpleRegisterVo) {
+        String email = StringUtils.isBlank(userSimpleRegisterVo.getEmail()) ? null : userSimpleRegisterVo.getEmail().trim();
+        userSimpleRegisterVo.setEmail(email);
+
         String username = userSimpleRegisterVo.getUsername();
         if(username == null || username.trim().isEmpty()) {
             return R.error("请输入用户名");
@@ -289,10 +328,24 @@ public class UserAuthController {
             return R.error("用户名已存在");
         }
 
+        // 如果传递了邮箱，必须同时校验邮箱验证码
+        if (StringUtils.isNotBlank(userSimpleRegisterVo.getEmail())) {
+            if (isEmailExists(userSimpleRegisterVo.getEmail())) {
+                return R.error("邮箱已存在");
+            }
+            if (StringUtils.isBlank(userSimpleRegisterVo.getEmailVerifyCode())) {
+                return R.error("请输入邮箱验证码");
+            }
+            if (!userEmailCodeService.verifyRegisterEmailCode(userSimpleRegisterVo.getEmail(), userSimpleRegisterVo.getEmailVerifyCode())) {
+                return R.error("邮箱验证码错误");
+            }
+        }
+
         UserInfo userInfo = new UserInfo();
         userInfo.setCode(IDGeneratorUtils.snowflake().toString());
         userInfo.setUsername(username);
         userInfo.setNickname(username);
+        userInfo.setEmail(userSimpleRegisterVo.getEmail());
         userInfo.setPassword(new BCryptPasswordEncoder().encode(password));
         userInfo.setStatus(UserInfoEnums.Status.NORMAL.getId());
         userInfo.setAvatar(userSysConfig.getDefaultAvatar());
@@ -302,5 +355,15 @@ public class UserAuthController {
 
         userInfoService.register(userInfo);
         return R.success(userInfo);
+    }
+
+    /**
+     * 检查邮箱是否已被注册。
+     *
+     * @param email 邮箱
+     * @return true: 已存在
+     */
+    private boolean isEmailExists(String email) {
+        return userInfoService.getOne(new LambdaQueryWrapper<UserInfo>().eq(UserInfo::getEmail, email)) != null;
     }
 }
