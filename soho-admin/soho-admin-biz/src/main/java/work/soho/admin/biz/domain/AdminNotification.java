@@ -1,16 +1,12 @@
 package work.soho.admin.biz.domain;
 
-import java.io.Serializable;
-
-import java.time.LocalDateTime;
-
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableName;
-import io.swagger.annotations.ApiModelProperty;
+import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+
+import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
  * 管理员通知
@@ -64,6 +60,7 @@ public class AdminNotification implements Serializable {
      */
     @ApiModelProperty("创建时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @TableField(value = "created_time", fill = FieldFill.INSERT)
     private LocalDateTime createdTime;
 
     /**

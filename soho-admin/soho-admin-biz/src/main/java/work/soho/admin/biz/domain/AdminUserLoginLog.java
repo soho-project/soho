@@ -1,9 +1,6 @@
 package work.soho.admin.biz.domain;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -55,7 +52,7 @@ public class AdminUserLoginLog implements Serializable {
     * 创建时间
     */
     @ApiModelProperty(value = "创建时间")
-    @TableField(value = "created_time")
+    @TableField(value = "created_time", fill = FieldFill.INSERT)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
 }
