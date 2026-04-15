@@ -3,6 +3,7 @@ package work.soho.ai.biz.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import work.soho.ai.biz.dto.AiUsageSummary;
 import work.soho.ai.biz.service.AiMemberRequestLimitService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
 
@@ -28,8 +29,10 @@ public class AiMemberRequestLimitServiceImpl implements AiMemberRequestLimitServ
             return Decision.nonMember();
         }
         AiUserMemberCardService.ActiveMemberCard card = activeMemberCard.get();
-        // 当前只实现 by_request 免费配额；其他模式（如 by_token）按非会员处理
-        if (!"by_request".equalsIgnoreCase(safeString(card.getLimitMode()))) {
+        String limitMode = safeString(card.getLimitMode());
+        boolean byRequestMode = "by_request".equalsIgnoreCase(limitMode);
+        boolean byTokenMode = "by_token".equalsIgnoreCase(limitMode);
+        if (!byRequestMode && !byTokenMode) {
             return Decision.nonMember();
         }
         Long userCardId = card.getUserCardId();
@@ -43,41 +46,82 @@ public class AiMemberRequestLimitServiceImpl implements AiMemberRequestLimitServ
         int fiveHourWindowHours = Math.max(1, card.getRateLimitWindow5h() == null ? DEFAULT_WINDOW_5H : card.getRateLimitWindow5h());
         int sevenDayLimit = Math.max(1, card.getRateLimit7d() == null ? DEFAULT_RATE_LIMIT_7D : card.getRateLimit7d());
         int fiveHourLimit = Math.max(1, card.getRateLimit5h() == null ? DEFAULT_RATE_LIMIT_5H : card.getRateLimit5h());
+        int weeklyPromptTokenLimit = normalizeLimit(card.getWeeklyPromptTokenLimit());
+        int weeklyCompletionTokenLimit = normalizeLimit(card.getWeeklyCompletionTokenLimit());
+        int weeklyTotalTokenLimit = normalizeLimit(card.getWeeklyTotalTokenLimit());
         long nowMillis = Instant.now().toEpochMilli();
 
-        // 先校验长窗口（7天）
-        if (sevenDayEnabled) {
-            long count7d = countInWindow(build7dKey(userId, userCardId), nowMillis, Duration.ofDays(sevenDayWindowDays));
-            if (count7d >= sevenDayLimit) {
-                return new Decision(true, true, userId, userCardId, nowMillis, sevenDayWindowDays, fiveHourWindowHours, true, fiveHourEnabled);
+        if (byRequestMode) {
+            // 先校验长窗口（7天）
+            if (sevenDayEnabled) {
+                long count7d = countInWindow(build7dKey(userId, userCardId), nowMillis, Duration.ofDays(sevenDayWindowDays));
+                if (count7d >= sevenDayLimit) {
+                    return new Decision(true, true, limitMode, userId, userCardId, nowMillis, sevenDayWindowDays, fiveHourWindowHours, true, fiveHourEnabled);
+                }
+            }
+
+            // 再校验短窗口（5小时）
+            if (fiveHourEnabled) {
+                long count5h = countInWindow(build5hKey(userId, userCardId), nowMillis, Duration.ofHours(fiveHourWindowHours));
+                if (count5h >= fiveHourLimit) {
+                    return new Decision(true, true, limitMode, userId, userCardId, nowMillis, sevenDayWindowDays, fiveHourWindowHours, sevenDayEnabled, true);
+                }
             }
         }
 
-        // 再校验短窗口（5小时）
-        if (fiveHourEnabled) {
-            long count5h = countInWindow(build5hKey(userId, userCardId), nowMillis, Duration.ofHours(fiveHourWindowHours));
-            if (count5h >= fiveHourLimit) {
-                return new Decision(true, true, userId, userCardId, nowMillis, sevenDayWindowDays, fiveHourWindowHours, sevenDayEnabled, true);
+        if (byTokenMode) {
+            // 按周 token 限额（空或<=0表示不限）
+            Duration weeklyDuration = Duration.ofDays(7);
+            if (weeklyPromptTokenLimit > 0) {
+                long usedPromptTokens = countInWindow(buildWeeklyPromptTokenKey(userId, userCardId), nowMillis, weeklyDuration);
+                if (usedPromptTokens >= weeklyPromptTokenLimit) {
+                    return new Decision(true, true, limitMode, userId, userCardId, nowMillis, sevenDayWindowDays, fiveHourWindowHours, false, false);
+                }
+            }
+            if (weeklyCompletionTokenLimit > 0) {
+                long usedCompletionTokens = countInWindow(buildWeeklyCompletionTokenKey(userId, userCardId), nowMillis, weeklyDuration);
+                if (usedCompletionTokens >= weeklyCompletionTokenLimit) {
+                    return new Decision(true, true, limitMode, userId, userCardId, nowMillis, sevenDayWindowDays, fiveHourWindowHours, false, false);
+                }
+            }
+            if (weeklyTotalTokenLimit > 0) {
+                long usedTotalTokens = countInWindow(buildWeeklyTotalTokenKey(userId, userCardId), nowMillis, weeklyDuration);
+                if (usedTotalTokens >= weeklyTotalTokenLimit) {
+                    return new Decision(true, true, limitMode, userId, userCardId, nowMillis, sevenDayWindowDays, fiveHourWindowHours, false, false);
+                }
             }
         }
 
-        return new Decision(true, false, userId, userCardId, nowMillis, sevenDayWindowDays, fiveHourWindowHours, sevenDayEnabled, fiveHourEnabled);
+        return new Decision(true, false, limitMode, userId, userCardId, nowMillis, sevenDayWindowDays, fiveHourWindowHours,
+                byRequestMode && sevenDayEnabled, byRequestMode && fiveHourEnabled);
     }
 
     @Override
-    public void consumeIfNeeded(Decision decision, String requestId) {
+    public void consumeIfNeeded(Decision decision, String requestId, AiUsageSummary usage) {
         // 仅在“会员按请求计费且未超限”时，才记录一次配额消耗
         if (decision == null || !decision.canConsumeQuota()) {
             return;
         }
         long nowMillis = decision.getNowMillis() == null ? Instant.now().toEpochMilli() : decision.getNowMillis();
-        if (decision.isSevenDayEnabled()) {
-            addWindowRecord(build7dKey(decision.getUserId(), decision.getCardId()), nowMillis,
-                    Duration.ofDays(Math.max(1, decision.getSevenDayWindowDays())));
+        if (decision.isByRequestMode()) {
+            if (decision.isSevenDayEnabled()) {
+                addWindowRecord(build7dKey(decision.getUserId(), decision.getCardId()), nowMillis,
+                        Duration.ofDays(Math.max(1, decision.getSevenDayWindowDays())));
+            }
+            if (decision.isFiveHourEnabled()) {
+                addWindowRecord(build5hKey(decision.getUserId(), decision.getCardId()), nowMillis,
+                        Duration.ofHours(Math.max(1, decision.getFiveHourWindowHours())));
+            }
+            return;
         }
-        if (decision.isFiveHourEnabled()) {
-            addWindowRecord(build5hKey(decision.getUserId(), decision.getCardId()), nowMillis,
-                    Duration.ofHours(Math.max(1, decision.getFiveHourWindowHours())));
+        if (decision.isByTokenMode()) {
+            Duration weeklyDuration = Duration.ofDays(7);
+            int promptTokens = normalizeUsageToken(usage == null ? null : usage.getPromptTokens());
+            int completionTokens = normalizeUsageToken(usage == null ? null : usage.getCompletionTokens());
+            int totalTokens = normalizeUsageToken(usage == null ? null : usage.getTotalTokens());
+            addWindowRecord(buildWeeklyPromptTokenKey(decision.getUserId(), decision.getCardId()), nowMillis, weeklyDuration, promptTokens);
+            addWindowRecord(buildWeeklyCompletionTokenKey(decision.getUserId(), decision.getCardId()), nowMillis, weeklyDuration, completionTokens);
+            addWindowRecord(buildWeeklyTotalTokenKey(decision.getUserId(), decision.getCardId()), nowMillis, weeklyDuration, totalTokens);
         }
     }
 
@@ -155,6 +199,24 @@ public class AiMemberRequestLimitServiceImpl implements AiMemberRequestLimitServ
         }
     }
 
+    /**
+     * 在固定窗口内按增量累计计数，常用于 token 数累计。
+     */
+    private void addWindowRecord(String keyPrefix, long nowMillis, Duration duration, long delta) {
+        if (delta <= 0) {
+            return;
+        }
+        String key = buildFixedWindowKey(keyPrefix, nowMillis, duration);
+        Long current = stringRedisTemplate.opsForValue().increment(key, delta);
+        if (current == null) {
+            return;
+        }
+        if (current == delta) {
+            long ttlMillis = computeCurrentBucketTtlMillis(nowMillis, duration);
+            stringRedisTemplate.expire(key, ttlMillis, TimeUnit.MILLISECONDS);
+        }
+    }
+
     private String buildFixedWindowKey(String keyPrefix, long nowMillis, Duration duration) {
         long windowMillis = Math.max(1L, duration.toMillis());
         long bucketIndex = nowMillis / windowMillis;
@@ -181,8 +243,49 @@ public class AiMemberRequestLimitServiceImpl implements AiMemberRequestLimitServ
         return "rate:ai:member:5h:user:" + userId + ":userCard:" + cardId;
     }
 
+    /**
+     * 构建周输入 token 计数键前缀。
+     */
+    private String buildWeeklyPromptTokenKey(Long userId, Long cardId) {
+        return "rate:ai:member:week:token:prompt:user:" + userId + ":userCard:" + cardId;
+    }
+
+    /**
+     * 构建周输出 token 计数键前缀。
+     */
+    private String buildWeeklyCompletionTokenKey(Long userId, Long cardId) {
+        return "rate:ai:member:week:token:completion:user:" + userId + ":userCard:" + cardId;
+    }
+
+    /**
+     * 构建周总 token 计数键前缀。
+     */
+    private String buildWeeklyTotalTokenKey(Long userId, Long cardId) {
+        return "rate:ai:member:week:token:total:user:" + userId + ":userCard:" + cardId;
+    }
+
     private String safeString(String value) {
         return value == null ? "" : value;
+    }
+
+    /**
+     * 规范化限额值：空或小于等于0统一按不限处理。
+     */
+    private int normalizeLimit(Integer limit) {
+        if (limit == null || limit <= 0) {
+            return 0;
+        }
+        return limit;
+    }
+
+    /**
+     * 规范化 token 用量：空或负数按0处理。
+     */
+    private int normalizeUsageToken(Integer value) {
+        if (value == null || value <= 0) {
+            return 0;
+        }
+        return value;
     }
 
     private int safeToInt(long value) {

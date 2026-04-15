@@ -1,17 +1,20 @@
 package work.soho.ai.biz.service;
 
+import work.soho.ai.biz.dto.AiUsageSummary;
+
 import java.util.Optional;
 
 public interface AiMemberRequestLimitService {
     Decision evaluate(Long userId, Optional<AiUserMemberCardService.ActiveMemberCard> activeMemberCard);
 
-    void consumeIfNeeded(Decision decision, String requestId);
+    void consumeIfNeeded(Decision decision, String requestId, AiUsageSummary usage);
 
     UsageSnapshot queryUsage(Long userId, AiUserMemberCardService.ActiveMemberCard activeMemberCard);
 
     final class Decision {
         private final boolean memberByRequest;
         private final boolean overLimit;
+        private final String limitMode;
         private final Long userId;
         private final Long cardId;
         private final Long nowMillis;
@@ -20,11 +23,12 @@ public interface AiMemberRequestLimitService {
         private final boolean sevenDayEnabled;
         private final boolean fiveHourEnabled;
 
-        public Decision(boolean memberByRequest, boolean overLimit, Long userId, Long cardId, Long nowMillis,
+        public Decision(boolean memberByRequest, boolean overLimit, String limitMode, Long userId, Long cardId, Long nowMillis,
                         int sevenDayWindowDays, int fiveHourWindowHours,
                         boolean sevenDayEnabled, boolean fiveHourEnabled) {
             this.memberByRequest = memberByRequest;
             this.overLimit = overLimit;
+            this.limitMode = limitMode;
             this.userId = userId;
             this.cardId = cardId;
             this.nowMillis = nowMillis;
@@ -35,7 +39,7 @@ public interface AiMemberRequestLimitService {
         }
 
         public static Decision nonMember() {
-            return new Decision(false, false, null, null, null, 0, 0, false, false);
+            return new Decision(false, false, "", null, null, null, 0, 0, false, false);
         }
 
         public boolean isMemberByRequest() {
@@ -52,6 +56,14 @@ public interface AiMemberRequestLimitService {
 
         public boolean canConsumeQuota() {
             return memberByRequest && !overLimit;
+        }
+
+        public boolean isByRequestMode() {
+            return "by_request".equalsIgnoreCase(limitMode);
+        }
+
+        public boolean isByTokenMode() {
+            return "by_token".equalsIgnoreCase(limitMode);
         }
 
         public Long getUserId() {

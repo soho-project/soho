@@ -83,7 +83,10 @@ public class AiUserMemberCardServiceImpl extends ServiceImpl<AiUserMemberCardMap
                     card.getRateLimit5hEnabled(),
                     card.getRateLimit7dEnabled(),
                     card.getRateLimitWindow5h(),
-                    card.getRateLimitWindow7d()
+                    card.getRateLimitWindow7d(),
+                    card.getWeeklyPromptTokenLimit(),
+                    card.getWeeklyCompletionTokenLimit(),
+                    card.getWeeklyTotalTokenLimit()
             ));
         }
         return Optional.empty();
@@ -239,7 +242,10 @@ public class AiUserMemberCardServiceImpl extends ServiceImpl<AiUserMemberCardMap
                 card.getRateLimit5hEnabled(),
                 card.getRateLimit7dEnabled(),
                 card.getRateLimitWindow5h(),
-                card.getRateLimitWindow7d()
+                card.getRateLimitWindow7d(),
+                card.getWeeklyPromptTokenLimit(),
+                card.getWeeklyCompletionTokenLimit(),
+                card.getWeeklyTotalTokenLimit()
         );
         AiMemberRequestLimitService.UsageSnapshot usage = aiMemberRequestLimitService.queryUsage(userCard.getUserId(), activeMemberCard);
         view.setUsageAvailable(usage.isUsageAvailable());
@@ -272,7 +278,10 @@ public class AiUserMemberCardServiceImpl extends ServiceImpl<AiUserMemberCardMap
                 card.getRateLimit5hEnabled(),
                 card.getRateLimit7dEnabled(),
                 card.getRateLimitWindow5h(),
-                card.getRateLimitWindow7d()
+                card.getRateLimitWindow7d(),
+                card.getWeeklyPromptTokenLimit(),
+                card.getWeeklyCompletionTokenLimit(),
+                card.getWeeklyTotalTokenLimit()
         );
         AiMemberRequestLimitService.UsageSnapshot usage = aiMemberRequestLimitService.queryUsage(userCard.getUserId(), activeMemberCard);
         target.setUsageAvailable(usage.isUsageAvailable());
