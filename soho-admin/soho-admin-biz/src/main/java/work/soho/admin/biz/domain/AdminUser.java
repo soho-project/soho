@@ -1,5 +1,6 @@
 package work.soho.admin.biz.domain;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -74,6 +75,7 @@ public class AdminUser implements Serializable {
      */
     @ApiModelProperty("更新时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @TableField(value = "updated_time", fill = FieldFill.INSERT_UPDATE)
     private Date updatedTime;
 
     /**
@@ -81,6 +83,7 @@ public class AdminUser implements Serializable {
      */
     @ApiModelProperty("创建时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @TableField(value = "created_time", fill = FieldFill.INSERT)
     private Date createdTime;
 
     /**
