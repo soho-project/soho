@@ -1,11 +1,10 @@
 package work.soho.wallet.biz.listen;
 
+import com.baomidou.dynamic.datasource.annotation.DsTxEventListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 import work.soho.user.api.event.UserRegisteredEvent;
 import work.soho.wallet.biz.domain.WalletType;
 import work.soho.wallet.biz.enums.WalletTypeEnums;
@@ -21,7 +20,7 @@ public class UserRegisteredInitWalletListener {
     private final WalletTypeService walletTypeService;
     private final WalletInfoService walletInfoService;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @DsTxEventListener
     public void onUserRegistered(UserRegisteredEvent event) {
         if (event == null || event.getUserId() == null) {
             return;
