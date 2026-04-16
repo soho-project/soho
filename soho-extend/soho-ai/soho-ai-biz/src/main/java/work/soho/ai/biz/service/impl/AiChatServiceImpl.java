@@ -1640,9 +1640,11 @@ public class AiChatServiceImpl implements AiChatService {
         body.put("store", pickBoolean(config, "store", false));
         body.put("stream", stream);
         putIfNotNull(body, "instructions", buildCodexInstructions(messages));
-        putIfNotNull(body, "temperature", pickDouble(config, "temperature", request.getTemperature()));
+        //该参数上游报错
+//        putIfNotNull(body, "temperature", pickDouble(config, "temperature", request.getTemperature()));
         putIfNotNull(body, "top_p", pickDouble(config, "topP", request.getTopP()));
-        putIfNotNull(body, "max_output_tokens", pickInteger(config, "maxTokens", request.getMaxTokens()));
+        // 上游好像不支持 max_output_tokens， 传递这个参数上游会报错
+//        putIfNotNull(body, "max_output_tokens", pickInteger(config, "maxTokens", request.getMaxTokens()));
 
         List<Map<String, Object>> input = new ArrayList<>();
         AiChatRequest.Message latestUserMessage = findLatestUserMessage(messages);
