@@ -10,6 +10,8 @@ public interface AiUserApiKeyService extends IService<AiUserApiKey> {
 
     AiUserApiKey requireByPlaintextKey(String plaintextKey);
 
+    AiUserApiKey findByPlaintextKey(String plaintextKey);
+
     /**
      * 按用户ID获取一个可用的 API Key。
      *

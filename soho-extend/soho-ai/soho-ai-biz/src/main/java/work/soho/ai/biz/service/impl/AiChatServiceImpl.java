@@ -666,7 +666,7 @@ public class AiChatServiceImpl implements AiChatService {
         Map<String, Object> body = new HashMap<>();
         body.put("model", model);
         body.put("messages", toOpenAiMessages(messages));
-        putIfNotNull(body, "temperature", pickDouble(config, "temperature", request.getTemperature()));
+//        putIfNotNull(body, "temperature", pickDouble(config, "temperature", request.getTemperature()));
         putIfNotNull(body, "top_p", pickDouble(config, "topP", request.getTopP()));
         putIfNotNull(body, "max_tokens", pickInteger(config, "maxTokens", request.getMaxTokens()));
         putIfNotNull(body, "stream", request.getStream());
@@ -834,7 +834,8 @@ public class AiChatServiceImpl implements AiChatService {
         body.put("model", model);
         body.put("messages", toOpenAiMessages(messages));
         body.put("stream", true);
-        putIfNotNull(body, "temperature", pickDouble(config, "temperature", request.getTemperature()));
+        // 上游不支持该参数 请勿放开
+//        putIfNotNull(body, "temperature", pickDouble(config, "temperature", request.getTemperature()));
         putIfNotNull(body, "top_p", pickDouble(config, "topP", request.getTopP()));
         putIfNotNull(body, "max_tokens", pickInteger(config, "maxTokens", request.getMaxTokens()));
 

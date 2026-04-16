@@ -11,10 +11,13 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import work.soho.ai.biz.controller.AiClientErrorSupport;
+import work.soho.ai.biz.dto.AiOpenApiGuardContext;
+import work.soho.ai.biz.exception.AiOpenApiGuardException;
 import work.soho.ai.biz.request.OpenAiChatCompletionRequest;
 import work.soho.ai.biz.request.OpenAiResponsesRequest;
+import work.soho.ai.biz.service.AiOpenApiGuardService;
 import work.soho.ai.biz.service.AiOpenApiService;
-import work.soho.ai.biz.controller.AiClientErrorSupport;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.common.security.userdetails.SohoUserDetails;
 
@@ -32,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class GuestAiOpenAiController {
     private static final String CLIENT_ERROR_MESSAGE = "临时错误，如果长期错误请联系管理员";
     private final AiOpenApiService aiOpenApiService;
+    private final AiOpenApiGuardService aiOpenApiGuardService;
 
     /**
      * 查询 OpenAI/Codex 兼容余额。
@@ -41,12 +45,7 @@ public class GuestAiOpenAiController {
     public Object balance(@RequestHeader("Authorization") String authorization,
                           @RequestHeader(value = "User-Agent", required = false) String userAgent) {
         log.info("OpenAI/Codex 兼容余额查询, userAgent={}", userAgent);
-        try {
-            return aiOpenApiService.balance(authorization);
-        } catch (RuntimeException ex) {
-            log.error("OpenAI/Codex 兼容余额查询失败, msg={}", ex.getMessage(), ex);
-            return buildBalanceErrorResponse();
-        }
+        return guardForBalance(authorization, endpoint("/user/balance"), () -> aiOpenApiService.balance(authorization));
     }
 
     /**
@@ -55,15 +54,12 @@ public class GuestAiOpenAiController {
     @GetMapping(value = "/api/user/self")
     @ApiOperation("OpenAI/Codex 兼容用户套餐用量查询")
     public Object self(@AuthenticationPrincipal SohoUserDetails userDetails,
-                       @RequestHeader(value = "New-Api-User", required = false) String newApiUserHeader) {
+                       @RequestHeader(value = "New-Api-User", required = false) String newApiUserHeader,
+                       @RequestHeader("Authorization") String authorization) {
         log.info("OpenAI/Codex 兼容套餐查询, userId={}, newApiUser={}",
                 userDetails == null ? null : userDetails.getId(), newApiUserHeader);
-        try {
-            return aiOpenApiService.selfPackage(userDetails == null ? null : userDetails.getId(), newApiUserHeader);
-        } catch (RuntimeException ex) {
-            log.error("OpenAI/Codex 兼容套餐查询失败, msg={}", ex.getMessage(), ex);
-            return buildSelfPackageErrorResponse(ex);
-        }
+        return guardForSelf(authorization, endpoint("/api/user/self"),
+                () -> aiOpenApiService.selfPackage(userDetails == null ? null : userDetails.getId(), newApiUserHeader));
     }
 
     /**
@@ -73,7 +69,142 @@ public class GuestAiOpenAiController {
     @ApiOperation("OpenAI 兼容 models")
     public Object models(@RequestHeader("Authorization") String authorization) {
         log.info("OpenAI 兼容 models");
-        return aiOpenApiService.models(authorization);
+        return guardAndHandle(authorization, endpoint("/models"), () -> aiOpenApiService.models(authorization));
+    }
+
+    private Object guardAndHandle(String authorization, String endpoint, GuardedSupplier supplier) {
+        AiOpenApiGuardContext guardContext = null;
+        try {
+            guardContext = aiOpenApiGuardService.checkAndAcquire(authorization, endpoint);
+            return supplier.get();
+        } catch (AiOpenApiGuardException ex) {
+            return buildOpenAiErrorResponse(ex);
+        } catch (RuntimeException ex) {
+            aiOpenApiGuardService.recordFailure(guardContext, ex);
+            return buildOpenAiErrorResponse(ex);
+        }
+    }
+
+    private ResponseEntity<byte[]> guardAndHandleAudio(String authorization, String endpoint, AudioSupplier supplier) {
+        AiOpenApiGuardContext guardContext = null;
+        try {
+            guardContext = aiOpenApiGuardService.checkAndAcquire(authorization, endpoint);
+            return supplier.get();
+        } catch (AiOpenApiGuardException ex) {
+            return ResponseEntity.status(ex.getHttpStatus()).build();
+        } catch (RuntimeException ex) {
+            aiOpenApiGuardService.recordFailure(guardContext, ex);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    private SseEmitter guardAndHandleStream(Flux<String> flux) {
+        SseEmitter emitter = new SseEmitter(0L);
+        subscribeWithEmitter(emitter, flux);
+        return emitter;
+    }
+
+    @FunctionalInterface
+    private interface GuardedSupplier {
+        Object get();
+    }
+
+    @FunctionalInterface
+    private interface AudioSupplier {
+        ResponseEntity<byte[]> get();
+    }
+
+    @FunctionalInterface
+    private interface FluxSupplier {
+        Flux<String> get();
+    }
+
+    private Object guardAndHandleStreamRequest(String authorization, String endpoint, FluxSupplier supplier) {
+        AiOpenApiGuardContext guardContext = null;
+        try {
+            guardContext = aiOpenApiGuardService.checkAndAcquire(authorization, endpoint);
+            return guardAndHandleStream(attachStreamFailureHandling(guardContext, supplier.get()));
+        } catch (AiOpenApiGuardException ex) {
+            return buildOpenAiErrorResponse(ex);
+        } catch (RuntimeException ex) {
+            aiOpenApiGuardService.recordFailure(guardContext, ex);
+            return buildOpenAiErrorResponse(ex);
+        }
+    }
+
+    private Flux<String> attachStreamFailureHandling(AiOpenApiGuardContext guardContext, Flux<String> flux) {
+        return flux.doOnError(ex -> aiOpenApiGuardService.recordFailure(guardContext, ex));
+    }
+
+    private Object buildOpenAiErrorResponse(AiOpenApiGuardException ex) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("message", ex.getClientMessage());
+        error.put("type", "request_error");
+        error.put("code", ex.getErrorCode());
+        Map<String, Object> result = new HashMap<>();
+        result.put("error", error);
+        return result;
+    }
+
+    private Map<String, Object> buildBalanceGuardErrorResponse() {
+        Map<String, Object> result = buildBalanceErrorResponse();
+        result.put("message", "api key不可用");
+        return result;
+    }
+
+    private Map<String, Object> buildSelfPackageGuardErrorResponse(AiOpenApiGuardException ex) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", false);
+        result.put("message", ex.getClientMessage());
+        return result;
+    }
+
+    private Object guardForSelf(String authorization, String endpoint, GuardedSupplier supplier) {
+        AiOpenApiGuardContext guardContext = null;
+        try {
+            guardContext = aiOpenApiGuardService.checkAndAcquire(authorization, endpoint);
+            return supplier.get();
+        } catch (AiOpenApiGuardException ex) {
+            return buildSelfPackageGuardErrorResponse(ex);
+        } catch (RuntimeException ex) {
+            aiOpenApiGuardService.recordFailure(guardContext, ex);
+            return buildSelfPackageErrorResponse(ex);
+        }
+    }
+
+    private Object guardForBalance(String authorization, String endpoint, GuardedSupplier supplier) {
+        AiOpenApiGuardContext guardContext = null;
+        try {
+            guardContext = aiOpenApiGuardService.checkAndAcquire(authorization, endpoint);
+            return supplier.get();
+        } catch (AiOpenApiGuardException ex) {
+            return buildBalanceGuardErrorResponse();
+        } catch (RuntimeException ex) {
+            aiOpenApiGuardService.recordFailure(guardContext, ex);
+            return buildBalanceErrorResponse();
+        }
+    }
+
+    private String endpoint(String suffix) {
+        return "/ai/guest/openai/v1" + suffix;
+    }
+
+    private Object buildGuardedChatResponse(String authorization, OpenAiChatCompletionRequest request) {
+        if (Boolean.TRUE.equals(request.getStream())) {
+            return guardAndHandleStreamRequest(authorization, endpoint("/chat/completions"),
+                    () -> aiOpenApiService.streamChatCompletions(authorization, request));
+        }
+        return guardAndHandle(authorization, endpoint("/chat/completions"),
+                () -> aiOpenApiService.chatCompletions(authorization, request));
+    }
+
+    private Object buildGuardedResponsesResponse(String authorization, OpenAiResponsesRequest request) {
+        if (Boolean.TRUE.equals(request.getStream())) {
+            return guardAndHandleStreamRequest(authorization, endpoint("/responses"),
+                    () -> aiOpenApiService.streamResponses(authorization, request));
+        }
+        return guardAndHandle(authorization, endpoint("/responses"),
+                () -> aiOpenApiService.responses(authorization, request));
     }
 
     /**
@@ -85,17 +216,7 @@ public class GuestAiOpenAiController {
     public Object chatCompletions(@RequestHeader("Authorization") String authorization,
                                   @RequestBody OpenAiChatCompletionRequest request) {
         log.info("OpenAI 兼容 chat completions 请求摘要: {}", JacksonUtils.toJson(buildChatCompletionsLogSummary(request)));
-        try {
-            if (Boolean.TRUE.equals(request.getStream())) {
-                SseEmitter emitter = new SseEmitter(0L);
-                subscribeWithEmitter(emitter, aiOpenApiService.streamChatCompletions(authorization, request));
-                return emitter;
-            }
-            return aiOpenApiService.chatCompletions(authorization, request);
-        } catch (RuntimeException ex) {
-            log.error("OpenAI 兼容 chat completions 失败, msg={}", ex.getMessage(), ex);
-            return buildOpenAiErrorResponse(ex);
-        }
+        return buildGuardedChatResponse(authorization, request);
     }
 
     /**
@@ -107,17 +228,7 @@ public class GuestAiOpenAiController {
     public Object responses(@RequestHeader("Authorization") String authorization,
                             @RequestBody OpenAiResponsesRequest request) {
         log.info("OpenAI 兼容 responses 请求摘要: {}", JacksonUtils.toJson(buildResponsesLogSummary(request)));
-        try {
-            if (Boolean.TRUE.equals(request.getStream())) {
-                SseEmitter emitter = new SseEmitter(0L);
-                subscribeWithEmitter(emitter, aiOpenApiService.streamResponses(authorization, request));
-                return emitter;
-            }
-            return aiOpenApiService.responses(authorization, request);
-        } catch (RuntimeException ex) {
-            log.error("OpenAI 兼容 responses 失败, msg={}", ex.getMessage(), ex);
-            return buildOpenAiErrorResponse(ex);
-        }
+        return buildGuardedResponsesResponse(authorization, request);
     }
 
     /**
@@ -128,12 +239,8 @@ public class GuestAiOpenAiController {
     public Object imageGenerations(@RequestHeader("Authorization") String authorization,
                                    @RequestBody Map<String, Object> request) {
         log.info("OpenAI 兼容 images generations 请求摘要: {}", JacksonUtils.toJson(buildSimpleLogSummary(request)));
-        try {
-            return aiOpenApiService.imageGenerations(authorization, request);
-        } catch (RuntimeException ex) {
-            log.error("OpenAI 兼容 images generations 失败, msg={}", ex.getMessage(), ex);
-            return buildOpenAiErrorResponse(ex);
-        }
+        return guardAndHandle(authorization, endpoint("/images/generations"),
+                () -> aiOpenApiService.imageGenerations(authorization, request));
     }
 
     /**
@@ -144,12 +251,8 @@ public class GuestAiOpenAiController {
     public Object embeddings(@RequestHeader("Authorization") String authorization,
                              @RequestBody Map<String, Object> request) {
         log.info("OpenAI 兼容 embeddings 请求摘要: {}", JacksonUtils.toJson(buildSimpleLogSummary(request)));
-        try {
-            return aiOpenApiService.embeddings(authorization, request);
-        } catch (RuntimeException ex) {
-            log.error("OpenAI 兼容 embeddings 失败, msg={}", ex.getMessage(), ex);
-            return buildOpenAiErrorResponse(ex);
-        }
+        return guardAndHandle(authorization, endpoint("/embeddings"),
+                () -> aiOpenApiService.embeddings(authorization, request));
     }
 
     /**
@@ -161,12 +264,8 @@ public class GuestAiOpenAiController {
                                       @RequestParam Map<String, String> request,
                                       @RequestPart("file") MultipartFile file) {
         log.info("OpenAI 兼容 audio transcriptions 请求摘要: {}", JacksonUtils.toJson(buildMultipartLogSummary(request, file)));
-        try {
-            return aiOpenApiService.audioTranscriptions(authorization, request, file);
-        } catch (RuntimeException ex) {
-            log.error("OpenAI 兼容 audio transcriptions 失败, msg={}", ex.getMessage(), ex);
-            return buildOpenAiErrorResponse(ex);
-        }
+        return guardAndHandle(authorization, endpoint("/audio/transcriptions"),
+                () -> aiOpenApiService.audioTranscriptions(authorization, request, file));
     }
 
     /**
@@ -178,12 +277,8 @@ public class GuestAiOpenAiController {
                                     @RequestParam Map<String, String> request,
                                     @RequestPart("file") MultipartFile file) {
         log.info("OpenAI 兼容 audio translations 请求摘要: {}", JacksonUtils.toJson(buildMultipartLogSummary(request, file)));
-        try {
-            return aiOpenApiService.audioTranslations(authorization, request, file);
-        } catch (RuntimeException ex) {
-            log.error("OpenAI 兼容 audio translations 失败, msg={}", ex.getMessage(), ex);
-            return buildOpenAiErrorResponse(ex);
-        }
+        return guardAndHandle(authorization, endpoint("/audio/translations"),
+                () -> aiOpenApiService.audioTranslations(authorization, request, file));
     }
 
     /**
@@ -194,12 +289,8 @@ public class GuestAiOpenAiController {
     public ResponseEntity<byte[]> audioSpeech(@RequestHeader("Authorization") String authorization,
                                               @RequestBody Map<String, Object> request) {
         log.info("OpenAI 兼容 audio speech 请求摘要: {}", JacksonUtils.toJson(buildSimpleLogSummary(request)));
-        try {
-            return aiOpenApiService.audioSpeech(authorization, request);
-        } catch (RuntimeException ex) {
-            log.error("OpenAI 兼容 audio speech 失败, msg={}", ex.getMessage(), ex);
-            return ResponseEntity.internalServerError().build();
-        }
+        return guardAndHandleAudio(authorization, endpoint("/audio/speech"),
+                () -> aiOpenApiService.audioSpeech(authorization, request));
     }
 
     private void sendEvent(SseEmitter emitter, String payload) {
