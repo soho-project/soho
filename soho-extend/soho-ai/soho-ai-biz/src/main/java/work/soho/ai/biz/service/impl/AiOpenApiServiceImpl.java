@@ -484,7 +484,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
     @Override
     public Map<String, Object> responses(String authorization, OpenAiResponsesRequest request) {
-        log.info("responses 请求体: {}", JacksonUtils.toJson(request));
+        log.info("responses 请求摘要: {}", JacksonUtils.toJson(buildResponsesRequestLogSummary(request)));
         RequestAuditInfo requestAuditInfo = captureRequestAuditInfo();
         AiProviderConfig providerConfig = requireProviderConfig(request.getModel());
         if (!isCodexResponsesProvider(providerConfig)) {
@@ -534,7 +534,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
     @Override
     public Flux<String> streamResponses(String authorization, OpenAiResponsesRequest request) {
-        log.info("responses(stream) 请求体: {}", JacksonUtils.toJson(request));
+        log.info("responses(stream) 请求摘要: {}", JacksonUtils.toJson(buildResponsesRequestLogSummary(request)));
         RequestAuditInfo requestAuditInfo = captureRequestAuditInfo();
         AiProviderConfig providerConfig = requireProviderConfig(request.getModel());
         if (!isCodexResponsesProvider(providerConfig)) {
@@ -2288,6 +2288,16 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    private Map<String, Object> buildResponsesRequestLogSummary(OpenAiResponsesRequest request) {
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("model", request == null ? null : request.getModel());
+        summary.put("stream", request != null && Boolean.TRUE.equals(request.getStream()));
+        summary.put("includeCount", request == null || request.getInclude() == null ? 0 : request.getInclude().size());
+        summary.put("toolsCount", request == null || request.getTools() == null ? 0 : request.getTools().size());
+        summary.put("hasInput", request != null && request.getInput() != null);
+        return summary;
     }
 
     private Map<String, Object> buildOpenAiResponse(String requestId, String model, String content, AiUsageSummary usage) {
