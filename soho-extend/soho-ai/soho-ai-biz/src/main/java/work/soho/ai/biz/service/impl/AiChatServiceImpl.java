@@ -490,6 +490,30 @@ public class AiChatServiceImpl implements AiChatService {
         return map == null ? new HashMap<>() : map;
     }
 
+    private Map<String, Object> buildRequestBodySummary(Map<String, Object> requestBody) {
+        Map<String, Object> summary = new HashMap<>();
+        if (requestBody == null) {
+            summary.put("size", 0);
+            return summary;
+        }
+        summary.put("size", requestBody.size());
+        summary.put("model", requestBody.get("model"));
+        summary.put("stream", requestBody.get("stream"));
+        summary.put("hasInput", requestBody.get("input") != null);
+        summary.put("messagesCount", sizeOfValue(requestBody.get("messages")));
+        summary.put("toolsCount", sizeOfValue(requestBody.get("tools")));
+        summary.put("includeCount", sizeOfValue(requestBody.get("include")));
+        summary.put("contentsCount", sizeOfValue(requestBody.get("contents")));
+        return summary;
+    }
+
+    private int sizeOfValue(Object value) {
+        if (value instanceof List) {
+            return ((List<?>) value).size();
+        }
+        return 0;
+    }
+
     private String pickProvider(AiProviderConfig providerConfig, Map<String, Object> config) {
         String provider = pickString(config, "provider", providerConfig.getProvider());
         if (StringUtils.isBlank(provider)) {
@@ -794,8 +818,8 @@ public class AiChatServiceImpl implements AiChatService {
                     .onStatus(HttpStatus::isError, response -> response.bodyToMono(String.class)
                             .defaultIfEmpty("")
                             .flatMap(errorBody -> {
-                                log.error("codex responses request failed status={}, body={}, requestBody={}",
-                                        response.statusCode().value(), errorBody, JacksonUtils.toJson(body));
+                                log.error("codex responses request failed status={}, body={}, requestSummary={}",
+                                        response.statusCode().value(), errorBody, buildRequestBodySummary(body));
                                 return Mono.error(new IllegalArgumentException("codex responses request failed: " + errorBody));
                             }))
                     .bodyToFlux(DataBuffer.class)
@@ -980,8 +1004,8 @@ public class AiChatServiceImpl implements AiChatService {
                 .onStatus(HttpStatus::isError, response -> response.bodyToMono(String.class)
                         .defaultIfEmpty("")
                         .flatMap(errorBody -> {
-                            log.error("codex responses stream request failed status={}, body={}, requestBody={}",
-                                    response.statusCode().value(), errorBody, JacksonUtils.toJson(body));
+                            log.error("codex responses stream request failed status={}, body={}, requestSummary={}",
+                                    response.statusCode().value(), errorBody, buildRequestBodySummary(body));
                             return Mono.error(new IllegalArgumentException("codex responses stream request failed: " + errorBody));
                         }))
                 .bodyToFlux(DataBuffer.class)
@@ -1229,8 +1253,8 @@ public class AiChatServiceImpl implements AiChatService {
         return response.bodyToMono(String.class)
                 .defaultIfEmpty("")
                 .flatMap(errorBody -> {
-                    log.error("upstream api http error, url={}, status={}, body={}, requestBody={}",
-                            url, response.statusCode().value(), errorBody, JacksonUtils.toJson(requestBody));
+                    log.error("upstream api http error, url={}, status={}, body={}, requestSummary={}",
+                            url, response.statusCode().value(), errorBody, buildRequestBodySummary(requestBody));
                     return Mono.error(new IllegalArgumentException("upstream api request failed: " + errorBody));
                 });
     }
@@ -1240,8 +1264,8 @@ public class AiChatServiceImpl implements AiChatService {
      */
     private RuntimeException wrapUpstreamException(String url, Map<String, Object> requestBody, RuntimeException ex) {
         String message = extractUpstreamErrorMessage(ex);
-        log.error("upstream api request failed, url={}, error={}, requestBody={}",
-                url, message, JacksonUtils.toJson(requestBody), ex);
+        log.error("upstream api request failed, url={}, error={}, requestSummary={}",
+                url, message, buildRequestBodySummary(requestBody), ex);
         return new IllegalArgumentException("upstream api request failed: " + message, ex);
     }
 
