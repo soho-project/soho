@@ -86,10 +86,15 @@ public class AiOpenApiServiceImplTest {
         assertThat(result).containsEntry("object", "balance");
         assertThat(result).containsEntry("is_active", true);
         assertThat(result).containsEntry("unit", "USD");
-        assertThat(result.get("balance")).isEqualTo(new BigDecimal("88.1256"));
+        assertThat(result.get("balance")).isEqualTo(new BigDecimal("88.125600"));
         assertThat(result.get("wallet_type_ids")).isEqualTo(Collections.singletonList(2));
         assertThat(result.get("request_usage")).isInstanceOf(Map.class);
         assertThat(result.get("token_usage")).isInstanceOf(Map.class);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> tokenUsage = (Map<String, Object>) result.get("token_usage");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> todayUsage = (Map<String, Object>) tokenUsage.get("today");
+        assertThat(todayUsage.get("amount")).isEqualTo(new BigDecimal("1.250000"));
     }
 
     @Test
