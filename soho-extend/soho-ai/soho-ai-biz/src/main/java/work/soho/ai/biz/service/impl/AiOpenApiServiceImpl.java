@@ -1211,7 +1211,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             }
             totalBalance = totalBalance.add(walletInfo.getAmount());
         }
-        return totalBalance.setScale(4, RoundingMode.HALF_UP);
+        return totalBalance.setScale(6, RoundingMode.HALF_UP);
     }
 
     /**
@@ -1297,13 +1297,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      */
     private BigDecimal decimalValue(Map<String, Object> row, String key) {
         if (row == null || row.get(key) == null) {
-            return BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
+            return BigDecimal.ZERO.setScale(6, RoundingMode.HALF_UP);
         }
         Object value = row.get(key);
         if (value instanceof BigDecimal) {
-            return ((BigDecimal) value).setScale(4, RoundingMode.HALF_UP);
+            return ((BigDecimal) value).setScale(6, RoundingMode.HALF_UP);
         }
-        return new BigDecimal(String.valueOf(value)).setScale(4, RoundingMode.HALF_UP);
+        return new BigDecimal(String.valueOf(value)).setScale(6, RoundingMode.HALF_UP);
     }
 
     /**
