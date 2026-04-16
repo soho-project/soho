@@ -2,22 +2,22 @@ package work.soho.wallet.biz.service.impl;
 
 import cn.hutool.core.lang.Assert;
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import work.soho.wallet.api.service.WalletInfoApiService;
 import work.soho.wallet.biz.domain.WalletInfo;
 import work.soho.wallet.biz.domain.WalletLog;
+import work.soho.wallet.biz.domain.WalletType;
 import work.soho.wallet.biz.enums.WalletInfoEnums;
 import work.soho.wallet.biz.mapper.WalletInfoMapper;
 import work.soho.wallet.biz.mapper.WalletLogMapper;
 import work.soho.wallet.biz.mapper.WalletTypeMapper;
 import work.soho.wallet.biz.service.WalletInfoService;
-import work.soho.wallet.biz.domain.WalletType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -88,34 +88,40 @@ public class WalletInfoServiceImpl extends ServiceImpl<WalletInfoMapper, WalletI
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @DSTransactional(rollbackFor = Exception.class)
     public WalletLog updateAmount(WalletInfo walletInfo, BigDecimal amount, String notes) {
         return updateAmountWithBiz(walletInfo, amount, notes, null, null);
     }
 
 
-    @Transactional(rollbackFor = Exception.class)
+    @DSTransactional(rollbackFor = Exception.class)
     public WalletLog updateAmountWithBiz(WalletInfo walletInfo, BigDecimal amount, String notes, Integer bizId, String outTrackId) {
         if (walletInfo != null) {
-            BigDecimal computeAmount = walletInfo.getAmount().add(amount);
+            BigDecimal beforeAmount = walletInfo.getAmount();
+            BigDecimal computeAmount = beforeAmount.add(amount);
             Assert.isTrue(computeAmount.compareTo(BigDecimal.ZERO) >= 0, "余额不足");
+
+            // 使用数据库原子操作更新余额，避免并发竞态
+            int rows = baseMapper.atomicUpdateAmount(walletInfo.getId(), amount);
+            Assert.isTrue(rows > 0, "余额不足");
+
+            // 重新查询实际余额用于日志
+            WalletInfo updated = getById(walletInfo.getId());
+            BigDecimal afterAmount = updated != null ? updated.getAmount() : computeAmount;
 
             // 添加钱包日志
             WalletLog walletLog = new WalletLog();
             walletLog.setWalletId(walletInfo.getId());
             walletLog.setAmount(amount);
-            walletLog.setBeforeAmount(walletInfo.getAmount());
-            walletLog.setAfterAmount(computeAmount);
+            walletLog.setBeforeAmount(afterAmount.subtract(amount));
+            walletLog.setAfterAmount(afterAmount);
             walletLog.setNotes(notes);
             walletLog.setBizId(bizId);
             walletLog.setOutTrackId(outTrackId);
             walletLog.setCreatedTime(LocalDateTime.now());
             walletLogMapper.insert(walletLog);
 
-            walletInfo.setAmount(computeAmount);
-            walletInfo.setUpdatedTime(LocalDateTime.now());
-            updateById(walletInfo);
-
+            walletInfo.setAmount(afterAmount);
             return walletLog;
         }
         return null;

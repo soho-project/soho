@@ -15,4 +15,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="Base_Column_List">
         id,user_id,type,amount,status,updated_time,created_time
     </sql>
+
+    <update id="atomicUpdateAmount">
+        UPDATE wallet_info
+        SET amount = amount + #{delta}, updated_time = NOW()
+        WHERE id = #{id} AND amount + #{delta} >= 0
+    </update>
 </mapper>

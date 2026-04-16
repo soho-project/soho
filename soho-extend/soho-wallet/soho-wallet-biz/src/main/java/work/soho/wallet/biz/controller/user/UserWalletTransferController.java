@@ -100,6 +100,8 @@ public class UserWalletTransferController {
         lqw.eq(walletTransfer.getFromWalletId() != null, WalletTransfer::getFromWalletId ,walletTransfer.getFromWalletId());
         lqw.eq(walletTransfer.getFromWalletType() != null, WalletTransfer::getFromWalletType ,walletTransfer.getFromWalletType());
         lqw.eq(walletTransfer.getFromAmount() != null, WalletTransfer::getFromAmount ,walletTransfer.getFromAmount());
+        lqw.and(w -> w.eq(WalletTransfer::getFromUserId, sohoUserDetails.getId())
+                .or().eq(WalletTransfer::getToUserId, sohoUserDetails.getId()));
         lqw.eq(walletTransfer.getToWalletId() != null, WalletTransfer::getToWalletId ,walletTransfer.getToWalletId());
         lqw.eq(walletTransfer.getToWalletType() != null, WalletTransfer::getToWalletType ,walletTransfer.getToWalletType());
         lqw.eq(walletTransfer.getToUserId() != null,WalletTransfer::getToUserId ,walletTransfer.getToUserId());
@@ -120,6 +122,8 @@ public class UserWalletTransferController {
     public R<WalletTransfer> getInfo(@PathVariable("id" ) Long id, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         LambdaQueryWrapper<WalletTransfer> lqw = new LambdaQueryWrapper<>();
         lqw.eq(WalletTransfer::getId, id);
+        lqw.and(w -> w.eq(WalletTransfer::getFromUserId, sohoUserDetails.getId())
+                .or().eq(WalletTransfer::getToUserId, sohoUserDetails.getId()));
         WalletTransfer walletTransfer = walletTransferService.getOne(lqw);
         return R.success(walletTransfer);
     }
@@ -130,6 +134,7 @@ public class UserWalletTransferController {
     @PostMapping
     @Node(value = "user::walletTransfer::add", name = "新增 钱包转账")
     public R<Boolean> add(@RequestBody WalletTransfer walletTransfer, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        walletTransfer.setFromUserId(sohoUserDetails.getId());
         return R.success(walletTransferService.save(walletTransfer));
     }
 
@@ -139,6 +144,12 @@ public class UserWalletTransferController {
     @PutMapping
     @Node(value = "user::walletTransfer::edit", name = "修改 钱包转账")
     public R<Boolean> edit(@RequestBody WalletTransfer walletTransfer, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
+        WalletTransfer existing = walletTransferService.getOne(new LambdaQueryWrapper<WalletTransfer>()
+                .eq(WalletTransfer::getId, walletTransfer.getId())
+                .eq(WalletTransfer::getFromUserId, sohoUserDetails.getId()));
+        if (existing == null) {
+            return R.error("记录不存在或无权修改");
+        }
         return R.success(walletTransferService.updateById(walletTransfer));
     }
 
@@ -149,6 +160,8 @@ public class UserWalletTransferController {
     @Node(value = "user::walletTransfer::remove", name = "删除 钱包转账")
     public R<Boolean> remove(@PathVariable Long[] ids, @AuthenticationPrincipal SohoUserDetails sohoUserDetails) {
         LambdaQueryWrapper<WalletTransfer> lqw = new LambdaQueryWrapper<>();
+        lqw.in(WalletTransfer::getId, (Object[]) ids);
+        lqw.eq(WalletTransfer::getFromUserId, sohoUserDetails.getId());
         return R.success(walletTransferService.remove(lqw));
     }
 }

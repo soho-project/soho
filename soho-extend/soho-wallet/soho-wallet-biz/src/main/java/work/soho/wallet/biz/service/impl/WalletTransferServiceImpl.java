@@ -16,6 +16,8 @@ import work.soho.wallet.biz.mapper.WalletTransferMapper;
 import work.soho.wallet.biz.service.WalletTransferService;
 import work.soho.wallet.biz.service.WalletTypeService;
 
+import com.baomidou.dynamic.datasource.annotation.DSTransactional;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -42,6 +44,7 @@ public class WalletTransferServiceImpl extends ServiceImpl<WalletTransferMapper,
      * @return
      */
     @Override
+    @DSTransactional
     public WalletTransfer transfer(Long userId, Long walletId, Long toWalletId, BigDecimal amount, String remark) {
         WalletInfo fromWalletInfo = walletInfoMapper.selectById(walletId);
         Assert.notNull(fromWalletInfo, "用户钱包不存在");
@@ -61,9 +64,7 @@ public class WalletTransferServiceImpl extends ServiceImpl<WalletTransferMapper,
         Assert.notNull(toWalletType, "目标钱包类型异常");
 
         // 检查转入钱包是否支持来源类型钱包
-        if(toWalletType.getCanTransferInTypes() == null) {
-            Assert.isTrue(toWalletType.getCanTransferInTypes().contains(fromWalletInfo.getType().toString()), "目标钱包不支持来源钱包类型");
-        } else {
+        if(toWalletType.getCanTransferInTypes() != null) {
             List<String> canTransferInTypes = Arrays.asList(toWalletType.getCanTransferInTypes().split( ","));
             if(!canTransferInTypes.contains(fromWalletInfo.getType().toString())) {
                 Assert.isTrue(false, "目标钱包不支持来源钱包类型");

