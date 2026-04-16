@@ -75,6 +75,12 @@ public class AiApiCallLogController {
         lqw.like(StringUtils.isNotBlank(aiApiCallLog.getErrorMessage()),AiApiCallLog::getErrorMessage ,aiApiCallLog.getErrorMessage());
         lqw.eq(aiApiCallLog.getWalletLogId() != null, AiApiCallLog::getWalletLogId ,aiApiCallLog.getWalletLogId());
         lqw.eq(aiApiCallLog.getUpdatedTime() != null, AiApiCallLog::getUpdatedTime ,aiApiCallLog.getUpdatedTime());
+        lqw.like(StringUtils.isNotBlank(aiApiCallLog.getClientIp()),AiApiCallLog::getClientIp ,aiApiCallLog.getClientIp());
+        lqw.like(StringUtils.isNotBlank(aiApiCallLog.getUserAgent()),AiApiCallLog::getUserAgent ,aiApiCallLog.getUserAgent());
+        lqw.like(StringUtils.isNotBlank(aiApiCallLog.getRequestSource()),AiApiCallLog::getRequestSource ,aiApiCallLog.getRequestSource());
+        lqw.like(StringUtils.isNotBlank(aiApiCallLog.getRejectReason()),AiApiCallLog::getRejectReason ,aiApiCallLog.getRejectReason());
+        lqw.eq(aiApiCallLog.getRiskHit() != null, AiApiCallLog::getRiskHit ,aiApiCallLog.getRiskHit());
+        lqw.eq(aiApiCallLog.getBanHit() != null, AiApiCallLog::getBanHit ,aiApiCallLog.getBanHit());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, AiApiCallLog::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, AiApiCallLog::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
         lqw.orderByDesc(AiApiCallLog::getId);
@@ -207,6 +213,12 @@ public class AiApiCallLogController {
         lqw.like(StringUtils.isNotBlank(aiApiCallLog.getErrorMessage()),AiApiCallLog::getErrorMessage ,aiApiCallLog.getErrorMessage());
         lqw.eq(aiApiCallLog.getWalletLogId() != null, AiApiCallLog::getWalletLogId ,aiApiCallLog.getWalletLogId());
         lqw.eq(aiApiCallLog.getUpdatedTime() != null, AiApiCallLog::getUpdatedTime ,aiApiCallLog.getUpdatedTime());
+        lqw.like(StringUtils.isNotBlank(aiApiCallLog.getClientIp()),AiApiCallLog::getClientIp ,aiApiCallLog.getClientIp());
+        lqw.like(StringUtils.isNotBlank(aiApiCallLog.getUserAgent()),AiApiCallLog::getUserAgent ,aiApiCallLog.getUserAgent());
+        lqw.like(StringUtils.isNotBlank(aiApiCallLog.getRequestSource()),AiApiCallLog::getRequestSource ,aiApiCallLog.getRequestSource());
+        lqw.like(StringUtils.isNotBlank(aiApiCallLog.getRejectReason()),AiApiCallLog::getRejectReason ,aiApiCallLog.getRejectReason());
+        lqw.eq(aiApiCallLog.getRiskHit() != null, AiApiCallLog::getRiskHit ,aiApiCallLog.getRiskHit());
+        lqw.eq(aiApiCallLog.getBanHit() != null, AiApiCallLog::getBanHit ,aiApiCallLog.getBanHit());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, AiApiCallLog::getCreatedTime, betweenCreatedTimeRequest.getStartTime());
         lqw.lt(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getEndTime() != null, AiApiCallLog::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
         lqw.orderByDesc(AiApiCallLog::getId);

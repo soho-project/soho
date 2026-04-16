@@ -105,6 +105,36 @@ public class AiApiCallLog implements Serializable {
     @TableField(value = "first_token_ms")
     private Long firstTokenMs;
 
+    @ExcelProperty("client_ip")
+    @ApiModelProperty(value = "客户端IP")
+    @TableField(value = "client_ip")
+    private String clientIp;
+
+    @ExcelProperty("user_agent")
+    @ApiModelProperty(value = "客户端User-Agent")
+    @TableField(value = "user_agent")
+    private String userAgent;
+
+    @ExcelProperty("request_source")
+    @ApiModelProperty(value = "请求来源")
+    @TableField(value = "request_source")
+    private String requestSource;
+
+    @ExcelProperty("reject_reason")
+    @ApiModelProperty(value = "拦截原因")
+    @TableField(value = "reject_reason")
+    private String rejectReason;
+
+    @ExcelProperty("risk_hit")
+    @ApiModelProperty(value = "是否命中风险规则")
+    @TableField(value = "risk_hit")
+    private Integer riskHit;
+
+    @ExcelProperty("ban_hit")
+    @ApiModelProperty(value = "是否命中封禁")
+    @TableField(value = "ban_hit")
+    private Integer banHit;
+
     @ExcelProperty("updated_time")
     @ApiModelProperty(value = "updated_time")
     @TableField(value = "updated_time", fill = FieldFill.INSERT_UPDATE)

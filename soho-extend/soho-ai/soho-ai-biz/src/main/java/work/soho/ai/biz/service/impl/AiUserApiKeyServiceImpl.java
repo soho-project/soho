@@ -48,13 +48,19 @@ public class AiUserApiKeyServiceImpl extends ServiceImpl<AiUserApiKeyMapper, AiU
 
     @Override
     public AiUserApiKey requireByPlaintextKey(String plaintextKey) {
-        Assert.hasText(plaintextKey, "api key不能为空");
-        AiUserApiKey apiKey = getOne(new LambdaQueryWrapper<AiUserApiKey>()
-                .eq(AiUserApiKey::getApiKeyHash, sha256(plaintextKey))
-                .eq(AiUserApiKey::getStatus, AiUserApiKeyEnums.Status.ENABLED.getId())
-                .last("limit 1"));
+        AiUserApiKey apiKey = findByPlaintextKey(plaintextKey);
         Assert.notNull(apiKey, "无效的api key");
+        Assert.isTrue(apiKey.getStatus() != null
+                && apiKey.getStatus().intValue() == AiUserApiKeyEnums.Status.ENABLED.getId(), "api key已禁用");
         return apiKey;
+    }
+
+    @Override
+    public AiUserApiKey findByPlaintextKey(String plaintextKey) {
+        Assert.hasText(plaintextKey, "api key不能为空");
+        return getOne(new LambdaQueryWrapper<AiUserApiKey>()
+                .eq(AiUserApiKey::getApiKeyHash, sha256(plaintextKey))
+                .last("limit 1"));
     }
 
     /**
