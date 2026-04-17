@@ -87,6 +87,27 @@ public class AiOpenApiGuardServiceImplTest {
     }
 
     @Test
+    public void checkAndAcquire_whenApiKeyInvalid_shouldAuditWithAnonymousUserId() {
+        when(aiUserApiKeyService.findByPlaintextKey("bad-token")).thenReturn(null);
+
+        assertThatThrownBy(() -> service.checkAndAcquire("Bearer bad-token", "/ai/guest/openai/v1/responses"))
+                .isInstanceOf(AiOpenApiGuardException.class)
+                .satisfies(ex -> {
+                    AiOpenApiGuardException guardException = (AiOpenApiGuardException) ex;
+                    assertThat(guardException.getErrorCode()).isEqualTo("invalid_api_key");
+                    assertThat(guardException.getHttpStatus()).isEqualTo(401);
+                });
+
+        ArgumentCaptor<AiApiCallLog> captor = ArgumentCaptor.forClass(AiApiCallLog.class);
+        verify(aiApiCallLogService).save(captor.capture());
+        assertThat(captor.getValue().getUserId()).isEqualTo(0L);
+        assertThat(captor.getValue().getApiKeyId()).isEqualTo(0L);
+        assertThat(captor.getValue().getProviderConfigId()).isEqualTo(0L);
+        assertThat(captor.getValue().getRequestSource()).isEqualTo("guest_openai");
+        assertThat(captor.getValue().getRejectReason()).isEqualTo("invalid_api_key");
+    }
+
+    @Test
     public void checkAndAcquire_whenApiKeyBanned_shouldReject() {
         AiUserApiKey apiKey = enabledApiKey();
         when(aiUserApiKeyService.findByPlaintextKey("token")).thenReturn(apiKey);

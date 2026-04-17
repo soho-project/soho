@@ -81,6 +81,7 @@ public class GuestAiOpenAiController {
             return buildOpenAiErrorResponse(ex);
         } catch (RuntimeException ex) {
             aiOpenApiGuardService.recordFailure(guardContext, ex);
+            logUnhandledException(endpoint, ex);
             return buildOpenAiErrorResponse(ex);
         }
     }
@@ -94,6 +95,7 @@ public class GuestAiOpenAiController {
             return ResponseEntity.status(ex.getHttpStatus()).build();
         } catch (RuntimeException ex) {
             aiOpenApiGuardService.recordFailure(guardContext, ex);
+            logUnhandledException(endpoint, ex);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -128,12 +130,20 @@ public class GuestAiOpenAiController {
             return buildOpenAiErrorResponse(ex);
         } catch (RuntimeException ex) {
             aiOpenApiGuardService.recordFailure(guardContext, ex);
+            logUnhandledException(endpoint, ex);
             return buildOpenAiErrorResponse(ex);
         }
     }
 
     private Flux<String> attachStreamFailureHandling(AiOpenApiGuardContext guardContext, Flux<String> flux) {
         return flux.doOnError(ex -> aiOpenApiGuardService.recordFailure(guardContext, ex));
+    }
+
+    /**
+     * 记录被统一错误文案掩盖的真实异常，便于控制台排查问题。
+     */
+    private void logUnhandledException(String endpoint, Throwable ex) {
+        log.error("OpenAI 兼容接口请求失败, endpoint={}, message={}", endpoint, ex == null ? null : ex.getMessage(), ex);
     }
 
     private Object buildOpenAiErrorResponse(AiOpenApiGuardException ex) {
@@ -168,6 +178,7 @@ public class GuestAiOpenAiController {
             return buildSelfPackageGuardErrorResponse(ex);
         } catch (RuntimeException ex) {
             aiOpenApiGuardService.recordFailure(guardContext, ex);
+            logUnhandledException(endpoint, ex);
             return buildSelfPackageErrorResponse(ex);
         }
     }
@@ -181,6 +192,7 @@ public class GuestAiOpenAiController {
             return buildBalanceGuardErrorResponse();
         } catch (RuntimeException ex) {
             aiOpenApiGuardService.recordFailure(guardContext, ex);
+            logUnhandledException(endpoint, ex);
             return buildBalanceErrorResponse();
         }
     }
