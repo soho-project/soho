@@ -27,6 +27,9 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class AiOpenApiGuardServiceImpl implements AiOpenApiGuardService {
+    private static final long ANONYMOUS_USER_ID = 0L;
+    private static final long ANONYMOUS_API_KEY_ID = 0L;
+    private static final long UNKNOWN_PROVIDER_CONFIG_ID = 0L;
     private static final String REQUEST_SOURCE = "guest_openai";
     private static final String USER_AGENT_HEADER = "User-Agent";
     private static final String AUTHORIZATION_PREFIX = "Bearer ";
@@ -86,6 +89,9 @@ public class AiOpenApiGuardServiceImpl implements AiOpenApiGuardService {
         recordRiskFailure(context.getApiKey().getId());
     }
 
+    /**
+     * 从 Authorization 头中提取 Bearer token。
+     */
     private String extractBearerToken(String authorization) {
         Assert.hasText(authorization, "Authorization不能为空");
         Assert.isTrue(authorization.startsWith(AUTHORIZATION_PREFIX), "Authorization格式错误");
@@ -94,6 +100,9 @@ public class AiOpenApiGuardServiceImpl implements AiOpenApiGuardService {
         return token;
     }
 
+    /**
+     * 判断当前 key 是否已被临时封禁。
+     */
     private boolean isTemporarilyBanned(Long apiKeyId) {
         if (!aiSysConfig.isOpenApiBanEnabled()) {
             return false;
@@ -101,6 +110,9 @@ public class AiOpenApiGuardServiceImpl implements AiOpenApiGuardService {
         return Boolean.TRUE.equals(stringRedisTemplate.hasKey(buildBanKey(apiKeyId)));
     }
 
+    /**
+     * 判断当前 key 是否触发分钟级限流。
+     */
     private boolean isRateLimitExceeded(Long apiKeyId) {
         if (!aiSysConfig.isOpenApiRateLimitEnabled()) {
             return false;
@@ -119,6 +131,9 @@ public class AiOpenApiGuardServiceImpl implements AiOpenApiGuardService {
         return current > limit;
     }
 
+    /**
+     * 记录风险失败次数，并在达到阈值时施加临时封禁。
+     */
     private boolean recordRiskFailure(Long apiKeyId) {
         if (apiKeyId == null || !aiSysConfig.isOpenApiBanEnabled()) {
             return false;
@@ -141,6 +156,9 @@ public class AiOpenApiGuardServiceImpl implements AiOpenApiGuardService {
         return false;
     }
 
+    /**
+     * 判断异常是否应计入风险失败统计。
+     */
     private boolean shouldCountAsRiskFailure(Throwable throwable) {
         String message = throwable.getMessage();
         if (StringUtils.isBlank(message)) {
@@ -158,6 +176,9 @@ public class AiOpenApiGuardServiceImpl implements AiOpenApiGuardService {
                 || lower.contains("unauthorized");
     }
 
+    /**
+     * 记录被守卫层拒绝的请求日志，确保审计表必填字段完整。
+     */
     private void logReject(AiUserApiKey apiKey,
                            String endpoint,
                            String clientIp,
@@ -168,10 +189,9 @@ public class AiOpenApiGuardServiceImpl implements AiOpenApiGuardService {
                            String errorMessage) {
         AiApiCallLog log = new AiApiCallLog();
         log.setRequestId(IDGeneratorUtils.uuid32());
-        if (apiKey != null) {
-            log.setUserId(apiKey.getUserId());
-            log.setApiKeyId(apiKey.getId());
-        }
+        log.setUserId(resolveLogUserId(apiKey));
+        log.setApiKeyId(resolveLogApiKeyId(apiKey));
+        log.setProviderConfigId(resolveLogProviderConfigId(apiKey));
         log.setEndpoint(endpoint);
         log.setAmount(BigDecimal.ZERO);
         log.setStatus(AiApiCallLogEnums.Status.FAILED.getId());
@@ -187,31 +207,76 @@ public class AiOpenApiGuardServiceImpl implements AiOpenApiGuardService {
         aiApiCallLogService.save(log);
     }
 
+    /**
+     * 解析日志记录使用的用户ID，匿名或非法 key 请求统一落到占位用户ID，避免日志落库失败。
+     */
+    private Long resolveLogUserId(AiUserApiKey apiKey) {
+        if (apiKey == null || apiKey.getUserId() == null) {
+            return ANONYMOUS_USER_ID;
+        }
+        return apiKey.getUserId();
+    }
+
+    /**
+     * 解析日志记录使用的 API Key ID，匿名或非法 key 请求统一落到占位 key ID。
+     */
+    private Long resolveLogApiKeyId(AiUserApiKey apiKey) {
+        if (apiKey == null || apiKey.getId() == null) {
+            return ANONYMOUS_API_KEY_ID;
+        }
+        return apiKey.getId();
+    }
+
+    /**
+     * 解析日志记录使用的 provider 配置ID，访客拦截场景统一使用占位值。
+     */
+    private Long resolveLogProviderConfigId(AiUserApiKey apiKey) {
+        return UNKNOWN_PROVIDER_CONFIG_ID;
+    }
+
+    /**
+     * 计算当前时间桶剩余 TTL，确保窗口过期时间覆盖到当前桶结束。
+     */
     private long computeCurrentBucketTtlMillis(long nowMillis, long windowMillis) {
         long bucketEnd = computeCurrentBucketEndMillis(nowMillis, windowMillis);
         return Math.max(1000L, bucketEnd - nowMillis + 1000L);
     }
 
+    /**
+     * 计算当前时间所在桶的结束时间。
+     */
     private long computeCurrentBucketEndMillis(long nowMillis, long windowMillis) {
         long safeWindowMillis = Math.max(1L, windowMillis);
         long bucketStart = (nowMillis / safeWindowMillis) * safeWindowMillis;
         return bucketStart + safeWindowMillis;
     }
 
+    /**
+     * 构建分钟级限流 Redis Key。
+     */
     private String buildRateLimitKey(Long apiKeyId, long nowMillis) {
         long bucket = nowMillis / TimeUnit.MINUTES.toMillis(1);
         return "rate:ai:openapi:key:" + apiKeyId + ":bucket:" + bucket;
     }
 
+    /**
+     * 构建风险失败统计 Redis Key。
+     */
     private String buildFailWindowKey(Long apiKeyId, long nowMillis, long windowMillis) {
         long bucket = nowMillis / Math.max(1L, windowMillis);
         return "risk:ai:openapi:fail:key:" + apiKeyId + ":bucket:" + bucket;
     }
 
+    /**
+     * 构建临时封禁 Redis Key。
+     */
     private String buildBanKey(Long apiKeyId) {
         return "risk:ai:openapi:ban:key:" + apiKeyId;
     }
 
+    /**
+     * 安全获取客户端 IP。
+     */
     private String safeClientIp() {
         try {
             return IpUtils.getClientIp();
@@ -220,6 +285,9 @@ public class AiOpenApiGuardServiceImpl implements AiOpenApiGuardService {
         }
     }
 
+    /**
+     * 安全获取指定请求头。
+     */
     private String safeHeader(String headerName) {
         try {
             return RequestUtil.getHeader(headerName);

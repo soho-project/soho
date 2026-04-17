@@ -186,6 +186,29 @@ public class GuestAiOpenAiControllerTest {
     }
 
     @Test
+    public void models_whenServiceThrowsUnexpectedException_shouldReturnGenericErrorAndRecordFailure() {
+        AiOpenApiService aiOpenApiService = Mockito.mock(AiOpenApiService.class);
+        AiOpenApiGuardService guardService = Mockito.mock(AiOpenApiGuardService.class);
+        GuestAiOpenAiController controller = new GuestAiOpenAiController(aiOpenApiService, guardService);
+        AiOpenApiGuardContext guardContext = new AiOpenApiGuardContext();
+        when(guardService.checkAndAcquire("Bearer token", "/ai/guest/openai/v1/models"))
+                .thenReturn(guardContext);
+        when(aiOpenApiService.models("Bearer token"))
+                .thenThrow(new RuntimeException("upstream 502 https://example.com/internal"));
+
+        Object result = controller.models("Bearer token");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> resultMap = (Map<String, Object>) result;
+        @SuppressWarnings("unchecked")
+        Map<String, Object> error = (Map<String, Object>) resultMap.get("error");
+
+        assertThat(error).containsEntry("message", "临时错误，如果长期错误请联系管理员");
+        assertThat(error).containsEntry("type", "server_error");
+        assertThat(error).containsEntry("code", "server_error");
+        verify(guardService).recordFailure(eq(guardContext), any(RuntimeException.class));
+    }
+
+    @Test
     public void chatCompletions_stream_shouldReturnEmitterWhenGuardPasses() {
         AiOpenApiService aiOpenApiService = Mockito.mock(AiOpenApiService.class);
         AiOpenApiGuardService guardService = Mockito.mock(AiOpenApiGuardService.class);

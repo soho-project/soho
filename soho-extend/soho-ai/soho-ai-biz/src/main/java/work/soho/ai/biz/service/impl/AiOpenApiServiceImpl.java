@@ -489,7 +489,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         AiProviderConfig providerConfig = requireProviderConfig(request.getModel());
         if (!isCodexResponsesProvider(providerConfig)) {
             Map<String, Object> response = responsesByChatCompatibility(authorization, request);
-            log.info("responses 最终返回: {}", JacksonUtils.toJson(response));
+            log.info("responses 返回摘要: {}", JacksonUtils.toJson(buildResponsesResultLogSummary(response)));
             return response;
         }
 
@@ -519,7 +519,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 Map<String, Object> chatResponse = buildOpenAiResponse(requestId, response.getModel(), response.getContent(), usage);
                 result = buildResponsesResponse(chatResponse);
             }
-            log.info("responses 最终返回: {}", JacksonUtils.toJson(result));
+            log.info("responses 返回摘要: {}", JacksonUtils.toJson(buildResponsesResultLogSummary(result)));
             return result;
         } catch (RuntimeException ex) {
             providerConfig = resolveActualProviderConfig(null, aiChatRequest, providerConfig);
@@ -576,9 +576,11 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                             "/ai/guest/openai/v1/responses", totalMs, resolveFirstTokenMs(firstTokenAt, startAt),
                             requestAuditInfo);
                     if (StringUtils.isNotBlank(completedPayloadRef.get())) {
-                        log.info("responses(stream) 最终返回(完成): {}", completedPayloadRef.get());
+                        log.info("responses(stream) 返回摘要(完成): {}",
+                                JacksonUtils.toJson(buildResponsesStreamPayloadLogSummary(completedPayloadRef.get())));
                     } else {
-                        log.info("responses(stream) 最终返回(完成): {}", buildStreamCompletedSummary(model, contentBuilder.toString()));
+                        log.info("responses(stream) 返回摘要(完成): {}",
+                                JacksonUtils.toJson(buildResponsesCompletedLogSummary(model, contentBuilder.toString())));
                     }
                 })
                 .doOnError(ex -> {
@@ -589,8 +591,10 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                     saveFailedLog(requestId, apiKey, actualProviderConfig, model, ex.getMessage(),
                             "/ai/guest/openai/v1/responses", totalMs, resolveFirstTokenMs(firstTokenAt, startAt),
                             requestAuditInfo);
+                    ex.printStackTrace();
                     String failedPayload = JacksonUtils.toJson(buildResponsesFailedEvent("resp_" + requestId, CLIENT_ERROR_MESSAGE));
-                    log.warn("responses(stream) 最终返回(失败): {}", failedPayload);
+                    log.warn("responses(stream) 返回摘要(失败): {}",
+                            JacksonUtils.toJson(buildResponsesStreamPayloadLogSummary(failedPayload)));
                 });
     }
 
@@ -677,7 +681,8 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 .onErrorResume(ex -> {
                     failed.set(true);
                     String failedPayload = JacksonUtils.toJson(buildResponsesFailedEvent(responseId, CLIENT_ERROR_MESSAGE));
-                    log.warn("responses(stream) 最终返回(失败): {}", failedPayload);
+                    log.warn("responses(stream) 返回摘要(失败): {}",
+                            JacksonUtils.toJson(buildResponsesStreamPayloadLogSummary(failedPayload)));
                     return Flux.just(failedPayload);
                 });
 
@@ -686,7 +691,8 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 return Flux.empty();
             }
             String completedPayload = JacksonUtils.toJson(buildResponsesCompletedEvent(responseId, model, createdAt, outputItemId, outputTextBuilder.toString()));
-            log.info("responses(stream) 最终返回(完成): {}", completedPayload);
+            log.info("responses(stream) 返回摘要(完成): {}",
+                    JacksonUtils.toJson(buildResponsesCompletedLogSummary(model, outputTextBuilder.toString())));
             return Flux.just(
                     JacksonUtils.toJson(buildResponsesOutputTextDoneEvent(outputTextBuilder.toString())),
                     JacksonUtils.toJson(buildResponsesContentPartDoneEvent(responseId, outputItemId, outputTextBuilder.toString())),
@@ -1524,12 +1530,67 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         }
     }
 
+    private Map<String, Object> buildResponsesCompletedLogSummary(String model, String outputText) {
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("type", "response.completed");
+        summary.put("model", model);
+        summary.put("outputTextLength", outputText == null ? 0 : outputText.length());
+        return summary;
+    }
+
+    private Map<String, Object> buildResponsesStreamPayloadLogSummary(String payload) {
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("payloadLength", payload == null ? 0 : payload.length());
+        if (StringUtils.isBlank(payload)) {
+            summary.put("type", null);
+            summary.put("model", null);
+            summary.put("status", null);
+            summary.put("outputTextLength", 0);
+            summary.put("errorCode", null);
+            return summary;
+        }
+        try {
+            JsonNode root = JacksonUtils.getObjectMapper().readTree(payload);
+            summary.put("type", root.path("type").asText(null));
+            JsonNode response = root.path("response");
+            summary.put("model", response.path("model").asText(null));
+            summary.put("status", response.path("status").asText(null));
+            summary.put("outputTextLength", response.path("output_text").asText("").length());
+            summary.put("errorCode", root.path("error").path("code").asText(null));
+            return summary;
+        } catch (Exception ex) {
+            summary.put("type", null);
+            summary.put("model", null);
+            summary.put("status", null);
+            summary.put("outputTextLength", 0);
+            summary.put("errorCode", null);
+            return summary;
+        }
+    }
+
+    private Map<String, Object> buildResponsesResultLogSummary(Map<String, Object> result) {
+        Map<String, Object> summary = new LinkedHashMap<>();
+        if (result == null) {
+            summary.put("object", null);
+            summary.put("model", null);
+            summary.put("status", null);
+            summary.put("outputCount", 0);
+            summary.put("outputTextLength", 0);
+            summary.put("hasError", false);
+            return summary;
+        }
+        summary.put("object", result.get("object"));
+        summary.put("model", result.get("model"));
+        summary.put("status", result.get("status"));
+        summary.put("outputCount", result.get("output") instanceof List ? ((List<?>) result.get("output")).size() : 0);
+        Object outputText = result.get("output_text");
+        summary.put("outputTextLength", outputText == null ? 0 : String.valueOf(outputText).length());
+        summary.put("hasError", result.get("error") != null);
+        return summary;
+    }
+
     private String buildStreamCompletedSummary(String model, String outputText) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("type", "response.completed");
-        response.put("model", model);
-        response.put("output_text", outputText);
-        return JacksonUtils.toJson(response);
+        return JacksonUtils.toJson(buildResponsesCompletedLogSummary(model, outputText));
     }
 
     private void putIfNotNull(Map<String, Object> map, String key, Object value) {
