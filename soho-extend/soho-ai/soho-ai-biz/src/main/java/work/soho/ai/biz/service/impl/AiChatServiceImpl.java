@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.netty.channel.ChannelOption;
+import io.netty.resolver.NoopAddressResolverGroup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -1341,6 +1342,7 @@ public class AiChatServiceImpl implements AiChatService {
         ensureRelayEndpointAvailable(resolvedSettings, config);
         int timeoutMs = pickInteger(config, "timeoutMs", DEFAULT_TIMEOUT_MS);
         HttpClient httpClient = HttpClient.create()
+                .resolver(NoopAddressResolverGroup.INSTANCE)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMs)
                 .responseTimeout(Duration.ofMillis(timeoutMs))
                 .proxy(spec -> {

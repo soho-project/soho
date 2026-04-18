@@ -55,7 +55,8 @@ public final class AiProxyLayerUtils {
         if (settings == null) {
             return null;
         }
-        return new Proxy(settings.getJavaProxyType(), new InetSocketAddress(settings.getHost(), settings.getPort()));
+        return new Proxy(settings.getJavaProxyType(),
+                InetSocketAddress.createUnresolved(settings.getHost(), settings.getPort()));
     }
 
     /**
