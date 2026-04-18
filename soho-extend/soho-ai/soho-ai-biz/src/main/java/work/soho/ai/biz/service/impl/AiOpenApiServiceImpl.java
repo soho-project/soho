@@ -26,6 +26,7 @@ import work.soho.ai.biz.domain.AiModelInfo;
 import work.soho.ai.biz.domain.AiProviderConfig;
 import work.soho.ai.biz.domain.AiUserApiKey;
 import work.soho.ai.biz.dto.AiChatResponse;
+import work.soho.ai.biz.dto.AiProxySelectionResult;
 import work.soho.ai.biz.dto.AiUserMemberCardView;
 import work.soho.ai.biz.dto.AiUsageSummary;
 import work.soho.ai.biz.enums.AiApiCallLogEnums;
@@ -39,6 +40,7 @@ import work.soho.ai.biz.service.AiOpenApiService;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
 import work.soho.ai.biz.service.AiProxyConfigService;
+import work.soho.ai.biz.service.AiProxyRuntimeStateService;
 import work.soho.ai.biz.service.AiProxyRelayService;
 import work.soho.ai.biz.service.AiUserApiKeyService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
@@ -75,6 +77,7 @@ import java.util.LinkedHashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 @Log4j2
 @Service
@@ -83,12 +86,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private static final String CLIENT_ERROR_MESSAGE = "临时错误，如果长期错误请联系管理员";
     private static final String GEMINI_MOCK_RESPONSE_FILE = "/home/fang/testgemini/test.txt";
     private static final String INTERNAL_PROVIDER_KEY = "__resolvedProvider";
+    private static final String INTERNAL_PROXY_NODE_ID = "__resolvedProxyNodeId";
+    private static final int MAX_PROXY_RETRY_ATTEMPTS = 2;
     private final AiUserApiKeyService aiUserApiKeyService;
     private final AiProviderConfigService aiProviderConfigService;
     private final AiProviderModelRelService aiProviderModelRelService;
     private final AiChatService aiChatService;
     private final AiProxyConfigService aiProxyConfigService;
     private final AiProxyRelayService aiProxyRelayService;
+    private final AiProxyRuntimeStateService aiProxyRuntimeStateService;
     private final AiApiCallLogService aiApiCallLogService;
     private final WalletInfoService walletInfoService;
     private final WalletInfoApiService walletInfoApiService;
@@ -299,7 +305,8 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         long startAt = System.currentTimeMillis();
 
         try {
-            Map<String, Object> result = invokeGeminiGenerateWithRetry(url, request, timeoutMs, buildProxy(config));
+            Map<String, Object> result = executeWithProxyRetry(config, "geminiGenerateContent",
+                    () -> invokeGeminiGenerateWithRetry(url, request, timeoutMs, buildProxy(config)));
 
 //            String rawBody = readGeminiMockResponseBody();
 //            Map<String, Object> result = parseJsonMap(rawBody);
@@ -310,11 +317,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxySuccess(config, totalMs);
             saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null,
                     requestAuditInfo);
             return result;
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxyFailure(config, ex);
             saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
@@ -724,19 +733,23 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         long startAt = System.currentTimeMillis();
 
         try {
-            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
-            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,
-                    new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+            ResponseEntity<String> response = executeWithProxyRetry(config, endpoint, () -> {
+                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+                HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                return restTemplate.exchange(url, HttpMethod.POST,
+                        new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+            });
 
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxySuccess(config, totalMs);
             saveSuccessLog(requestId, apiKey, providerConfig, model, emptyUsage(), BigDecimal.ZERO, null,
                     endpoint, totalMs, null, requestAuditInfo);
             return parseJsonMap(response.getBody());
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxyFailure(config, ex);
             saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
@@ -765,11 +778,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         long startAt = System.currentTimeMillis();
 
         try {
-            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
-            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,
-                    new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+            ResponseEntity<String> response = executeWithProxyRetry(config, endpoint, () -> {
+                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+                HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                return restTemplate.exchange(url, HttpMethod.POST,
+                        new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+            });
 
             Map<String, Object> result = parseJsonMap(response.getBody());
             AiUsageSummary usage = extractEmbeddingUsage(result, request);
@@ -778,11 +793,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxySuccess(config, totalMs);
             saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null,
                     requestAuditInfo);
             return result;
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxyFailure(config, ex);
             saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
@@ -811,11 +828,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         long startAt = System.currentTimeMillis();
 
         try {
-            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
-            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,
-                    new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+            ResponseEntity<String> response = executeWithProxyRetry(config, endpoint, () -> {
+                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+                HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                return restTemplate.exchange(url, HttpMethod.POST,
+                        new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+            });
 
             AiUsageSummary usage = emptyUsage();
             BigDecimal amount = calculateAmount(billingPlan, usage, model);
@@ -823,11 +842,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxySuccess(config, totalMs);
             saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null,
                     requestAuditInfo);
             return parseJsonMap(response.getBody());
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxyFailure(config, ex);
             saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
@@ -854,19 +875,23 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         long startAt = System.currentTimeMillis();
 
         try {
-            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
-            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(buildMultipartBody(request, file), headers);
-            ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.POST, entity, byte[].class);
+            ResponseEntity<byte[]> response = executeWithProxyRetry(config, endpoint, () -> {
+                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+                HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+                headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+                HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(buildMultipartBody(request, file), headers);
+                return restTemplate.exchange(url, HttpMethod.POST, entity, byte[].class);
+            });
 
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxySuccess(config, totalMs);
             saveSuccessLog(requestId, apiKey, providerConfig, model, emptyUsage(), BigDecimal.ZERO, null,
                     endpoint, totalMs, null, requestAuditInfo);
             return parseResponseBody(response);
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxyFailure(config, ex);
             saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
@@ -896,11 +921,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         long startAt = System.currentTimeMillis();
 
         try {
-            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
-            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(buildMultipartBody(request, file), headers);
-            ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.POST, entity, byte[].class);
+            ResponseEntity<byte[]> response = executeWithProxyRetry(config, endpoint, () -> {
+                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+                HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+                headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+                HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(buildMultipartBody(request, file), headers);
+                return restTemplate.exchange(url, HttpMethod.POST, entity, byte[].class);
+            });
 
             AiUsageSummary usage = emptyUsage();
             BigDecimal amount = calculateAmount(billingPlan, usage, model);
@@ -908,11 +935,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxySuccess(config, totalMs);
             saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null,
                     requestAuditInfo);
             return parseResponseBody(response);
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxyFailure(config, ex);
             saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
@@ -938,14 +967,17 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         long startAt = System.currentTimeMillis();
 
         try {
-            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
-            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.POST,
-                    new HttpEntity<>(request == null ? new HashMap<>() : request, headers), byte[].class);
+            ResponseEntity<byte[]> response = executeWithProxyRetry(config, endpoint, () -> {
+                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+                HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                return restTemplate.exchange(url, HttpMethod.POST,
+                        new HttpEntity<>(request == null ? new HashMap<>() : request, headers), byte[].class);
+            });
 
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxySuccess(config, totalMs);
             saveSuccessLog(requestId, apiKey, providerConfig, model, emptyUsage(), BigDecimal.ZERO, null,
                     endpoint, totalMs, null, requestAuditInfo);
             return ResponseEntity.status(response.getStatusCode())
@@ -953,6 +985,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                     .body(response.getBody());
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxyFailure(config, ex);
             saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
@@ -981,11 +1014,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         long startAt = System.currentTimeMillis();
 
         try {
-            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
-            HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.POST,
-                    new HttpEntity<>(request == null ? new HashMap<>() : request, headers), byte[].class);
+            ResponseEntity<byte[]> response = executeWithProxyRetry(config, endpoint, () -> {
+                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+                HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                return restTemplate.exchange(url, HttpMethod.POST,
+                        new HttpEntity<>(request == null ? new HashMap<>() : request, headers), byte[].class);
+            });
 
             AiUsageSummary usage = emptyUsage();
             BigDecimal amount = calculateAmount(billingPlan, usage, model);
@@ -993,6 +1028,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxySuccess(config, totalMs);
             saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null,
                     requestAuditInfo);
             return ResponseEntity.status(response.getStatusCode())
@@ -1000,10 +1036,85 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                     .body(response.getBody());
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
+            recordProxyFailure(config, ex);
             saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
         }
+    }
+
+    /**
+     * 按代理节点重试一次请求，避免单个失效节点导致当前请求直接失败。
+     *
+     * @param config 请求配置
+     * @param action 动作名
+     * @param supplier 实际请求
+     * @param <T> 返回类型
+     * @return 请求结果
+     */
+    private <T> T executeWithProxyRetry(Map<String, Object> config, String action, Supplier<T> supplier) {
+        RuntimeException lastException = null;
+        for (int attempt = 1; attempt <= MAX_PROXY_RETRY_ATTEMPTS; attempt++) {
+            try {
+                return supplier.get();
+            } catch (RuntimeException ex) {
+                lastException = ex;
+                if (!shouldRetryWithAnotherProxy(config, ex) || attempt >= MAX_PROXY_RETRY_ATTEMPTS) {
+                    throw ex;
+                }
+                Long failedProxyNodeId = resolveProxyNodeId(config);
+                recordProxyFailure(config, ex);
+                clearResolvedProxyNode(config);
+                log.warn("proxy retry scheduled, action={}, attempt={}/{}, failedProxyNodeId={}, reason={}",
+                        action, attempt, MAX_PROXY_RETRY_ATTEMPTS, failedProxyNodeId, extractUpstreamErrorMessage(ex));
+            }
+        }
+        throw lastException == null ? new IllegalStateException("proxy retry failed without exception") : lastException;
+    }
+
+    /**
+     * 判断是否应该切换到其它代理节点重试。
+     *
+     * @param config 请求配置
+     * @param throwable 异常
+     * @return 是否重试
+     */
+    private boolean shouldRetryWithAnotherProxy(Map<String, Object> config, Throwable throwable) {
+        return resolveProxyNodeId(config) != null && isProxyRelevantFailure(throwable);
+    }
+
+    /**
+     * 判断是否为代理相关失败。
+     *
+     * @param throwable 异常
+     * @return 是否为代理相关失败
+     */
+    private boolean isProxyRelevantFailure(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            String message = current.getMessage();
+            if (StringUtils.isNotBlank(message)) {
+                String lower = message.toLowerCase(Locale.ROOT);
+                if (lower.contains("proxy")
+                        || lower.contains("socks")
+                        || lower.contains("relay")
+                        || lower.contains("connect")
+                        || lower.contains("connection reset")
+                        || lower.contains("connection refused")
+                        || lower.contains("no route to host")
+                        || lower.contains("broken pipe")
+                        || lower.contains("unresolved")
+                        || lower.contains("unknown host")
+                        || lower.contains("dns")
+                        || lower.contains("timeout")
+                        || lower.contains("timed out")
+                        || lower.contains("first token timeout")) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     /**
@@ -2799,7 +2910,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             throw new IllegalStateException("aiProxyRelayService is null, provider=" + provider
                     + ", config=" + summarizeProxyConfig(config));
         }
-        AiProxyLayerUtils.ProxySettings settings = aiProxyConfigService.resolveProxySettings(provider);
+        AiProxySelectionResult selectionResult = aiProxyConfigService.resolveProxySelection(provider);
+        cacheResolvedProxyNode(config, selectionResult);
+        AiProxyLayerUtils.ProxySettings settings = selectionResult == null ? null : selectionResult.getProxySettings();
         if (settings != null) {
             try {
                 settings = aiProxyRelayService.ensureRelay(settings, provider);
@@ -2813,6 +2926,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             return AiProxyLayerUtils.buildJavaProxy(settings);
         }
         AiProxyLayerUtils.ProxySettings fallback = AiProxyLayerUtils.resolve(config);
+        clearResolvedProxyNode(config);
         try {
             fallback = aiProxyRelayService.ensureRelay(fallback, provider);
         } catch (Exception ex) {
@@ -2825,6 +2939,93 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             log.info("proxy node selected from fallback, provider={}, settings={}", provider, summarizeProxySettings(fallback));
         }
         return AiProxyLayerUtils.buildJavaProxy(fallback);
+    }
+
+    /**
+     * 缓存本次请求命中的代理节点标识。
+     *
+     * @param config 请求配置
+     * @param result 代理选择结果
+     */
+    private void cacheResolvedProxyNode(Map<String, Object> config, AiProxySelectionResult result) {
+        if (config == null) {
+            return;
+        }
+        clearResolvedProxyNode(config);
+        if (result == null || result.getProxyConfig() == null || result.getProxyConfig().getId() == null) {
+            return;
+        }
+        config.put(INTERNAL_PROXY_NODE_ID, String.valueOf(result.getProxyConfig().getId()));
+        config.put("proxyNodeId", String.valueOf(result.getProxyConfig().getId()));
+        if (StringUtils.isNotBlank(result.getProxyConfig().getName())) {
+            config.put("proxyNodeName", result.getProxyConfig().getName());
+        }
+        if (StringUtils.isNotBlank(result.getProxyConfig().getProvider())) {
+            config.put("proxyNodeProvider", result.getProxyConfig().getProvider());
+        }
+    }
+
+    /**
+     * 清理本次请求缓存的代理节点标识。
+     *
+     * @param config 请求配置
+     */
+    private void clearResolvedProxyNode(Map<String, Object> config) {
+        if (config == null) {
+            return;
+        }
+        config.remove(INTERNAL_PROXY_NODE_ID);
+        config.remove("proxyNodeId");
+        config.remove("proxyNodeName");
+        config.remove("proxyNodeProvider");
+    }
+
+    /**
+     * 记录代理节点成功。
+     *
+     * @param config 请求配置
+     * @param totalMs 总耗时
+     */
+    private void recordProxySuccess(Map<String, Object> config, long totalMs) {
+        Long proxyNodeId = resolveProxyNodeId(config);
+        if (proxyNodeId != null) {
+            aiProxyRuntimeStateService.recordSuccess(proxyNodeId, totalMs);
+        }
+    }
+
+    /**
+     * 记录代理节点失败。
+     *
+     * @param config 请求配置
+     * @param throwable 异常
+     */
+    private void recordProxyFailure(Map<String, Object> config, Throwable throwable) {
+        Long proxyNodeId = resolveProxyNodeId(config);
+        if (proxyNodeId != null) {
+            aiProxyRuntimeStateService.recordFailure(proxyNodeId, throwable);
+        }
+    }
+
+    /**
+     * 读取本次请求命中的代理节点ID。
+     *
+     * @param config 请求配置
+     * @return 代理节点ID
+     */
+    private Long resolveProxyNodeId(Map<String, Object> config) {
+        if (config == null) {
+            return null;
+        }
+        String value = pickString(config, INTERNAL_PROXY_NODE_ID, pickString(config, "proxyNodeId", ""));
+        if (StringUtils.isBlank(value)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException ex) {
+            log.warn("invalid proxy node id, value={}", value);
+            return null;
+        }
     }
 
     /**

@@ -2,6 +2,7 @@ package work.soho.ai.biz.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import work.soho.ai.biz.domain.AiProxyConfig;
+import work.soho.ai.biz.dto.AiProxySelectionResult;
 import work.soho.ai.biz.utils.AiProxyLayerUtils;
 
 import java.util.Optional;
@@ -22,6 +23,14 @@ public interface AiProxyConfigService extends IService<AiProxyConfig> {
      * @return 选中的代理配置
      */
     Optional<AiProxyConfig> selectProxyByProvider(String provider);
+
+    /**
+     * 按供应商规则选择并解析代理节点。
+     *
+     * @param provider 供应商编码
+     * @return 选择结果
+     */
+    AiProxySelectionResult resolveProxySelection(String provider);
 
     /**
      * 按供应商规则解析代理设置。
