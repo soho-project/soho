@@ -585,6 +585,28 @@ Content-Type: application/json
 }
 ```
 
+### POST /sendResetPasswordEmailCode
+发送找回密码邮箱验证码
+
+请求示例：
+```http
+POST /guest/user/auth/sendResetPasswordEmailCode
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+```
+
+返回示例：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "payload": null
+}
+```
+
 ### POST /captcha
 获取图形验证码（返回图片流）
 
@@ -614,6 +636,31 @@ Content-Type: application/json
   "phone": "13800000000",
   "verifyCode": "123456",
   "inviteCode": 0
+}
+```
+
+### POST /resetPasswordByEmail
+通过邮箱验证码找回密码
+
+请求示例：
+```http
+POST /guest/user/auth/resetPasswordByEmail
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "emailVerifyCode": "123456",
+  "newPassword": "new123456",
+  "confirmPassword": "new123456"
+}
+```
+
+返回示例：
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "payload": true
 }
 ```
 
