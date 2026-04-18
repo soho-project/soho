@@ -38,6 +38,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 
 @Api(tags = "会员鉴权")
@@ -46,6 +47,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/guest/user/auth")
 public class UserAuthController {
+    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[A-Za-z_-][A-Za-z0-9_-]*$");
+
     private final TokenServiceImpl tokenService;
     private final AdminConfigApiService adminSysConfig;
     private final UserInfoService userInfoService;
@@ -280,8 +283,13 @@ public class UserAuthController {
 
         // 确定用户名
         String username = userRegisterVo.getUsername();
-        if(username == null || username.isEmpty()) {
+        if(username == null || username.trim().isEmpty()) {
             username = "P"+userRegisterVo.getPhone();
+        } else {
+            username = username.trim();
+            if (!isValidUsername(username)) {
+                return R.error("用户名格式错误；只允许字母、数字、下划线、中划线，且数字不能作为首字符");
+            }
         }
         String nickname = userRegisterVo.getNickname();
         if(nickname == null || nickname.isEmpty()) {
@@ -378,6 +386,9 @@ public class UserAuthController {
             return R.error("请输入用户名");
         }
         username = username.trim();
+        if (!isValidUsername(username)) {
+            return R.error("用户名格式错误；只允许字母、数字、下划线、中划线，且数字不能作为首字符");
+        }
 
         String password = userSimpleRegisterVo.getPassword();
         if(password == null || password.isEmpty()) {
@@ -425,5 +436,17 @@ public class UserAuthController {
      */
     private boolean isEmailExists(String email) {
         return userInfoService.getOne(new LambdaQueryWrapper<UserInfo>().eq(UserInfo::getEmail, email)) != null;
+    }
+
+    /**
+     * 检查用户名格式是否有效。
+     *
+     * 规则：只允许字母、数字、下划线和中划线，且数字不能作为首字符。
+     *
+     * @param username 用户名
+     * @return true: 格式有效
+     */
+    private boolean isValidUsername(String username) {
+        return StringUtils.isNotBlank(username) && USERNAME_PATTERN.matcher(username).matches();
     }
 }
