@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.junit.Test;
 import org.mockito.Mockito;
 import work.soho.ai.biz.domain.AiProxyConfig;
+import work.soho.ai.biz.service.AiProxyRuntimeStateService;
 import work.soho.ai.biz.utils.AiProxyLayerUtils;
 
 import java.util.Collections;
@@ -18,7 +19,9 @@ public class AiProxyConfigServiceImplTest {
 
     @Test
     public void selectProxyByProvider_whenProviderBoundExists_shouldUseProviderBoundFirst() {
-        AiProxyConfigServiceImpl service = Mockito.spy(new AiProxyConfigServiceImpl());
+        AiProxyRuntimeStateService runtimeStateService = Mockito.mock(AiProxyRuntimeStateService.class);
+        Mockito.when(runtimeStateService.getEffectiveWeight(any())).thenReturn(100);
+        AiProxyConfigServiceImpl service = Mockito.spy(new AiProxyConfigServiceImpl(runtimeStateService));
         AiProxyConfig bound = new AiProxyConfig();
         bound.setId(10L);
         bound.setProvider("openai");
@@ -36,7 +39,9 @@ public class AiProxyConfigServiceImplTest {
 
     @Test
     public void selectProxyByProvider_whenProviderBoundMissing_shouldFallbackToGlobal() {
-        AiProxyConfigServiceImpl service = Mockito.spy(new AiProxyConfigServiceImpl());
+        AiProxyRuntimeStateService runtimeStateService = Mockito.mock(AiProxyRuntimeStateService.class);
+        Mockito.when(runtimeStateService.getEffectiveWeight(any())).thenReturn(50);
+        AiProxyConfigServiceImpl service = Mockito.spy(new AiProxyConfigServiceImpl(runtimeStateService));
         AiProxyConfig global = new AiProxyConfig();
         global.setId(22L);
         global.setProvider("");
@@ -54,7 +59,8 @@ public class AiProxyConfigServiceImplTest {
 
     @Test
     public void resolveProxySettings_shouldConvertSelectedEntityToProxySettings() {
-        AiProxyConfigServiceImpl service = Mockito.spy(new AiProxyConfigServiceImpl());
+        AiProxyRuntimeStateService runtimeStateService = Mockito.mock(AiProxyRuntimeStateService.class);
+        AiProxyConfigServiceImpl service = Mockito.spy(new AiProxyConfigServiceImpl(runtimeStateService));
         AiProxyConfig bound = new AiProxyConfig();
         bound.setProvider("openai");
         bound.setProxyType("ss");
@@ -69,5 +75,28 @@ public class AiProxyConfigServiceImplTest {
         assertThat(settings.getHost()).isEqualTo("127.0.0.1");
         assertThat(settings.getPort()).isEqualTo(7890);
         assertThat(settings.isLocalRelayRequired()).isTrue();
+    }
+
+    @Test
+    public void selectProxyByProvider_whenProviderBoundRuntimeWeightZero_shouldFallbackToGlobal() {
+        AiProxyRuntimeStateService runtimeStateService = Mockito.mock(AiProxyRuntimeStateService.class);
+        AiProxyConfigServiceImpl service = Mockito.spy(new AiProxyConfigServiceImpl(runtimeStateService));
+        AiProxyConfig bound = new AiProxyConfig();
+        bound.setId(31L);
+        bound.setProvider("openai");
+        bound.setWeight(100);
+        AiProxyConfig global = new AiProxyConfig();
+        global.setId(32L);
+        global.setProvider("");
+        global.setWeight(20);
+
+        Mockito.when(runtimeStateService.getEffectiveWeight(bound)).thenReturn(0);
+        Mockito.when(runtimeStateService.getEffectiveWeight(global)).thenReturn(20);
+        doReturn(List.of(bound), List.of(global)).when(service).list(any(LambdaQueryWrapper.class));
+
+        Optional<AiProxyConfig> selected = service.selectProxyByProvider("openai");
+
+        assertThat(selected).isPresent();
+        assertThat(selected.get().getId()).isEqualTo(32L);
     }
 }

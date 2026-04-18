@@ -6,8 +6,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import work.soho.ai.biz.domain.AiProxyConfig;
+import work.soho.ai.biz.dto.AiProxySelectionResult;
 import work.soho.ai.biz.mapper.AiProxyConfigMapper;
 import work.soho.ai.biz.service.AiProxyConfigService;
+import work.soho.ai.biz.service.AiProxyRuntimeStateService;
 import work.soho.ai.biz.utils.AiProxyLayerUtils;
 import work.soho.common.core.util.StringUtils;
 
@@ -27,6 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 public class AiProxyConfigServiceImpl extends ServiceImpl<AiProxyConfigMapper, AiProxyConfig>
         implements AiProxyConfigService {
+    private final AiProxyRuntimeStateService aiProxyRuntimeStateService;
 
     /**
      * 按供应商优先 + 权重随机选择代理。
@@ -38,14 +41,35 @@ public class AiProxyConfigServiceImpl extends ServiceImpl<AiProxyConfigMapper, A
     public Optional<AiProxyConfig> selectProxyByProvider(String provider) {
         String normalizedProvider = normalizeProvider(provider);
         List<AiProxyConfig> providerBound = listByProvider(normalizedProvider);
-        if (!providerBound.isEmpty()) {
-            return Optional.of(selectByWeight(providerBound));
+        AiProxyConfig selected = selectByWeight(providerBound);
+        if (selected != null) {
+            return Optional.of(selected);
         }
         List<AiProxyConfig> global = listGlobal();
-        if (global.isEmpty()) {
-            return Optional.empty();
+        selected = selectByWeight(global);
+        if (selected != null) {
+            return Optional.of(selected);
         }
-        return Optional.of(selectByWeight(global));
+        return Optional.empty();
+    }
+
+    /**
+     * 按供应商规则选择并解析代理节点。
+     *
+     * @param provider 供应商编码
+     * @return 选择结果
+     */
+    @Override
+    public AiProxySelectionResult resolveProxySelection(String provider) {
+        Optional<AiProxyConfig> optional = selectProxyByProvider(provider);
+        if (optional.isEmpty()) {
+            return null;
+        }
+        AiProxyConfig selected = optional.get();
+        Map<String, Object> configMap = toProxyConfigMap(selected);
+        AiProxyLayerUtils.ProxySettings settings = AiProxyLayerUtils.resolve(configMap);
+        log.info("proxy node selected from table, provider={}, node={}", normalizeProvider(provider), summarizeNode(selected));
+        return new AiProxySelectionResult(selected, settings);
     }
 
     /**
@@ -56,15 +80,8 @@ public class AiProxyConfigServiceImpl extends ServiceImpl<AiProxyConfigMapper, A
      */
     @Override
     public AiProxyLayerUtils.ProxySettings resolveProxySettings(String provider) {
-        Optional<AiProxyConfig> optional = selectProxyByProvider(provider);
-        if (optional.isEmpty()) {
-            return null;
-        }
-        AiProxyConfig selected = optional.get();
-        Map<String, Object> configMap = toProxyConfigMap(selected);
-        AiProxyLayerUtils.ProxySettings settings = AiProxyLayerUtils.resolve(configMap);
-        log.info("proxy node selected from table, provider={}, node={}", normalizeProvider(provider), summarizeNode(selected));
-        return settings;
+        AiProxySelectionResult result = resolveProxySelection(provider);
+        return result == null ? null : result.getProxySettings();
     }
 
     /**
@@ -112,7 +129,7 @@ public class AiProxyConfigServiceImpl extends ServiceImpl<AiProxyConfigMapper, A
             totalWeight += normalizedWeight(item);
         }
         if (totalWeight <= 0) {
-            return candidates.get(0);
+            return null;
         }
         int hit = ThreadLocalRandom.current().nextInt(totalWeight);
         int current = 0;
@@ -145,10 +162,7 @@ public class AiProxyConfigServiceImpl extends ServiceImpl<AiProxyConfigMapper, A
      * @return 归一化权重
      */
     private int normalizedWeight(AiProxyConfig config) {
-        if (config == null || config.getWeight() == null || config.getWeight() <= 0) {
-            return 1;
-        }
-        return config.getWeight();
+        return aiProxyRuntimeStateService.getEffectiveWeight(config);
     }
 
     /**

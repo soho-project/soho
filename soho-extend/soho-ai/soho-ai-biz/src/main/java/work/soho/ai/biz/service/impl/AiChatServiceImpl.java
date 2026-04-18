@@ -30,6 +30,7 @@ import reactor.netty.http.client.HttpClient;
 import reactor.netty.transport.ProxyProvider;
 import work.soho.ai.biz.domain.AiProviderConfig;
 import work.soho.ai.biz.dto.AiChatResponse;
+import work.soho.ai.biz.dto.AiProxySelectionResult;
 import work.soho.ai.biz.dto.AiUsageSummary;
 import work.soho.ai.biz.request.AiChatRequest;
 import work.soho.ai.biz.service.AiChatService;
@@ -37,6 +38,7 @@ import work.soho.ai.biz.service.AiFileService;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
 import work.soho.ai.biz.service.AiProxyConfigService;
+import work.soho.ai.biz.service.AiProxyRuntimeStateService;
 import work.soho.ai.biz.service.AiProxyRelayService;
 import work.soho.ai.biz.service.AiProviderRuntimeStateService;
 import work.soho.ai.biz.utils.AiProxyLayerUtils;
@@ -64,6 +66,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Log4j2
@@ -81,7 +84,9 @@ public class AiChatServiceImpl implements AiChatService {
     private static final String EXTRA_ACTUAL_MODEL = "actualModel";
     private static final long DEFAULT_FIRST_PAYLOAD_TIMEOUT_MS = 8000L;
     private static final String INTERNAL_PROVIDER_KEY = "__resolvedProvider";
+    private static final String INTERNAL_PROXY_NODE_ID = "__resolvedProxyNodeId";
     private static final String INTERNAL_PROXY_SUMMARY_KEY = "__resolvedProxySummary";
+    private static final int MAX_PROXY_RETRY_ATTEMPTS = 2;
     private static final int RELAY_PROBE_TIMEOUT_MS = 1200;
     private static final long RELAY_PROBE_CACHE_TTL_MS = 15_000L;
     private static final ConcurrentMap<String, RelayProbeSnapshot> RELAY_PROBE_CACHE = new ConcurrentHashMap<>();
@@ -91,6 +96,7 @@ public class AiChatServiceImpl implements AiChatService {
     private final AiFileService aiFileService;
     private final AiProxyConfigService aiProxyConfigService;
     private final AiProxyRelayService aiProxyRelayService;
+    private final AiProxyRuntimeStateService aiProxyRuntimeStateService;
     private final AiProviderRuntimeStateService aiProviderRuntimeStateService;
 
     @Override
@@ -189,7 +195,7 @@ public class AiChatServiceImpl implements AiChatService {
         if (isCodexResponsesAdapter(config)) {
             Flux<String> stream = streamCodexResponses(baseUrl, apiKey, model, messages, request, config);
             String proxySummary = summarizeProxyForLog(config);
-            return withUpstreamStreamTimingLog(providerConfig, provider, upstreamUrl, model, proxySummary,
+            return withUpstreamStreamTimingLog(providerConfig, config, provider, upstreamUrl, model, proxySummary,
                     applyFirstPayloadTimeout(stream, resolveFirstPayloadTimeoutMs(timeoutMs, config), providerConfig.getCode(), model));
         }
 
@@ -217,7 +223,7 @@ public class AiChatServiceImpl implements AiChatService {
                 break;
         }
         String proxySummary = summarizeProxyForLog(config);
-        return withUpstreamStreamTimingLog(providerConfig, provider, upstreamUrl, model, proxySummary,
+        return withUpstreamStreamTimingLog(providerConfig, config, provider, upstreamUrl, model, proxySummary,
                 applyFirstPayloadTimeout(stream, resolveFirstPayloadTimeoutMs(timeoutMs, config), providerConfig.getCode(), model));
     }
 
@@ -700,7 +706,7 @@ public class AiChatServiceImpl implements AiChatService {
         if (StringUtils.isNotBlank(apiKey)) {
             headers.put("Authorization", "Bearer " + apiKey);
         }
-        return withUpstreamRequestTimingLog(providerConfig, provider, model, url, () -> {
+        return withUpstreamRequestTimingLog(providerConfig, config, provider, model, url, () -> {
             String raw = postJson(url, headers, body, timeoutMs, config);
             String content = extractOpenAiContent(raw);
             AiUsageSummary usage = extractUsage(provider, raw);
@@ -732,7 +738,7 @@ public class AiChatServiceImpl implements AiChatService {
         Map<String, String> headers = new HashMap<>();
         headers.put("x-api-key", apiKey);
         headers.put("anthropic-version", version);
-        return withUpstreamRequestTimingLog(providerConfig, provider, model, url, () -> {
+        return withUpstreamRequestTimingLog(providerConfig, config, provider, model, url, () -> {
             String raw = postJson(url, headers, body, timeoutMs, config);
             String content = extractAnthropicContent(raw);
             AiUsageSummary usage = extractUsage(provider, raw);
@@ -768,7 +774,7 @@ public class AiChatServiceImpl implements AiChatService {
             body.put("systemInstruction", Map.of("parts", List.of(Map.of("text", system))));
         }
 
-        return withUpstreamRequestTimingLog(providerConfig, provider, model, requestUrl, () -> {
+        return withUpstreamRequestTimingLog(providerConfig, config, provider, model, requestUrl, () -> {
             String raw = postJson(requestUrl, Collections.emptyMap(), body, timeoutMs, config);
             String content = extractGeminiContent(raw);
             AiUsageSummary usage = extractUsage(provider, raw);
@@ -789,7 +795,7 @@ public class AiChatServiceImpl implements AiChatService {
         body.put("messages", toOpenAiMessages(messages));
         putIfNotNull(body, "stream", request.getStream() != null ? request.getStream() : Boolean.FALSE);
 
-        return withUpstreamRequestTimingLog(providerConfig, provider, model, url, () -> {
+        return withUpstreamRequestTimingLog(providerConfig, config, provider, model, url, () -> {
             String raw = postJson(url, Collections.emptyMap(), body, timeoutMs, config);
             String content = extractOllamaContent(raw);
             AiUsageSummary usage = extractUsage(provider, raw);
@@ -807,7 +813,7 @@ public class AiChatServiceImpl implements AiChatService {
         String url = joinUrl(baseUrl, path);
         Map<String, Object> body = resolveCodexRequestBody(model, messages, request, config, true);
 
-        return withUpstreamRequestTimingLog(providerConfig, provider, model, url, () -> {
+        return withUpstreamRequestTimingLog(providerConfig, config, provider, model, url, () -> {
             List<String> payloads = buildWebClient(config)
                     .post()
                     .uri(url)
@@ -864,23 +870,24 @@ public class AiChatServiceImpl implements AiChatService {
         putIfNotNull(body, "top_p", pickDouble(config, "topP", request.getTopP()));
         putIfNotNull(body, "max_tokens", pickInteger(config, "maxTokens", request.getMaxTokens()));
 
-        WebClient.RequestBodySpec req = buildWebClient(config)
-                .post()
-                .uri(url)
-                .accept(MediaType.TEXT_EVENT_STREAM)
-                .contentType(MediaType.APPLICATION_JSON);
-        if (StringUtils.isNotBlank(apiKey)) {
-            req.header("Authorization", "Bearer " + apiKey);
-        }
-        Flux<String> stream = req.bodyValue(body)
-                .retrieve()
-                .onStatus(HttpStatus::isError, response -> buildUpstreamHttpError(url, body, response))
-                .bodyToFlux(DataBuffer.class)
-                .map(this::bufferToString)
-                .transform(this::sseToPayloadFlux)
-                .doOnError(ex -> log.error("openai stream upstream request failed, url={}, error={}",
-                        url, extractUpstreamErrorMessage(ex), ex));
-        return stream;
+        return executeStreamWithProxyRetry(config, "streamOpenAiCompatible", () -> {
+            WebClient.RequestBodySpec req = buildWebClient(config)
+                    .post()
+                    .uri(url)
+                    .accept(MediaType.TEXT_EVENT_STREAM)
+                    .contentType(MediaType.APPLICATION_JSON);
+            if (StringUtils.isNotBlank(apiKey)) {
+                req.header("Authorization", "Bearer " + apiKey);
+            }
+            return req.bodyValue(body)
+                    .retrieve()
+                    .onStatus(HttpStatus::isError, response -> buildUpstreamHttpError(url, body, response))
+                    .bodyToFlux(DataBuffer.class)
+                    .map(this::bufferToString)
+                    .transform(this::sseToPayloadFlux)
+                    .doOnError(ex -> log.error("openai stream upstream request failed, url={}, error={}",
+                            url, extractUpstreamErrorMessage(ex), ex));
+        });
     }
 
     private Flux<String> streamAnthropic(String baseUrl, String apiKey, String model,
@@ -902,7 +909,7 @@ public class AiChatServiceImpl implements AiChatService {
             body.put("system", system);
         }
 
-        Flux<String> stream = buildWebClient(config)
+        return executeStreamWithProxyRetry(config, "streamAnthropic", () -> buildWebClient(config)
                 .post()
                 .uri(url)
                 .accept(MediaType.TEXT_EVENT_STREAM)
@@ -916,8 +923,7 @@ public class AiChatServiceImpl implements AiChatService {
                 .map(this::bufferToString)
                 .transform(this::sseToPayloadFlux)
                 .doOnError(ex -> log.error("anthropic stream upstream request failed, url={}, error={}",
-                        url, extractUpstreamErrorMessage(ex), ex));
-        return stream;
+                        url, extractUpstreamErrorMessage(ex), ex)));
     }
 
     private Flux<String> streamGemini(String baseUrl, String apiKey, String model,
@@ -945,7 +951,7 @@ public class AiChatServiceImpl implements AiChatService {
             body.put("systemInstruction", Map.of("parts", List.of(Map.of("text", system))));
         }
 
-        Flux<String> stream = buildWebClient(config)
+        return executeStreamWithProxyRetry(config, "streamGemini", () -> buildWebClient(config)
                 .post()
                 .uri(requestUrl)
                 .accept(MediaType.TEXT_EVENT_STREAM)
@@ -957,8 +963,7 @@ public class AiChatServiceImpl implements AiChatService {
                 .map(this::bufferToString)
                 .transform(this::sseToPayloadFlux)
                 .doOnError(ex -> log.error("gemini stream upstream request failed, url={}, error={}",
-                        requestUrl, extractUpstreamErrorMessage(ex), ex));
-        return stream;
+                        requestUrl, extractUpstreamErrorMessage(ex), ex)));
     }
 
     private Flux<String> streamOllama(String baseUrl, String model,
@@ -971,7 +976,7 @@ public class AiChatServiceImpl implements AiChatService {
         body.put("messages", toOpenAiMessages(messages));
         body.put("stream", true);
 
-        Flux<String> stream = buildWebClient(config)
+        return executeStreamWithProxyRetry(config, "streamOllama", () -> buildWebClient(config)
                 .post()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -982,8 +987,7 @@ public class AiChatServiceImpl implements AiChatService {
                 .map(this::bufferToString)
                 .transform(this::linesToFlux)
                 .doOnError(ex -> log.error("ollama stream upstream request failed, url={}, error={}",
-                        url, extractUpstreamErrorMessage(ex), ex));
-        return stream;
+                        url, extractUpstreamErrorMessage(ex), ex)));
     }
 
     private Flux<String> streamCodexResponses(String baseUrl, String apiKey, String model,
@@ -994,30 +998,31 @@ public class AiChatServiceImpl implements AiChatService {
         Map<String, Object> body = resolveCodexRequestBody(model, messages, request, config, true);
         boolean nativeResponses = isNativeResponses(request);
 
-        Flux<String> payloadFlux = buildWebClient(config)
-                .post()
-                .uri(url)
-                .accept(MediaType.TEXT_EVENT_STREAM)
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Bearer " + apiKey)
-                .bodyValue(body)
-                .retrieve()
-                .onStatus(HttpStatus::isError, response -> response.bodyToMono(String.class)
-                        .defaultIfEmpty("")
-                        .flatMap(errorBody -> {
-                            log.error("codex responses stream request failed status={}, body={}, requestSummary={}",
-                                    response.statusCode().value(), errorBody, buildRequestBodySummary(body));
-                            return Mono.error(new IllegalArgumentException("codex responses stream request failed: " + errorBody));
-                        }))
-                .bodyToFlux(DataBuffer.class)
-                .map(this::bufferToString)
-                .transform(this::sseToPayloadFlux);
+        return executeStreamWithProxyRetry(config, "streamCodexResponses", () -> {
+            Flux<String> payloadFlux = buildWebClient(config)
+                    .post()
+                    .uri(url)
+                    .accept(MediaType.TEXT_EVENT_STREAM)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .bodyValue(body)
+                    .retrieve()
+                    .onStatus(HttpStatus::isError, response -> response.bodyToMono(String.class)
+                            .defaultIfEmpty("")
+                            .flatMap(errorBody -> {
+                                log.error("codex responses stream request failed status={}, body={}, requestSummary={}",
+                                        response.statusCode().value(), errorBody, buildRequestBodySummary(body));
+                                return Mono.error(new IllegalArgumentException("codex responses stream request failed: " + errorBody));
+                            }))
+                    .bodyToFlux(DataBuffer.class)
+                    .map(this::bufferToString)
+                    .transform(this::sseToPayloadFlux);
 
-        if (nativeResponses) {
-            return payloadFlux;
-        }
-        Flux<String> openAiStream = payloadFlux.flatMap(payload -> codexPayloadToOpenAiPayload(payload, model));
-        return openAiStream;
+            if (nativeResponses) {
+                return payloadFlux;
+            }
+            return payloadFlux.flatMap(payload -> codexPayloadToOpenAiPayload(payload, model));
+        });
     }
 
     /**
@@ -1029,7 +1034,8 @@ public class AiChatServiceImpl implements AiChatService {
      * @param source   原始流
      * @return 带日志打点的流
      */
-    private Flux<String> withUpstreamStreamTimingLog(AiProviderConfig providerConfig, String provider, String url,
+    private Flux<String> withUpstreamStreamTimingLog(AiProviderConfig providerConfig, Map<String, Object> config,
+                                                     String provider, String url,
                                                      String model, String proxySummary, Flux<String> source) {
         long startAt = System.currentTimeMillis();
         AtomicLong firstTokenAt = new AtomicLong(-1L);
@@ -1050,6 +1056,7 @@ public class AiChatServiceImpl implements AiChatService {
                     long totalMs = System.currentTimeMillis() - startAt;
                     long firstTokenMs = firstTokenAt.get() < 0 ? -1L : firstTokenAt.get() - startAt;
                     aiProviderRuntimeStateService.recordSuccess(providerConfig, totalMs, firstTokenMs > 0 ? firstTokenMs : null);
+                    recordProxySuccess(config, totalMs);
                     log.info("ai upstream stream completed, provider={}, model={}, url={}, proxy={}, total_ms={}, first_token_ms={}",
                             provider, model, url, proxySummary, totalMs, firstTokenMs);
                 })
@@ -1057,6 +1064,7 @@ public class AiChatServiceImpl implements AiChatService {
                     long totalMs = System.currentTimeMillis() - startAt;
                     long firstTokenMs = firstTokenAt.get() < 0 ? -1L : firstTokenAt.get() - startAt;
                     aiProviderRuntimeStateService.recordFailure(providerConfig, ex);
+                    recordProxyFailure(config, ex);
                     log.warn("ai upstream stream failed, provider={}, model={}, url={}, proxy={}, total_ms={}, first_token_ms={}, error={}",
                             provider, model, url, proxySummary, totalMs, firstTokenMs, ex.getMessage());
                 });
@@ -1071,7 +1079,8 @@ public class AiChatServiceImpl implements AiChatService {
      * @param call     请求执行逻辑
      * @return 上游响应
      */
-    private AiChatResponse withUpstreamRequestTimingLog(AiProviderConfig providerConfig, String provider, String model, String url,
+    private AiChatResponse withUpstreamRequestTimingLog(AiProviderConfig providerConfig, Map<String, Object> config,
+                                                        String provider, String model, String url,
                                                         Supplier<AiChatResponse> call) {
         long startAt = System.currentTimeMillis();
         log.info("ai upstream request start, provider={}, model={}, url={}", provider, model, url);
@@ -1079,12 +1088,14 @@ public class AiChatServiceImpl implements AiChatService {
             AiChatResponse response = call.get();
             long totalMs = System.currentTimeMillis() - startAt;
             aiProviderRuntimeStateService.recordSuccess(providerConfig, totalMs, null);
+            recordProxySuccess(config, totalMs);
             log.info("ai upstream request completed, provider={}, model={}, url={}, total_ms={}",
                     provider, model, url, totalMs);
             return response;
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
             aiProviderRuntimeStateService.recordFailure(providerConfig, ex);
+            recordProxyFailure(config, ex);
             log.warn("ai upstream request failed, provider={}, model={}, url={}, total_ms={}, error={}",
                     provider, model, url, totalMs, ex.getMessage());
             throw ex;
@@ -1232,19 +1243,21 @@ public class AiChatServiceImpl implements AiChatService {
 
     private String postJson(String url, Map<String, String> headers, Map<String, Object> body, Integer timeoutMs,
                             Map<String, Object> config) {
-        RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        if (headers != null) {
-            headers.forEach(httpHeaders::add);
-        }
-        HttpEntity<String> entity = new HttpEntity<>(JacksonUtils.toJson(body), httpHeaders);
-        try {
-            ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-            return response.getBody();
-        } catch (RuntimeException ex) {
-            throw wrapUpstreamException(url, body, ex);
-        }
+        return executeWithProxyRetry(config, "postJson", () -> {
+            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+            if (headers != null) {
+                headers.forEach(httpHeaders::add);
+            }
+            HttpEntity<String> entity = new HttpEntity<>(JacksonUtils.toJson(body), httpHeaders);
+            try {
+                ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+                return response.getBody();
+            } catch (RuntimeException ex) {
+                throw wrapUpstreamException(url, body, ex);
+            }
+        });
     }
 
     /**
@@ -1288,6 +1301,105 @@ public class AiChatServiceImpl implements AiChatService {
         }
         String message = ex == null ? null : ex.getMessage();
         return StringUtils.isBlank(message) ? "unknown upstream error" : message;
+    }
+
+    /**
+     * 按代理节点重试一次请求，避免单个失效节点导致本次请求直接失败。
+     *
+     * @param config 请求配置
+     * @param action 动作名
+     * @param supplier 实际请求
+     * @param <T> 返回类型
+     * @return 请求结果
+     */
+    private <T> T executeWithProxyRetry(Map<String, Object> config, String action, Supplier<T> supplier) {
+        RuntimeException lastException = null;
+        for (int attempt = 1; attempt <= MAX_PROXY_RETRY_ATTEMPTS; attempt++) {
+            try {
+                return supplier.get();
+            } catch (RuntimeException ex) {
+                lastException = ex;
+                if (!shouldRetryWithAnotherProxy(config, ex) || attempt >= MAX_PROXY_RETRY_ATTEMPTS) {
+                    throw ex;
+                }
+                Long failedProxyNodeId = resolveProxyNodeId(config);
+                recordProxyFailure(config, ex);
+                clearResolvedProxyNode(config);
+                cacheResolvedProxySummary(config, null);
+                log.warn("proxy retry scheduled, action={}, attempt={}/{}, failedProxyNodeId={}, reason={}",
+                        action, attempt, MAX_PROXY_RETRY_ATTEMPTS, failedProxyNodeId, extractUpstreamErrorMessage(ex));
+            }
+        }
+        throw lastException == null ? new IllegalStateException("proxy retry failed without exception") : lastException;
+    }
+
+    /**
+     * 按代理节点重试一次流式请求。
+     *
+     * @param config 请求配置
+     * @param action 动作名
+     * @param supplier 实际请求
+     * @return 请求流
+     */
+    private Flux<String> executeStreamWithProxyRetry(Map<String, Object> config, String action, Supplier<Flux<String>> supplier) {
+        return Flux.defer(supplier::get)
+                .onErrorResume(ex -> {
+                    if (!(ex instanceof RuntimeException) || !shouldRetryWithAnotherProxy(config, ex)) {
+                        return Flux.error(ex);
+                    }
+                    Long failedProxyNodeId = resolveProxyNodeId(config);
+                    recordProxyFailure(config, ex);
+                    clearResolvedProxyNode(config);
+                    cacheResolvedProxySummary(config, null);
+                    log.warn("proxy retry scheduled, action={}, attempt=1/{}, failedProxyNodeId={}, reason={}",
+                            action, MAX_PROXY_RETRY_ATTEMPTS, failedProxyNodeId, extractUpstreamErrorMessage(ex));
+                    return Flux.defer(supplier::get);
+                });
+    }
+
+    /**
+     * 判断是否应该切换到其它代理节点重试。
+     *
+     * @param config 请求配置
+     * @param throwable 异常
+     * @return 是否重试
+     */
+    private boolean shouldRetryWithAnotherProxy(Map<String, Object> config, Throwable throwable) {
+        return resolveProxyNodeId(config) != null && isProxyRelevantFailure(throwable);
+    }
+
+    /**
+     * 判断是否为代理相关失败。
+     *
+     * @param throwable 异常
+     * @return 是否为代理相关失败
+     */
+    private boolean isProxyRelevantFailure(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            String message = current.getMessage();
+            if (StringUtils.isNotBlank(message)) {
+                String lower = message.toLowerCase(Locale.ROOT);
+                if (lower.contains("proxy")
+                        || lower.contains("socks")
+                        || lower.contains("relay")
+                        || lower.contains("connect")
+                        || lower.contains("connection reset")
+                        || lower.contains("connection refused")
+                        || lower.contains("no route to host")
+                        || lower.contains("broken pipe")
+                        || lower.contains("unresolved")
+                        || lower.contains("unknown host")
+                        || lower.contains("dns")
+                        || lower.contains("timeout")
+                        || lower.contains("timed out")
+                        || lower.contains("first token timeout")) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private RestTemplate buildRestTemplate(Integer timeoutMs, Proxy proxy) {
@@ -1388,6 +1500,93 @@ public class AiChatServiceImpl implements AiChatService {
             return;
         }
         config.put(INTERNAL_PROXY_SUMMARY_KEY, summarizeProxySettings(settings));
+    }
+
+    /**
+     * 缓存本次请求命中的代理节点标识。
+     *
+     * @param config 请求配置
+     * @param result 代理选择结果
+     */
+    private void cacheResolvedProxyNode(Map<String, Object> config, AiProxySelectionResult result) {
+        if (config == null) {
+            return;
+        }
+        clearResolvedProxyNode(config);
+        if (result == null || result.getProxyConfig() == null || result.getProxyConfig().getId() == null) {
+            return;
+        }
+        config.put(INTERNAL_PROXY_NODE_ID, String.valueOf(result.getProxyConfig().getId()));
+        config.put("proxyNodeId", String.valueOf(result.getProxyConfig().getId()));
+        if (StringUtils.isNotBlank(result.getProxyConfig().getName())) {
+            config.put("proxyNodeName", result.getProxyConfig().getName());
+        }
+        if (StringUtils.isNotBlank(result.getProxyConfig().getProvider())) {
+            config.put("proxyNodeProvider", result.getProxyConfig().getProvider());
+        }
+    }
+
+    /**
+     * 清理本次请求缓存的代理节点标识。
+     *
+     * @param config 请求配置
+     */
+    private void clearResolvedProxyNode(Map<String, Object> config) {
+        if (config == null) {
+            return;
+        }
+        config.remove(INTERNAL_PROXY_NODE_ID);
+        config.remove("proxyNodeId");
+        config.remove("proxyNodeName");
+        config.remove("proxyNodeProvider");
+    }
+
+    /**
+     * 记录代理节点成功。
+     *
+     * @param config 请求配置
+     * @param totalMs 总耗时
+     */
+    private void recordProxySuccess(Map<String, Object> config, long totalMs) {
+        Long proxyNodeId = resolveProxyNodeId(config);
+        if (proxyNodeId != null) {
+            aiProxyRuntimeStateService.recordSuccess(proxyNodeId, totalMs);
+        }
+    }
+
+    /**
+     * 记录代理节点失败。
+     *
+     * @param config 请求配置
+     * @param throwable 异常
+     */
+    private void recordProxyFailure(Map<String, Object> config, Throwable throwable) {
+        Long proxyNodeId = resolveProxyNodeId(config);
+        if (proxyNodeId != null) {
+            aiProxyRuntimeStateService.recordFailure(proxyNodeId, throwable);
+        }
+    }
+
+    /**
+     * 读取本次请求命中的代理节点ID。
+     *
+     * @param config 请求配置
+     * @return 代理节点ID
+     */
+    private Long resolveProxyNodeId(Map<String, Object> config) {
+        if (config == null) {
+            return null;
+        }
+        String value = pickString(config, INTERNAL_PROXY_NODE_ID, pickString(config, "proxyNodeId", ""));
+        if (StringUtils.isBlank(value)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException ex) {
+            log.warn("invalid proxy node id, value={}", value);
+            return null;
+        }
     }
 
     /**
@@ -1613,12 +1812,15 @@ public class AiChatServiceImpl implements AiChatService {
      */
     private AiProxyLayerUtils.ProxySettings resolveProxySettings(Map<String, Object> config) {
         String provider = pickString(config, INTERNAL_PROVIDER_KEY, pickString(config, "provider", ""));
-        AiProxyLayerUtils.ProxySettings settings = aiProxyConfigService.resolveProxySettings(provider);
+        AiProxySelectionResult selectionResult = aiProxyConfigService.resolveProxySelection(provider);
+        cacheResolvedProxyNode(config, selectionResult);
+        AiProxyLayerUtils.ProxySettings settings = selectionResult == null ? null : selectionResult.getProxySettings();
         if (settings != null) {
             log.info("proxy node selected by provider binding, provider={}, settings={}",
                     provider, summarizeProxySettings(settings));
             return settings;
         }
+        clearResolvedProxyNode(config);
         return AiProxyLayerUtils.resolve(config);
     }
 
