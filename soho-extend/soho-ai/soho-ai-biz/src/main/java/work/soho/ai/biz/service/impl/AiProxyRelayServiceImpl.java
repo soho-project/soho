@@ -141,10 +141,30 @@ public class AiProxyRelayServiceImpl implements AiProxyRelayService {
     private Map<String, Object> buildXrayConfig(String protocol, String proxyUrl, int localPort) {
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("log", Collections.singletonMap("loglevel", "warning"));
+        root.put("dns", buildDns());
         root.put("inbounds", Collections.singletonList(buildInbound(localPort)));
         root.put("outbounds", buildOutbounds(protocol, proxyUrl));
         root.put("routing", buildRouting());
         return root;
+    }
+
+    /**
+     * 构建 xray DNS 配置，优先使用 DoH，减少本机明文 DNS 暴露。
+     *
+     * @return DNS 配置
+     */
+    private Map<String, Object> buildDns() {
+        Map<String, Object> dns = new LinkedHashMap<>();
+        dns.put("disableCache", false);
+        dns.put("disableFallback", false);
+        dns.put("queryStrategy", "UseIPv4");
+        dns.put("servers", List.of(
+                "https://1.1.1.1/dns-query",
+                "https://8.8.8.8/dns-query",
+                "1.1.1.1",
+                "8.8.8.8"
+        ));
+        return dns;
     }
 
     /**
