@@ -50,6 +50,13 @@ public class AiUserApiKey implements Serializable {
     @TableField(value = "status")
     private Integer status;
 
+    @ExcelProperty("expire_end_time")
+    @ApiModelProperty(value = "expire_end_time")
+    @TableField(value = "expire_end_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime expireEndTime;
+
     @ExcelProperty("last_used_time")
     @ApiModelProperty(value = "last_used_time")
     @TableField(value = "last_used_time")

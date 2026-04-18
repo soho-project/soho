@@ -73,6 +73,7 @@ public class UserAiApiKeyController {
         view.setName(item.getName());
         view.setApiKeyPrefix(item.getApiKeyPrefix());
         view.setStatus(item.getStatus());
+        view.setExpireEndTime(item.getExpireEndTime());
         view.setLastUsedTime(item.getLastUsedTime());
         view.setCreatedTime(item.getCreatedTime());
         return view;

@@ -10,6 +10,7 @@ public class AiUserApiKeyView {
     private String name;
     private String apiKeyPrefix;
     private Integer status;
+    private LocalDateTime expireEndTime;
     private LocalDateTime lastUsedTime;
     private LocalDateTime createdTime;
 }

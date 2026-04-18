@@ -22,20 +22,26 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class AiUserApiKeyServiceImpl extends ServiceImpl<AiUserApiKeyMapper, AiUserApiKey>
         implements AiUserApiKeyService {
+    /**
+     * 创建用户 AI API Key，并按请求记录有效期；未传有效期时默认永久有效。
+     */
     @Override
     public AiUserApiKeyCreatedResponse createKey(Long userId, CreateAiUserApiKeyRequest request) {
         Assert.notNull(userId, "userId不能为空");
         Assert.notNull(request, "request不能为空");
+        validateExpireEndTime(request.getExpireEndTime());
 
         String plaintextKey = "sk-ai-" + IDGeneratorUtils.uuid32();
+        LocalDateTime now = LocalDateTime.now();
         AiUserApiKey entity = new AiUserApiKey();
         entity.setUserId(userId);
         entity.setName(StringUtils.isBlank(request.getName()) ? "ai-key" : request.getName());
         entity.setApiKeyPrefix(plaintextKey.substring(0, Math.min(12, plaintextKey.length())));
         entity.setApiKeyHash(sha256(plaintextKey));
         entity.setStatus(AiUserApiKeyEnums.Status.ENABLED.getId());
-        entity.setCreatedTime(LocalDateTime.now());
-        entity.setUpdatedTime(LocalDateTime.now());
+        entity.setExpireEndTime(request.getExpireEndTime());
+        entity.setCreatedTime(now);
+        entity.setUpdatedTime(now);
         save(entity);
 
         AiUserApiKeyCreatedResponse response = new AiUserApiKeyCreatedResponse();
@@ -43,15 +49,20 @@ public class AiUserApiKeyServiceImpl extends ServiceImpl<AiUserApiKeyMapper, AiU
         response.setName(entity.getName());
         response.setApiKey(plaintextKey);
         response.setApiKeyPrefix(entity.getApiKeyPrefix());
+        response.setExpireEndTime(entity.getExpireEndTime());
         return response;
     }
 
+    /**
+     * 按明文 key 获取可用 key，并统一校验启用状态与有效期。
+     */
     @Override
     public AiUserApiKey requireByPlaintextKey(String plaintextKey) {
         AiUserApiKey apiKey = findByPlaintextKey(plaintextKey);
         Assert.notNull(apiKey, "无效的api key");
         Assert.isTrue(apiKey.getStatus() != null
                 && apiKey.getStatus().intValue() == AiUserApiKeyEnums.Status.ENABLED.getId(), "api key已禁用");
+        Assert.isTrue(!isExpired(apiKey), "api key已过期");
         return apiKey;
     }
 
@@ -75,6 +86,9 @@ public class AiUserApiKeyServiceImpl extends ServiceImpl<AiUserApiKeyMapper, AiU
         AiUserApiKey apiKey = getOne(new LambdaQueryWrapper<AiUserApiKey>()
                 .eq(AiUserApiKey::getUserId, userId)
                 .eq(AiUserApiKey::getStatus, AiUserApiKeyEnums.Status.ENABLED.getId())
+                .and(wrapper -> wrapper.isNull(AiUserApiKey::getExpireEndTime)
+                        .or()
+                        .gt(AiUserApiKey::getExpireEndTime, LocalDateTime.now()))
                 .orderByDesc(AiUserApiKey::getLastUsedTime)
                 .orderByDesc(AiUserApiKey::getId)
                 .last("limit 1"));
@@ -123,6 +137,23 @@ public class AiUserApiKeyServiceImpl extends ServiceImpl<AiUserApiKeyMapper, AiU
         entity.setLastUsedTime(LocalDateTime.now());
         entity.setUpdatedTime(LocalDateTime.now());
         updateById(entity);
+    }
+
+    /**
+     * 校验有效期必须晚于当前时间。
+     */
+    private void validateExpireEndTime(LocalDateTime expireEndTime) {
+        if (expireEndTime == null) {
+            return;
+        }
+        Assert.isTrue(expireEndTime.isAfter(LocalDateTime.now()), "有效期必须晚于当前时间");
+    }
+
+    /**
+     * 判断 key 是否已过期。
+     */
+    private boolean isExpired(AiUserApiKey apiKey) {
+        return apiKey.getExpireEndTime() != null && !apiKey.getExpireEndTime().isAfter(LocalDateTime.now());
     }
 
     private String sha256(String value) {

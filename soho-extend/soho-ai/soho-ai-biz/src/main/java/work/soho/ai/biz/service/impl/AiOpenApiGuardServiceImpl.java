@@ -39,6 +39,9 @@ public class AiOpenApiGuardServiceImpl implements AiOpenApiGuardService {
     private final StringRedisTemplate stringRedisTemplate;
     private final AiSysConfig aiSysConfig;
 
+    /**
+     * 校验来访 API Key 是否存在、启用且未过期，并在拒绝时记录审计日志。
+     */
     @Override
     public AiOpenApiGuardContext checkAndAcquire(String authorization, String endpoint) {
         String clientIp = safeClientIp();
@@ -50,11 +53,20 @@ public class AiOpenApiGuardServiceImpl implements AiOpenApiGuardService {
             throw new AiOpenApiGuardException("invalid api key", "无效的api key", "invalid_api_key",
                     "invalid_api_key", false, false, 401);
         }
-        if (apiKey.getStatus() == null
-                || apiKey.getStatus().intValue() != AiUserApiKeyEnums.Status.ENABLED.getId()) {
-            logReject(apiKey, endpoint, clientIp, userAgent, "disabled_api_key", false, false, "api key已禁用");
-            throw new AiOpenApiGuardException("disabled api key", "api key已禁用", "invalid_api_key",
-                    "disabled_api_key", false, false, 403);
+        try {
+            apiKey = aiUserApiKeyService.requireByPlaintextKey(token);
+        } catch (IllegalArgumentException ex) {
+            if ("api key已禁用".equals(ex.getMessage())) {
+                logReject(apiKey, endpoint, clientIp, userAgent, "disabled_api_key", false, false, "api key已禁用");
+                throw new AiOpenApiGuardException("disabled api key", "api key已禁用", "invalid_api_key",
+                        "disabled_api_key", false, false, 403);
+            }
+            if ("api key已过期".equals(ex.getMessage())) {
+                logReject(apiKey, endpoint, clientIp, userAgent, "expired_api_key", false, false, "api key已过期");
+                throw new AiOpenApiGuardException("expired api key", "api key已过期", "invalid_api_key",
+                        "expired_api_key", false, false, 403);
+            }
+            throw ex;
         }
         if (isTemporarilyBanned(apiKey.getId())) {
             logReject(apiKey, endpoint, clientIp, userAgent, "temporary_ban", true, true, "api key已被临时封禁");
