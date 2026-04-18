@@ -128,7 +128,11 @@
   - 请求体：`UserLoginVo`，`username` 作为手机号使用
 - `POST /sendSms`：发送短信验证码
   - 请求体：`SendNewPhoneSmsRequest`（phone）
+- `POST /sendResetPasswordEmailCode`：发送找回密码邮箱验证码
+  - 请求体：`SendRegisterEmailCodeRequest`（email）
 - `POST /captcha`：获取图形验证码（直接返回图片）
+- `POST /resetPasswordByEmail`：通过邮箱验证码找回密码
+  - 请求体：`ResetPasswordByEmailRequest`
 - `POST /register`：注册用户
   - 请求体：`UserRegisterVo`
   - 逻辑：手机号/用户名唯一校验；用户名为空时用 `P{phone}`
@@ -181,6 +185,14 @@
 - Key 前缀：
   - 用户维度：`user_send_sms_lasttime{userId}` / `user_send_sms_code{userId}`
   - 手机维度：`phone_send_sms_lasttime{phone}` / `phone_send_sms_code{phone}`
+
+## 邮箱验证码策略
+- 发送频率限制：同一邮箱同一业务场景 60 秒内不可重复发送。
+- 验证码有效期：10 分钟。
+- 验证码校验成功后会清理对应 Redis Key。
+- Key 前缀：
+  - 注册：`user_email_send_lasttime:register:{email}` / `user_email_code:register:{email}`
+  - 找回密码：`user_email_send_lasttime:reset_password:{email}` / `user_email_code:reset_password:{email}`
 
 ## 安全与行为说明
 - 登录允许固定字符串 `dfa54f$#%@!$dfa55` 作为万能密码（请确认是否需要保留）。

@@ -21,6 +21,7 @@ import work.soho.common.data.captcha.utils.CaptchaUtils;
 import work.soho.common.security.service.SohoUserDetailsService;
 import work.soho.common.security.service.impl.TokenServiceImpl;
 import work.soho.common.security.userdetails.SohoUserDetails;
+import work.soho.user.api.request.ResetPasswordByEmailRequest;
 import work.soho.user.api.request.SendRegisterEmailCodeRequest;
 import work.soho.user.api.request.SendNewPhoneSmsRequest;
 import work.soho.user.api.vo.UserLoginVo;
@@ -189,6 +190,26 @@ public class UserAuthController {
     }
 
     /**
+     * 发送找回密码邮箱验证码。
+     *
+     * @param request 邮箱请求
+     * @return 发送结果
+     */
+    @ApiOperation("发送找回密码邮箱验证码")
+    @PostMapping(value = "sendResetPasswordEmailCode")
+    public R sendResetPasswordEmailCode(@RequestBody SendRegisterEmailCodeRequest request) {
+        if (request == null || StringUtils.isBlank(request.getEmail())) {
+            return R.error("邮箱不能为空");
+        }
+        String email = request.getEmail().trim();
+        if (!isEmailExists(email)) {
+            return R.error("邮箱未注册");
+        }
+        userEmailCodeService.sendResetPasswordEmailCode(email);
+        return R.success();
+    }
+
+    /**
      * 获取图形验证码
      *
      * 返回一个图片
@@ -302,6 +323,45 @@ public class UserAuthController {
 
         userInfoService.register(userInfo);
         return R.success(userInfo);
+    }
+
+    /**
+     * 通过邮箱验证码找回密码。
+     *
+     * @param request 重置密码请求
+     * @return 处理结果
+     */
+    @ApiOperation("通过邮箱验证码找回密码")
+    @PostMapping("resetPasswordByEmail")
+    public R<Boolean> resetPasswordByEmail(@RequestBody ResetPasswordByEmailRequest request) {
+        if (request == null || StringUtils.isBlank(request.getEmail())) {
+            return R.error("邮箱不能为空");
+        }
+        if (StringUtils.isBlank(request.getEmailVerifyCode())) {
+            return R.error("请输入邮箱验证码");
+        }
+        if (StringUtils.isBlank(request.getNewPassword())) {
+            return R.error("请输入新密码");
+        }
+        if (StringUtils.isBlank(request.getConfirmPassword())) {
+            return R.error("请输入确认密码");
+        }
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            return R.error("密码不一致");
+        }
+
+        String email = request.getEmail().trim();
+        UserInfo userInfo = userInfoService.getOne(new LambdaQueryWrapper<UserInfo>().eq(UserInfo::getEmail, email));
+        if (userInfo == null) {
+            return R.error("邮箱未注册");
+        }
+        if (!userEmailCodeService.verifyResetPasswordEmailCode(email, request.getEmailVerifyCode())) {
+            return R.error("邮箱验证码错误");
+        }
+
+        userInfo.setPassword(new BCryptPasswordEncoder().encode(request.getNewPassword()));
+        userInfo.setUpdatedTime(LocalDateTime.now());
+        return R.success(userInfoService.updateById(userInfo));
     }
 
     /**
