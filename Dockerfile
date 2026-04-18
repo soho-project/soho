@@ -43,7 +43,8 @@ COPY ./soho-admin-web/target/soho-admin-web-1.0-SNAPSHOT.jar /root/
 WORKDIR /root/
 ARG CONFIG_PROFILE="dev"
 ENV TZ="Asia/Shanghai"
-ENV JAVA_TOOL_OPTIONS="-Duser.timezone=Asia/Shanghai -Xmx380m"
+#ENV JAVA_TOOL_OPTIONS="-Duser.timezone=Asia/Shanghai -Xmx380m"
+ENV JAVA_TOOL_OPTIONS="-Duser.timezone=Asia/Shanghai -Xmx6380m"
 ENV SPRING_CLOUD_CONFIG_PROFILE="-Dspring.profiles.active=${CONFIG_PROFILE}"
 ENV AI_RELAY_XRAY_BIN="/usr/local/bin/xray"
 ENV AI_RELAY_WORKDIR="/tmp/soho-ai-relay"
