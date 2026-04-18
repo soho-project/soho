@@ -6,12 +6,14 @@ CREATE TABLE `ai_user_api_key` (
   `api_key_prefix` varchar(32) NOT NULL,
   `api_key_hash` varchar(128) NOT NULL,
   `status` tinyint NOT NULL DEFAULT 1,
+  `expire_end_time` datetime DEFAULT NULL,
   `last_used_time` datetime DEFAULT NULL,
   `updated_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_time` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_ai_user_api_key_user_id` (`user_id`),
-  KEY `idx_ai_user_api_key_hash` (`api_key_hash`)
+  KEY `idx_ai_user_api_key_hash` (`api_key_hash`),
+  KEY `idx_ai_user_api_key_expire_end_time` (`expire_end_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `ai_api_call_log` (

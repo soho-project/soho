@@ -10,11 +10,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="apiKeyPrefix" column="api_key_prefix" jdbcType="VARCHAR"/>
         <result property="apiKeyHash" column="api_key_hash" jdbcType="VARCHAR"/>
         <result property="status" column="status" jdbcType="INTEGER"/>
+        <result property="expireEndTime" column="expire_end_time" jdbcType="TIMESTAMP"/>
         <result property="lastUsedTime" column="last_used_time" jdbcType="TIMESTAMP"/>
         <result property="updatedTime" column="updated_time" jdbcType="TIMESTAMP"/>
         <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
     </resultMap>
     <sql id="Base_Column_List">
-        id,user_id,name,api_key_prefix,api_key_hash,status,last_used_time,updated_time,created_time
+        id,user_id,name,api_key_prefix,api_key_hash,status,expire_end_time,last_used_time,updated_time,created_time
     </sql>
 </mapper>

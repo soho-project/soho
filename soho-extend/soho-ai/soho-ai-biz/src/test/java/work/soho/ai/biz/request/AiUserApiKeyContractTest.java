@@ -19,6 +19,13 @@ public class AiUserApiKeyContractTest {
         assertThat(fieldNames(AiUserApiKeyView.class)).doesNotContain("providerConfigId");
     }
 
+    @Test
+    public void aiUserApiKeyContracts_shouldExposeExpireEndTime() {
+        assertThat(fieldNames(CreateAiUserApiKeyRequest.class)).contains("expireEndTime");
+        assertThat(fieldNames(AiUserApiKeyCreatedResponse.class)).contains("expireEndTime");
+        assertThat(fieldNames(AiUserApiKeyView.class)).contains("expireEndTime");
+    }
+
     private Set<String> fieldNames(Class<?> type) {
         return Arrays.stream(type.getDeclaredFields())
                 .map(field -> field.getName())

@@ -15,6 +15,7 @@ import work.soho.ai.biz.exception.AiOpenApiGuardException;
 import work.soho.ai.biz.service.AiApiCallLogService;
 import work.soho.ai.biz.service.AiUserApiKeyService;
 
+import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,6 +52,7 @@ public class AiOpenApiGuardServiceImplTest {
     public void checkAndAcquire_whenApiKeyValid_shouldReturnContext() {
         AiUserApiKey apiKey = enabledApiKey();
         when(aiUserApiKeyService.findByPlaintextKey("token")).thenReturn(apiKey);
+        when(aiUserApiKeyService.requireByPlaintextKey("token")).thenReturn(apiKey);
 
         AiOpenApiGuardContext context = service.checkAndAcquire("Bearer token", "/ai/guest/openai/v1/models");
 
@@ -65,6 +67,7 @@ public class AiOpenApiGuardServiceImplTest {
     public void checkAndAcquire_whenRateLimitExceeded_shouldRejectAndAudit() {
         AiUserApiKey apiKey = enabledApiKey();
         when(aiUserApiKeyService.findByPlaintextKey("token")).thenReturn(apiKey);
+        when(aiUserApiKeyService.requireByPlaintextKey("token")).thenReturn(apiKey);
         when(aiSysConfig.isOpenApiRateLimitEnabled()).thenReturn(true);
         when(aiSysConfig.getOpenApiRateLimitPerMinute()).thenReturn(1);
         when(aiSysConfig.isOpenApiBanEnabled()).thenReturn(true);
@@ -111,6 +114,7 @@ public class AiOpenApiGuardServiceImplTest {
     public void checkAndAcquire_whenApiKeyBanned_shouldReject() {
         AiUserApiKey apiKey = enabledApiKey();
         when(aiUserApiKeyService.findByPlaintextKey("token")).thenReturn(apiKey);
+        when(aiUserApiKeyService.requireByPlaintextKey("token")).thenReturn(apiKey);
         when(aiSysConfig.isOpenApiBanEnabled()).thenReturn(true);
         when(stringRedisTemplate.hasKey(anyString())).thenReturn(true);
 
@@ -121,6 +125,27 @@ public class AiOpenApiGuardServiceImplTest {
                     assertThat(guardException.getErrorCode()).isEqualTo("temporarily_banned");
                     assertThat(guardException.isBanHit()).isTrue();
                 });
+    }
+
+    @Test
+    public void checkAndAcquire_whenApiKeyExpired_shouldReject() {
+        AiUserApiKey apiKey = enabledApiKey();
+        when(aiUserApiKeyService.findByPlaintextKey("token")).thenReturn(apiKey);
+        when(aiUserApiKeyService.requireByPlaintextKey("token")).thenThrow(new IllegalArgumentException("api key已过期"));
+
+        assertThatThrownBy(() -> service.checkAndAcquire("Bearer token", "/ai/guest/openai/v1/models"))
+                .isInstanceOf(AiOpenApiGuardException.class)
+                .satisfies(ex -> {
+                    AiOpenApiGuardException guardException = (AiOpenApiGuardException) ex;
+                    assertThat(guardException.getErrorCode()).isEqualTo("invalid_api_key");
+                    assertThat(guardException.getRejectReason()).isEqualTo("expired_api_key");
+                    assertThat(guardException.getHttpStatus()).isEqualTo(403);
+                });
+
+        ArgumentCaptor<AiApiCallLog> captor = ArgumentCaptor.forClass(AiApiCallLog.class);
+        verify(aiApiCallLogService).save(captor.capture());
+        assertThat(captor.getValue().getRejectReason()).isEqualTo("expired_api_key");
+        assertThat(captor.getValue().getErrorMessage()).isEqualTo("api key已过期");
     }
 
     @Test

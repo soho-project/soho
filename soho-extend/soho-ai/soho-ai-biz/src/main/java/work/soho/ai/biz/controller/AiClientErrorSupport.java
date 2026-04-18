@@ -16,6 +16,7 @@ public final class AiClientErrorSupport {
             "钱包不存在",
             "模型",
             "无效的api key",
+            "api key已过期",
             "当前用户没有可用的api key",
             "api key不能为空",
             "key不能为空",
