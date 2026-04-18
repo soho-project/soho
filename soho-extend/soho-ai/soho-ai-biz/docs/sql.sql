@@ -72,6 +72,7 @@ CREATE TABLE `ai_model_info` (
   `status` tinyint NOT NULL DEFAULT 1,
   `prompt_price` decimal(18,4) DEFAULT 0.0000,
   `completion_price` decimal(18,4) DEFAULT 0.0000,
+  `fixed_request_price` decimal(18,6) DEFAULT 0.000000 COMMENT '按次计费单价',
   `sort` int DEFAULT 0,
   `updated_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_time` datetime DEFAULT CURRENT_TIMESTAMP,

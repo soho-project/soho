@@ -7,6 +7,7 @@ import work.soho.ai.biz.domain.AiUserApiKey;
 import work.soho.ai.biz.domain.AiModelInfo;
 import work.soho.ai.biz.dto.AiChatResponse;
 import work.soho.ai.biz.dto.AiUsageSummary;
+import work.soho.ai.biz.request.OpenAiResponsesRequest;
 import work.soho.ai.biz.request.OpenAiChatCompletionRequest;
 import work.soho.ai.biz.service.AiApiCallLogService;
 import work.soho.ai.biz.service.AiChatService;
@@ -21,6 +22,7 @@ import work.soho.wallet.biz.domain.WalletInfo;
 import work.soho.wallet.api.service.WalletInfoApiService;
 import work.soho.wallet.biz.service.WalletInfoService;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Map;
@@ -295,7 +297,7 @@ public class AiOpenApiServiceImplTest {
     }
 
     @Test
-    public void chatCompletions_whenModelHasPrice_shouldChargeEvenIfProviderBillingDisabled() {
+    public void chatCompletions_whenModelHasPrice_shouldChargeByTokens() {
         AiUserApiKeyService aiUserApiKeyService = Mockito.mock(AiUserApiKeyService.class);
         AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
         AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
@@ -383,7 +385,7 @@ public class AiOpenApiServiceImplTest {
                 Mockito.eq(1),
                 Mockito.anyInt(),
                 Mockito.anyString(),
-                Mockito.argThat(amount -> amount != null && amount.compareTo(new BigDecimal("-0.500000")) == 0),
+                Mockito.argThat(amount -> amount != null && amount.compareTo(new BigDecimal("-0.025000")) == 0),
                 Mockito.argThat(notes ->
                         notes != null
                                 && notes.contains("AI调用扣费 model=gpt-4o-mini")
@@ -391,6 +393,161 @@ public class AiOpenApiServiceImplTest {
                                 && notes.contains("outputTokens=20")
                                 && notes.contains("totalTokens=30"))
         );
+    }
+
+    @Test
+    public void responses_whenModelHasSplitPrice_shouldNotFallbackToFixedRequestPrice() {
+        AiUserApiKeyService aiUserApiKeyService = Mockito.mock(AiUserApiKeyService.class);
+        AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
+        AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiChatService aiChatService = Mockito.mock(AiChatService.class);
+        AiApiCallLogService aiApiCallLogService = Mockito.mock(AiApiCallLogService.class);
+        WalletInfoService walletInfoService = Mockito.mock(WalletInfoService.class);
+        WalletInfoApiService walletInfoApiService = Mockito.mock(WalletInfoApiService.class);
+        AiMemberRequestLimitService aiMemberRequestLimitService = Mockito.mock(AiMemberRequestLimitService.class);
+        AiUserMemberCardService aiUserMemberCardService = Mockito.mock(AiUserMemberCardService.class);
+        when(aiMemberRequestLimitService.evaluate(Mockito.any(), Mockito.any()))
+                .thenReturn(AiMemberRequestLimitService.Decision.nonMember());
+
+        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+                aiUserApiKeyService,
+                aiProviderConfigService,
+                aiProviderModelRelService,
+                aiChatService,
+                Mockito.mock(AiProxyConfigService.class),
+                Mockito.mock(AiProxyRelayService.class),
+                aiApiCallLogService,
+                walletInfoService,
+                walletInfoApiService,
+                aiMemberRequestLimitService,
+                aiUserMemberCardService
+        );
+
+        AiUserApiKey apiKey = new AiUserApiKey();
+        apiKey.setId(10L);
+        apiKey.setUserId(7L);
+        when(aiUserApiKeyService.requireByPlaintextKey("token")).thenReturn(apiKey);
+
+        AiProviderConfig providerConfig = new AiProviderConfig();
+        providerConfig.setId(42L);
+        providerConfig.setCode("openai-prod");
+        providerConfig.setProvider("openai");
+        providerConfig.setDefaultModel("gpt-5.4");
+        providerConfig.setConfigJson("{\"adapter\":\"codexResponses\",\"billingEnabled\":false,\"billingWalletTypeId\":1}");
+        when(aiChatService.resolveProviderConfigByProvider("openai", "gpt-5.4")).thenReturn(providerConfig);
+
+        AiModelInfo modelInfo = new AiModelInfo();
+        modelInfo.setModelName("gpt-5.4");
+        modelInfo.setPromptPrice(new BigDecimal("0.0172"));
+        modelInfo.setCompletionPrice(new BigDecimal("0.1032"));
+        when(aiProviderModelRelService.listEnabledModelsByProviderConfigId(42L))
+                .thenReturn(java.util.List.of(modelInfo));
+
+        WalletInfo walletInfo = new WalletInfo();
+        walletInfo.setAmount(new BigDecimal("100.0000"));
+        when(walletInfoService.getByUserIdAndType(7L, 1)).thenReturn(walletInfo);
+
+        AiUsageSummary estimatedUsage = new AiUsageSummary();
+        estimatedUsage.setPromptTokens(100);
+        estimatedUsage.setCompletionTokens(20);
+        estimatedUsage.setTotalTokens(120);
+        when(aiChatService.estimateUsage(Mockito.any(), Mockito.anyString())).thenReturn(estimatedUsage);
+
+        AiChatResponse response = new AiChatResponse();
+        response.setModel("gpt-5.4");
+        response.setContent("hello");
+        response.setPromptTokens(7672);
+        response.setCompletionTokens(23);
+        response.setTotalTokens(7695);
+        when(aiChatService.chat(Mockito.any())).thenReturn(response);
+
+        when(walletInfoApiService.changeWalletAmount(
+                Mockito.eq(7L),
+                Mockito.eq(1),
+                Mockito.anyInt(),
+                Mockito.anyString(),
+                Mockito.any(BigDecimal.class),
+                Mockito.contains("AI调用扣费")))
+                .thenReturn(99L);
+
+        OpenAiResponsesRequest request = new OpenAiResponsesRequest();
+        request.setModel("gpt-5.4");
+        request.setInput("hello");
+
+        service.responses("Bearer token", request);
+
+        Mockito.verify(walletInfoApiService).changeWalletAmount(
+                Mockito.eq(7L),
+                Mockito.eq(1),
+                Mockito.anyInt(),
+                Mockito.anyString(),
+                Mockito.argThat(amount -> amount != null && amount.compareTo(new BigDecimal("-0.134332")) == 0),
+                Mockito.argThat(notes ->
+                        notes != null
+                                && notes.contains("AI调用扣费 model=gpt-5.4")
+                                && notes.contains("inputTokens=7672")
+                                && notes.contains("outputTokens=23")
+                                && notes.contains("totalTokens=7695"))
+        );
+    }
+
+    @Test
+    public void buildFixedPriceBillingPlan_shouldUseDedicatedFixedRequestPrice() throws Exception {
+        AiUserApiKeyService aiUserApiKeyService = Mockito.mock(AiUserApiKeyService.class);
+        AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
+        AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiChatService aiChatService = Mockito.mock(AiChatService.class);
+        AiApiCallLogService aiApiCallLogService = Mockito.mock(AiApiCallLogService.class);
+        WalletInfoService walletInfoService = Mockito.mock(WalletInfoService.class);
+        WalletInfoApiService walletInfoApiService = Mockito.mock(WalletInfoApiService.class);
+        AiMemberRequestLimitService aiMemberRequestLimitService = Mockito.mock(AiMemberRequestLimitService.class);
+        AiUserMemberCardService aiUserMemberCardService = Mockito.mock(AiUserMemberCardService.class);
+        when(aiMemberRequestLimitService.evaluate(Mockito.any(), Mockito.any()))
+                .thenReturn(AiMemberRequestLimitService.Decision.nonMember());
+
+        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+                aiUserApiKeyService,
+                aiProviderConfigService,
+                aiProviderModelRelService,
+                aiChatService,
+                Mockito.mock(AiProxyConfigService.class),
+                Mockito.mock(AiProxyRelayService.class),
+                aiApiCallLogService,
+                walletInfoService,
+                walletInfoApiService,
+                aiMemberRequestLimitService,
+                aiUserMemberCardService
+        );
+
+        AiUserApiKey apiKey = new AiUserApiKey();
+        apiKey.setId(10L);
+        apiKey.setUserId(7L);
+
+        AiProviderConfig providerConfig = new AiProviderConfig();
+        providerConfig.setId(42L);
+        providerConfig.setConfigJson("{\"billingEnabled\":false,\"billingWalletTypeId\":1}");
+
+        AiModelInfo modelInfo = new AiModelInfo();
+        modelInfo.setModelName("tts-1");
+        modelInfo.setPromptPrice(new BigDecimal("0.0172"));
+        modelInfo.setCompletionPrice(new BigDecimal("0.1032"));
+        modelInfo.setFixedRequestPrice(new BigDecimal("0.5000"));
+        when(aiProviderModelRelService.listEnabledModelsByProviderConfigId(42L))
+                .thenReturn(java.util.List.of(modelInfo));
+
+        Method buildMethod = AiOpenApiServiceImpl.class
+                .getDeclaredMethod("buildFixedPriceBillingPlan", AiUserApiKey.class, AiProviderConfig.class, String.class);
+        buildMethod.setAccessible(true);
+        Object billingPlan = buildMethod.invoke(service, apiKey, providerConfig, "tts-1");
+
+        Class<?> billingPlanClass = billingPlan.getClass();
+        Method calculateAmountMethod = AiOpenApiServiceImpl.class
+                .getDeclaredMethod("calculateAmount", billingPlanClass, AiUsageSummary.class, String.class);
+        calculateAmountMethod.setAccessible(true);
+
+        BigDecimal amount = (BigDecimal) calculateAmountMethod.invoke(service, billingPlan, new AiUsageSummary(), "tts-1");
+
+        assertThat(amount).isEqualByComparingTo("0.500000");
     }
 
     @Test

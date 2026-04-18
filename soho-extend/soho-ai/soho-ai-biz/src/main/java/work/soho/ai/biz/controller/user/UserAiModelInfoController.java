@@ -63,6 +63,7 @@ public class UserAiModelInfoController {
         lqw.eq(aiModelInfo.getStatus() != null, AiModelInfo::getStatus ,aiModelInfo.getStatus());
         lqw.eq(aiModelInfo.getPromptPrice() != null, AiModelInfo::getPromptPrice ,aiModelInfo.getPromptPrice());
         lqw.eq(aiModelInfo.getCompletionPrice() != null, AiModelInfo::getCompletionPrice ,aiModelInfo.getCompletionPrice());
+        lqw.eq(aiModelInfo.getFixedRequestPrice() != null, AiModelInfo::getFixedRequestPrice ,aiModelInfo.getFixedRequestPrice());
         lqw.eq(aiModelInfo.getSort() != null, AiModelInfo::getSort ,aiModelInfo.getSort());
         lqw.eq(aiModelInfo.getUpdatedTime() != null, AiModelInfo::getUpdatedTime ,aiModelInfo.getUpdatedTime());
         lqw.ge(betweenCreatedTimeRequest!=null && betweenCreatedTimeRequest.getStartTime() != null, AiModelInfo::getCreatedTime, betweenCreatedTimeRequest.getStartTime());

@@ -1917,6 +1917,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         return billingPlan;
     }
 
+    /**
+     * 预检余额，固定价请求按固定价校验，按 token 请求按预估 token 金额校验。
+     */
     private void preCheckBalance(BillingPlan billingPlan) {
         // 免费请求（billingEnabled=false）直接跳过余额检查
         if (!billingPlan.billingEnabled) {
@@ -2007,6 +2010,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             if (!model.equals(item.getModelName())) {
                 continue;
             }
+            BigDecimal fixedRequestPrice = item.getFixedRequestPrice() == null ? BigDecimal.ZERO : item.getFixedRequestPrice();
             BigDecimal promptPrice = item.getPromptPrice() == null ? BigDecimal.ZERO : item.getPromptPrice();
             BigDecimal completionPrice = item.getCompletionPrice() == null ? BigDecimal.ZERO : item.getCompletionPrice();
             if (promptPrice.compareTo(BigDecimal.ZERO) > 0 || completionPrice.compareTo(BigDecimal.ZERO) > 0) {
@@ -2016,7 +2020,10 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 if (completionPrice.compareTo(BigDecimal.ZERO) <= 0) {
                     completionPrice = promptPrice;
                 }
-                return ModelPricing.split(item.getModelName(), promptPrice, completionPrice);
+                return ModelPricing.split(item.getModelName(), promptPrice, completionPrice, fixedRequestPrice);
+            }
+            if (fixedRequestPrice.compareTo(BigDecimal.ZERO) > 0) {
+                return ModelPricing.fixed(item.getModelName(), fixedRequestPrice);
             }
         }
         return ModelPricing.empty();
@@ -2745,8 +2752,12 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         billingPlan.walletTypeId = pickInteger(config, "billingWalletTypeId", 1);
         billingPlan.promptPricePer1kTokens = pickBigDecimal(config, "promptPricePer1kTokens", BigDecimal.ZERO);
         billingPlan.completionPricePer1kTokens = pickBigDecimal(config, "completionPricePer1kTokens", billingPlan.promptPricePer1kTokens);
-        billingPlan.fixedRequestPrice = modelPricing.fixedRequestPrice();
-        billingPlan.fixedRequestBilling = billingPlan.fixedRequestPrice.compareTo(BigDecimal.ZERO) > 0;
+        if (billingPlan.fixedRequestBilling) {
+            billingPlan.fixedRequestPrice = modelPricing.fixedRequestPrice();
+            billingPlan.fixedRequestBilling = billingPlan.fixedRequestPrice.compareTo(BigDecimal.ZERO) > 0;
+        } else {
+            billingPlan.fixedRequestPrice = BigDecimal.ZERO;
+        }
         billingPlan.estimatedModel = StringUtils.isNotBlank(model) ? model : providerConfig.getDefaultModel();
         billingPlan.modelPricing = modelPricing;
         billingPlan.billingEnabled = modelPricing.hasSplitPrice() || billingPlan.fixedRequestBilling || pickBoolean(config, "billingEnabled", false);
@@ -2911,19 +2922,27 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         private final String modelName;
         private final BigDecimal promptPricePer1kTokens;
         private final BigDecimal completionPricePer1kTokens;
+        private final BigDecimal fixedRequestPrice;
 
-        private ModelPricing(String modelName, BigDecimal promptPricePer1kTokens, BigDecimal completionPricePer1kTokens) {
+        private ModelPricing(String modelName, BigDecimal promptPricePer1kTokens, BigDecimal completionPricePer1kTokens,
+                             BigDecimal fixedRequestPrice) {
             this.modelName = modelName;
             this.promptPricePer1kTokens = promptPricePer1kTokens;
             this.completionPricePer1kTokens = completionPricePer1kTokens;
+            this.fixedRequestPrice = fixedRequestPrice;
         }
 
         private static ModelPricing empty() {
-            return new ModelPricing(null, BigDecimal.ZERO, BigDecimal.ZERO);
+            return new ModelPricing(null, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
         }
 
-        private static ModelPricing split(String modelName, BigDecimal promptPricePer1kTokens, BigDecimal completionPricePer1kTokens) {
-            return new ModelPricing(modelName, promptPricePer1kTokens, completionPricePer1kTokens);
+        private static ModelPricing split(String modelName, BigDecimal promptPricePer1kTokens,
+                                          BigDecimal completionPricePer1kTokens, BigDecimal fixedRequestPrice) {
+            return new ModelPricing(modelName, promptPricePer1kTokens, completionPricePer1kTokens, fixedRequestPrice);
+        }
+
+        private static ModelPricing fixed(String modelName, BigDecimal fixedRequestPrice) {
+            return new ModelPricing(modelName, BigDecimal.ZERO, BigDecimal.ZERO, fixedRequestPrice);
         }
 
         private boolean hasSplitPrice() {
@@ -2932,17 +2951,11 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         }
 
         private boolean hasFixedRequestPrice() {
-            return fixedRequestPrice().compareTo(BigDecimal.ZERO) > 0;
+            return fixedRequestPrice.compareTo(BigDecimal.ZERO) > 0;
         }
 
         private BigDecimal fixedRequestPrice() {
-            if (promptPricePer1kTokens.compareTo(BigDecimal.ZERO) > 0) {
-                return promptPricePer1kTokens;
-            }
-            if (completionPricePer1kTokens.compareTo(BigDecimal.ZERO) > 0) {
-                return completionPricePer1kTokens;
-            }
-            return BigDecimal.ZERO;
+            return fixedRequestPrice;
         }
 
         private boolean matches(String model) {

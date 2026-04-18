@@ -62,6 +62,11 @@ public class AiModelInfo implements Serializable {
     @TableField(value = "completion_price")
     private BigDecimal completionPrice;
 
+    @ExcelProperty("按次计费单价")
+    @ApiModelProperty(value = "按次计费单价")
+    @TableField(value = "fixed_request_price")
+    private BigDecimal fixedRequestPrice;
+
     @ExcelProperty("排序")
     @ApiModelProperty(value = "排序")
     @TableField(value = "sort")
