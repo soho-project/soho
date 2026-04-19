@@ -25,6 +25,7 @@ public class AiFileServiceImpl implements AiFileService {
     private static final int READ_TIMEOUT_MS = 20000;
     private static final int MAX_DOWNLOAD_BYTES = 4 * 1024 * 1024;
     private static final int MAX_EXTRACTED_CHARS = 20000;
+    private static final int MAX_REDIRECTS = 3;
 
     @Override
     public String uploadUserFile(MultipartFile file) {
@@ -54,28 +55,72 @@ public class AiFileServiceImpl implements AiFileService {
     }
 
     private RemoteFile download(String fileUrl) throws IOException {
-        if (isBlockedFileUrl(fileUrl)) {
-            throw new IllegalArgumentException("blocked file url");
+        URL currentUrl = new URL(fileUrl);
+        for (int redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
+            validateRemoteUrl(currentUrl);
+            HttpURLConnection connection = openConnection(currentUrl);
+            try {
+                int status = connection.getResponseCode();
+                if (isRedirectStatus(status)) {
+                    if (redirectCount >= MAX_REDIRECTS) {
+                        throw new IOException("too many redirects");
+                    }
+                    currentUrl = resolveRedirectUrl(currentUrl, connection.getHeaderField("Location"));
+                    continue;
+                }
+                if (status >= 400) {
+                    throw new IOException("download file failed, status=" + status);
+                }
+                String contentType = connection.getContentType();
+                try (InputStream inputStream = connection.getInputStream()) {
+                    byte[] bytes = readAll(inputStream, MAX_DOWNLOAD_BYTES);
+                    return new RemoteFile(bytes, contentType);
+                }
+            } finally {
+                connection.disconnect();
+            }
         }
-        HttpURLConnection connection = (HttpURLConnection) new URL(fileUrl).openConnection();
-        connection.setInstanceFollowRedirects(true);
+        throw new IOException("too many redirects");
+    }
+
+    HttpURLConnection openConnection(URL url) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setInstanceFollowRedirects(false);
         connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
         connection.setReadTimeout(READ_TIMEOUT_MS);
         connection.setRequestProperty("User-Agent", "soho-ai-file-parser/1.0");
         connection.connect();
+        return connection;
+    }
 
-        int status = connection.getResponseCode();
-        if (status >= 400) {
-            throw new IOException("download file failed, status=" + status);
+    private void validateRemoteUrl(URL url) {
+        if (isBlockedFileUrl(url.toString())) {
+            throw new IllegalArgumentException("blocked file url");
         }
+    }
 
-        String contentType = connection.getContentType();
-        try (InputStream inputStream = connection.getInputStream()) {
-            byte[] bytes = readAll(inputStream, MAX_DOWNLOAD_BYTES);
-            return new RemoteFile(bytes, contentType);
-        } finally {
-            connection.disconnect();
+    private boolean isRedirectStatus(int status) {
+        return status == HttpURLConnection.HTTP_MOVED_PERM
+                || status == HttpURLConnection.HTTP_MOVED_TEMP
+                || status == HttpURLConnection.HTTP_SEE_OTHER
+                || status == 307
+                || status == 308;
+    }
+
+    private URL resolveRedirectUrl(URL currentUrl, String location) throws IOException {
+        if (StringUtils.isBlank(location)) {
+            throw new IOException("redirect location is empty");
         }
+        URL redirectUrl = new URL(currentUrl, location);
+        validateRemoteUrl(redirectUrl);
+        return redirectUrl;
+    }
+
+    boolean isBlockedFileUrl(URL url) {
+        if (url == null) {
+            return true;
+        }
+        return isBlockedFileUrl(url.toString());
     }
 
     boolean isBlockedFileUrl(String fileUrl) {
@@ -92,7 +137,7 @@ public class AiFileServiceImpl implements AiFileService {
             if (StringUtils.isBlank(host)) {
                 return true;
             }
-            if ("localhost".equalsIgnoreCase(host)) {
+            if ("localhost".equalsIgnoreCase(host) || "localhost.".equalsIgnoreCase(host)) {
                 return true;
             }
             InetAddress[] addresses = InetAddress.getAllByName(host);
