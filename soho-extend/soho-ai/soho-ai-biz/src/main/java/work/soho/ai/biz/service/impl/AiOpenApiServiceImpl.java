@@ -6,19 +6,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import work.soho.ai.biz.domain.AiApiCallLog;
@@ -42,6 +38,7 @@ import work.soho.ai.biz.service.AiProviderModelRelService;
 import work.soho.ai.biz.service.AiProxyConfigService;
 import work.soho.ai.biz.service.AiProxyRuntimeStateService;
 import work.soho.ai.biz.service.AiProxyRelayService;
+import work.soho.ai.biz.service.AiUpstreamClientFactory;
 import work.soho.ai.biz.service.AiUserApiKeyService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
 import work.soho.ai.biz.utils.AiProxyLayerUtils;
@@ -58,7 +55,6 @@ import work.soho.wallet.biz.service.WalletInfoService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -95,6 +91,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private final AiProxyConfigService aiProxyConfigService;
     private final AiProxyRelayService aiProxyRelayService;
     private final AiProxyRuntimeStateService aiProxyRuntimeStateService;
+    private final AiUpstreamClientFactory aiUpstreamClientFactory;
     private final AiApiCallLogService aiApiCallLogService;
     private final WalletInfoService walletInfoService;
     private final WalletInfoApiService walletInfoApiService;
@@ -306,7 +303,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         try {
             Map<String, Object> result = executeWithProxyRetry(config, "geminiGenerateContent",
-                    () -> invokeGeminiGenerateWithRetry(url, request, timeoutMs, buildProxy(config)));
+                    () -> invokeGeminiGenerateWithRetry(url, request, timeoutMs, buildProxySettings(config)));
 
 //            String rawBody = readGeminiMockResponseBody();
 //            Map<String, Object> result = parseJsonMap(rawBody);
@@ -342,17 +339,17 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private Map<String, Object> invokeGeminiGenerateWithRetry(String url,
                                                               Map<String, Object> request,
                                                               Integer timeoutMs,
-                                                              Proxy proxy) {
+                                                              AiProxyLayerUtils.ProxySettings proxySettings) {
         try {
-            return invokeGeminiGenerate(url, request, timeoutMs, proxy, false);
-        } catch (ResourceAccessException ex) {
+            return invokeGeminiGenerate(url, request, timeoutMs, proxySettings, false);
+        } catch (RuntimeException ex) {
             if (!isRetryableGeminiNetworkError(ex)) {
                 throw ex;
             }
             Integer retryTimeoutMs = resolveGeminiRetryTimeoutMs(timeoutMs);
             log.warn("gemini generateContent first attempt failed, retry once with Connection: close, url={}, message={}",
                     url, ex.getMessage());
-            return invokeGeminiGenerate(url, request, retryTimeoutMs, proxy, true);
+            return invokeGeminiGenerate(url, request, retryTimeoutMs, proxySettings, true);
         }
     }
 
@@ -369,17 +366,22 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private Map<String, Object> invokeGeminiGenerate(String url,
                                                      Map<String, Object> request,
                                                      Integer timeoutMs,
-                                                     Proxy proxy,
+                                                     AiProxyLayerUtils.ProxySettings proxySettings,
                                                      boolean forceCloseConnection) {
-        RestTemplate restTemplate = buildRestTemplate(timeoutMs, proxy);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         if (forceCloseConnection) {
             headers.set(HttpHeaders.CONNECTION, "close");
         }
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,
-                new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
-        return parseJsonMap(response.getBody());
+        ResponseEntity<String> response = aiUpstreamClientFactory.exchangeJson(
+                url,
+                HttpMethod.POST,
+                headers,
+                request == null ? new HashMap<>() : request,
+                normalizeTimeoutMs(timeoutMs),
+                proxySettings
+        );
+        return parseJsonMap(response == null ? null : response.getBody());
     }
 
     /**
@@ -388,7 +390,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      * @param ex 异常
      * @return true 表示建议重试
      */
-    private boolean isRetryableGeminiNetworkError(ResourceAccessException ex) {
+    private boolean isRetryableGeminiNetworkError(Throwable ex) {
         String message = ex == null ? "" : String.valueOf(ex.getMessage()).toLowerCase(Locale.ROOT);
         return message.contains("unexpected end of file")
                 || message.contains("connection reset")
@@ -734,11 +736,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         try {
             ResponseEntity<String> response = executeWithProxyRetry(config, endpoint, () -> {
-                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                return restTemplate.exchange(url, HttpMethod.POST,
-                        new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+                return exchangeJson(url, headers, request == null ? new HashMap<>() : request, timeoutMs, config);
             });
 
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
@@ -779,11 +779,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         try {
             ResponseEntity<String> response = executeWithProxyRetry(config, endpoint, () -> {
-                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                return restTemplate.exchange(url, HttpMethod.POST,
-                        new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+                return exchangeJson(url, headers, request == null ? new HashMap<>() : request, timeoutMs, config);
             });
 
             Map<String, Object> result = parseJsonMap(response.getBody());
@@ -829,11 +827,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         try {
             ResponseEntity<String> response = executeWithProxyRetry(config, endpoint, () -> {
-                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                return restTemplate.exchange(url, HttpMethod.POST,
-                        new HttpEntity<>(request == null ? new HashMap<>() : request, headers), String.class);
+                return exchangeJson(url, headers, request == null ? new HashMap<>() : request, timeoutMs, config);
             });
 
             AiUsageSummary usage = emptyUsage();
@@ -876,11 +872,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         try {
             ResponseEntity<byte[]> response = executeWithProxyRetry(config, endpoint, () -> {
-                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-                HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(buildMultipartBody(request, file), headers);
-                return restTemplate.exchange(url, HttpMethod.POST, entity, byte[].class);
+                return exchangeMultipart(url, headers, buildMultipartBody(request, file), timeoutMs, config);
             });
 
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
@@ -922,11 +916,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         try {
             ResponseEntity<byte[]> response = executeWithProxyRetry(config, endpoint, () -> {
-                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-                HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(buildMultipartBody(request, file), headers);
-                return restTemplate.exchange(url, HttpMethod.POST, entity, byte[].class);
+                return exchangeMultipart(url, headers, buildMultipartBody(request, file), timeoutMs, config);
             });
 
             AiUsageSummary usage = emptyUsage();
@@ -968,11 +960,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         try {
             ResponseEntity<byte[]> response = executeWithProxyRetry(config, endpoint, () -> {
-                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                return restTemplate.exchange(url, HttpMethod.POST,
-                        new HttpEntity<>(request == null ? new HashMap<>() : request, headers), byte[].class);
+                return exchangeBinary(url, headers, request == null ? new HashMap<>() : request, timeoutMs, config);
             });
 
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
@@ -1015,11 +1005,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         try {
             ResponseEntity<byte[]> response = executeWithProxyRetry(config, endpoint, () -> {
-                RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                return restTemplate.exchange(url, HttpMethod.POST,
-                        new HttpEntity<>(request == null ? new HashMap<>() : request, headers), byte[].class);
+                return exchangeBinary(url, headers, request == null ? new HashMap<>() : request, timeoutMs, config);
             });
 
             AiUsageSummary usage = emptyUsage();
@@ -2888,23 +2876,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     }
 
     /**
-     * 构建支持代理的 RestTemplate。
-     */
-    private RestTemplate buildRestTemplate(Integer timeoutMs, Proxy proxy) {
-        int timeout = timeoutMs == null || timeoutMs <= 0 ? 60000 : timeoutMs;
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(timeout);
-        factory.setReadTimeout(timeout);
-        if (proxy != null) {
-            factory.setProxy(proxy);
-        }
-        return new RestTemplate(factory);
-    }
-
-    /**
      * 构建上游代理配置。
      */
-    private Proxy buildProxy(Map<String, Object> config) {
+    private AiProxyLayerUtils.ProxySettings buildProxySettings(Map<String, Object> config) {
         String provider = pickString(config, INTERNAL_PROVIDER_KEY, pickString(config, "provider", ""));
         if (aiProxyRelayService == null) {
             throw new IllegalStateException("aiProxyRelayService is null, provider=" + provider
@@ -2923,7 +2897,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                         + ", error=" + ex.getMessage(), ex);
             }
             log.info("proxy node selected, provider={}, settings={}", provider, summarizeProxySettings(settings));
-            return AiProxyLayerUtils.buildJavaProxy(settings);
+            return settings;
         }
         AiProxyLayerUtils.ProxySettings fallback = AiProxyLayerUtils.resolve(config);
         clearResolvedProxyNode(config);
@@ -2938,7 +2912,56 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         if (fallback != null) {
             log.info("proxy node selected from fallback, provider={}, settings={}", provider, summarizeProxySettings(fallback));
         }
-        return AiProxyLayerUtils.buildJavaProxy(fallback);
+        return fallback;
+    }
+
+    private Integer normalizeTimeoutMs(Integer timeoutMs) {
+        return timeoutMs == null || timeoutMs <= 0 ? 60000 : timeoutMs;
+    }
+
+    private ResponseEntity<String> exchangeJson(String url,
+                                                HttpHeaders headers,
+                                                Object body,
+                                                Integer timeoutMs,
+                                                Map<String, Object> config) {
+        return aiUpstreamClientFactory.exchangeJson(
+                url,
+                HttpMethod.POST,
+                headers,
+                body,
+                normalizeTimeoutMs(timeoutMs),
+                buildProxySettings(config)
+        );
+    }
+
+    private ResponseEntity<byte[]> exchangeBinary(String url,
+                                                  HttpHeaders headers,
+                                                  Object body,
+                                                  Integer timeoutMs,
+                                                  Map<String, Object> config) {
+        return aiUpstreamClientFactory.exchangeBinary(
+                url,
+                HttpMethod.POST,
+                headers,
+                body,
+                normalizeTimeoutMs(timeoutMs),
+                buildProxySettings(config)
+        );
+    }
+
+    private ResponseEntity<byte[]> exchangeMultipart(String url,
+                                                     HttpHeaders headers,
+                                                     MultiValueMap<String, Object> body,
+                                                     Integer timeoutMs,
+                                                     Map<String, Object> config) {
+        return aiUpstreamClientFactory.exchangeMultipart(
+                url,
+                HttpMethod.POST,
+                headers,
+                body,
+                normalizeTimeoutMs(timeoutMs),
+                buildProxySettings(config)
+        );
     }
 
     /**
