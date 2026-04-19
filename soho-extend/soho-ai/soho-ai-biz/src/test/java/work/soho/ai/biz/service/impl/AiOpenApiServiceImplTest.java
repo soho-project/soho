@@ -644,6 +644,90 @@ public class AiOpenApiServiceImplTest {
     }
 
     @Test
+    public void buildOpenAiResponse_whenUsageHasCacheDetails_shouldExposeThem() throws Exception {
+        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+                Mockito.mock(AiUserApiKeyService.class),
+                Mockito.mock(AiProviderConfigService.class),
+                Mockito.mock(AiProviderModelRelService.class),
+                Mockito.mock(AiChatService.class),
+                Mockito.mock(AiProxyConfigService.class),
+                Mockito.mock(AiProxyRelayService.class),
+                Mockito.mock(AiProxyRuntimeStateService.class),
+                Mockito.mock(AiUpstreamClientFactory.class),
+                Mockito.mock(AiApiCallLogService.class),
+                Mockito.mock(WalletInfoService.class),
+                Mockito.mock(WalletInfoApiService.class),
+                Mockito.mock(AiMemberRequestLimitService.class),
+                Mockito.mock(AiUserMemberCardService.class)
+        );
+
+        AiUsageSummary usage = new AiUsageSummary();
+        usage.setPromptTokens(150);
+        usage.setCompletionTokens(40);
+        usage.setTotalTokens(190);
+        usage.setCachedInputTokens(50);
+        usage.setCacheCreationInputTokens(20);
+        usage.setCacheReadInputTokens(30);
+
+        Method method = AiOpenApiServiceImpl.class.getDeclaredMethod("buildOpenAiResponse", String.class, String.class, String.class, AiUsageSummary.class);
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> response = (Map<String, Object>) method.invoke(service, "req1", "claude-sonnet", "hello", usage);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> usageMap = (Map<String, Object>) response.get("usage");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> promptTokenDetails = (Map<String, Object>) usageMap.get("prompt_tokens_details");
+
+        assertThat(usageMap.get("prompt_tokens")).isEqualTo(150);
+        assertThat(usageMap.get("completion_tokens")).isEqualTo(40);
+        assertThat(usageMap.get("total_tokens")).isEqualTo(190);
+        assertThat(usageMap.get("cached_input_tokens")).isEqualTo(50);
+        assertThat(usageMap.get("cache_creation_input_tokens")).isEqualTo(20);
+        assertThat(usageMap.get("cache_read_input_tokens")).isEqualTo(30);
+        assertThat(promptTokenDetails.get("cached_tokens")).isEqualTo(50);
+    }
+
+    @Test
+    public void buildResponsesUsage_whenUsageHasCacheDetails_shouldExposeInputTokenDetails() throws Exception {
+        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+                Mockito.mock(AiUserApiKeyService.class),
+                Mockito.mock(AiProviderConfigService.class),
+                Mockito.mock(AiProviderModelRelService.class),
+                Mockito.mock(AiChatService.class),
+                Mockito.mock(AiProxyConfigService.class),
+                Mockito.mock(AiProxyRelayService.class),
+                Mockito.mock(AiProxyRuntimeStateService.class),
+                Mockito.mock(AiUpstreamClientFactory.class),
+                Mockito.mock(AiApiCallLogService.class),
+                Mockito.mock(WalletInfoService.class),
+                Mockito.mock(WalletInfoApiService.class),
+                Mockito.mock(AiMemberRequestLimitService.class),
+                Mockito.mock(AiUserMemberCardService.class)
+        );
+
+        Method method = AiOpenApiServiceImpl.class.getDeclaredMethod("buildResponsesUsage", Map.class);
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> usage = (Map<String, Object>) method.invoke(service, Map.of(
+                "prompt_tokens", 150,
+                "completion_tokens", 40,
+                "total_tokens", 190,
+                "cached_input_tokens", 50,
+                "cache_creation_input_tokens", 20,
+                "cache_read_input_tokens", 30
+        ));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> inputTokenDetails = (Map<String, Object>) usage.get("input_tokens_details");
+
+        assertThat(usage.get("input_tokens")).isEqualTo(150);
+        assertThat(usage.get("output_tokens")).isEqualTo(40);
+        assertThat(usage.get("total_tokens")).isEqualTo(190);
+        assertThat(inputTokenDetails.get("cached_tokens")).isEqualTo(50);
+        assertThat(inputTokenDetails.get("cache_creation_input_tokens")).isEqualTo(20);
+        assertThat(inputTokenDetails.get("cache_read_input_tokens")).isEqualTo(30);
+    }
+
+    @Test
     public void invokeGeminiGenerate_shouldUseUpstreamClientFactory() throws Exception {
         AiUpstreamClientFactory factory = Mockito.mock(AiUpstreamClientFactory.class);
         AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(

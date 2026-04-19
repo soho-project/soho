@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Flux;
 import work.soho.ai.biz.domain.AiProviderConfig;
 import work.soho.ai.biz.dto.AiChatResponse;
+import work.soho.ai.biz.dto.AiUsageSummary;
 import work.soho.ai.biz.request.AiChatRequest;
 import work.soho.ai.biz.request.OpenAiResponsesRequest;
 import work.soho.ai.biz.service.AiFileService;
@@ -26,6 +27,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -443,6 +445,56 @@ public class AiChatServiceImplTest {
         assertThatThrownBy(() -> service.resolveProviderConfig(null, "gpt-4o-mini"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("all upstream providers are temporarily unavailable for model: gpt-4o-mini");
+    }
+
+    /**
+     * Anthropic usage 应把 cache token 合并到输入 token。
+     */
+    @Test
+    public void extractUsage_whenAnthropicHasCacheTokens_shouldMergeIntoPromptTokens() throws Exception {
+        AiProviderConfigService providerConfigService = Mockito.mock(AiProviderConfigService.class);
+        AiProviderModelRelService providerModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiFileService aiFileService = Mockito.mock(AiFileService.class);
+        AiProviderRuntimeStateService runtimeStateService = allowAllRuntimeStateService();
+        AiChatServiceImpl service = new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService,
+                Mockito.mock(AiProxyConfigService.class), Mockito.mock(AiProxyRelayService.class),
+                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class));
+
+        Method method = AiChatServiceImpl.class.getDeclaredMethod("extractUsage", String.class, String.class);
+        method.setAccessible(true);
+        AiUsageSummary usage = (AiUsageSummary) method.invoke(service, "anthropic", "{\"usage\":{\"input_tokens\":100,\"cache_creation_input_tokens\":20,\"cache_read_input_tokens\":30,\"output_tokens\":40}}");
+
+        assertThat(usage.getPromptTokens()).isEqualTo(150);
+        assertThat(usage.getCompletionTokens()).isEqualTo(40);
+        assertThat(usage.getTotalTokens()).isEqualTo(190);
+        assertThat(usage.getCachedInputTokens()).isEqualTo(50);
+        assertThat(usage.getCacheCreationInputTokens()).isEqualTo(20);
+        assertThat(usage.getCacheReadInputTokens()).isEqualTo(30);
+    }
+
+    /**
+     * OpenAI usage 应保留 cached tokens 明细但不重复累加主 token。
+     */
+    @Test
+    public void extractUsage_whenOpenAiHasCachedTokens_shouldKeepDetailsOnly() throws Exception {
+        AiProviderConfigService providerConfigService = Mockito.mock(AiProviderConfigService.class);
+        AiProviderModelRelService providerModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiFileService aiFileService = Mockito.mock(AiFileService.class);
+        AiProviderRuntimeStateService runtimeStateService = allowAllRuntimeStateService();
+        AiChatServiceImpl service = new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService,
+                Mockito.mock(AiProxyConfigService.class), Mockito.mock(AiProxyRelayService.class),
+                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class));
+
+        Method method = AiChatServiceImpl.class.getDeclaredMethod("extractUsage", String.class, String.class);
+        method.setAccessible(true);
+        AiUsageSummary usage = (AiUsageSummary) method.invoke(service, "openai", "{\"usage\":{\"prompt_tokens\":120,\"completion_tokens\":80,\"total_tokens\":200,\"prompt_tokens_details\":{\"cached_tokens\":35}}}");
+
+        assertThat(usage.getPromptTokens()).isEqualTo(120);
+        assertThat(usage.getCompletionTokens()).isEqualTo(80);
+        assertThat(usage.getTotalTokens()).isEqualTo(200);
+        assertThat(usage.getCachedInputTokens()).isEqualTo(35);
+        assertThat(usage.getCacheCreationInputTokens()).isEqualTo(0);
+        assertThat(usage.getCacheReadInputTokens()).isEqualTo(0);
     }
 
     /**

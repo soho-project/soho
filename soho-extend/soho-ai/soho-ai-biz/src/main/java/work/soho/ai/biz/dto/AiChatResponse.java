@@ -13,4 +13,7 @@ public class AiChatResponse {
     private Integer promptTokens;
     private Integer completionTokens;
     private Integer totalTokens;
+    private Integer cachedInputTokens;
+    private Integer cacheCreationInputTokens;
+    private Integer cacheReadInputTokens;
 }
