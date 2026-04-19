@@ -171,9 +171,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
         aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
 
-        List<AiProviderConfig> providerConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
-                .eq(AiProviderConfig::getStatus, 1)
-                .orderByAsc(AiProviderConfig::getId));
+        List<AiProviderConfig> providerConfigs = aiProviderConfigService.listEnabledProviderConfigs();
 
         Map<String, Map<String, Object>> modelMap = new LinkedHashMap<>();
         for (AiProviderConfig providerConfig : providerConfigs) {
@@ -223,10 +221,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      * 构建 Gemini 模型列表响应。
      */
     private Map<String, Object> buildGeminiModelsResponse() {
-        List<AiProviderConfig> providerConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
-                .eq(AiProviderConfig::getStatus, 1)
-                .eq(AiProviderConfig::getProvider, "gemini")
-                .orderByAsc(AiProviderConfig::getId));
+        List<AiProviderConfig> providerConfigs = aiProviderConfigService.listEnabledProviderConfigsByProvider("gemini");
 
         Set<String> modelNames = new LinkedHashSet<>();
         for (AiProviderConfig providerConfig : providerConfigs) {
@@ -1288,9 +1283,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      * 解析余额接口使用的钱包类型列表。
      */
     private List<Integer> resolveBalanceWalletTypeIds() {
-        List<AiProviderConfig> providerConfigs = aiProviderConfigService.list(new LambdaQueryWrapper<AiProviderConfig>()
-                .eq(AiProviderConfig::getStatus, 1)
-                .orderByAsc(AiProviderConfig::getId));
+        List<AiProviderConfig> providerConfigs = aiProviderConfigService.listEnabledProviderConfigs();
         List<Integer> walletTypeIds = new ArrayList<>();
         for (AiProviderConfig providerConfig : providerConfigs) {
             Integer walletTypeId = pickInteger(parseConfig(providerConfig), "billingWalletTypeId", 1);

@@ -82,7 +82,7 @@ public class AiOpenApiServiceImplTest {
         AiProviderConfig providerConfig = new AiProviderConfig();
         providerConfig.setId(1L);
         providerConfig.setConfigJson("{\"billingWalletTypeId\":2}");
-        when(aiProviderConfigService.list(Mockito.any())).thenReturn(Collections.singletonList(providerConfig));
+        when(aiProviderConfigService.listEnabledProviderConfigs()).thenReturn(Collections.singletonList(providerConfig));
 
         WalletInfo walletInfo = new WalletInfo();
         walletInfo.setAmount(new BigDecimal("88.1256"));
