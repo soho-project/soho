@@ -1,9 +1,14 @@
 package work.soho.ai.biz.service.impl;
 
 import org.junit.Test;
+import org.mockito.Mockito;
 import work.soho.ai.biz.domain.AiProxyConfig;
+import work.soho.ai.biz.dto.AiProxyRuntimeStateSnapshot;
+import work.soho.ai.biz.service.AiProxyRuntimeStateRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class AiProxyRuntimeStateServiceImplTest {
 
@@ -52,6 +57,60 @@ public class AiProxyRuntimeStateServiceImplTest {
 
         assertThat(service.isRequestAllowed(proxyConfig)).isTrue();
         assertThat(service.getEffectiveWeight(proxyConfig)).isEqualTo(6);
+    }
+
+    @Test
+    public void getStateSnapshot_shouldExposeRuntimeMetrics() {
+        AiProxyRuntimeStateServiceImpl service = new AiProxyRuntimeStateServiceImpl();
+        AiProxyConfig proxyConfig = buildProxyConfig(5L, 9);
+
+        service.recordSuccess(proxyConfig.getId(), 12_000L);
+        service.recordFailure(proxyConfig.getId(), new IllegalStateException("proxy connection reset"));
+
+        AiProxyRuntimeStateSnapshot snapshot = service.getStateSnapshot(proxyConfig);
+
+        assertThat(snapshot).isNotNull();
+        assertThat(snapshot.getProxyConfigId()).isEqualTo(5L);
+        assertThat(snapshot.getBaseWeight()).isEqualTo(9);
+        assertThat(snapshot.getEffectiveWeight()).isBetween(1, 9);
+        assertThat(snapshot.getTotalSuccessCount()).isEqualTo(1L);
+        assertThat(snapshot.getTotalFailureCount()).isEqualTo(1L);
+        assertThat(snapshot.getLastErrorMessage()).contains("proxy connection reset");
+    }
+
+    @Test
+    public void getStateSnapshot_whenRepositoryHasSnapshot_shouldHydrateMemoryState() {
+        AiProxyRuntimeStateRepository repository = Mockito.mock(AiProxyRuntimeStateRepository.class);
+        AiProxyRuntimeStateServiceImpl service = new AiProxyRuntimeStateServiceImpl(repository);
+        AiProxyConfig proxyConfig = buildProxyConfig(6L, 10);
+        AiProxyRuntimeStateSnapshot snapshot = new AiProxyRuntimeStateSnapshot();
+        snapshot.setProxyConfigId(6L);
+        snapshot.setCircuitOpen(true);
+        snapshot.setCircuitOpenUntilMs(System.currentTimeMillis() + 30_000L);
+        snapshot.setConsecutiveFailures(2);
+        snapshot.setLastErrorMessage("proxy dns timeout");
+        snapshot.setTotalFailureCount(2L);
+        when(repository.findById(6L)).thenReturn(java.util.Optional.of(snapshot));
+
+        AiProxyRuntimeStateSnapshot result = service.getStateSnapshot(proxyConfig);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getCircuitOpen()).isTrue();
+        assertThat(service.isRequestAllowed(proxyConfig)).isFalse();
+        assertThat(service.getEffectiveWeight(proxyConfig)).isZero();
+    }
+
+    @Test
+    public void recordSuccess_shouldPersistSnapshotToRepository() {
+        AiProxyRuntimeStateRepository repository = Mockito.mock(AiProxyRuntimeStateRepository.class);
+        AiProxyRuntimeStateServiceImpl service = new AiProxyRuntimeStateServiceImpl(repository);
+
+        service.recordSuccess(7L, 8_000L);
+
+        verify(repository).save(Mockito.argThat(snapshot ->
+                snapshot != null
+                        && Long.valueOf(7L).equals(snapshot.getProxyConfigId())
+                        && Long.valueOf(1L).equals(snapshot.getTotalSuccessCount())));
     }
 
     /**

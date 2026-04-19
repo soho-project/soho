@@ -3,10 +3,13 @@ package work.soho.ai.biz.controller;
 import org.junit.Test;
 import org.mockito.Mockito;
 import work.soho.ai.biz.domain.AiProxyConfig;
+import work.soho.ai.biz.dto.AiProxyRuntimeStateSnapshot;
 import work.soho.ai.biz.request.AiProxyBatchTestRequest;
 import work.soho.ai.biz.service.AiProxyConfigService;
 import work.soho.ai.biz.service.AiProxyRelayService;
+import work.soho.ai.biz.service.AiProxyRuntimeStateService;
 import work.soho.ai.biz.utils.AiProxyLayerUtils;
+import work.soho.ai.biz.vo.AiProxyConfigMonitorVO;
 import work.soho.common.core.result.R;
 
 import java.io.InputStream;
@@ -35,6 +38,36 @@ import static org.mockito.Mockito.when;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AiProxyConfigControllerTest {
+
+    @Test
+    public void getInfo_shouldReturnMonitorFields() {
+        AiProxyConfigService aiProxyConfigService = Mockito.mock(AiProxyConfigService.class);
+        AiProxyRelayService aiProxyRelayService = Mockito.mock(AiProxyRelayService.class);
+        AiProxyRuntimeStateService aiProxyRuntimeStateService = Mockito.mock(AiProxyRuntimeStateService.class);
+        AiProxyConfigController controller = new AiProxyConfigController(aiProxyConfigService, aiProxyRelayService, aiProxyRuntimeStateService);
+
+        AiProxyConfig config = new AiProxyConfig();
+        config.setId(11L);
+        config.setName("proxy-11");
+        config.setWeight(7);
+        when(aiProxyConfigService.getById(11L)).thenReturn(config);
+
+        AiProxyRuntimeStateSnapshot snapshot = new AiProxyRuntimeStateSnapshot();
+        snapshot.setProxyConfigId(11L);
+        snapshot.setEffectiveWeight(5);
+        snapshot.setRequestAllowed(true);
+        snapshot.setCircuitOpen(false);
+        snapshot.setTotalSuccessCount(9L);
+        when(aiProxyRuntimeStateService.getStateSnapshot(config)).thenReturn(snapshot);
+
+        R<AiProxyConfigMonitorVO> response = controller.getInfo(11L);
+
+        assertThat(response.getPayload()).isNotNull();
+        assertThat(response.getPayload().getId()).isEqualTo(11L);
+        assertThat(response.getPayload().getEffectiveWeight()).isEqualTo(5);
+        assertThat(response.getPayload().getRequestAllowed()).isTrue();
+        assertThat(response.getPayload().getTotalSuccessCount()).isEqualTo(9L);
+    }
 
     @Test
     public void resolveBatchTestPoolSize_shouldLimitConcurrencyToFive() {
