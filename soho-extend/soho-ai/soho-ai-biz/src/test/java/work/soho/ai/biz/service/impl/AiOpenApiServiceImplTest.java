@@ -17,8 +17,20 @@ import work.soho.ai.biz.service.AiProviderModelRelService;
 import work.soho.ai.biz.service.AiProxyConfigService;
 import work.soho.ai.biz.service.AiProxyRelayService;
 import work.soho.ai.biz.service.AiProxyRuntimeStateService;
+import work.soho.ai.biz.service.AiUpstreamClientFactory;
 import work.soho.ai.biz.service.AiUserApiKeyService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import work.soho.wallet.biz.domain.WalletInfo;
 import work.soho.wallet.api.service.WalletInfoApiService;
 import work.soho.wallet.biz.service.WalletInfoService;
@@ -54,6 +66,7 @@ public class AiOpenApiServiceImplTest {
                 Mockito.mock(AiProxyConfigService.class),
                 Mockito.mock(AiProxyRelayService.class),
                 Mockito.mock(AiProxyRuntimeStateService.class),
+                Mockito.mock(AiUpstreamClientFactory.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -121,6 +134,7 @@ public class AiOpenApiServiceImplTest {
                 Mockito.mock(AiProxyConfigService.class),
                 Mockito.mock(AiProxyRelayService.class),
                 Mockito.mock(AiProxyRuntimeStateService.class),
+                Mockito.mock(AiUpstreamClientFactory.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -170,6 +184,7 @@ public class AiOpenApiServiceImplTest {
                 Mockito.mock(AiProxyConfigService.class),
                 Mockito.mock(AiProxyRelayService.class),
                 Mockito.mock(AiProxyRuntimeStateService.class),
+                Mockito.mock(AiUpstreamClientFactory.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -216,6 +231,7 @@ public class AiOpenApiServiceImplTest {
                 Mockito.mock(AiProxyConfigService.class),
                 Mockito.mock(AiProxyRelayService.class),
                 Mockito.mock(AiProxyRuntimeStateService.class),
+                Mockito.mock(AiUpstreamClientFactory.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -281,6 +297,7 @@ public class AiOpenApiServiceImplTest {
                 Mockito.mock(AiProxyConfigService.class),
                 Mockito.mock(AiProxyRelayService.class),
                 Mockito.mock(AiProxyRuntimeStateService.class),
+                Mockito.mock(AiUpstreamClientFactory.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -324,6 +341,7 @@ public class AiOpenApiServiceImplTest {
                 Mockito.mock(AiProxyConfigService.class),
                 Mockito.mock(AiProxyRelayService.class),
                 Mockito.mock(AiProxyRuntimeStateService.class),
+                Mockito.mock(AiUpstreamClientFactory.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -424,6 +442,7 @@ public class AiOpenApiServiceImplTest {
                 Mockito.mock(AiProxyConfigService.class),
                 Mockito.mock(AiProxyRelayService.class),
                 Mockito.mock(AiProxyRuntimeStateService.class),
+                Mockito.mock(AiUpstreamClientFactory.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -521,6 +540,7 @@ public class AiOpenApiServiceImplTest {
                 Mockito.mock(AiProxyConfigService.class),
                 Mockito.mock(AiProxyRelayService.class),
                 Mockito.mock(AiProxyRuntimeStateService.class),
+                Mockito.mock(AiUpstreamClientFactory.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -581,6 +601,7 @@ public class AiOpenApiServiceImplTest {
                 Mockito.mock(AiProxyConfigService.class),
                 Mockito.mock(AiProxyRelayService.class),
                 Mockito.mock(AiProxyRuntimeStateService.class),
+                Mockito.mock(AiUpstreamClientFactory.class),
                 aiApiCallLogService,
                 walletInfoService,
                 walletInfoApiService,
@@ -620,5 +641,50 @@ public class AiOpenApiServiceImplTest {
         assertThatThrownBy(() -> service.chatCompletions("Bearer token", request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("钱包不存在");
+    }
+
+    @Test
+    public void invokeGeminiGenerate_shouldUseUpstreamClientFactory() throws Exception {
+        AiUpstreamClientFactory factory = Mockito.mock(AiUpstreamClientFactory.class);
+        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+                Mockito.mock(AiUserApiKeyService.class),
+                Mockito.mock(AiProviderConfigService.class),
+                Mockito.mock(AiProviderModelRelService.class),
+                Mockito.mock(AiChatService.class),
+                Mockito.mock(AiProxyConfigService.class),
+                Mockito.mock(AiProxyRelayService.class),
+                Mockito.mock(AiProxyRuntimeStateService.class),
+                factory,
+                Mockito.mock(AiApiCallLogService.class),
+                Mockito.mock(WalletInfoService.class),
+                Mockito.mock(WalletInfoApiService.class),
+                Mockito.mock(AiMemberRequestLimitService.class),
+                Mockito.mock(AiUserMemberCardService.class)
+        );
+
+        when(factory.exchangeJson(anyString(), eq(HttpMethod.POST), any(HttpHeaders.class), any(), anyInt(), Mockito.any()))
+                .thenReturn(ResponseEntity.ok("{\"candidates\":[]}"));
+
+        Method method = AiOpenApiServiceImpl.class.getDeclaredMethod(
+                "invokeGeminiGenerate",
+                String.class,
+                Map.class,
+                Integer.class,
+                work.soho.ai.biz.utils.AiProxyLayerUtils.ProxySettings.class,
+                boolean.class
+        );
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> result = (Map<String, Object>) method.invoke(
+                service,
+                "https://example.com",
+                Map.of("contents", java.util.List.of()),
+                1234,
+                null,
+                false
+        );
+
+        assertThat(result).containsKey("candidates");
+        verify(factory, times(1)).exchangeJson(anyString(), eq(HttpMethod.POST), any(HttpHeaders.class), any(), anyInt(), Mockito.any());
     }
 }

@@ -3,21 +3,17 @@ package work.soho.ai.biz.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.netty.channel.ChannelOption;
-import io.netty.resolver.NoopAddressResolverGroup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -26,8 +22,6 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import reactor.netty.http.client.HttpClient;
-import reactor.netty.transport.ProxyProvider;
 import work.soho.ai.biz.domain.AiProviderConfig;
 import work.soho.ai.biz.dto.AiChatResponse;
 import work.soho.ai.biz.dto.AiProxySelectionResult;
@@ -41,6 +35,7 @@ import work.soho.ai.biz.service.AiProxyConfigService;
 import work.soho.ai.biz.service.AiProxyRuntimeStateService;
 import work.soho.ai.biz.service.AiProxyRelayService;
 import work.soho.ai.biz.service.AiProviderRuntimeStateService;
+import work.soho.ai.biz.service.AiUpstreamClientFactory;
 import work.soho.ai.biz.utils.AiProxyLayerUtils;
 import work.soho.ai.biz.utils.AiProviderModelUtils;
 import work.soho.common.core.util.JacksonUtils;
@@ -98,6 +93,7 @@ public class AiChatServiceImpl implements AiChatService {
     private final AiProxyRelayService aiProxyRelayService;
     private final AiProxyRuntimeStateService aiProxyRuntimeStateService;
     private final AiProviderRuntimeStateService aiProviderRuntimeStateService;
+    private final AiUpstreamClientFactory aiUpstreamClientFactory;
 
     @Override
     public AiChatResponse chat(AiChatRequest request) {
@@ -1244,16 +1240,21 @@ public class AiChatServiceImpl implements AiChatService {
     private String postJson(String url, Map<String, String> headers, Map<String, Object> body, Integer timeoutMs,
                             Map<String, Object> config) {
         return executeWithProxyRetry(config, "postJson", () -> {
-            RestTemplate restTemplate = buildRestTemplate(timeoutMs, buildProxy(config));
             HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
             if (headers != null) {
                 headers.forEach(httpHeaders::add);
             }
-            HttpEntity<String> entity = new HttpEntity<>(JacksonUtils.toJson(body), httpHeaders);
             try {
-                ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-                return response.getBody();
+                ResponseEntity<String> response = aiUpstreamClientFactory.exchangeJson(
+                        url,
+                        HttpMethod.POST,
+                        httpHeaders,
+                        body,
+                        timeoutMs,
+                        buildProxySettings(config)
+                );
+                return response == null ? null : response.getBody();
             } catch (RuntimeException ex) {
                 throw wrapUpstreamException(url, body, ex);
             }
@@ -1402,37 +1403,27 @@ public class AiChatServiceImpl implements AiChatService {
         return false;
     }
 
-    private RestTemplate buildRestTemplate(Integer timeoutMs, Proxy proxy) {
-        int timeout = timeoutMs == null || timeoutMs <= 0 ? DEFAULT_TIMEOUT_MS : timeoutMs;
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(timeout);
-        factory.setReadTimeout(timeout);
-        if (proxy != null) {
-            factory.setProxy(proxy);
-        }
-        return new RestTemplate(factory);
-    }
-
     WebClient buildWebClient() {
-        return WebClient.builder().build();
+        return aiUpstreamClientFactory.getWebClient(DEFAULT_TIMEOUT_MS, null);
     }
 
-    /**
-     * 基于配置构建 WebClient，并按代理配置挂载 Reactor Netty 代理能力。
-     *
-     * 说明：
-     * 1. proxyType=ss/vmess/vless/trojan 时，要求先通过本地中继程序暴露 socks5/http 出口；
-     * 2. 该方法只负责接入标准 HTTP/SOCKS5 代理，不直接实现 ss/vmess 协议握手；
-     * 3. 自动附带连接/响应超时以及代理用户名密码认证配置。
-     *
-     * @param config 提供方配置
-     * @return 可用的WebClient
-     */
-    WebClient buildWebClient(Map<String, Object> config) {
-        AiProxyLayerUtils.ProxySettings settings = resolveProxySettings(config);
+    private AiProxyLayerUtils.ProxySettings buildProxySettings(Map<String, Object> config) {
+        return resolveProxySettings(config);
+    }
+
+    private Integer normalizeTimeoutMs(Integer timeoutMs) {
+        return timeoutMs == null || timeoutMs <= 0 ? DEFAULT_TIMEOUT_MS : timeoutMs;
+    }
+
+    private WebClient buildSharedWebClient(Integer timeoutMs, AiProxyLayerUtils.ProxySettings settings) {
+        return aiUpstreamClientFactory.getWebClient(normalizeTimeoutMs(timeoutMs), settings);
+    }
+
+    private WebClient buildWebClientInternal(Integer timeoutMs, Map<String, Object> config) {
+        AiProxyLayerUtils.ProxySettings settings = buildProxySettings(config);
         if (settings == null) {
             cacheResolvedProxySummary(config, null);
-            return buildWebClient();
+            return buildSharedWebClient(timeoutMs, null);
         }
         String provider = pickString(config, INTERNAL_PROVIDER_KEY, pickString(config, "provider", ""));
         if (aiProxyRelayService == null) {
@@ -1452,38 +1443,29 @@ public class AiChatServiceImpl implements AiChatService {
         log.info("proxy node selected, provider={}, settings={}", provider, summarizeProxySettings(resolvedSettings));
         cacheResolvedProxySummary(config, resolvedSettings);
         ensureRelayEndpointAvailable(resolvedSettings, config);
-        int timeoutMs = pickInteger(config, "timeoutMs", DEFAULT_TIMEOUT_MS);
-        HttpClient httpClient = HttpClient.create()
-                .resolver(NoopAddressResolverGroup.INSTANCE)
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMs)
-                .responseTimeout(Duration.ofMillis(timeoutMs))
-                .proxy(spec -> {
-            ProxyProvider.Builder builder;
-            if (resolvedSettings.isLocalRelayRequired()) {
-                log.info("proxy protocol requires local relay endpoint, provider={}, relay={}:{}",
-                        pickString(config, INTERNAL_PROVIDER_KEY, pickString(config, "provider", "")),
-                        resolvedSettings.getHost(), resolvedSettings.getPort());
-            }
-            if (resolvedSettings.isHttpProxy()) {
-                builder = spec.type(ProxyProvider.Proxy.HTTP)
-                        .host(resolvedSettings.getHost())
-                        .port(resolvedSettings.getPort());
-            } else {
-                builder = spec.type(ProxyProvider.Proxy.SOCKS5)
-                        .host(resolvedSettings.getHost())
-                        .port(resolvedSettings.getPort());
-            }
-            if (StringUtils.isNotBlank(resolvedSettings.getUsername())) {
-                builder.username(resolvedSettings.getUsername());
-            }
-            if (StringUtils.isNotBlank(resolvedSettings.getPassword())) {
-                builder.password(ignored -> resolvedSettings.getPassword());
-            }
-        });
-        return WebClient.builder()
-                .clientConnector(new org.springframework.http.client.reactive.ReactorClientHttpConnector(httpClient))
-                .build();
+        return buildSharedWebClient(timeoutMs, resolvedSettings);
     }
+
+    WebClient buildWebClient(Map<String, Object> config) {
+        int timeoutMs = pickInteger(config, "timeoutMs", DEFAULT_TIMEOUT_MS);
+        return buildWebClientInternal(timeoutMs, config);
+    }
+
+    WebClient buildWebClient(Map<String, Object> config, Integer timeoutMs) {
+        return buildWebClientInternal(timeoutMs, config);
+    }
+
+    /**
+     * 基于配置构建 WebClient，并按代理配置挂载 Reactor Netty 代理能力。
+     *
+     * 说明：
+     * 1. proxyType=ss/vmess/vless/trojan 时，要求先通过本地中继程序暴露 socks5/http 出口；
+     * 2. 该方法只负责接入标准 HTTP/SOCKS5 代理，不直接实现 ss/vmess 协议握手；
+     * 3. 自动附带连接/响应超时以及代理用户名密码认证配置。
+     *
+     * @param config 提供方配置
+     * @return 可用的WebClient
+     */
 
     /**
      * 记录本次请求最终生效的代理摘要，避免日志误用原始配置中的静态代理字段。
@@ -1794,10 +1776,6 @@ public class AiChatServiceImpl implements AiChatService {
         private String getErrorMessage() {
             return errorMessage;
         }
-    }
-
-    private Proxy buildProxy(Map<String, Object> config) {
-        return AiProxyLayerUtils.buildJavaProxy(resolveProxySettings(config));
     }
 
     /**
