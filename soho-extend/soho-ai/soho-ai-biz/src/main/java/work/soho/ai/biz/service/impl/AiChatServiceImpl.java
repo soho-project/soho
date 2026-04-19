@@ -1930,13 +1930,20 @@ public class AiChatServiceImpl implements AiChatService {
             JsonNode root = JacksonUtils.getObjectMapper().readTree(raw);
             switch (provider.toLowerCase(Locale.ROOT)) {
                 case "anthropic":
-                    summary.setPromptTokens(root.path("usage").path("input_tokens").asInt(0));
+                    int anthropicInputTokens = root.path("usage").path("input_tokens").asInt(0);
+                    int cacheCreationInputTokens = root.path("usage").path("cache_creation_input_tokens").asInt(0);
+                    int cacheReadInputTokens = root.path("usage").path("cache_read_input_tokens").asInt(0);
+                    summary.setCacheCreationInputTokens(cacheCreationInputTokens);
+                    summary.setCacheReadInputTokens(cacheReadInputTokens);
+                    summary.setCachedInputTokens(cacheCreationInputTokens + cacheReadInputTokens);
+                    summary.setPromptTokens(anthropicInputTokens + summary.getCachedInputTokens());
                     summary.setCompletionTokens(root.path("usage").path("output_tokens").asInt(0));
                     break;
                 case "gemini":
                     summary.setPromptTokens(root.path("usageMetadata").path("promptTokenCount").asInt(0));
                     summary.setCompletionTokens(root.path("usageMetadata").path("candidatesTokenCount").asInt(0));
                     summary.setTotalTokens(root.path("usageMetadata").path("totalTokenCount").asInt(0));
+                    summary.setCachedInputTokens(root.path("usageMetadata").path("cachedContentTokenCount").asInt(0));
                     break;
                 case "ollama":
                     summary.setPromptTokens(root.path("prompt_eval_count").asInt(0));
@@ -1946,11 +1953,16 @@ public class AiChatServiceImpl implements AiChatService {
                     summary.setPromptTokens(root.path("usage").path("input_tokens").asInt(0));
                     summary.setCompletionTokens(root.path("usage").path("output_tokens").asInt(0));
                     summary.setTotalTokens(root.path("usage").path("total_tokens").asInt(0));
+                    summary.setCachedInputTokens(root.path("usage").path("input_tokens_details").path("cached_tokens").asInt(0));
                     break;
                 default:
                     summary.setPromptTokens(root.path("usage").path("prompt_tokens").asInt(0));
                     summary.setCompletionTokens(root.path("usage").path("completion_tokens").asInt(0));
                     summary.setTotalTokens(root.path("usage").path("total_tokens").asInt(0));
+                    summary.setCachedInputTokens(root.path("usage").path("prompt_tokens_details").path("cached_tokens").asInt(0));
+                    if (summary.getCachedInputTokens() == null || summary.getCachedInputTokens() == 0) {
+                        summary.setCachedInputTokens(root.path("usage").path("input_tokens_details").path("cached_tokens").asInt(0));
+                    }
                     // fixed 请求上游的是 codex接口
                     if (summary.getTotalTokens() == null || summary.getTotalTokens() == 0) {
                         summary.setPromptTokens(root.path("usage").path("input_tokens").asInt(0));
@@ -1980,6 +1992,9 @@ public class AiChatServiceImpl implements AiChatService {
         response.setPromptTokens(usage.getPromptTokens());
         response.setCompletionTokens(usage.getCompletionTokens());
         response.setTotalTokens(usage.getTotalTokens());
+        response.setCachedInputTokens(usage.getCachedInputTokens());
+        response.setCacheCreationInputTokens(usage.getCacheCreationInputTokens());
+        response.setCacheReadInputTokens(usage.getCacheReadInputTokens());
         return response;
     }
 

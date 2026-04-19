@@ -523,7 +523,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             Map<String, Object> result = parseNativeResponsesResult(response.getRaw());
             if (result.isEmpty()) {
                 Map<String, Object> chatResponse = buildOpenAiResponse(requestId, response.getModel(), response.getContent(), usage);
-                result = buildResponsesResponse(chatResponse);
+                result = buildResponsesResponse(chatResponse, usage);
             }
             log.info("responses 返回摘要: {}", JacksonUtils.toJson(buildResponsesResultLogSummary(result)));
             return result;
@@ -2240,6 +2240,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         usage.setPromptTokens(response.getPromptTokens() == null ? 0 : response.getPromptTokens());
         usage.setCompletionTokens(response.getCompletionTokens() == null ? 0 : response.getCompletionTokens());
         usage.setTotalTokens(response.getTotalTokens() == null ? 0 : response.getTotalTokens());
+        usage.setCachedInputTokens(response.getCachedInputTokens() == null ? 0 : response.getCachedInputTokens());
+        usage.setCacheCreationInputTokens(response.getCacheCreationInputTokens() == null ? 0 : response.getCacheCreationInputTokens());
+        usage.setCacheReadInputTokens(response.getCacheReadInputTokens() == null ? 0 : response.getCacheReadInputTokens());
         if (usage.getTotalTokens() == 0) {
             return aiChatService.estimateUsage(request, response.getContent());
         }
@@ -2481,17 +2484,46 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         usageMap.put("prompt_tokens", usage.getPromptTokens());
         usageMap.put("completion_tokens", usage.getCompletionTokens());
         usageMap.put("total_tokens", usage.getTotalTokens());
+        enrichChatUsageMap(usageMap, usage);
         response.put("usage", usageMap);
         return response;
     }
 
-    private Map<String, Object> buildResponsesResponse(Map<String, Object> chatResponse) {
+    private Map<String, Object> buildOpenAiUsageDetails(AiUsageSummary usage) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("cached_tokens", usage.getCachedInputTokens() == null ? 0 : usage.getCachedInputTokens());
+        return details;
+    }
+
+    private Map<String, Object> buildResponsesInputTokenDetails(AiUsageSummary usage) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("cached_tokens", usage.getCachedInputTokens() == null ? 0 : usage.getCachedInputTokens());
+        if ((usage.getCacheCreationInputTokens() == null ? 0 : usage.getCacheCreationInputTokens()) > 0) {
+            details.put("cache_creation_input_tokens", usage.getCacheCreationInputTokens());
+        }
+        if ((usage.getCacheReadInputTokens() == null ? 0 : usage.getCacheReadInputTokens()) > 0) {
+            details.put("cache_read_input_tokens", usage.getCacheReadInputTokens());
+        }
+        return details;
+    }
+
+    private Map<String, Object> enrichChatUsageMap(Map<String, Object> usageMap, AiUsageSummary usage) {
+        usageMap.put("cached_input_tokens", usage.getCachedInputTokens());
+        usageMap.put("cache_creation_input_tokens", usage.getCacheCreationInputTokens());
+        usageMap.put("cache_read_input_tokens", usage.getCacheReadInputTokens());
+        usageMap.put("prompt_tokens_details", buildOpenAiUsageDetails(usage));
+        usageMap.put("input_tokens_details", buildResponsesInputTokenDetails(usage));
+        return usageMap;
+    }
+
+    private Map<String, Object> buildResponsesResponse(Map<String, Object> chatResponse, AiUsageSummary usage) {
         String id = String.valueOf(chatResponse.getOrDefault("id", "resp_" + IDGeneratorUtils.uuid32()));
         String model = String.valueOf(chatResponse.getOrDefault("model", ""));
         String text = extractTextFromChatResponse(chatResponse);
         Map<String, Object> usageMap = chatResponse.get("usage") instanceof Map
                 ? new HashMap<>((Map<String, Object>) chatResponse.get("usage"))
                 : new HashMap<>();
+        enrichChatUsageMap(usageMap, usage);
 
         String outputItemId = "msg_" + IDGeneratorUtils.uuid32();
         Map<String, Object> outputItem = buildAssistantOutputItem(outputItemId, text);
@@ -2508,6 +2540,10 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         response.put("output_text", text);
         response.put("usage", buildResponsesUsage(usageMap));
         return response;
+    }
+
+    private Map<String, Object> buildResponsesResponse(Map<String, Object> chatResponse) {
+        return buildResponsesResponse(chatResponse, emptyUsage());
     }
 
     private String extractTextFromChatResponse(Map<String, Object> chatResponse) {
@@ -2531,10 +2567,24 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         Number promptTokens = toNumber(chatUsageMap.get("prompt_tokens"));
         Number completionTokens = toNumber(chatUsageMap.get("completion_tokens"));
         Number totalTokens = toNumber(chatUsageMap.get("total_tokens"));
+        Number cachedInputTokens = toNumber(chatUsageMap.get("cached_input_tokens"));
+        Number cacheCreationInputTokens = toNumber(chatUsageMap.get("cache_creation_input_tokens"));
+        Number cacheReadInputTokens = toNumber(chatUsageMap.get("cache_read_input_tokens"));
         Map<String, Object> usage = new HashMap<>();
         usage.put("input_tokens", promptTokens.intValue());
         usage.put("output_tokens", completionTokens.intValue());
         usage.put("total_tokens", totalTokens.intValue());
+        usage.put("input_tokens_details", new HashMap<>(Map.of("cached_tokens", cachedInputTokens.intValue())));
+        if (cacheCreationInputTokens.intValue() > 0 || cacheReadInputTokens.intValue() > 0) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> inputTokenDetails = (Map<String, Object>) usage.get("input_tokens_details");
+            if (cacheCreationInputTokens.intValue() > 0) {
+                inputTokenDetails.put("cache_creation_input_tokens", cacheCreationInputTokens.intValue());
+            }
+            if (cacheReadInputTokens.intValue() > 0) {
+                inputTokenDetails.put("cache_read_input_tokens", cacheReadInputTokens.intValue());
+            }
+        }
         return usage;
     }
 
