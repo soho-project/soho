@@ -4,16 +4,20 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageSerializable;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import work.soho.admin.api.request.BetweenCreatedTimeRequest;
 import work.soho.admin.api.vo.OptionVo;
 import work.soho.ai.biz.domain.AiProxyConfig;
+import work.soho.ai.biz.dto.AiProxyRuntimeStateSnapshot;
 import work.soho.ai.biz.request.AiProxyBatchStatusRequest;
 import work.soho.ai.biz.request.AiProxyBatchTestRequest;
 import work.soho.ai.biz.service.AiProxyConfigService;
 import work.soho.ai.biz.service.AiProxyRelayService;
+import work.soho.ai.biz.service.AiProxyRuntimeStateService;
 import work.soho.ai.biz.utils.AiProxyLayerUtils;
+import work.soho.ai.biz.vo.AiProxyConfigMonitorVO;
 import work.soho.common.core.result.R;
 import work.soho.common.core.util.PageUtils;
 import work.soho.common.core.util.StringUtils;
@@ -50,7 +54,6 @@ import java.util.stream.Collectors;
  */
 @Api(value = "AI代理配置", tags = "AI代理配置")
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/ai/admin/aiProxyConfig")
 public class AiProxyConfigController {
     private static final String DEFAULT_TEST_URL = "https://chatgpt.com";
@@ -61,6 +64,33 @@ public class AiProxyConfigController {
 
     private final AiProxyConfigService aiProxyConfigService;
     private final AiProxyRelayService aiProxyRelayService;
+    private final AiProxyRuntimeStateService aiProxyRuntimeStateService;
+
+    /**
+     * 创建代理配置控制器。
+     *
+     * @param aiProxyConfigService 代理配置服务
+     * @param aiProxyRelayService 代理中继服务
+     */
+    public AiProxyConfigController(AiProxyConfigService aiProxyConfigService, AiProxyRelayService aiProxyRelayService) {
+        this(aiProxyConfigService, aiProxyRelayService, null);
+    }
+
+    /**
+     * 创建代理配置控制器。
+     *
+     * @param aiProxyConfigService 代理配置服务
+     * @param aiProxyRelayService 代理中继服务
+     * @param aiProxyRuntimeStateService 代理运行时状态服务
+     */
+    @Autowired
+    public AiProxyConfigController(AiProxyConfigService aiProxyConfigService,
+                                   AiProxyRelayService aiProxyRelayService,
+                                   AiProxyRuntimeStateService aiProxyRuntimeStateService) {
+        this.aiProxyConfigService = aiProxyConfigService;
+        this.aiProxyRelayService = aiProxyRelayService;
+        this.aiProxyRuntimeStateService = aiProxyRuntimeStateService;
+    }
 
     /**
      * 查询代理列表。
@@ -72,8 +102,8 @@ public class AiProxyConfigController {
     @GetMapping("/list")
     @Node(value = "aiProxyConfig::list", name = "获取 AI代理配置 列表")
     @ApiOperation(value = "获取 AI代理配置 列表", notes = "获取 AI代理配置 列表")
-    public R<PageSerializable<AiProxyConfig>> list(AiProxyConfig aiProxyConfig,
-                                                    BetweenCreatedTimeRequest betweenCreatedTimeRequest) {
+    public R<PageSerializable<AiProxyConfigMonitorVO>> list(AiProxyConfig aiProxyConfig,
+                                                            BetweenCreatedTimeRequest betweenCreatedTimeRequest) {
         PageUtils.startPage();
         LambdaQueryWrapper<AiProxyConfig> lqw = new LambdaQueryWrapper<>();
         lqw.like(StringUtils.isNotBlank(aiProxyConfig.getName()), AiProxyConfig::getName, aiProxyConfig.getName());
@@ -87,7 +117,8 @@ public class AiProxyConfigController {
         lqw.lt(betweenCreatedTimeRequest != null && betweenCreatedTimeRequest.getEndTime() != null,
                 AiProxyConfig::getCreatedTime, betweenCreatedTimeRequest.getEndTime());
         lqw.orderByDesc(AiProxyConfig::getWeight).orderByAsc(AiProxyConfig::getId);
-        return R.success(new PageSerializable<>(aiProxyConfigService.list(lqw)));
+        List<AiProxyConfig> list = aiProxyConfigService.list(lqw);
+        return R.success(new PageSerializable<>(toMonitorViewList(list)));
     }
 
     /**
@@ -99,8 +130,9 @@ public class AiProxyConfigController {
     @GetMapping("/{id}")
     @Node(value = "aiProxyConfig::getInfo", name = "获取 AI代理配置 详情")
     @ApiOperation(value = "获取 AI代理配置 详情", notes = "获取 AI代理配置 详情")
-    public R<AiProxyConfig> getInfo(@PathVariable("id") Long id) {
-        return R.success(aiProxyConfigService.getById(id));
+    public R<AiProxyConfigMonitorVO> getInfo(@PathVariable("id") Long id) {
+        AiProxyConfig config = aiProxyConfigService.getById(id);
+        return R.success(toMonitorView(config, resolveStateSnapshot(config)));
     }
 
     /**
@@ -142,6 +174,113 @@ public class AiProxyConfigController {
     @ApiOperation(value = "删除 AI代理配置", notes = "删除 AI代理配置")
     public R<Boolean> remove(@PathVariable Long[] ids) {
         return R.success(aiProxyConfigService.removeByIds(Arrays.asList(ids)));
+    }
+
+    /**
+     * 清理代理节点运行时状态。
+     *
+     * @param id 主键ID
+     * @return 更新后的代理详情
+     */
+    @PostMapping("/{id}/clearRuntimeState")
+    @Node(value = "aiProxyConfig::clearRuntimeState", name = "清理 AI代理配置 运行态")
+    @ApiOperation(value = "清理 AI代理配置 运行态", notes = "清理单个代理节点的熔断、降权与统计运行态")
+    public R<AiProxyConfigMonitorVO> clearRuntimeState(@PathVariable("id") Long id) {
+        return R.success(resetRuntimeState(id));
+    }
+
+    /**
+     * 手动解除代理节点熔断与降权。
+     *
+     * @param id 主键ID
+     * @return 更新后的代理详情
+     */
+    @PostMapping("/{id}/resetCircuitBreaker")
+    @Node(value = "aiProxyConfig::resetCircuitBreaker", name = "重置 AI代理配置 熔断")
+    @ApiOperation(value = "重置 AI代理配置 熔断", notes = "手动解除单个代理节点的熔断与降权")
+    public R<AiProxyConfigMonitorVO> resetCircuitBreaker(@PathVariable("id") Long id) {
+        return R.success(resetRuntimeState(id));
+    }
+
+    /**
+     * 转换代理监控视图列表。
+     *
+     * @param list 代理配置列表
+     * @return 监控视图列表
+     */
+    private List<AiProxyConfigMonitorVO> toMonitorViewList(List<AiProxyConfig> list) {
+        if (list == null || list.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Map<Long, AiProxyRuntimeStateSnapshot> stateMap = aiProxyRuntimeStateService == null
+                ? new HashMap<>()
+                : aiProxyRuntimeStateService.getStateSnapshotMap(list);
+        List<AiProxyConfigMonitorVO> result = new ArrayList<>(list.size());
+        for (AiProxyConfig item : list) {
+            result.add(toMonitorView(item, stateMap.get(item.getId())));
+        }
+        return result;
+    }
+
+    /**
+     * 转换单个代理监控视图。
+     *
+     * @param config 代理配置
+     * @param snapshot 运行时快照
+     * @return 监控视图
+     */
+    private AiProxyConfigMonitorVO toMonitorView(AiProxyConfig config, AiProxyRuntimeStateSnapshot snapshot) {
+        if (config == null) {
+            return null;
+        }
+        AiProxyConfigMonitorVO view = new AiProxyConfigMonitorVO();
+        BeanUtils.copyProperties(config, view);
+        if (snapshot == null) {
+            return view;
+        }
+        view.setEffectiveWeight(snapshot.getEffectiveWeight());
+        view.setRequestAllowed(snapshot.getRequestAllowed());
+        view.setCircuitOpen(snapshot.getCircuitOpen());
+        view.setCircuitOpenUntilMs(snapshot.getCircuitOpenUntilMs());
+        view.setLastSuccessAtMs(snapshot.getLastSuccessAtMs());
+        view.setLastFailureAtMs(snapshot.getLastFailureAtMs());
+        view.setEwmaTotalMs(snapshot.getEwmaTotalMs());
+        view.setConsecutiveFailures(snapshot.getConsecutiveFailures());
+        view.setConsecutiveSlowRequests(snapshot.getConsecutiveSlowRequests());
+        view.setLastErrorMessage(snapshot.getLastErrorMessage());
+        view.setTotalSuccessCount(snapshot.getTotalSuccessCount());
+        view.setTotalFailureCount(snapshot.getTotalFailureCount());
+        return view;
+    }
+
+    /**
+     * 查询单个代理运行时快照。
+     *
+     * @param config 代理配置
+     * @return 运行时快照
+     */
+    private AiProxyRuntimeStateSnapshot resolveStateSnapshot(AiProxyConfig config) {
+        if (aiProxyRuntimeStateService == null || config == null) {
+            return null;
+        }
+        return aiProxyRuntimeStateService.getStateSnapshot(config);
+    }
+
+    /**
+     * 重置代理运行时状态并返回最新监控视图。
+     *
+     * @param id 主键ID
+     * @return 监控视图
+     */
+    private AiProxyConfigMonitorVO resetRuntimeState(Long id) {
+        AiProxyConfig config = aiProxyConfigService.getById(id);
+        if (config == null) {
+            throw new IllegalArgumentException("代理节点不存在");
+        }
+        if (aiProxyRuntimeStateService != null) {
+            aiProxyRuntimeStateService.clearState(id);
+        }
+        return toMonitorView(config, resolveStateSnapshot(config));
     }
 
     /**
