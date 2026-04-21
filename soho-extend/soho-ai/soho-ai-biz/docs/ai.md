@@ -65,13 +65,15 @@
 
 ```json
 {
-  "name": "codex-key-1"
+  "name": "codex-key-1",
+  "expireEndTime": "2026-04-24 00:00:00"
 }
 ```
 
 说明：
 
 - Key 不再绑定单个 provider config
+- `expireEndTime` 选填，格式为 `yyyy-MM-dd HH:mm:ss`
 - 返回明文 `apiKey`
 - 明文只展示一次
 
