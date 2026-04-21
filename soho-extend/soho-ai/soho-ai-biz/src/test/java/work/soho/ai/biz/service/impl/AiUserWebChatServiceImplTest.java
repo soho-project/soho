@@ -10,6 +10,8 @@ import work.soho.ai.biz.service.AiChatService;
 import work.soho.ai.biz.service.AiChatSessionMessageService;
 import work.soho.ai.biz.service.AiChatSessionService;
 import work.soho.ai.biz.service.AiMemberRequestLimitService;
+import work.soho.ai.biz.service.AiModelInfoService;
+import work.soho.ai.biz.service.AiModelRouteService;
 import work.soho.ai.biz.service.AiPromptRenderLogService;
 import work.soho.ai.biz.service.AiPromptRenderService;
 import work.soho.ai.biz.service.AiProviderConfigService;
@@ -93,6 +95,8 @@ public class AiUserWebChatServiceImplTest {
         return new AiUserWebChatServiceImpl(
                 Mockito.mock(AiProviderConfigService.class),
                 Mockito.mock(AiProviderModelRelService.class),
+                Mockito.mock(AiModelInfoService.class),
+                Mockito.mock(AiModelRouteService.class),
                 Mockito.mock(AiChatService.class),
                 Mockito.mock(AiApiCallLogService.class),
                 aiChatSessionService,

@@ -6,12 +6,15 @@ import work.soho.ai.biz.domain.AiProviderConfig;
 import work.soho.ai.biz.domain.AiUserApiKey;
 import work.soho.ai.biz.domain.AiModelInfo;
 import work.soho.ai.biz.dto.AiChatResponse;
+import work.soho.ai.biz.dto.AiResolvedModelRoute;
 import work.soho.ai.biz.dto.AiUsageSummary;
 import work.soho.ai.biz.request.OpenAiResponsesRequest;
 import work.soho.ai.biz.request.OpenAiChatCompletionRequest;
 import work.soho.ai.biz.service.AiApiCallLogService;
 import work.soho.ai.biz.service.AiChatService;
 import work.soho.ai.biz.service.AiMemberRequestLimitService;
+import work.soho.ai.biz.service.AiModelInfoService;
+import work.soho.ai.biz.service.AiModelRouteService;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
 import work.soho.ai.biz.service.AiProxyConfigService;
@@ -58,7 +61,7 @@ public class AiOpenApiServiceImplTest {
         AiMemberRequestLimitService aiMemberRequestLimitService = Mockito.mock(AiMemberRequestLimitService.class);
         AiUserMemberCardService aiUserMemberCardService = Mockito.mock(AiUserMemberCardService.class);
 
-        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+        AiOpenApiServiceImpl service = buildService(
                 aiUserApiKeyService,
                 aiProviderConfigService,
                 aiProviderModelRelService,
@@ -126,7 +129,7 @@ public class AiOpenApiServiceImplTest {
         AiMemberRequestLimitService aiMemberRequestLimitService = Mockito.mock(AiMemberRequestLimitService.class);
         AiUserMemberCardService aiUserMemberCardService = Mockito.mock(AiUserMemberCardService.class);
 
-        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+        AiOpenApiServiceImpl service = buildService(
                 aiUserApiKeyService,
                 aiProviderConfigService,
                 aiProviderModelRelService,
@@ -176,7 +179,7 @@ public class AiOpenApiServiceImplTest {
         when(aiMemberRequestLimitService.evaluate(Mockito.any(), Mockito.any()))
                 .thenReturn(AiMemberRequestLimitService.Decision.nonMember());
 
-        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+        AiOpenApiServiceImpl service = buildService(
                 aiUserApiKeyService,
                 aiProviderConfigService,
                 aiProviderModelRelService,
@@ -223,7 +226,7 @@ public class AiOpenApiServiceImplTest {
         when(aiMemberRequestLimitService.evaluate(Mockito.any(), Mockito.any()))
                 .thenReturn(AiMemberRequestLimitService.Decision.nonMember());
 
-        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+        AiOpenApiServiceImpl service = buildService(
                 aiUserApiKeyService,
                 aiProviderConfigService,
                 aiProviderModelRelService,
@@ -289,7 +292,7 @@ public class AiOpenApiServiceImplTest {
         AiMemberRequestLimitService aiMemberRequestLimitService = Mockito.mock(AiMemberRequestLimitService.class);
         AiUserMemberCardService aiUserMemberCardService = Mockito.mock(AiUserMemberCardService.class);
 
-        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+        AiOpenApiServiceImpl service = buildService(
                 aiUserApiKeyService,
                 aiProviderConfigService,
                 aiProviderModelRelService,
@@ -319,6 +322,86 @@ public class AiOpenApiServiceImplTest {
         Mockito.verify(aiChatService).resolveProviderConfigByProvider("gemini", "gemini-2.5-pro");
     }
 
+    /**
+     * 透传固定价 JSON 请求时，应把别名模型改写为实际模型再调用上游。
+     */
+    @Test
+    public void imageGenerations_whenAliasModelHasFallback_shouldForwardActualModel() {
+        AiUserApiKeyService aiUserApiKeyService = Mockito.mock(AiUserApiKeyService.class);
+        AiProviderConfigService aiProviderConfigService = Mockito.mock(AiProviderConfigService.class);
+        AiProviderModelRelService aiProviderModelRelService = Mockito.mock(AiProviderModelRelService.class);
+        AiModelInfoService aiModelInfoService = Mockito.mock(AiModelInfoService.class);
+        AiModelRouteService aiModelRouteService = Mockito.mock(AiModelRouteService.class);
+        AiChatService aiChatService = Mockito.mock(AiChatService.class);
+        AiApiCallLogService aiApiCallLogService = Mockito.mock(AiApiCallLogService.class);
+        WalletInfoService walletInfoService = Mockito.mock(WalletInfoService.class);
+        WalletInfoApiService walletInfoApiService = Mockito.mock(WalletInfoApiService.class);
+        AiMemberRequestLimitService aiMemberRequestLimitService = Mockito.mock(AiMemberRequestLimitService.class);
+        AiUserMemberCardService aiUserMemberCardService = Mockito.mock(AiUserMemberCardService.class);
+        AiUpstreamClientFactory aiUpstreamClientFactory = Mockito.mock(AiUpstreamClientFactory.class);
+        when(aiMemberRequestLimitService.evaluate(Mockito.any(), Mockito.any()))
+                .thenReturn(AiMemberRequestLimitService.Decision.nonMember());
+
+        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+                aiUserApiKeyService,
+                aiProviderConfigService,
+                aiProviderModelRelService,
+                aiModelInfoService,
+                aiModelRouteService,
+                aiChatService,
+                Mockito.mock(AiProxyConfigService.class),
+                Mockito.mock(AiProxyRelayService.class),
+                Mockito.mock(AiProxyRuntimeStateService.class),
+                aiUpstreamClientFactory,
+                aiApiCallLogService,
+                walletInfoService,
+                walletInfoApiService,
+                aiMemberRequestLimitService,
+                aiUserMemberCardService
+        );
+
+        AiUserApiKey apiKey = new AiUserApiKey();
+        apiKey.setId(10L);
+        apiKey.setUserId(7L);
+        when(aiUserApiKeyService.requireByPlaintextKey("token")).thenReturn(apiKey);
+
+        AiProviderConfig providerConfig = new AiProviderConfig();
+        providerConfig.setId(42L);
+        providerConfig.setCode("openai-prod");
+        providerConfig.setProvider("openai");
+        providerConfig.setDefaultModel("image-v1");
+        providerConfig.setBaseUrl("https://example.com");
+        providerConfig.setApiKeyRef("upstream-key");
+        providerConfig.setConfigJson("{\"billingEnabled\":false}");
+        when(aiChatService.resolveProviderConfigByProvider("openai", "alias-image")).thenReturn(providerConfig);
+
+        AiResolvedModelRoute route = new AiResolvedModelRoute();
+        route.setRequestedModel("alias-image");
+        route.setActualModel("image-v1");
+        route.setFallbackApplied(true);
+        route.setFallbackChain(java.util.List.of("alias-image", "image-v1"));
+        when(aiModelRouteService.resolveRouteForProvider(providerConfig, "alias-image")).thenReturn(route);
+
+        when(aiUpstreamClientFactory.exchangeJson(anyString(), eq(HttpMethod.POST), any(HttpHeaders.class), any(), anyInt(), Mockito.any()))
+                .thenReturn(ResponseEntity.ok("{\"created\":123,\"data\":[]}"));
+
+        service.imageGenerations("Bearer token", new java.util.HashMap<>(Map.of(
+                "model", "alias-image",
+                "prompt", "draw a cat"
+        )));
+
+        verify(aiUpstreamClientFactory).exchangeJson(
+                anyString(),
+                eq(HttpMethod.POST),
+                any(HttpHeaders.class),
+                Mockito.argThat(body -> body instanceof Map
+                        && "image-v1".equals(((Map<?, ?>) body).get("model"))
+                        && "draw a cat".equals(((Map<?, ?>) body).get("prompt"))),
+                anyInt(),
+                Mockito.any()
+        );
+    }
+
     @Test
     public void chatCompletions_whenModelHasPrice_shouldChargeByTokens() {
         AiUserApiKeyService aiUserApiKeyService = Mockito.mock(AiUserApiKeyService.class);
@@ -333,7 +416,7 @@ public class AiOpenApiServiceImplTest {
         when(aiMemberRequestLimitService.evaluate(Mockito.any(), Mockito.any()))
                 .thenReturn(AiMemberRequestLimitService.Decision.nonMember());
 
-        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+        AiOpenApiServiceImpl service = buildService(
                 aiUserApiKeyService,
                 aiProviderConfigService,
                 aiProviderModelRelService,
@@ -434,7 +517,7 @@ public class AiOpenApiServiceImplTest {
         when(aiMemberRequestLimitService.evaluate(Mockito.any(), Mockito.any()))
                 .thenReturn(AiMemberRequestLimitService.Decision.nonMember());
 
-        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+        AiOpenApiServiceImpl service = buildService(
                 aiUserApiKeyService,
                 aiProviderConfigService,
                 aiProviderModelRelService,
@@ -532,7 +615,7 @@ public class AiOpenApiServiceImplTest {
         when(aiMemberRequestLimitService.evaluate(Mockito.any(), Mockito.any()))
                 .thenReturn(AiMemberRequestLimitService.Decision.nonMember());
 
-        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+        AiOpenApiServiceImpl service = buildService(
                 aiUserApiKeyService,
                 aiProviderConfigService,
                 aiProviderModelRelService,
@@ -593,7 +676,7 @@ public class AiOpenApiServiceImplTest {
         when(aiMemberRequestLimitService.evaluate(Mockito.any(), Mockito.any()))
                 .thenReturn(AiMemberRequestLimitService.Decision.nonMember());
 
-        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+        AiOpenApiServiceImpl service = buildService(
                 aiUserApiKeyService,
                 aiProviderConfigService,
                 aiProviderModelRelService,
@@ -645,7 +728,7 @@ public class AiOpenApiServiceImplTest {
 
     @Test
     public void buildOpenAiResponse_whenUsageHasCacheDetails_shouldExposeThem() throws Exception {
-        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+        AiOpenApiServiceImpl service = buildService(
                 Mockito.mock(AiUserApiKeyService.class),
                 Mockito.mock(AiProviderConfigService.class),
                 Mockito.mock(AiProviderModelRelService.class),
@@ -689,7 +772,7 @@ public class AiOpenApiServiceImplTest {
 
     @Test
     public void buildResponsesUsage_whenUsageHasCacheDetails_shouldExposeInputTokenDetails() throws Exception {
-        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+        AiOpenApiServiceImpl service = buildService(
                 Mockito.mock(AiUserApiKeyService.class),
                 Mockito.mock(AiProviderConfigService.class),
                 Mockito.mock(AiProviderModelRelService.class),
@@ -730,7 +813,7 @@ public class AiOpenApiServiceImplTest {
     @Test
     public void invokeGeminiGenerate_shouldUseUpstreamClientFactory() throws Exception {
         AiUpstreamClientFactory factory = Mockito.mock(AiUpstreamClientFactory.class);
-        AiOpenApiServiceImpl service = new AiOpenApiServiceImpl(
+        AiOpenApiServiceImpl service = buildService(
                 Mockito.mock(AiUserApiKeyService.class),
                 Mockito.mock(AiProviderConfigService.class),
                 Mockito.mock(AiProviderModelRelService.class),
@@ -770,5 +853,78 @@ public class AiOpenApiServiceImplTest {
 
         assertThat(result).containsKey("candidates");
         verify(factory, times(1)).exchangeJson(anyString(), eq(HttpMethod.POST), any(HttpHeaders.class), any(), anyInt(), Mockito.any());
+    }
+
+    /**
+     * 构造带默认模型信息与模型路由依赖的 OpenAPI 服务。
+     */
+    private AiOpenApiServiceImpl buildService(AiUserApiKeyService aiUserApiKeyService,
+                                              AiProviderConfigService aiProviderConfigService,
+                                              AiProviderModelRelService aiProviderModelRelService,
+                                              AiChatService aiChatService,
+                                              AiProxyConfigService aiProxyConfigService,
+                                              AiProxyRelayService aiProxyRelayService,
+                                              AiProxyRuntimeStateService aiProxyRuntimeStateService,
+                                              AiUpstreamClientFactory aiUpstreamClientFactory,
+                                              AiApiCallLogService aiApiCallLogService,
+                                              WalletInfoService walletInfoService,
+                                              WalletInfoApiService walletInfoApiService,
+                                              AiMemberRequestLimitService aiMemberRequestLimitService,
+                                              AiUserMemberCardService aiUserMemberCardService) {
+        AiModelRouteService aiModelRouteService = buildPassThroughModelRouteService();
+        return new AiOpenApiServiceImpl(
+                aiUserApiKeyService,
+                aiProviderConfigService,
+                aiProviderModelRelService,
+                Mockito.mock(AiModelInfoService.class),
+                aiModelRouteService,
+                aiChatService,
+                aiProxyConfigService,
+                aiProxyRelayService,
+                aiProxyRuntimeStateService,
+                aiUpstreamClientFactory,
+                aiApiCallLogService,
+                walletInfoService,
+                walletInfoApiService,
+                aiMemberRequestLimitService,
+                aiUserMemberCardService
+        );
+    }
+
+    /**
+     * 构造默认“请求模型即实际模型”的路由桩，兼容未显式关注兜底路由的历史测试。
+     */
+    private AiModelRouteService buildPassThroughModelRouteService() {
+        AiModelRouteService aiModelRouteService = Mockito.mock(AiModelRouteService.class);
+        Mockito.when(aiModelRouteService.resolveRoute(Mockito.anyString()))
+                .thenAnswer(invocation -> buildResolvedRoute(invocation.getArgument(0), invocation.getArgument(0)));
+        Mockito.when(aiModelRouteService.resolveRouteForProvider(Mockito.any(AiProviderConfig.class), Mockito.nullable(String.class)))
+                .thenAnswer(invocation -> {
+                    AiProviderConfig providerConfig = invocation.getArgument(0);
+                    String requestedModel = invocation.getArgument(1);
+                    String actualModel = requestedModel;
+                    if ((actualModel == null || actualModel.isBlank()) && providerConfig != null) {
+                        actualModel = providerConfig.getDefaultModel();
+                    }
+                    return buildResolvedRoute(requestedModel, actualModel);
+                });
+        return aiModelRouteService;
+    }
+
+    /**
+     * 构造测试用路由结果。
+     */
+    private AiResolvedModelRoute buildResolvedRoute(String requestedModel, String actualModel) {
+        AiResolvedModelRoute route = new AiResolvedModelRoute();
+        route.setRequestedModel(requestedModel);
+        route.setActualModel(actualModel);
+        route.setFallbackApplied(requestedModel != null && actualModel != null && !requestedModel.equals(actualModel));
+        if (requestedModel != null) {
+            route.getFallbackChain().add(requestedModel);
+        }
+        if (actualModel != null && !actualModel.equals(requestedModel)) {
+            route.getFallbackChain().add(actualModel);
+        }
+        return route;
     }
 }

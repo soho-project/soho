@@ -32,6 +32,8 @@ import work.soho.ai.biz.request.OpenAiResponsesRequest;
 import work.soho.ai.biz.service.AiApiCallLogService;
 import work.soho.ai.biz.service.AiChatService;
 import work.soho.ai.biz.service.AiMemberRequestLimitService;
+import work.soho.ai.biz.service.AiModelInfoService;
+import work.soho.ai.biz.service.AiModelRouteService;
 import work.soho.ai.biz.service.AiOpenApiService;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
@@ -42,7 +44,6 @@ import work.soho.ai.biz.service.AiUpstreamClientFactory;
 import work.soho.ai.biz.service.AiUserApiKeyService;
 import work.soho.ai.biz.service.AiUserMemberCardService;
 import work.soho.ai.biz.utils.AiProxyLayerUtils;
-import work.soho.ai.biz.utils.AiProviderModelUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.IpUtils;
 import work.soho.common.core.util.JacksonUtils;
@@ -62,7 +63,6 @@ import java.time.ZoneId;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -83,10 +83,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private static final String GEMINI_MOCK_RESPONSE_FILE = "/home/fang/testgemini/test.txt";
     private static final String INTERNAL_PROVIDER_KEY = "__resolvedProvider";
     private static final String INTERNAL_PROXY_NODE_ID = "__resolvedProxyNodeId";
+    private static final String EXTRA_REQUEST_MODEL = "requestModel";
+    private static final String EXTRA_ACTUAL_MODEL = "actualModel";
+    private static final String EXTRA_ACTUAL_PROVIDER_CODE = "actualProviderCode";
     private static final int MAX_PROXY_RETRY_ATTEMPTS = 2;
     private final AiUserApiKeyService aiUserApiKeyService;
     private final AiProviderConfigService aiProviderConfigService;
     private final AiProviderModelRelService aiProviderModelRelService;
+    private final AiModelInfoService aiModelInfoService;
+    private final AiModelRouteService aiModelRouteService;
     private final AiChatService aiChatService;
     private final AiProxyConfigService aiProxyConfigService;
     private final AiProxyRelayService aiProxyRelayService;
@@ -175,20 +180,11 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         Map<String, Map<String, Object>> modelMap = new LinkedHashMap<>();
         for (AiProviderConfig providerConfig : providerConfigs) {
-            List<AiModelInfo> relModels = aiProviderModelRelService.listEnabledModelsByProviderConfigId(providerConfig.getId());
-            if (!relModels.isEmpty()) {
-                relModels.sort(Comparator.comparing(AiModelInfo::getSort, Comparator.nullsLast(Integer::compareTo))
-                        .thenComparing(AiModelInfo::getId, Comparator.nullsLast(Long::compareTo)));
-                for (AiModelInfo relModel : relModels) {
-                    addModelRow(modelMap, relModel.getModelName(), providerConfig, relModel.getCreatedTime());
-                }
-                continue;
-            }
-
-            for (String modelName : AiProviderModelUtils.extractModels(providerConfig)) {
+            for (String modelName : aiModelRouteService.listDisplayModelsByProvider(providerConfig)) {
                 addModelRow(modelMap, modelName, providerConfig, providerConfig.getCreatedTime());
             }
         }
+        addUnboundDisplayModels(modelMap, providerConfigs);
 
         Map<String, Object> response = new HashMap<>();
         response.put("object", "list");
@@ -225,18 +221,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         Set<String> modelNames = new LinkedHashSet<>();
         for (AiProviderConfig providerConfig : providerConfigs) {
-            List<AiModelInfo> relModels = aiProviderModelRelService.listEnabledModelsByProviderConfigId(providerConfig.getId());
-            if (!relModels.isEmpty()) {
-                relModels.sort(Comparator.comparing(AiModelInfo::getSort, Comparator.nullsLast(Integer::compareTo))
-                        .thenComparing(AiModelInfo::getId, Comparator.nullsLast(Long::compareTo)));
-                for (AiModelInfo relModel : relModels) {
-                    if (StringUtils.isNotBlank(relModel.getModelName())) {
-                        modelNames.add(relModel.getModelName());
-                    }
-                }
-                continue;
-            }
-            modelNames.addAll(AiProviderModelUtils.extractModels(providerConfig));
+            modelNames.addAll(aiModelRouteService.listDisplayModelsByProvider(providerConfig));
         }
 
         List<Map<String, Object>> models = new ArrayList<>();
@@ -284,12 +269,14 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         AiProviderConfig providerConfig = requireProviderConfig("gemini", model);
         assertGeminiProvider(providerConfig, model);
         RequestAuditInfo requestAuditInfo = captureRequestAuditInfo();
-        BillingPlan billingPlan = buildGeminiGenerateBillingPlan(apiKey, providerConfig, model, request);
+        String requestModel = model;
+        String actualModel = resolvePlannedActualModel(providerConfig, requestModel);
+        BillingPlan billingPlan = buildGeminiGenerateBillingPlan(apiKey, providerConfig, requestModel, request);
         preCheckBalance(billingPlan);
 
         Map<String, Object> config = parseConfig(providerConfig);
         String apiVersion = pickString(config, "geminiApiVersion", "v1beta");
-        String path = "/" + apiVersion + "/models/" + model + ":generateContent";
+        String path = "/" + apiVersion + "/models/" + actualModel + ":generateContent";
         String url = appendQueryParam(joinUrl(pickBaseUrl(providerConfig, config), path), "key",
                 pickApiKey(providerConfig, config));
         Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
@@ -304,19 +291,19 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 //            Map<String, Object> result = parseJsonMap(rawBody);
 
             AiUsageSummary usage = extractGeminiUsage(result, request);
-            BigDecimal amount = calculateAmount(billingPlan, usage, model);
-            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
+            BigDecimal amount = calculateAmount(billingPlan, usage, requestModel);
+            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, requestModel);
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxySuccess(config, totalMs);
-            saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null,
+            saveSuccessLog(requestId, apiKey, providerConfig, requestModel, actualModel, usage, amount, walletLogId, endpoint, totalMs, null,
                     requestAuditInfo);
             return result;
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxyFailure(config, ex);
-            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
+            saveFailedLog(requestId, apiKey, providerConfig, requestModel, actualModel, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
         }
@@ -421,22 +408,25 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         try {
             AiChatResponse response = aiChatService.chat(aiChatRequest);
             AiProviderConfig providerConfig = resolveActualProviderConfig(response, aiChatRequest, selectedProviderConfig);
-            refreshBillingPlanProviderConfig(billingPlan, providerConfig, response.getModel());
+            String requestModel = resolveRequestModel(response, aiChatRequest, providerConfig);
+            String actualModel = resolveActualModel(response, aiChatRequest, providerConfig);
+            refreshBillingPlanProviderConfig(billingPlan, providerConfig, actualModel);
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
-            BigDecimal amount = calculateAmount(billingPlan, usage, response.getModel());
-            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, response.getModel());
+            BigDecimal amount = calculateAmount(billingPlan, usage, requestModel);
+            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, requestModel);
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
-            saveSuccessLog(requestId, apiKey, providerConfig, response.getModel(), usage, amount, walletLogId,
+            saveSuccessLog(requestId, apiKey, providerConfig, requestModel, actualModel, usage, amount, walletLogId,
                     "/ai/guest/openai/v1/chat/completions", totalMs, null, requestAuditInfo);
             return buildOpenAiResponse(requestId, response.getModel(), response.getContent(), usage);
         } catch (RuntimeException ex) {
             AiProviderConfig providerConfig = resolveActualProviderConfig(null, aiChatRequest, selectedProviderConfig);
-            String model = resolveActualModel(aiChatRequest, providerConfig);
-            refreshBillingPlanProviderConfig(billingPlan, providerConfig, model);
+            String requestModel = resolveRequestModel(null, aiChatRequest, providerConfig);
+            String actualModel = resolveActualModel(null, aiChatRequest, providerConfig);
+            refreshBillingPlanProviderConfig(billingPlan, providerConfig, actualModel);
             long totalMs = System.currentTimeMillis() - startAt;
-            saveFailedLog(requestId, apiKey, providerConfig, model, ex.getMessage(),
+            saveFailedLog(requestId, apiKey, providerConfig, requestModel, actualModel, ex.getMessage(),
                     "/ai/guest/openai/v1/chat/completions", totalMs, null, requestAuditInfo);
             throw ex;
         }
@@ -453,7 +443,6 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
 
         String requestId = IDGeneratorUtils.uuid32();
         StringBuilder contentBuilder = new StringBuilder();
-        String targetModel = StringUtils.isBlank(request.getModel()) ? selectedProviderConfig.getDefaultModel() : request.getModel();
         long startAt = System.currentTimeMillis();
         AtomicLong firstTokenAt = new AtomicLong(-1L);
 
@@ -465,24 +454,26 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 })
                 .doOnComplete(() -> {
                     AiProviderConfig providerConfig = resolveActualProviderConfig(null, aiChatRequest, selectedProviderConfig);
-                    String model = resolveActualModel(aiChatRequest, providerConfig);
-                    refreshBillingPlanProviderConfig(billingPlan, providerConfig, model);
+                    String requestModel = resolveRequestModel(null, aiChatRequest, providerConfig);
+                    String actualModel = resolveActualModel(null, aiChatRequest, providerConfig);
+                    refreshBillingPlanProviderConfig(billingPlan, providerConfig, actualModel);
                     AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, contentBuilder.toString());
-                    BigDecimal amount = calculateAmount(billingPlan, usage, model);
-                    Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
+                    BigDecimal amount = calculateAmount(billingPlan, usage, requestModel);
+                    Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, requestModel);
                     aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
                     aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
                     long totalMs = System.currentTimeMillis() - startAt;
-                    saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId,
+                    saveSuccessLog(requestId, apiKey, providerConfig, requestModel, actualModel, usage, amount, walletLogId,
                             "/ai/guest/openai/v1/chat/completions", totalMs, resolveFirstTokenMs(firstTokenAt, startAt),
                             requestAuditInfo);
                 })
                 .doOnError(ex -> {
                     AiProviderConfig providerConfig = resolveActualProviderConfig(null, aiChatRequest, selectedProviderConfig);
-                    String model = resolveActualModel(aiChatRequest, providerConfig);
-                    refreshBillingPlanProviderConfig(billingPlan, providerConfig, model);
+                    String requestModel = resolveRequestModel(null, aiChatRequest, providerConfig);
+                    String actualModel = resolveActualModel(null, aiChatRequest, providerConfig);
+                    refreshBillingPlanProviderConfig(billingPlan, providerConfig, actualModel);
                     long totalMs = System.currentTimeMillis() - startAt;
-                    saveFailedLog(requestId, apiKey, providerConfig, model, ex.getMessage(),
+                    saveFailedLog(requestId, apiKey, providerConfig, requestModel, actualModel, ex.getMessage(),
                             "/ai/guest/openai/v1/chat/completions", totalMs, resolveFirstTokenMs(firstTokenAt, startAt),
                             requestAuditInfo);
                 });
@@ -510,14 +501,16 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         try {
             AiChatResponse response = aiChatService.chat(aiChatRequest);
             providerConfig = resolveActualProviderConfig(response, aiChatRequest, providerConfig);
-            refreshBillingPlanProviderConfig(billingPlan, providerConfig, response.getModel());
+            String requestModel = resolveRequestModel(response, aiChatRequest, providerConfig);
+            String actualModel = resolveActualModel(response, aiChatRequest, providerConfig);
+            refreshBillingPlanProviderConfig(billingPlan, providerConfig, actualModel);
             AiUsageSummary usage = usageFromResponse(aiChatRequest, response);
-            BigDecimal amount = calculateAmount(billingPlan, usage, response.getModel());
-            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, response.getModel());
+            BigDecimal amount = calculateAmount(billingPlan, usage, requestModel);
+            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, requestModel);
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
-            saveSuccessLog(requestId, apiKey, providerConfig, response.getModel(), usage, amount, walletLogId,
+            saveSuccessLog(requestId, apiKey, providerConfig, requestModel, actualModel, usage, amount, walletLogId,
                     "/ai/guest/openai/v1/responses", totalMs, null, requestAuditInfo);
 
             Map<String, Object> result = parseNativeResponsesResult(response.getRaw());
@@ -529,10 +522,11 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             return result;
         } catch (RuntimeException ex) {
             providerConfig = resolveActualProviderConfig(null, aiChatRequest, providerConfig);
-            String model = resolveActualModel(aiChatRequest, providerConfig);
-            refreshBillingPlanProviderConfig(billingPlan, providerConfig, model);
+            String requestModel = resolveRequestModel(null, aiChatRequest, providerConfig);
+            String actualModel = resolveActualModel(null, aiChatRequest, providerConfig);
+            refreshBillingPlanProviderConfig(billingPlan, providerConfig, actualModel);
             long totalMs = System.currentTimeMillis() - startAt;
-            saveFailedLog(requestId, apiKey, providerConfig, model, ex.getMessage(),
+            saveFailedLog(requestId, apiKey, providerConfig, requestModel, actualModel, ex.getMessage(),
                     "/ai/guest/openai/v1/responses", totalMs, null, requestAuditInfo);
             throw ex;
         }
@@ -555,7 +549,6 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         preCheckBalance(billingPlan);
 
         String requestId = IDGeneratorUtils.uuid32();
-        String targetModel = StringUtils.isBlank(request.getModel()) ? providerConfig.getDefaultModel() : request.getModel();
         StringBuilder contentBuilder = new StringBuilder();
         AtomicReference<String> completedPayloadRef = new AtomicReference<>("");
         long startAt = System.currentTimeMillis();
@@ -570,15 +563,16 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                 })
                 .doOnComplete(() -> {
                     AiProviderConfig actualProviderConfig = resolveActualProviderConfig(null, aiChatRequest, providerConfig);
-                    String model = resolveActualModel(aiChatRequest, actualProviderConfig);
-                    refreshBillingPlanProviderConfig(billingPlan, actualProviderConfig, model);
+                    String requestModel = resolveRequestModel(null, aiChatRequest, actualProviderConfig);
+                    String actualModel = resolveActualModel(null, aiChatRequest, actualProviderConfig);
+                    refreshBillingPlanProviderConfig(billingPlan, actualProviderConfig, actualModel);
                     AiUsageSummary usage = aiChatService.estimateUsage(aiChatRequest, contentBuilder.toString());
-                    BigDecimal amount = calculateAmount(billingPlan, usage, model);
-                    Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
+                    BigDecimal amount = calculateAmount(billingPlan, usage, requestModel);
+                    Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, requestModel);
                     aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
                     aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
                     long totalMs = System.currentTimeMillis() - startAt;
-                    saveSuccessLog(requestId, apiKey, actualProviderConfig, model, usage, amount, walletLogId,
+                    saveSuccessLog(requestId, apiKey, actualProviderConfig, requestModel, actualModel, usage, amount, walletLogId,
                             "/ai/guest/openai/v1/responses", totalMs, resolveFirstTokenMs(firstTokenAt, startAt),
                             requestAuditInfo);
                     if (StringUtils.isNotBlank(completedPayloadRef.get())) {
@@ -586,15 +580,16 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                                 JacksonUtils.toJson(buildResponsesStreamPayloadLogSummary(completedPayloadRef.get())));
                     } else {
                         log.info("responses(stream) 返回摘要(完成): {}",
-                                JacksonUtils.toJson(buildResponsesCompletedLogSummary(model, contentBuilder.toString())));
+                                JacksonUtils.toJson(buildResponsesCompletedLogSummary(requestModel, contentBuilder.toString())));
                     }
                 })
                 .doOnError(ex -> {
                     AiProviderConfig actualProviderConfig = resolveActualProviderConfig(null, aiChatRequest, providerConfig);
-                    String model = resolveActualModel(aiChatRequest, actualProviderConfig);
-                    refreshBillingPlanProviderConfig(billingPlan, actualProviderConfig, model);
+                    String requestModel = resolveRequestModel(null, aiChatRequest, actualProviderConfig);
+                    String actualModel = resolveActualModel(null, aiChatRequest, actualProviderConfig);
+                    refreshBillingPlanProviderConfig(billingPlan, actualProviderConfig, actualModel);
                     long totalMs = System.currentTimeMillis() - startAt;
-                    saveFailedLog(requestId, apiKey, actualProviderConfig, model, ex.getMessage(),
+                    saveFailedLog(requestId, apiKey, actualProviderConfig, requestModel, actualModel, ex.getMessage(),
                             "/ai/guest/openai/v1/responses", totalMs, resolveFirstTokenMs(firstTokenAt, startAt),
                             requestAuditInfo);
                     ex.printStackTrace();
@@ -716,11 +711,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     @SuppressWarnings("unchecked")
     private Map<String, Object> proxyJsonRequest(String authorization, Map<String, Object> request, String modelField,
                                                  String pathConfigKey, String defaultPath, String endpoint) {
-        String model = request == null ? null : stringify(request.get(modelField));
-        Assert.hasText(model, "model不能为空");
+        String requestModel = request == null ? null : stringify(request.get(modelField));
+        Assert.hasText(requestModel, "model不能为空");
 
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
-        AiProviderConfig providerConfig = requireProviderConfig(model);
+        AiProviderConfig providerConfig = requireProviderConfig(requestModel);
+        String actualModel = resolvePlannedActualModel(providerConfig, requestModel);
+        Map<String, Object> actualRequest = replaceModelField(request, modelField, actualModel);
         RequestAuditInfo requestAuditInfo = captureRequestAuditInfo();
         Map<String, Object> config = parseConfig(providerConfig);
         String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
@@ -733,19 +730,19 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             ResponseEntity<String> response = executeWithProxyRetry(config, endpoint, () -> {
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                return exchangeJson(url, headers, request == null ? new HashMap<>() : request, timeoutMs, config);
+                return exchangeJson(url, headers, actualRequest, timeoutMs, config);
             });
 
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxySuccess(config, totalMs);
-            saveSuccessLog(requestId, apiKey, providerConfig, model, emptyUsage(), BigDecimal.ZERO, null,
+            saveSuccessLog(requestId, apiKey, providerConfig, requestModel, actualModel, emptyUsage(), BigDecimal.ZERO, null,
                     endpoint, totalMs, null, requestAuditInfo);
             return parseJsonMap(response.getBody());
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxyFailure(config, ex);
-            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
+            saveFailedLog(requestId, apiKey, providerConfig, requestModel, actualModel, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
         }
@@ -756,13 +753,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      */
     private Map<String, Object> proxyEmbeddingsRequest(String authorization, Map<String, Object> request, String modelField,
                                                        String pathConfigKey, String defaultPath, String endpoint) {
-        String model = request == null ? null : stringify(request.get(modelField));
-        Assert.hasText(model, "model不能为空");
+        String requestModel = request == null ? null : stringify(request.get(modelField));
+        Assert.hasText(requestModel, "model不能为空");
 
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
-        AiProviderConfig providerConfig = requireProviderConfig(model);
+        AiProviderConfig providerConfig = requireProviderConfig(requestModel);
+        String actualModel = resolvePlannedActualModel(providerConfig, requestModel);
+        Map<String, Object> actualRequest = replaceModelField(request, modelField, actualModel);
         RequestAuditInfo requestAuditInfo = captureRequestAuditInfo();
-        BillingPlan billingPlan = buildEmbeddingBillingPlan(apiKey, providerConfig, model, request);
+        BillingPlan billingPlan = buildEmbeddingBillingPlan(apiKey, providerConfig, requestModel, actualRequest);
         preCheckBalance(billingPlan);
 
         Map<String, Object> config = parseConfig(providerConfig);
@@ -776,24 +775,24 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             ResponseEntity<String> response = executeWithProxyRetry(config, endpoint, () -> {
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                return exchangeJson(url, headers, request == null ? new HashMap<>() : request, timeoutMs, config);
+                return exchangeJson(url, headers, actualRequest, timeoutMs, config);
             });
 
             Map<String, Object> result = parseJsonMap(response.getBody());
-            AiUsageSummary usage = extractEmbeddingUsage(result, request);
-            BigDecimal amount = calculateAmount(billingPlan, usage, model);
-            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
+            AiUsageSummary usage = extractEmbeddingUsage(result, actualRequest);
+            BigDecimal amount = calculateAmount(billingPlan, usage, requestModel);
+            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, requestModel);
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxySuccess(config, totalMs);
-            saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null,
+            saveSuccessLog(requestId, apiKey, providerConfig, requestModel, actualModel, usage, amount, walletLogId, endpoint, totalMs, null,
                     requestAuditInfo);
             return result;
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxyFailure(config, ex);
-            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
+            saveFailedLog(requestId, apiKey, providerConfig, requestModel, actualModel, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
         }
@@ -804,13 +803,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      */
     private Map<String, Object> proxyFixedPriceJsonRequest(String authorization, Map<String, Object> request, String modelField,
                                                            String pathConfigKey, String defaultPath, String endpoint) {
-        String model = request == null ? null : stringify(request.get(modelField));
-        Assert.hasText(model, "model不能为空");
+        String requestModel = request == null ? null : stringify(request.get(modelField));
+        Assert.hasText(requestModel, "model不能为空");
 
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
-        AiProviderConfig providerConfig = requireProviderConfig(model);
+        AiProviderConfig providerConfig = requireProviderConfig(requestModel);
+        String actualModel = resolvePlannedActualModel(providerConfig, requestModel);
+        Map<String, Object> actualRequest = replaceModelField(request, modelField, actualModel);
         RequestAuditInfo requestAuditInfo = captureRequestAuditInfo();
-        BillingPlan billingPlan = buildFixedPriceBillingPlan(apiKey, providerConfig, model);
+        BillingPlan billingPlan = buildFixedPriceBillingPlan(apiKey, providerConfig, requestModel);
         preCheckBalance(billingPlan);
 
         Map<String, Object> config = parseConfig(providerConfig);
@@ -824,23 +825,23 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             ResponseEntity<String> response = executeWithProxyRetry(config, endpoint, () -> {
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                return exchangeJson(url, headers, request == null ? new HashMap<>() : request, timeoutMs, config);
+                return exchangeJson(url, headers, actualRequest, timeoutMs, config);
             });
 
             AiUsageSummary usage = emptyUsage();
-            BigDecimal amount = calculateAmount(billingPlan, usage, model);
-            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
+            BigDecimal amount = calculateAmount(billingPlan, usage, requestModel);
+            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, requestModel);
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxySuccess(config, totalMs);
-            saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null,
+            saveSuccessLog(requestId, apiKey, providerConfig, requestModel, actualModel, usage, amount, walletLogId, endpoint, totalMs, null,
                     requestAuditInfo);
             return parseJsonMap(response.getBody());
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxyFailure(config, ex);
-            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
+            saveFailedLog(requestId, apiKey, providerConfig, requestModel, actualModel, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
         }
@@ -852,11 +853,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private Object proxyMultipartRequest(String authorization, Map<String, String> request, MultipartFile file,
                                          String modelField, String pathConfigKey, String defaultPath, String endpoint) {
         Assert.notNull(file, "file不能为空");
-        String model = request == null ? null : request.get(modelField);
-        Assert.hasText(model, "model不能为空");
+        String requestModel = request == null ? null : request.get(modelField);
+        Assert.hasText(requestModel, "model不能为空");
 
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
-        AiProviderConfig providerConfig = requireProviderConfig(model);
+        AiProviderConfig providerConfig = requireProviderConfig(requestModel);
+        String actualModel = resolvePlannedActualModel(providerConfig, requestModel);
+        Map<String, String> actualRequest = replaceMultipartModelField(request, modelField, actualModel);
         RequestAuditInfo requestAuditInfo = captureRequestAuditInfo();
         Map<String, Object> config = parseConfig(providerConfig);
         String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
@@ -869,19 +872,19 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             ResponseEntity<byte[]> response = executeWithProxyRetry(config, endpoint, () -> {
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-                return exchangeMultipart(url, headers, buildMultipartBody(request, file), timeoutMs, config);
+                return exchangeMultipart(url, headers, buildMultipartBody(actualRequest, file), timeoutMs, config);
             });
 
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxySuccess(config, totalMs);
-            saveSuccessLog(requestId, apiKey, providerConfig, model, emptyUsage(), BigDecimal.ZERO, null,
+            saveSuccessLog(requestId, apiKey, providerConfig, requestModel, actualModel, emptyUsage(), BigDecimal.ZERO, null,
                     endpoint, totalMs, null, requestAuditInfo);
             return parseResponseBody(response);
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxyFailure(config, ex);
-            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
+            saveFailedLog(requestId, apiKey, providerConfig, requestModel, actualModel, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
         }
@@ -893,13 +896,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private Object proxyFixedPriceMultipartRequest(String authorization, Map<String, String> request, MultipartFile file,
                                                    String modelField, String pathConfigKey, String defaultPath, String endpoint) {
         Assert.notNull(file, "file不能为空");
-        String model = request == null ? null : request.get(modelField);
-        Assert.hasText(model, "model不能为空");
+        String requestModel = request == null ? null : request.get(modelField);
+        Assert.hasText(requestModel, "model不能为空");
 
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
-        AiProviderConfig providerConfig = requireProviderConfig(model);
+        AiProviderConfig providerConfig = requireProviderConfig(requestModel);
+        String actualModel = resolvePlannedActualModel(providerConfig, requestModel);
+        Map<String, String> actualRequest = replaceMultipartModelField(request, modelField, actualModel);
         RequestAuditInfo requestAuditInfo = captureRequestAuditInfo();
-        BillingPlan billingPlan = buildFixedPriceBillingPlan(apiKey, providerConfig, model);
+        BillingPlan billingPlan = buildFixedPriceBillingPlan(apiKey, providerConfig, requestModel);
         preCheckBalance(billingPlan);
 
         Map<String, Object> config = parseConfig(providerConfig);
@@ -913,23 +918,23 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             ResponseEntity<byte[]> response = executeWithProxyRetry(config, endpoint, () -> {
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-                return exchangeMultipart(url, headers, buildMultipartBody(request, file), timeoutMs, config);
+                return exchangeMultipart(url, headers, buildMultipartBody(actualRequest, file), timeoutMs, config);
             });
 
             AiUsageSummary usage = emptyUsage();
-            BigDecimal amount = calculateAmount(billingPlan, usage, model);
-            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
+            BigDecimal amount = calculateAmount(billingPlan, usage, requestModel);
+            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, requestModel);
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxySuccess(config, totalMs);
-            saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null,
+            saveSuccessLog(requestId, apiKey, providerConfig, requestModel, actualModel, usage, amount, walletLogId, endpoint, totalMs, null,
                     requestAuditInfo);
             return parseResponseBody(response);
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxyFailure(config, ex);
-            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
+            saveFailedLog(requestId, apiKey, providerConfig, requestModel, actualModel, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
         }
@@ -940,11 +945,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      */
     private ResponseEntity<byte[]> proxyBinaryRequest(String authorization, Map<String, Object> request, String modelField,
                                                       String pathConfigKey, String defaultPath, String endpoint) {
-        String model = request == null ? null : stringify(request.get(modelField));
-        Assert.hasText(model, "model不能为空");
+        String requestModel = request == null ? null : stringify(request.get(modelField));
+        Assert.hasText(requestModel, "model不能为空");
 
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
-        AiProviderConfig providerConfig = requireProviderConfig(model);
+        AiProviderConfig providerConfig = requireProviderConfig(requestModel);
+        String actualModel = resolvePlannedActualModel(providerConfig, requestModel);
+        Map<String, Object> actualRequest = replaceModelField(request, modelField, actualModel);
         RequestAuditInfo requestAuditInfo = captureRequestAuditInfo();
         Map<String, Object> config = parseConfig(providerConfig);
         String url = joinUrl(pickBaseUrl(providerConfig, config), pickString(config, pathConfigKey, defaultPath));
@@ -957,13 +964,13 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             ResponseEntity<byte[]> response = executeWithProxyRetry(config, endpoint, () -> {
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                return exchangeBinary(url, headers, request == null ? new HashMap<>() : request, timeoutMs, config);
+                return exchangeBinary(url, headers, actualRequest, timeoutMs, config);
             });
 
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxySuccess(config, totalMs);
-            saveSuccessLog(requestId, apiKey, providerConfig, model, emptyUsage(), BigDecimal.ZERO, null,
+            saveSuccessLog(requestId, apiKey, providerConfig, requestModel, actualModel, emptyUsage(), BigDecimal.ZERO, null,
                     endpoint, totalMs, null, requestAuditInfo);
             return ResponseEntity.status(response.getStatusCode())
                     .headers(filterBinaryResponseHeaders(response.getHeaders()))
@@ -971,7 +978,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxyFailure(config, ex);
-            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
+            saveFailedLog(requestId, apiKey, providerConfig, requestModel, actualModel, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
         }
@@ -982,13 +989,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      */
     private ResponseEntity<byte[]> proxyFixedPriceBinaryRequest(String authorization, Map<String, Object> request, String modelField,
                                                                 String pathConfigKey, String defaultPath, String endpoint) {
-        String model = request == null ? null : stringify(request.get(modelField));
-        Assert.hasText(model, "model不能为空");
+        String requestModel = request == null ? null : stringify(request.get(modelField));
+        Assert.hasText(requestModel, "model不能为空");
 
         AiUserApiKey apiKey = aiUserApiKeyService.requireByPlaintextKey(extractBearerToken(authorization));
-        AiProviderConfig providerConfig = requireProviderConfig(model);
+        AiProviderConfig providerConfig = requireProviderConfig(requestModel);
+        String actualModel = resolvePlannedActualModel(providerConfig, requestModel);
+        Map<String, Object> actualRequest = replaceModelField(request, modelField, actualModel);
         RequestAuditInfo requestAuditInfo = captureRequestAuditInfo();
-        BillingPlan billingPlan = buildFixedPriceBillingPlan(apiKey, providerConfig, model);
+        BillingPlan billingPlan = buildFixedPriceBillingPlan(apiKey, providerConfig, requestModel);
         preCheckBalance(billingPlan);
 
         Map<String, Object> config = parseConfig(providerConfig);
@@ -1002,17 +1011,17 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             ResponseEntity<byte[]> response = executeWithProxyRetry(config, endpoint, () -> {
                 HttpHeaders headers = buildAuthorizationHeaders(upstreamApiKey);
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                return exchangeBinary(url, headers, request == null ? new HashMap<>() : request, timeoutMs, config);
+                return exchangeBinary(url, headers, actualRequest, timeoutMs, config);
             });
 
             AiUsageSummary usage = emptyUsage();
-            BigDecimal amount = calculateAmount(billingPlan, usage, model);
-            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, model);
+            BigDecimal amount = calculateAmount(billingPlan, usage, requestModel);
+            Long walletLogId = chargeIfNeeded(billingPlan, requestId, usage, amount, requestModel);
             aiMemberRequestLimitService.consumeIfNeeded(billingPlan.memberLimitDecision, requestId, usage);
             aiUserApiKeyService.touchLastUsedTime(apiKey.getId());
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxySuccess(config, totalMs);
-            saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, null,
+            saveSuccessLog(requestId, apiKey, providerConfig, requestModel, actualModel, usage, amount, walletLogId, endpoint, totalMs, null,
                     requestAuditInfo);
             return ResponseEntity.status(response.getStatusCode())
                     .headers(filterBinaryResponseHeaders(response.getHeaders()))
@@ -1020,7 +1029,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         } catch (RuntimeException ex) {
             long totalMs = System.currentTimeMillis() - startAt;
             recordProxyFailure(config, ex);
-            saveFailedLog(requestId, apiKey, providerConfig, model, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
+            saveFailedLog(requestId, apiKey, providerConfig, requestModel, actualModel, extractUpstreamErrorMessage(ex), endpoint, totalMs, null,
                     requestAuditInfo);
             throw ex;
         }
@@ -1098,6 +1107,38 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             current = current.getCause();
         }
         return false;
+    }
+
+    /**
+     * 将 JSON 请求中的模型名替换为实际命中的模型，避免别名模型直接透传到上游后报错。
+     *
+     * @param request 原始请求
+     * @param modelField 模型字段名
+     * @param actualModel 实际模型
+     * @return 替换后的请求体
+     */
+    private Map<String, Object> replaceModelField(Map<String, Object> request, String modelField, String actualModel) {
+        Map<String, Object> actualRequest = request == null ? new HashMap<>() : new HashMap<>(request);
+        if (StringUtils.isNotBlank(modelField) && StringUtils.isNotBlank(actualModel)) {
+            actualRequest.put(modelField, actualModel);
+        }
+        return actualRequest;
+    }
+
+    /**
+     * 将 multipart 请求中的模型名替换为实际命中的模型。
+     *
+     * @param request 原始请求
+     * @param modelField 模型字段名
+     * @param actualModel 实际模型
+     * @return 替换后的请求参数
+     */
+    private Map<String, String> replaceMultipartModelField(Map<String, String> request, String modelField, String actualModel) {
+        Map<String, String> actualRequest = request == null ? new HashMap<>() : new HashMap<>(request);
+        if (StringUtils.isNotBlank(modelField) && StringUtils.isNotBlank(actualModel)) {
+            actualRequest.put(modelField, actualModel);
+        }
+        return actualRequest;
     }
 
     /**
@@ -1229,6 +1270,32 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         row.put("created", toEpochSeconds(createdTime));
         row.put("owned_by", StringUtils.isNotBlank(providerConfig.getProvider()) ? providerConfig.getProvider() : "soho");
         modelMap.put(modelName, row);
+    }
+
+    /**
+     * 补充没有被提供方循环覆盖到的模型行。
+     *
+     * @param modelMap 模型映射
+     * @param providerConfigs 提供方列表
+     */
+    private void addUnboundDisplayModels(Map<String, Map<String, Object>> modelMap, List<AiProviderConfig> providerConfigs) {
+        if (providerConfigs == null || providerConfigs.isEmpty()) {
+            return;
+        }
+        for (AiModelInfo modelInfo : aiModelInfoService.listEnabledModels()) {
+            if (modelInfo == null || StringUtils.isBlank(modelInfo.getModelName()) || modelMap.containsKey(modelInfo.getModelName())) {
+                continue;
+            }
+            if (StringUtils.isBlank(aiModelRouteService.resolveRoute(modelInfo.getModelName()).getActualModel())) {
+                continue;
+            }
+            for (AiProviderConfig providerConfig : providerConfigs) {
+                if (aiModelRouteService.listDisplayModelsByProvider(providerConfig).contains(modelInfo.getModelName())) {
+                    addModelRow(modelMap, modelInfo.getModelName(), providerConfig, modelInfo.getCreatedTime());
+                    break;
+                }
+            }
+        }
     }
 
     private long toEpochSeconds(LocalDateTime createdTime) {
@@ -1894,12 +1961,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                                          OpenAiChatCompletionRequest request) {
         Map<String, Object> config = parseConfig(providerConfig);
         String requestedModel = StringUtils.isNotBlank(request.getModel()) ? request.getModel() : providerConfig.getDefaultModel();
-        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), requestedModel);
+        String actualModel = resolvePlannedActualModel(providerConfig, request.getModel());
+        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), requestedModel, actualModel);
         BillingPlan billingPlan = new BillingPlan();
         billingPlan.userId = apiKey.getUserId();
         billingPlan.apiKeyId = apiKey.getId();
         billingPlan.providerConfigId = providerConfig.getId();
-        billingPlan.billingEnabled = modelPricing.hasSplitPrice() || pickBoolean(config, "billingEnabled", false);
+        billingPlan.requestModel = requestedModel;
+        billingPlan.actualModel = actualModel;
+        billingPlan.billingEnabled = modelPricing.hasAnyPrice() || pickBoolean(config, "billingEnabled", false);
         billingPlan.walletTypeId = pickInteger(config, "billingWalletTypeId", 1);
         billingPlan.promptPricePer1kTokens = pickBigDecimal(config, "promptPricePer1kTokens", BigDecimal.ZERO);
         billingPlan.completionPricePer1kTokens = pickBigDecimal(config, "completionPricePer1kTokens", billingPlan.promptPricePer1kTokens);
@@ -1929,12 +1999,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private BillingPlan buildEmbeddingBillingPlan(AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
                                                   Map<String, Object> request) {
         Map<String, Object> config = parseConfig(providerConfig);
-        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model);
+        String actualModel = resolvePlannedActualModel(providerConfig, model);
+        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model, actualModel);
         BillingPlan billingPlan = new BillingPlan();
         billingPlan.userId = apiKey.getUserId();
         billingPlan.apiKeyId = apiKey.getId();
         billingPlan.providerConfigId = providerConfig.getId();
-        billingPlan.billingEnabled = modelPricing.hasSplitPrice() || pickBoolean(config, "billingEnabled", false);
+        billingPlan.requestModel = model;
+        billingPlan.actualModel = actualModel;
+        billingPlan.billingEnabled = modelPricing.hasAnyPrice() || pickBoolean(config, "billingEnabled", false);
         billingPlan.walletTypeId = pickInteger(config, "billingWalletTypeId", 1);
         billingPlan.promptPricePer1kTokens = pickBigDecimal(config, "promptPricePer1kTokens", BigDecimal.ZERO);
         billingPlan.completionPricePer1kTokens = BigDecimal.ZERO;
@@ -1957,12 +2030,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private BillingPlan buildGeminiGenerateBillingPlan(AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
                                                        Map<String, Object> request) {
         Map<String, Object> config = parseConfig(providerConfig);
-        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model);
+        String actualModel = resolvePlannedActualModel(providerConfig, model);
+        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model, actualModel);
         BillingPlan billingPlan = new BillingPlan();
         billingPlan.userId = apiKey.getUserId();
         billingPlan.apiKeyId = apiKey.getId();
         billingPlan.providerConfigId = providerConfig.getId();
-        billingPlan.billingEnabled = modelPricing.hasSplitPrice() || pickBoolean(config, "billingEnabled", false);
+        billingPlan.requestModel = model;
+        billingPlan.actualModel = actualModel;
+        billingPlan.billingEnabled = modelPricing.hasAnyPrice() || pickBoolean(config, "billingEnabled", false);
         billingPlan.walletTypeId = pickInteger(config, "billingWalletTypeId", 1);
         billingPlan.promptPricePer1kTokens = pickBigDecimal(config, "promptPricePer1kTokens", BigDecimal.ZERO);
         billingPlan.completionPricePer1kTokens = pickBigDecimal(config, "completionPricePer1kTokens", billingPlan.promptPricePer1kTokens);
@@ -1985,12 +2061,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      */
     private BillingPlan buildFixedPriceBillingPlan(AiUserApiKey apiKey, AiProviderConfig providerConfig, String model) {
         Map<String, Object> config = parseConfig(providerConfig);
-        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model);
+        String actualModel = resolvePlannedActualModel(providerConfig, model);
+        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model, actualModel);
         BillingPlan billingPlan = new BillingPlan();
         billingPlan.userId = apiKey.getUserId();
         billingPlan.apiKeyId = apiKey.getId();
         billingPlan.providerConfigId = providerConfig.getId();
         billingPlan.billingEnabled = modelPricing.hasFixedRequestPrice() || pickBoolean(config, "billingEnabled", false);
+        billingPlan.requestModel = model;
+        billingPlan.actualModel = actualModel;
         billingPlan.walletTypeId = pickInteger(config, "billingWalletTypeId", 1);
         billingPlan.promptPricePer1kTokens = BigDecimal.ZERO;
         billingPlan.completionPricePer1kTokens = BigDecimal.ZERO;
@@ -2072,10 +2151,8 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
                     ? BigDecimal.ZERO
                     : billingPlan.fixedRequestPrice.setScale(6, RoundingMode.HALF_UP);
         }
-        ModelPricing modelPricing = billingPlan.modelPricing;
-        if (modelPricing == null || !modelPricing.matches(model)) {
-            modelPricing = resolveModelPricing(billingPlan.providerConfigId, model);
-        }
+        String requestModel = StringUtils.isNotBlank(model) ? model : billingPlan.requestModel;
+        ModelPricing modelPricing = resolveModelPricing(billingPlan.providerConfigId, requestModel, billingPlan.actualModel);
         if (modelPricing.hasSplitPrice()) {
             BigDecimal promptCost = modelPricing.promptPricePer1kTokens
                     .multiply(BigDecimal.valueOf(usage.getPromptTokens() == null ? 0 : usage.getPromptTokens()))
@@ -2094,7 +2171,36 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         return promptCost.add(completionCost).setScale(6, RoundingMode.HALF_UP);
     }
 
-    private ModelPricing resolveModelPricing(Long providerConfigId, String model) {
+    /**
+     * 解析计费模型价格，优先请求模型，未命中时退回到实际模型。
+     *
+     * @param providerConfigId 提供方配置ID
+     * @param requestModel 请求模型
+     * @param actualModel 实际模型
+     * @return 模型价格
+     */
+    private ModelPricing resolveModelPricing(Long providerConfigId, String requestModel, String actualModel) {
+        ModelPricing requestPricing = resolveSingleModelPricing(providerConfigId, requestModel);
+        if (requestPricing.hasAnyPrice()) {
+            return requestPricing;
+        }
+        if (StringUtils.isNotBlank(actualModel) && !actualModel.equals(requestModel)) {
+            ModelPricing actualPricing = resolveSingleModelPricing(providerConfigId, actualModel);
+            if (actualPricing.hasAnyPrice()) {
+                return actualPricing;
+            }
+        }
+        return ModelPricing.empty();
+    }
+
+    /**
+     * 解析单个模型的价格配置。
+     *
+     * @param providerConfigId 提供方配置ID
+     * @param model 模型名
+     * @return 模型价格
+     */
+    private ModelPricing resolveSingleModelPricing(Long providerConfigId, String model) {
         if (providerConfigId == null || StringUtils.isBlank(model)) {
             return ModelPricing.empty();
         }
@@ -2117,6 +2223,25 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             if (fixedRequestPrice.compareTo(BigDecimal.ZERO) > 0) {
                 return ModelPricing.fixed(item.getModelName(), fixedRequestPrice);
             }
+        }
+        AiModelInfo modelInfo = aiModelInfoService.findEnabledByModelName(model);
+        if (modelInfo == null) {
+            return ModelPricing.empty();
+        }
+        BigDecimal fixedRequestPrice = modelInfo.getFixedRequestPrice() == null ? BigDecimal.ZERO : modelInfo.getFixedRequestPrice();
+        BigDecimal promptPrice = modelInfo.getPromptPrice() == null ? BigDecimal.ZERO : modelInfo.getPromptPrice();
+        BigDecimal completionPrice = modelInfo.getCompletionPrice() == null ? BigDecimal.ZERO : modelInfo.getCompletionPrice();
+        if (promptPrice.compareTo(BigDecimal.ZERO) > 0 || completionPrice.compareTo(BigDecimal.ZERO) > 0) {
+            if (promptPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                promptPrice = completionPrice;
+            }
+            if (completionPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                completionPrice = promptPrice;
+            }
+            return ModelPricing.split(modelInfo.getModelName(), promptPrice, completionPrice, fixedRequestPrice);
+        }
+        if (fixedRequestPrice.compareTo(BigDecimal.ZERO) > 0) {
+            return ModelPricing.fixed(modelInfo.getModelName(), fixedRequestPrice);
         }
         return ModelPricing.empty();
     }
@@ -2348,13 +2473,15 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private void saveSuccessLog(String requestId, AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
                                 AiUsageSummary usage, BigDecimal amount, Long walletLogId, String endpoint,
                                 Long totalMs, Long firstTokenMs) {
-        saveSuccessLog(requestId, apiKey, providerConfig, model, usage, amount, walletLogId, endpoint, totalMs, firstTokenMs, null);
+        saveSuccessLog(requestId, apiKey, providerConfig, model, model,
+                usage, amount, walletLogId, endpoint, totalMs, firstTokenMs, null);
     }
 
     /**
      * 保存成功调用日志，并补充请求审计字段。
      */
-    private void saveSuccessLog(String requestId, AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
+    private void saveSuccessLog(String requestId, AiUserApiKey apiKey, AiProviderConfig providerConfig, String requestModel,
+                                String actualModel,
                                 AiUsageSummary usage, BigDecimal amount, Long walletLogId, String endpoint,
                                 Long totalMs, Long firstTokenMs, RequestAuditInfo requestAuditInfo) {
         AiApiCallLog log = new AiApiCallLog();
@@ -2363,7 +2490,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         log.setApiKeyId(apiKey.getId());
         log.setProviderConfigId(providerConfig.getId());
         log.setEndpoint(endpoint);
-        log.setModel(model);
+        log.setModel(actualModel);
+        log.setRequestModel(requestModel);
+        log.setActualModel(actualModel);
         log.setPromptTokens(usage.getPromptTokens());
         log.setCompletionTokens(usage.getCompletionTokens());
         log.setTotalTokens(usage.getTotalTokens());
@@ -2380,15 +2509,25 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         aiApiCallLogService.save(log);
     }
 
-    private void saveFailedLog(String requestId, AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
+    private void saveFailedLog(String requestId, AiUserApiKey apiKey, AiProviderConfig providerConfig, String requestModel,
+                               String actualModel,
                                String errorMessage, String endpoint, Long totalMs, Long firstTokenMs) {
-        saveFailedLog(requestId, apiKey, providerConfig, model, errorMessage, endpoint, totalMs, firstTokenMs, null);
+        saveFailedLog(requestId, apiKey, providerConfig, requestModel, actualModel,
+                errorMessage, endpoint, totalMs, firstTokenMs, null);
+    }
+
+    private void saveFailedLog(String requestId, AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
+                               String errorMessage, String endpoint, Long totalMs, Long firstTokenMs,
+                               RequestAuditInfo requestAuditInfo) {
+        saveFailedLog(requestId, apiKey, providerConfig, model, model,
+                errorMessage, endpoint, totalMs, firstTokenMs, requestAuditInfo);
     }
 
     /**
      * 保存失败调用日志，并补充请求审计字段。
      */
-    private void saveFailedLog(String requestId, AiUserApiKey apiKey, AiProviderConfig providerConfig, String model,
+    private void saveFailedLog(String requestId, AiUserApiKey apiKey, AiProviderConfig providerConfig, String requestModel,
+                               String actualModel,
                                String errorMessage, String endpoint, Long totalMs, Long firstTokenMs,
                                RequestAuditInfo requestAuditInfo) {
         AiApiCallLog log = new AiApiCallLog();
@@ -2397,7 +2536,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         log.setApiKeyId(apiKey.getId());
         log.setProviderConfigId(providerConfig.getId());
         log.setEndpoint(endpoint);
-        log.setModel(model);
+        log.setModel(actualModel);
+        log.setRequestModel(requestModel);
+        log.setActualModel(actualModel);
         log.setAmount(BigDecimal.ZERO);
         log.setStatus(AiApiCallLogEnums.Status.FAILED.getId());
         log.setErrorMessage(StringUtils.isBlank(errorMessage) ? "AI request failed" : errorMessage);
@@ -2853,7 +2994,7 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
     private AiProviderConfig resolveActualProviderConfig(AiChatResponse response, AiChatRequest request, AiProviderConfig fallback) {
         String providerCode = response != null && StringUtils.isNotBlank(response.getProviderCode())
                 ? response.getProviderCode()
-                : request == null ? null : request.getProviderCode();
+                : resolveRequestExtra(request, EXTRA_ACTUAL_PROVIDER_CODE, request == null ? null : request.getProviderCode());
         if (StringUtils.isBlank(providerCode)) {
             return fallback;
         }
@@ -2870,11 +3011,74 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
      * @param providerConfig 提供方配置
      * @return 模型名
      */
-    private String resolveActualModel(AiChatRequest request, AiProviderConfig providerConfig) {
-        if (request != null && StringUtils.isNotBlank(request.getModel())) {
-            return request.getModel();
+    private String resolveActualModel(AiChatResponse response, AiChatRequest request, AiProviderConfig providerConfig) {
+        if (response != null && StringUtils.isNotBlank(response.getActualModel())) {
+            return response.getActualModel();
+        }
+        String actualModel = resolveRequestExtra(request, EXTRA_ACTUAL_MODEL, null);
+        if (StringUtils.isNotBlank(actualModel)) {
+            return actualModel;
+        }
+        String requestModel = resolveRequestModel(response, request, providerConfig);
+        if (providerConfig == null) {
+            return requestModel;
+        }
+        return resolvePlannedActualModel(providerConfig, requestModel);
+    }
+
+    /**
+     * 解析客户端请求模型。
+     *
+     * @param response 响应对象
+     * @param request 请求对象
+     * @param providerConfig 提供方配置
+     * @return 请求模型
+     */
+    private String resolveRequestModel(AiChatResponse response, AiChatRequest request, AiProviderConfig providerConfig) {
+        if (response != null && StringUtils.isNotBlank(response.getRequestModel())) {
+            return response.getRequestModel();
+        }
+        String requestModel = resolveRequestExtra(request, EXTRA_REQUEST_MODEL, request == null ? null : request.getModel());
+        if (StringUtils.isNotBlank(requestModel)) {
+            return requestModel;
         }
         return providerConfig == null ? null : providerConfig.getDefaultModel();
+    }
+
+    /**
+     * 从请求扩展参数中读取字符串值。
+     *
+     * @param request 请求对象
+     * @param key 键名
+     * @param fallback 默认值
+     * @return 字符串值
+     */
+    private String resolveRequestExtra(AiChatRequest request, String key, String fallback) {
+        if (request == null || request.getExtra() == null) {
+            return fallback;
+        }
+        Object value = request.getExtra().get(key);
+        if (value == null || StringUtils.isBlank(String.valueOf(value))) {
+            return fallback;
+        }
+        return String.valueOf(value);
+    }
+
+    /**
+     * 解析计费阶段预期使用的实际模型。
+     *
+     * @param providerConfig 提供方配置
+     * @param requestedModel 请求模型
+     * @return 实际模型
+     */
+    private String resolvePlannedActualModel(AiProviderConfig providerConfig, String requestedModel) {
+        if (providerConfig == null) {
+            return requestedModel;
+        }
+        if (StringUtils.isBlank(requestedModel)) {
+            return providerConfig.getDefaultModel();
+        }
+        return aiModelRouteService.resolveRouteForProvider(providerConfig, requestedModel).getActualModel();
     }
 
     /**
@@ -2889,7 +3093,9 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             return;
         }
         Map<String, Object> config = parseConfig(providerConfig);
-        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), model);
+        String requestModel = StringUtils.isNotBlank(billingPlan.requestModel) ? billingPlan.requestModel : model;
+        String actualModel = StringUtils.isNotBlank(model) ? model : billingPlan.actualModel;
+        ModelPricing modelPricing = resolveModelPricing(providerConfig.getId(), requestModel, actualModel);
         billingPlan.providerConfigId = providerConfig.getId();
         billingPlan.walletTypeId = pickInteger(config, "billingWalletTypeId", 1);
         billingPlan.promptPricePer1kTokens = pickBigDecimal(config, "promptPricePer1kTokens", BigDecimal.ZERO);
@@ -2900,9 +3106,11 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         } else {
             billingPlan.fixedRequestPrice = BigDecimal.ZERO;
         }
-        billingPlan.estimatedModel = StringUtils.isNotBlank(model) ? model : providerConfig.getDefaultModel();
+        billingPlan.requestModel = requestModel;
+        billingPlan.actualModel = actualModel;
+        billingPlan.estimatedModel = StringUtils.isNotBlank(requestModel) ? requestModel : providerConfig.getDefaultModel();
         billingPlan.modelPricing = modelPricing;
-        billingPlan.billingEnabled = modelPricing.hasSplitPrice() || billingPlan.fixedRequestBilling || pickBoolean(config, "billingEnabled", false);
+        billingPlan.billingEnabled = modelPricing.hasAnyPrice() || billingPlan.fixedRequestBilling || pickBoolean(config, "billingEnabled", false);
         if (billingPlan.memberLimitDecision != null
                 && billingPlan.memberLimitDecision.isMemberByRequest()
                 && !billingPlan.memberLimitDecision.isOverLimit()) {
@@ -3179,6 +3387,8 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
         private BigDecimal fixedRequestPrice;
         private BigDecimal promptPricePer1kTokens;
         private BigDecimal completionPricePer1kTokens;
+        private String requestModel;
+        private String actualModel;
         private String estimatedModel;
         private AiUsageSummary estimatedUsage;
         private ModelPricing modelPricing;
@@ -3221,15 +3431,12 @@ public class AiOpenApiServiceImpl implements AiOpenApiService {
             return fixedRequestPrice.compareTo(BigDecimal.ZERO) > 0;
         }
 
-        private BigDecimal fixedRequestPrice() {
-            return fixedRequestPrice;
+        private boolean hasAnyPrice() {
+            return hasSplitPrice() || hasFixedRequestPrice();
         }
 
-        private boolean matches(String model) {
-            if (StringUtils.isBlank(modelName) || StringUtils.isBlank(model)) {
-                return false;
-            }
-            return modelName.equals(model);
+        private BigDecimal fixedRequestPrice() {
+            return fixedRequestPrice;
         }
     }
 

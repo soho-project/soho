@@ -59,6 +59,16 @@ public class AiApiCallLog implements Serializable {
     @TableField(value = "model")
     private String model;
 
+    @ExcelProperty("request_model")
+    @ApiModelProperty(value = "请求模型")
+    @TableField(value = "request_model")
+    private String requestModel;
+
+    @ExcelProperty("actual_model")
+    @ApiModelProperty(value = "实际调用模型")
+    @TableField(value = "actual_model")
+    private String actualModel;
+
     @ExcelProperty("prompt_tokens")
     @ApiModelProperty(value = "prompt_tokens")
     @TableField(value = "prompt_tokens")

@@ -73,6 +73,12 @@ public class AiModelInfo implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Integer sort;
 
+    @ExcelProperty("兜底模型ID")
+    @ApiModelProperty(value = "兜底模型ID")
+    @TableField(value = "fallback_model_id")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long fallbackModelId;
+
     @ExcelProperty("更新时间")
     @ApiModelProperty(value = "更新时间")
     @TableField(value = "updated_time", fill = FieldFill.INSERT_UPDATE)
