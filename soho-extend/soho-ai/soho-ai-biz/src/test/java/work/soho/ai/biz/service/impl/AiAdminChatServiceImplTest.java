@@ -9,10 +9,10 @@ import work.soho.ai.biz.service.AiChatService;
 import work.soho.ai.biz.service.AiChatSessionMessageService;
 import work.soho.ai.biz.service.AiChatSessionService;
 import work.soho.ai.biz.service.AiFileService;
+import work.soho.ai.biz.service.AiModelRouteService;
 import work.soho.ai.biz.service.AiPromptRenderLogService;
 import work.soho.ai.biz.service.AiPromptRenderService;
 import work.soho.ai.biz.service.AiProviderConfigService;
-import work.soho.ai.biz.service.AiProviderModelRelService;
 
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -88,7 +88,7 @@ public class AiAdminChatServiceImplTest {
     private AiAdminChatServiceImpl buildService(AiChatSessionService aiChatSessionService) {
         return new AiAdminChatServiceImpl(
                 Mockito.mock(AiProviderConfigService.class),
-                Mockito.mock(AiProviderModelRelService.class),
+                Mockito.mock(AiModelRouteService.class),
                 Mockito.mock(AiChatService.class),
                 aiChatSessionService,
                 Mockito.mock(AiChatSessionMessageService.class),

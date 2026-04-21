@@ -10,7 +10,6 @@ import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import work.soho.ai.biz.domain.AiChatSession;
 import work.soho.ai.biz.domain.AiChatSessionMessage;
-import work.soho.ai.biz.domain.AiModelInfo;
 import work.soho.ai.biz.domain.AiPromptRenderLog;
 import work.soho.ai.biz.domain.AiProviderConfig;
 import work.soho.ai.biz.dto.AiChatResponse;
@@ -23,11 +22,10 @@ import work.soho.ai.biz.service.AiChatService;
 import work.soho.ai.biz.service.AiChatSessionMessageService;
 import work.soho.ai.biz.service.AiChatSessionService;
 import work.soho.ai.biz.service.AiFileService;
+import work.soho.ai.biz.service.AiModelRouteService;
 import work.soho.ai.biz.service.AiPromptRenderLogService;
 import work.soho.ai.biz.service.AiPromptRenderService;
 import work.soho.ai.biz.service.AiProviderConfigService;
-import work.soho.ai.biz.service.AiProviderModelRelService;
-import work.soho.ai.biz.utils.AiProviderModelUtils;
 import work.soho.common.core.util.IDGeneratorUtils;
 import work.soho.common.core.util.JacksonUtils;
 import work.soho.common.core.util.StringUtils;
@@ -49,7 +47,7 @@ public class AiAdminChatServiceImpl implements AiAdminChatService {
     private static final String ADMIN_CHAT_ENDPOINT = "/ai/admin/chat";
 
     private final AiProviderConfigService aiProviderConfigService;
-    private final AiProviderModelRelService aiProviderModelRelService;
+    private final AiModelRouteService aiModelRouteService;
     private final AiChatService aiChatService;
     private final AiChatSessionService aiChatSessionService;
     private final AiChatSessionMessageService aiChatSessionMessageService;
@@ -74,7 +72,7 @@ public class AiAdminChatServiceImpl implements AiAdminChatService {
             item.setProviderCode(providerConfig.getCode());
             item.setProvider(providerConfig.getProvider());
             item.setDefaultModel(providerConfig.getDefaultModel());
-            item.setModels(resolveModels(providerConfig));
+            item.setModels(aiModelRouteService.listDisplayModelsByProvider(providerConfig));
             list.add(item);
         }
         return list;
@@ -213,20 +211,6 @@ public class AiAdminChatServiceImpl implements AiAdminChatService {
      * @param providerConfig 提供方配置
      * @return 模型列表
      */
-    private List<String> resolveModels(AiProviderConfig providerConfig) {
-        List<AiModelInfo> modelInfos = aiProviderModelRelService.listEnabledModelsByProviderConfigId(providerConfig.getId());
-        if (!modelInfos.isEmpty()) {
-            List<String> models = new ArrayList<>();
-            for (AiModelInfo item : modelInfos) {
-                if (StringUtils.isNotBlank(item.getModelName())) {
-                    models.add(item.getModelName());
-                }
-            }
-            return models;
-        }
-        return AiProviderModelUtils.extractModels(providerConfig);
-    }
-
     /**
      * 准备当前管理员会话。
      *

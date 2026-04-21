@@ -19,11 +19,13 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import work.soho.ai.biz.domain.AiProviderConfig;
 import work.soho.ai.biz.dto.AiChatResponse;
+import work.soho.ai.biz.dto.AiResolvedModelRoute;
 import work.soho.ai.biz.dto.AiProxySelectionResult;
 import work.soho.ai.biz.dto.AiUsageSummary;
 import work.soho.ai.biz.request.AiChatRequest;
 import work.soho.ai.biz.service.AiChatService;
 import work.soho.ai.biz.service.AiFileService;
+import work.soho.ai.biz.service.AiModelRouteService;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
 import work.soho.ai.biz.service.AiProxyConfigService;
@@ -70,7 +72,11 @@ public class AiChatServiceImpl implements AiChatService {
     private static final String EXTRA_ACTUAL_PROVIDER_CONFIG_ID = "actualProviderConfigId";
     private static final String EXTRA_ACTUAL_PROVIDER_CODE = "actualProviderCode";
     private static final String EXTRA_ACTUAL_PROVIDER = "actualProvider";
+    private static final String EXTRA_REQUEST_MODEL = "requestModel";
+    private static final String EXTRA_CLIENT_MODEL = "clientModel";
     private static final String EXTRA_ACTUAL_MODEL = "actualModel";
+    private static final String EXTRA_FALLBACK_APPLIED = "fallbackApplied";
+    private static final String EXTRA_FALLBACK_CHAIN = "fallbackChain";
     private static final long DEFAULT_FIRST_PAYLOAD_TIMEOUT_MS = 8000L;
     private static final String INTERNAL_PROVIDER_KEY = "__resolvedProvider";
     private static final String INTERNAL_PROXY_NODE_ID = "__resolvedProxyNodeId";
@@ -88,20 +94,28 @@ public class AiChatServiceImpl implements AiChatService {
     private final AiProxyRuntimeStateService aiProxyRuntimeStateService;
     private final AiProviderRuntimeStateService aiProviderRuntimeStateService;
     private final AiUpstreamClientFactory aiUpstreamClientFactory;
+    private final AiModelRouteService aiModelRouteService;
 
+    /**
+     * 执行非流式聊天，并在请求前完成模型兜底路由。
+     *
+     * @param request 聊天请求
+     * @return 聊天结果
+     */
     @Override
     public AiChatResponse chat(AiChatRequest request) {
-        List<AiProviderConfig> candidates = resolveProviderConfigCandidates(request.getProviderCode(), request.getModel());
-        int maxAttempts = Math.min(MAX_FAILOVER_ATTEMPTS, candidates.size());
+        ProviderRoutingPlan routingPlan = resolveProviderRoutingPlan(request);
+        applyRoutingPlan(request, routingPlan);
+        int maxAttempts = Math.min(MAX_FAILOVER_ATTEMPTS, routingPlan.getCandidates().size());
         RuntimeException lastException = null;
         for (int i = 0; i < maxAttempts; i++) {
-            AiProviderConfig candidate = candidates.get(i);
+            AiProviderConfig candidate = routingPlan.getCandidates().get(i);
             try {
                 return chat(candidate, request);
             } catch (RuntimeException ex) {
                 lastException = ex;
                 log.warn("chat upstream attempt failed, attempt={}/{}, providerCode={}, model={}, error={}",
-                        i + 1, maxAttempts, candidate.getCode(), request.getModel(), ex.getMessage());
+                        i + 1, maxAttempts, candidate.getCode(), resolveClientModel(request, routingPlan.getActualModel()), ex.getMessage());
             }
         }
         if (lastException != null) {
@@ -110,11 +124,18 @@ public class AiChatServiceImpl implements AiChatService {
         throw new IllegalArgumentException("provider config not found");
     }
 
+    /**
+     * 执行流式聊天，并在请求前完成模型兜底路由。
+     *
+     * @param request 聊天请求
+     * @return 流式响应
+     */
     @Override
     public Flux<String> streamChat(AiChatRequest request) {
-        List<AiProviderConfig> candidates = resolveProviderConfigCandidates(request.getProviderCode(), request.getModel());
-        int maxAttempts = Math.min(MAX_FAILOVER_ATTEMPTS, candidates.size());
-        return streamChatWithFailover(candidates, request, 0, maxAttempts);
+        ProviderRoutingPlan routingPlan = resolveProviderRoutingPlan(request);
+        applyRoutingPlan(request, routingPlan);
+        int maxAttempts = Math.min(MAX_FAILOVER_ATTEMPTS, routingPlan.getCandidates().size());
+        return streamChatWithFailover(routingPlan.getCandidates(), request, 0, maxAttempts);
     }
 
     @Override
@@ -167,6 +188,7 @@ public class AiChatServiceImpl implements AiChatService {
         String apiKey = pickApiKey(providerConfig, config);
         String baseUrl = pickBaseUrl(providerConfig, config);
         String model = normalizeModel(provider, pickModel(request, providerConfig, config));
+        String clientModel = resolveClientModel(request, model);
         Integer timeoutMs = pickInteger(config, "timeoutMs", providerConfig.getTimeoutMs());
         Boolean streamSupported = pickBoolean(config, "streamSupported", true);
         List<AiChatRequest.Message> messages = enrichMessagesWithFiles(buildMessages(request));
@@ -186,12 +208,13 @@ public class AiChatServiceImpl implements AiChatService {
             Flux<String> stream = streamCodexResponses(baseUrl, apiKey, model, messages, request, config);
             String proxySummary = summarizeProxyForLog(config);
             return withUpstreamStreamTimingLog(providerConfig, config, provider, upstreamUrl, model, proxySummary,
-                    applyFirstPayloadTimeout(stream, resolveFirstPayloadTimeoutMs(timeoutMs, config), providerConfig.getCode(), model));
+                    applyFirstPayloadTimeout(stream, resolveFirstPayloadTimeoutMs(timeoutMs, config), providerConfig.getCode(), model))
+                    .transform(payloadFlux -> rewriteStreamPayloadModel(payloadFlux, clientModel));
         }
 
         if (Boolean.FALSE.equals(streamSupported)) {
             AiChatResponse resp = chat(providerConfig, request);
-            return toOpenAiStream(resp.getContent());
+            return toOpenAiStream(resp.getContent(), clientModel);
         }
 
         Flux<String> stream;
@@ -214,7 +237,8 @@ public class AiChatServiceImpl implements AiChatService {
         }
         String proxySummary = summarizeProxyForLog(config);
         return withUpstreamStreamTimingLog(providerConfig, config, provider, upstreamUrl, model, proxySummary,
-                applyFirstPayloadTimeout(stream, resolveFirstPayloadTimeoutMs(timeoutMs, config), providerConfig.getCode(), model));
+                applyFirstPayloadTimeout(stream, resolveFirstPayloadTimeoutMs(timeoutMs, config), providerConfig.getCode(), model))
+                .transform(payloadFlux -> rewriteStreamPayloadModel(payloadFlux, clientModel));
     }
 
     /**
@@ -293,17 +317,15 @@ public class AiChatServiceImpl implements AiChatService {
         if (StringUtils.isBlank(provider) || StringUtils.isBlank(model)) {
             throw new IllegalArgumentException("provider or model is required");
         }
-        List<AiProviderConfig> orderedCandidates = loadOrderedEnabledCandidatesByModel(model);
-        if (orderedCandidates.isEmpty()) {
-            throw new IllegalArgumentException("provider config not found for model: " + model);
-        }
         List<AiProviderConfig> availableCandidates = new ArrayList<>();
-        for (AiProviderConfig orderedCandidate : orderedCandidates) {
-            if (!provider.equalsIgnoreCase(orderedCandidate.getProvider())) {
+        List<AiProviderConfig> enabledConfigs = aiProviderConfigService.listEnabledProviderConfigsByProvider(provider);
+        for (AiProviderConfig enabledConfig : enabledConfigs) {
+            AiResolvedModelRoute route = aiModelRouteService.resolveRouteForProvider(enabledConfig, model);
+            if (StringUtils.isBlank(route.getActualModel())) {
                 continue;
             }
-            if (aiProviderRuntimeStateService.isRequestAllowed(orderedCandidate)) {
-                availableCandidates.add(orderedCandidate);
+            if (aiProviderRuntimeStateService.isRequestAllowed(enabledConfig)) {
+                availableCandidates.add(enabledConfig);
             }
         }
         if (availableCandidates.isEmpty()) {
@@ -311,6 +333,43 @@ public class AiChatServiceImpl implements AiChatService {
         }
         AiProviderConfig selected = selectByWeight(availableCandidates);
         return selected == null ? availableCandidates.get(0) : selected;
+    }
+
+    /**
+     * 解析请求对应的提供方路由计划。
+     *
+     * @param request 聊天请求
+     * @return 路由计划
+     */
+    private ProviderRoutingPlan resolveProviderRoutingPlan(AiChatRequest request) {
+        String providerCode = request == null ? null : request.getProviderCode();
+        String requestedModel = request == null ? null : request.getModel();
+        List<AiProviderConfig> candidates = resolveProviderConfigCandidates(providerCode, requestedModel);
+        AiResolvedModelRoute route = resolveRequestedRoute(providerCode, requestedModel, candidates);
+        String actualModel = route == null ? null : route.getActualModel();
+        String clientModel = StringUtils.isNotBlank(requestedModel) ? requestedModel : actualModel;
+        return new ProviderRoutingPlan(candidates, requestedModel, clientModel, actualModel, route);
+    }
+
+    /**
+     * 解析请求模型在当前上下文内的实际路由。
+     *
+     * @param providerCode 提供方编码
+     * @param requestedModel 请求模型
+     * @param candidates 候选提供方
+     * @return 路由结果
+     */
+    private AiResolvedModelRoute resolveRequestedRoute(String providerCode, String requestedModel, List<AiProviderConfig> candidates) {
+        if (StringUtils.isBlank(requestedModel)) {
+            return new AiResolvedModelRoute();
+        }
+        if (StringUtils.isNotBlank(providerCode)) {
+            if (candidates == null || candidates.isEmpty()) {
+                throw new IllegalArgumentException("provider config not found");
+            }
+            return aiModelRouteService.resolveRouteForProvider(candidates.get(0), requestedModel);
+        }
+        return aiModelRouteService.resolveRoute(requestedModel);
     }
 
     private AiProviderConfig selectByWeight(List<AiProviderConfig> candidates) {
@@ -363,12 +422,18 @@ public class AiChatServiceImpl implements AiChatService {
             if (!aiProviderRuntimeStateService.isRequestAllowed(candidate)) {
                 throw new IllegalStateException("provider temporarily unavailable: " + providerCode);
             }
+            validateRouteForProvider(candidate, model);
             return Collections.singletonList(candidate);
         }
         if (StringUtils.isBlank(model)) {
             throw new IllegalArgumentException("providerCode or model is required");
         }
-        List<AiProviderConfig> orderedCandidates = loadOrderedEnabledCandidatesByModel(model);
+        AiResolvedModelRoute route = aiModelRouteService.resolveRoute(model);
+        String actualModel = route == null ? null : route.getActualModel();
+        if (StringUtils.isBlank(actualModel)) {
+            throw new IllegalArgumentException("provider config not found for model: " + model);
+        }
+        List<AiProviderConfig> orderedCandidates = loadOrderedEnabledCandidatesByModel(actualModel);
         if (orderedCandidates.isEmpty()) {
             throw new IllegalArgumentException("provider config not found for model: " + model);
         }
@@ -393,6 +458,22 @@ public class AiChatServiceImpl implements AiChatService {
             }
         }
         return candidates;
+    }
+
+    /**
+     * 校验指定提供方内是否存在可用的实际模型。
+     *
+     * @param providerConfig 提供方配置
+     * @param requestedModel 请求模型
+     */
+    private void validateRouteForProvider(AiProviderConfig providerConfig, String requestedModel) {
+        if (providerConfig == null || StringUtils.isBlank(requestedModel)) {
+            return;
+        }
+        AiResolvedModelRoute route = aiModelRouteService.resolveRouteForProvider(providerConfig, requestedModel);
+        if (StringUtils.isBlank(route.getActualModel())) {
+            throw new IllegalArgumentException("model not supported: " + requestedModel);
+        }
     }
 
     /**
@@ -444,8 +525,7 @@ public class AiChatServiceImpl implements AiChatService {
             if (enabledConfig.getId() == null || addedConfigIds.contains(enabledConfig.getId())) {
                 continue;
             }
-            List<String> declaredModels = AiProviderModelUtils.extractModels(enabledConfig);
-            if (declaredModels.contains(model)) {
+            if (supportsDirectModel(enabledConfig, model)) {
                 orderedCandidates.add(enabledConfig);
             }
         }
@@ -470,7 +550,8 @@ public class AiChatServiceImpl implements AiChatService {
         return Flux.defer(() -> streamChat(candidate, request))
                 .onErrorResume(ex -> {
                     log.warn("stream chat upstream attempt failed, attempt={}/{}, providerCode={}, model={}, error={}",
-                            index + 1, maxAttempts, candidate.getCode(), request.getModel(), ex.getMessage());
+                            index + 1, maxAttempts, candidate.getCode(),
+                            resolveClientModel(request, resolveActualModelFromRequest(request)), ex.getMessage());
                     if (index + 1 >= maxAttempts) {
                         return Flux.error(ex);
                     }
@@ -529,6 +610,10 @@ public class AiChatServiceImpl implements AiChatService {
     }
 
     private String pickModel(AiChatRequest request, AiProviderConfig providerConfig, Map<String, Object> config) {
+        String resolvedModel = resolveActualModelFromRequest(request);
+        if (StringUtils.isNotBlank(resolvedModel)) {
+            return resolvedModel;
+        }
         if (StringUtils.isNotBlank(request.getModel())) {
             return request.getModel();
         }
@@ -586,6 +671,25 @@ public class AiChatServiceImpl implements AiChatService {
     }
 
     private void validateSupportedModel(AiProviderConfig providerConfig, String model) {
+        if (providerConfig == null || StringUtils.isBlank(model)) {
+            return;
+        }
+        if (!supportsDirectModel(providerConfig, model)) {
+            throw new IllegalArgumentException("model not supported: " + model);
+        }
+    }
+
+    /**
+     * 判断提供方是否直接支持当前模型。
+     *
+     * @param providerConfig 提供方配置
+     * @param model 模型名
+     * @return 是否支持
+     */
+    private boolean supportsDirectModel(AiProviderConfig providerConfig, String model) {
+        if (providerConfig == null || providerConfig.getId() == null || StringUtils.isBlank(model)) {
+            return false;
+        }
         List<String> supportedModels = new ArrayList<>();
         for (work.soho.ai.biz.domain.AiModelInfo item : aiProviderModelRelService.listEnabledModelsByProviderConfigId(providerConfig.getId())) {
             if (StringUtils.isNotBlank(item.getModelName())) {
@@ -595,12 +699,10 @@ public class AiChatServiceImpl implements AiChatService {
         if (supportedModels.isEmpty()) {
             supportedModels = AiProviderModelUtils.extractModels(providerConfig);
         }
-        if (supportedModels.isEmpty() || StringUtils.isBlank(model)) {
-            return;
+        if (supportedModels.isEmpty()) {
+            return true;
         }
-        if (!supportedModels.contains(model)) {
-            throw new IllegalArgumentException("model not supported: " + model);
-        }
+        return supportedModels.contains(model);
     }
 
     private List<AiChatRequest.Message> buildMessages(AiChatRequest request) {
@@ -702,7 +804,7 @@ public class AiChatServiceImpl implements AiChatService {
             if (usage.getTotalTokens() == 0) {
                 usage = estimateUsage(request, content);
             }
-            return buildResponse(providerConfig, provider, model, content, raw, usage);
+            return buildResponse(providerConfig, provider, request, model, content, raw, usage);
         });
     }
 
@@ -734,7 +836,7 @@ public class AiChatServiceImpl implements AiChatService {
             if (usage.getTotalTokens() == 0) {
                 usage = estimateUsage(request, content);
             }
-            return buildResponse(providerConfig, provider, model, content, raw, usage);
+            return buildResponse(providerConfig, provider, request, model, content, raw, usage);
         });
     }
 
@@ -770,7 +872,7 @@ public class AiChatServiceImpl implements AiChatService {
             if (usage.getTotalTokens() == 0) {
                 usage = estimateUsage(request, content);
             }
-            return buildResponse(providerConfig, provider, model, content, raw, usage);
+            return buildResponse(providerConfig, provider, request, model, content, raw, usage);
         });
     }
 
@@ -791,7 +893,7 @@ public class AiChatServiceImpl implements AiChatService {
             if (usage.getTotalTokens() == 0) {
                 usage = estimateUsage(request, content);
             }
-            return buildResponse(providerConfig, provider, model, content, raw, usage);
+            return buildResponse(providerConfig, provider, request, model, content, raw, usage);
         });
     }
 
@@ -840,7 +942,7 @@ public class AiChatServiceImpl implements AiChatService {
             if (usage.getTotalTokens() == 0) {
                 usage = estimateUsage(request, content);
             }
-            return buildResponse(providerConfig, provider, model, content, raw, usage);
+            return buildResponse(providerConfig, provider, request, model, content, raw, usage);
         });
     }
 
@@ -1981,12 +2083,15 @@ public class AiChatServiceImpl implements AiChatService {
         return summary;
     }
 
-    private AiChatResponse buildResponse(AiProviderConfig providerConfig, String provider, String model, String content, String raw, AiUsageSummary usage) {
+    private AiChatResponse buildResponse(AiProviderConfig providerConfig, String provider, AiChatRequest request,
+                                         String actualModel, String content, String raw, AiUsageSummary usage) {
         AiChatResponse response = new AiChatResponse();
         response.setProviderConfigId(providerConfig == null ? null : providerConfig.getId());
         response.setProviderCode(providerConfig == null ? null : providerConfig.getCode());
         response.setProvider(provider);
-        response.setModel(model);
+        response.setRequestModel(resolveRequestedModel(request));
+        response.setActualModel(actualModel);
+        response.setModel(resolveClientModel(request, actualModel));
         response.setContent(content);
         response.setRaw(raw);
         response.setPromptTokens(usage.getPromptTokens());
@@ -2011,15 +2116,94 @@ public class AiChatServiceImpl implements AiChatService {
             return;
         }
         request.setProviderCode(providerConfig.getCode());
-        if (StringUtils.isBlank(request.getModel())) {
-            request.setModel(model);
-        }
         Map<String, Object> extra = request.getExtra() == null ? new HashMap<>() : new HashMap<>(request.getExtra());
+        String requestedModel = resolveRequestedModel(request);
         extra.put(EXTRA_ACTUAL_PROVIDER_CONFIG_ID, providerConfig.getId());
         extra.put(EXTRA_ACTUAL_PROVIDER_CODE, providerConfig.getCode());
         extra.put(EXTRA_ACTUAL_PROVIDER, provider);
+        extra.put(EXTRA_REQUEST_MODEL, requestedModel);
+        extra.put(EXTRA_CLIENT_MODEL, StringUtils.isNotBlank(requestedModel) ? requestedModel : model);
         extra.put(EXTRA_ACTUAL_MODEL, model);
         request.setExtra(extra);
+    }
+
+    /**
+     * 将路由计划回写到请求上下文。
+     *
+     * @param request 请求对象
+     * @param routingPlan 路由计划
+     */
+    private void applyRoutingPlan(AiChatRequest request, ProviderRoutingPlan routingPlan) {
+        if (request == null || routingPlan == null) {
+            return;
+        }
+        Map<String, Object> extra = request.getExtra() == null ? new HashMap<>() : new HashMap<>(request.getExtra());
+        if (StringUtils.isNotBlank(routingPlan.getRequestedModel())) {
+            extra.put(EXTRA_REQUEST_MODEL, routingPlan.getRequestedModel());
+        }
+        if (StringUtils.isNotBlank(routingPlan.getClientModel())) {
+            extra.put(EXTRA_CLIENT_MODEL, routingPlan.getClientModel());
+        }
+        if (StringUtils.isNotBlank(routingPlan.getActualModel())) {
+            extra.put(EXTRA_ACTUAL_MODEL, routingPlan.getActualModel());
+        }
+        AiResolvedModelRoute route = routingPlan.getRoute();
+        if (route != null) {
+            extra.put(EXTRA_FALLBACK_APPLIED, route.isFallbackApplied());
+            extra.put(EXTRA_FALLBACK_CHAIN, route.getFallbackChain());
+        }
+        request.setExtra(extra);
+    }
+
+    /**
+     * 解析请求上下文中的实际模型。
+     *
+     * @param request 请求对象
+     * @return 实际模型
+     */
+    private String resolveActualModelFromRequest(AiChatRequest request) {
+        if (request == null || request.getExtra() == null) {
+            return null;
+        }
+        Object value = request.getExtra().get(EXTRA_ACTUAL_MODEL);
+        return value == null ? null : String.valueOf(value);
+    }
+
+    /**
+     * 解析客户端请求模型。
+     *
+     * @param request 请求对象
+     * @return 请求模型
+     */
+    private String resolveRequestedModel(AiChatRequest request) {
+        if (request == null) {
+            return null;
+        }
+        if (request.getExtra() != null) {
+            Object requestModel = request.getExtra().get(EXTRA_REQUEST_MODEL);
+            if (requestModel != null && StringUtils.isNotBlank(String.valueOf(requestModel))) {
+                return String.valueOf(requestModel);
+            }
+        }
+        return request.getModel();
+    }
+
+    /**
+     * 解析客户端应看到的模型名。
+     *
+     * @param request 请求对象
+     * @param actualModel 实际模型
+     * @return 客户端模型
+     */
+    private String resolveClientModel(AiChatRequest request, String actualModel) {
+        if (request != null && request.getExtra() != null) {
+            Object clientModel = request.getExtra().get(EXTRA_CLIENT_MODEL);
+            if (clientModel != null && StringUtils.isNotBlank(String.valueOf(clientModel))) {
+                return String.valueOf(clientModel);
+            }
+        }
+        String requestedModel = resolveRequestedModel(request);
+        return StringUtils.isNotBlank(requestedModel) ? requestedModel : actualModel;
     }
 
     private String joinUrl(String baseUrl, String path) {
@@ -2228,11 +2412,11 @@ public class AiChatServiceImpl implements AiChatService {
         return fallback;
     }
 
-    private Flux<String> toOpenAiStream(String content) {
+    private Flux<String> toOpenAiStream(String content, String model) {
         if (StringUtils.isBlank(content)) {
             return Flux.just("[DONE]");
         }
-        return Flux.just(buildOpenAiChunk("assistant", content, null), "[DONE]");
+        return Flux.just(buildOpenAiChunk("assistant", content, model), "[DONE]");
     }
 
     private void putIfNotNull(Map<String, Object> map, String key, Object value) {
@@ -2298,6 +2482,44 @@ public class AiChatServiceImpl implements AiChatService {
             payload.put("model", model);
         }
         return JacksonUtils.toJson(payload);
+    }
+
+    /**
+     * 将流式 payload 中的模型字段改写为客户端请求模型。
+     *
+     * @param source 原始流
+     * @param clientModel 客户端模型
+     * @return 改写后的流
+     */
+    private Flux<String> rewriteStreamPayloadModel(Flux<String> source, String clientModel) {
+        if (StringUtils.isBlank(clientModel)) {
+            return source;
+        }
+        return source.map(payload -> rewritePayloadModel(payload, clientModel));
+    }
+
+    /**
+     * 改写单条 payload 的模型字段。
+     *
+     * @param payload 单条 payload
+     * @param clientModel 客户端模型
+     * @return 改写后的 payload
+     */
+    private String rewritePayloadModel(String payload, String clientModel) {
+        if (StringUtils.isBlank(payload) || "[DONE]".equals(payload)) {
+            return payload;
+        }
+        try {
+            JsonNode root = JacksonUtils.getObjectMapper().readTree(payload);
+            if (root == null || root.isMissingNode() || !root.isObject()) {
+                return payload;
+            }
+            ((com.fasterxml.jackson.databind.node.ObjectNode) root).put("model", clientModel);
+            return JacksonUtils.toJson(root);
+        } catch (Exception ex) {
+            log.warn("rewrite stream payload model failed, payload={}", payload, ex);
+            return payload;
+        }
     }
 
     private int estimateTokensByChars(int chars) {
@@ -2414,6 +2636,46 @@ public class AiChatServiceImpl implements AiChatService {
             return new DelimiterHit(lfIdx, 2);
         }
         return crlfIdx < lfIdx ? new DelimiterHit(crlfIdx, 4) : new DelimiterHit(lfIdx, 2);
+    }
+
+    /**
+     * 请求路由计划。
+     */
+    private static final class ProviderRoutingPlan {
+        private final List<AiProviderConfig> candidates;
+        private final String requestedModel;
+        private final String clientModel;
+        private final String actualModel;
+        private final AiResolvedModelRoute route;
+
+        private ProviderRoutingPlan(List<AiProviderConfig> candidates, String requestedModel, String clientModel,
+                                    String actualModel, AiResolvedModelRoute route) {
+            this.candidates = candidates == null ? Collections.emptyList() : candidates;
+            this.requestedModel = requestedModel;
+            this.clientModel = clientModel;
+            this.actualModel = actualModel;
+            this.route = route;
+        }
+
+        private List<AiProviderConfig> getCandidates() {
+            return candidates;
+        }
+
+        private String getRequestedModel() {
+            return requestedModel;
+        }
+
+        private String getClientModel() {
+            return clientModel;
+        }
+
+        private String getActualModel() {
+            return actualModel;
+        }
+
+        private AiResolvedModelRoute getRoute() {
+            return route;
+        }
     }
 
     private static final class DelimiterHit {

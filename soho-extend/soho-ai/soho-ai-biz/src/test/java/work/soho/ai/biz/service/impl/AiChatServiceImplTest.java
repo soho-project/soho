@@ -13,6 +13,8 @@ import work.soho.ai.biz.dto.AiUsageSummary;
 import work.soho.ai.biz.request.AiChatRequest;
 import work.soho.ai.biz.request.OpenAiResponsesRequest;
 import work.soho.ai.biz.service.AiFileService;
+import work.soho.ai.biz.service.AiModelInfoService;
+import work.soho.ai.biz.service.AiModelRouteService;
 import work.soho.ai.biz.service.AiProviderConfigService;
 import work.soho.ai.biz.service.AiProviderModelRelService;
 import work.soho.ai.biz.service.AiProviderRuntimeStateService;
@@ -25,6 +27,7 @@ import work.soho.common.core.util.JacksonUtils;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -64,10 +67,12 @@ public class AiChatServiceImplTest {
                 Mockito.mock(AiProxyRelayService.class),
                 Mockito.mock(AiProxyRuntimeStateService.class),
                 runtimeStateService,
-                Mockito.mock(AiUpstreamClientFactory.class)
+                Mockito.mock(AiUpstreamClientFactory.class),
+                buildModelRouteService(providerConfigService, providerModelRelService)
         ));
 
         AiProviderConfig providerConfig = new AiProviderConfig();
+        providerConfig.setId(1L);
         providerConfig.setStatus(1);
         providerConfig.setProvider("openai");
         providerConfig.setCode("p1");
@@ -112,12 +117,14 @@ public class AiChatServiceImplTest {
                 aiProxyRelayService,
                 Mockito.mock(AiProxyRuntimeStateService.class),
                 runtimeStateService,
-                factory
+                factory,
+                buildModelRouteService(providerConfigService, providerModelRelService)
         ));
         when(aiProxyRelayService.ensureRelay(Mockito.nullable(AiProxyLayerUtils.ProxySettings.class), anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         AiProviderConfig providerConfig = new AiProviderConfig();
+        providerConfig.setId(2L);
         providerConfig.setStatus(1);
         providerConfig.setProvider("openai");
         providerConfig.setCode("codex");
@@ -161,7 +168,8 @@ public class AiChatServiceImplTest {
                 .thenReturn(10);
         AiChatServiceImpl service = new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService,
                 Mockito.mock(AiProxyConfigService.class), Mockito.mock(AiProxyRelayService.class),
-                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class));
+                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class),
+                buildModelRouteService(providerConfigService, providerModelRelService));
 
         when(providerModelRelService.listEnabledProviderConfigIdsByModelName("gpt-4o-mini"))
                 .thenReturn(Arrays.asList(1L, 2L));
@@ -170,12 +178,16 @@ public class AiChatServiceImplTest {
         lowWeightConfig.setId(1L);
         lowWeightConfig.setStatus(1);
         lowWeightConfig.setCode("low");
+        lowWeightConfig.setDefaultModel("gpt-4o-mini");
+        lowWeightConfig.setSupportedModels("gpt-4o-mini");
         lowWeightConfig.setWeight(0);
 
         AiProviderConfig highWeightConfig = new AiProviderConfig();
         highWeightConfig.setId(2L);
         highWeightConfig.setStatus(1);
         highWeightConfig.setCode("high");
+        highWeightConfig.setDefaultModel("gpt-4o-mini");
+        highWeightConfig.setSupportedModels("gpt-4o-mini");
         highWeightConfig.setWeight(10);
 
         when(providerConfigService.listEnabledProviderConfigs()).thenReturn(Arrays.asList(lowWeightConfig, highWeightConfig));
@@ -200,7 +212,8 @@ public class AiChatServiceImplTest {
                 .thenReturn(10);
         AiChatServiceImpl service = new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService,
                 Mockito.mock(AiProxyConfigService.class), Mockito.mock(AiProxyRelayService.class),
-                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class));
+                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class),
+                buildModelRouteService(providerConfigService, providerModelRelService));
 
         when(providerModelRelService.listEnabledProviderConfigIdsByModelName("gpt-4o-mini"))
                 .thenReturn(Arrays.asList());
@@ -232,7 +245,8 @@ public class AiChatServiceImplTest {
         when(runtimeStateService.getEffectiveWeight(Mockito.any())).thenReturn(10);
         AiChatServiceImpl service = new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService,
                 Mockito.mock(AiProxyConfigService.class), Mockito.mock(AiProxyRelayService.class),
-                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class));
+                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class),
+                buildModelRouteService(providerConfigService, providerModelRelService));
 
         when(providerModelRelService.listEnabledProviderConfigIdsByModelName("gpt-4o-mini"))
                 .thenReturn(Arrays.asList(1L, 2L));
@@ -242,6 +256,8 @@ public class AiChatServiceImplTest {
         openaiConfig.setStatus(1);
         openaiConfig.setCode("openai-prod");
         openaiConfig.setProvider("openai");
+        openaiConfig.setDefaultModel("gpt-4o-mini");
+        openaiConfig.setSupportedModels("gpt-4o-mini");
         openaiConfig.setWeight(10);
 
         AiProviderConfig geminiConfig = new AiProviderConfig();
@@ -249,9 +265,13 @@ public class AiChatServiceImplTest {
         geminiConfig.setStatus(1);
         geminiConfig.setCode("gemini-prod");
         geminiConfig.setProvider("gemini");
+        geminiConfig.setDefaultModel("gpt-4o-mini");
+        geminiConfig.setSupportedModels("gpt-4o-mini");
         geminiConfig.setWeight(10);
 
         when(providerConfigService.listEnabledProviderConfigs()).thenReturn(Arrays.asList(openaiConfig, geminiConfig));
+        when(providerConfigService.listEnabledProviderConfigsByProvider("gemini")).thenReturn(Arrays.asList(geminiConfig));
+        when(providerConfigService.listEnabledProviderConfigsByProvider("anthropic")).thenReturn(Collections.emptyList());
 
         AiProviderConfig selected = service.resolveProviderConfigByProvider("gemini", "gpt-4o-mini");
         assertThat(selected.getId()).isEqualTo(2L);
@@ -335,7 +355,8 @@ public class AiChatServiceImplTest {
         AiProviderRuntimeStateService runtimeStateService = allowAllRuntimeStateService();
         AiChatServiceImpl service = new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService,
                 Mockito.mock(AiProxyConfigService.class), Mockito.mock(AiProxyRelayService.class),
-                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class));
+                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class),
+                buildModelRouteService(providerConfigService, providerModelRelService));
 
         Map<String, Object> body = new HashMap<>();
         body.put("model", "gpt-5.4");
@@ -387,7 +408,8 @@ public class AiChatServiceImplTest {
         AiProviderRuntimeStateService runtimeStateService = Mockito.mock(AiProviderRuntimeStateService.class);
         AiChatServiceImpl service = new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService,
                 Mockito.mock(AiProxyConfigService.class), Mockito.mock(AiProxyRelayService.class),
-                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class));
+                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class),
+                buildModelRouteService(providerConfigService, providerModelRelService));
 
         when(providerModelRelService.listEnabledProviderConfigIdsByModelName("gpt-4o-mini"))
                 .thenReturn(Arrays.asList(1L, 2L));
@@ -396,11 +418,15 @@ public class AiChatServiceImplTest {
         first.setId(1L);
         first.setCode("p1");
         first.setStatus(1);
+        first.setDefaultModel("gpt-4o-mini");
+        first.setSupportedModels("gpt-4o-mini");
 
         AiProviderConfig second = new AiProviderConfig();
         second.setId(2L);
         second.setCode("p2");
         second.setStatus(1);
+        second.setDefaultModel("gpt-4o-mini");
+        second.setSupportedModels("gpt-4o-mini");
 
         when(providerConfigService.listEnabledProviderConfigs()).thenReturn(Arrays.asList(first, second));
         when(runtimeStateService.isRequestAllowed(first)).thenReturn(false);
@@ -423,7 +449,8 @@ public class AiChatServiceImplTest {
         AiProviderRuntimeStateService runtimeStateService = Mockito.mock(AiProviderRuntimeStateService.class);
         AiChatServiceImpl service = new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService,
                 Mockito.mock(AiProxyConfigService.class), Mockito.mock(AiProxyRelayService.class),
-                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class));
+                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class),
+                buildModelRouteService(providerConfigService, providerModelRelService));
 
         when(providerModelRelService.listEnabledProviderConfigIdsByModelName("gpt-4o-mini"))
                 .thenReturn(Arrays.asList(1L, 2L));
@@ -432,11 +459,15 @@ public class AiChatServiceImplTest {
         first.setId(1L);
         first.setCode("p1");
         first.setStatus(1);
+        first.setDefaultModel("gpt-4o-mini");
+        first.setSupportedModels("gpt-4o-mini");
 
         AiProviderConfig second = new AiProviderConfig();
         second.setId(2L);
         second.setCode("p2");
         second.setStatus(1);
+        second.setDefaultModel("gpt-4o-mini");
+        second.setSupportedModels("gpt-4o-mini");
 
         when(providerConfigService.listEnabledProviderConfigs()).thenReturn(Arrays.asList(first, second));
         when(runtimeStateService.isRequestAllowed(first)).thenReturn(false);
@@ -458,7 +489,8 @@ public class AiChatServiceImplTest {
         AiProviderRuntimeStateService runtimeStateService = allowAllRuntimeStateService();
         AiChatServiceImpl service = new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService,
                 Mockito.mock(AiProxyConfigService.class), Mockito.mock(AiProxyRelayService.class),
-                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class));
+                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class),
+                buildModelRouteService(providerConfigService, providerModelRelService));
 
         Method method = AiChatServiceImpl.class.getDeclaredMethod("extractUsage", String.class, String.class);
         method.setAccessible(true);
@@ -483,7 +515,8 @@ public class AiChatServiceImplTest {
         AiProviderRuntimeStateService runtimeStateService = allowAllRuntimeStateService();
         AiChatServiceImpl service = new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService,
                 Mockito.mock(AiProxyConfigService.class), Mockito.mock(AiProxyRelayService.class),
-                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class));
+                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, Mockito.mock(AiUpstreamClientFactory.class),
+                buildModelRouteService(providerConfigService, providerModelRelService));
 
         Method method = AiChatServiceImpl.class.getDeclaredMethod("extractUsage", String.class, String.class);
         method.setAccessible(true);
@@ -509,7 +542,8 @@ public class AiChatServiceImplTest {
         AiUpstreamClientFactory factory = Mockito.mock(AiUpstreamClientFactory.class);
         AiChatServiceImpl service = Mockito.spy(new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService,
                 Mockito.mock(AiProxyConfigService.class), Mockito.mock(AiProxyRelayService.class),
-                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, factory));
+                Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, factory,
+                buildModelRouteService(providerConfigService, providerModelRelService)));
         when(factory.exchangeJson(anyString(), eq(HttpMethod.POST), any(HttpHeaders.class), any(), anyInt(), Mockito.nullable(AiProxyLayerUtils.ProxySettings.class)))
                 .thenReturn(ResponseEntity.ok("{\"ok\":true}"));
 
@@ -534,7 +568,8 @@ public class AiChatServiceImplTest {
         AiProviderRuntimeStateService runtimeStateService = allowAllRuntimeStateService();
         AiUpstreamClientFactory factory = Mockito.mock(AiUpstreamClientFactory.class);
         AiChatServiceImpl service = Mockito.spy(new AiChatServiceImpl(providerConfigService, providerModelRelService, aiFileService,
-                aiProxyConfigService, aiProxyRelayService, Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, factory));
+                aiProxyConfigService, aiProxyRelayService, Mockito.mock(AiProxyRuntimeStateService.class), runtimeStateService, factory,
+                buildModelRouteService(providerConfigService, providerModelRelService)));
         when(aiProxyRelayService.ensureRelay(Mockito.nullable(AiProxyLayerUtils.ProxySettings.class), anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(factory.exchangeStream(anyString(), eq(HttpMethod.POST), any(HttpHeaders.class), any(), anyInt(), Mockito.nullable(AiProxyLayerUtils.ProxySettings.class)))
@@ -597,5 +632,15 @@ public class AiChatServiceImplTest {
             return Math.max(providerConfig.getWeight(), 0);
         });
         return runtimeStateService;
+    }
+
+    /**
+     * 构造可复用的模型路由服务，默认仅按当前 provider 声明的模型进行直接路由。
+     */
+    private AiModelRouteService buildModelRouteService(AiProviderConfigService providerConfigService,
+                                                       AiProviderModelRelService providerModelRelService) {
+        AiModelInfoService aiModelInfoService = Mockito.mock(AiModelInfoService.class);
+        when(aiModelInfoService.listEnabledModels()).thenReturn(Collections.emptyList());
+        return new AiModelRouteServiceImpl(aiModelInfoService, providerConfigService, providerModelRelService);
     }
 }
