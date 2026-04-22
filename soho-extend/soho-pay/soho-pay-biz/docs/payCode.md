@@ -48,6 +48,48 @@
 4. 对整串做 `MD5` 并转大写，得到 `sign`
 5. 服务端校验时间窗：`signTimestamp` 与服务端时间差不超过 10 分钟
 
+## 支付服务器轮询新支付单
+
+接口：`GET /pay/guest/api/pay/customQr/pollOrders`
+
+适用场景：
+1. 自定义二维码支付方式创建支付单后，支付服务器定时拉取新单。
+2. 支付服务器使用 `nextOrderId` 作为游标，避免重复消费。
+3. 接口默认使用长轮询，服务端会等待一段时间再返回，减少空轮询请求。
+
+请求字段：
+- `payInfoId`
+- `lastOrderId`（可选，首次可传 `0`）
+- `limit`（可选，默认 `20`，最大 `100`）
+- `waitSeconds`（可选，默认 `25`，最大 `55`）
+- `signTimestamp`（必填）
+- `signNonce`（必填）
+- `sign`（必填）
+
+签名规则：
+1. 参与签名字段：`payInfoId,lastOrderId,limit,waitSeconds,signTimestamp,signNonce`
+2. 其他规则与上报接口一致，签名密钥仍使用 `pay_info.account_private_key`
+
+返回字段：
+- `success`
+- `message`
+- `count`
+- `nextOrderId`
+- `hasMore`
+- `orders`
+
+`orders` 中包含：
+- `id`
+- `payId`
+- `orderNo`
+- `trackingNo`
+- `amount`
+- `status`
+- `notifyUrl`
+- `userId`
+- `createdTime`
+- `updatedTime`
+
 匹配逻辑：
 1. 仅筛选同 `payInfoId` 且 `payAmount` 相同的支付单。
 2. 支付时间需满足：`created_time <= payTime <= created_time + 5分钟`。

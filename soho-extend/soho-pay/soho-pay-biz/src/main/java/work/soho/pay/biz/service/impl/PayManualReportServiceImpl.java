@@ -15,6 +15,8 @@ import work.soho.pay.biz.mapper.PayManualReportMapper;
 import work.soho.pay.biz.platform.model.PayOrderDetails;
 import work.soho.pay.biz.platform.ndpay.adapter.NdpaySignUtil;
 import work.soho.pay.biz.request.PayManualReportAuditRequest;
+import work.soho.pay.biz.request.PayManualOrderPollRequest;
+import work.soho.pay.biz.service.PayManualOrderPollNotifier;
 import work.soho.pay.biz.request.PayManualReportSubmitRequest;
 import work.soho.pay.biz.service.PayInfoService;
 import work.soho.pay.biz.service.PayManualReportService;
@@ -23,6 +25,7 @@ import work.soho.pay.biz.service.PayOrderService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,10 +42,15 @@ public class PayManualReportServiceImpl extends ServiceImpl<PayManualReportMappe
     private static final int MAX_AUTO_MATCH_MINUTES_DIFF = 15;
     private static final int MAX_REPORT_DAYS_RANGE = 7;
     private static final long SIGN_EXPIRE_MILLIS = 10 * 60 * 1000L;
+    private static final int DEFAULT_POLL_LIMIT = 20;
+    private static final int MAX_POLL_LIMIT = 100;
+    private static final int DEFAULT_POLL_WAIT_SECONDS = 25;
+    private static final int MAX_POLL_WAIT_SECONDS = 55;
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final PayInfoService payInfoService;
     private final PayOrderService payOrderService;
+    private final PayManualOrderPollNotifier payManualOrderPollNotifier;
 
     /**
      * 提交支付上报并执行自动匹配。
@@ -116,6 +124,42 @@ public class PayManualReportServiceImpl extends ServiceImpl<PayManualReportMappe
         }
         updateById(report);
         return buildResult(true, "已提交，等待人工审核", report.getId(), false, true);
+    }
+
+    /**
+     * 轮询新的待处理支付单。
+     *
+     * @param request 轮询参数
+     * @return 轮询结果
+     */
+    @Override
+    public Map<String, Object> pollPendingOrders(PayManualOrderPollRequest request) {
+        String validateMessage = validatePollRequest(request);
+        if (StringUtils.isNotBlank(validateMessage)) {
+            return buildPollResult(false, validateMessage, 0, request == null ? 0 : safeInt(request.getLastOrderId()), false, new ArrayList<>());
+        }
+
+        PayInfo payInfo = payInfoService.getById(request.getPayInfoId());
+        if (payInfo == null) {
+            return buildPollResult(false, "支付方式不存在", 0, safeInt(request.getLastOrderId()), false, new ArrayList<>());
+        }
+        if (!CUSTOM_QR_ADAPTER.equals(payInfo.getAdapterName())) {
+            return buildPollResult(false, "该支付方式不支持自定义二维码轮询", 0, safeInt(request.getLastOrderId()), false, new ArrayList<>());
+        }
+        String signMessage = verifyPollSignature(request, payInfo);
+        if (StringUtils.isNotBlank(signMessage)) {
+            return buildPollResult(false, signMessage, 0, safeInt(request.getLastOrderId()), false, new ArrayList<>());
+        }
+
+        int limit = normalizePollLimit(request.getLimit());
+        int lastOrderId = safeInt(request.getLastOrderId());
+        int waitSeconds = normalizePollWaitSeconds(request.getWaitSeconds());
+        List<PayOrder> payOrders = queryPendingOrdersWithLongPoll(request.getPayInfoId(), lastOrderId, limit, waitSeconds);
+
+        boolean hasMore = payOrders.size() > limit;
+        List<Map<String, Object>> orders = buildPollOrders(payOrders, limit);
+        int nextOrderId = orders.isEmpty() ? lastOrderId : safeInt((Integer) orders.get(orders.size() - 1).get("id"));
+        return buildPollResult(true, orders.isEmpty() ? "暂无新支付单" : "获取新支付单成功", orders.size(), nextOrderId, hasMore, orders);
     }
 
     /**
@@ -218,6 +262,31 @@ public class PayManualReportServiceImpl extends ServiceImpl<PayManualReportMappe
     }
 
     /**
+     * 校验轮询参数。
+     *
+     * @param request 轮询请求
+     * @return 错误信息，为空表示通过
+     */
+    private String validatePollRequest(PayManualOrderPollRequest request) {
+        if (request == null) {
+            return "请求参数不能为空";
+        }
+        if (request.getPayInfoId() == null) {
+            return "payInfoId不能为空";
+        }
+        if (StringUtils.isBlank(request.getSignTimestamp())) {
+            return "signTimestamp不能为空";
+        }
+        if (StringUtils.isBlank(request.getSignNonce())) {
+            return "signNonce不能为空";
+        }
+        if (StringUtils.isBlank(request.getSign())) {
+            return "sign不能为空";
+        }
+        return "";
+    }
+
+    /**
      * 校验客户端上报签名。
      *
      * @param request 上报请求
@@ -253,6 +322,50 @@ public class PayManualReportServiceImpl extends ServiceImpl<PayManualReportMappe
     }
 
     /**
+     * 校验轮询签名。
+     *
+     * @param request 轮询请求
+     * @param payInfo 支付配置
+     * @return 错误信息，为空表示通过
+     */
+    private String verifyPollSignature(PayManualOrderPollRequest request, PayInfo payInfo) {
+        String timeMessage = verifySignTimestamp(request.getSignTimestamp());
+        if (StringUtils.isNotBlank(timeMessage)) {
+            return timeMessage;
+        }
+
+        Map<String, Object> signMap = new HashMap<>();
+        signMap.put("payInfoId", request.getPayInfoId());
+        signMap.put("lastOrderId", safeInt(request.getLastOrderId()));
+        signMap.put("limit", normalizePollLimit(request.getLimit()));
+        signMap.put("waitSeconds", normalizePollWaitSeconds(request.getWaitSeconds()));
+        signMap.put("signTimestamp", request.getSignTimestamp());
+        signMap.put("signNonce", request.getSignNonce());
+        boolean verified = NdpaySignUtil.verify(signMap, payInfo.getAccountPrivateKey(), request.getSign());
+        return verified ? "" : "签名校验失败";
+    }
+
+    /**
+     * 校验签名时间戳是否有效。
+     *
+     * @param signTimestamp 签名时间戳
+     * @return 错误信息，为空表示通过
+     */
+    private String verifySignTimestamp(String signTimestamp) {
+        long signTs;
+        try {
+            signTs = Long.parseLong(signTimestamp);
+        } catch (Exception ex) {
+            return "signTimestamp格式错误";
+        }
+        long now = System.currentTimeMillis();
+        if (Math.abs(now - signTs) > SIGN_EXPIRE_MILLIS) {
+            return "签名已过期";
+        }
+        return "";
+    }
+
+    /**
      * 规范化金额字符串，避免签名时出现科学计数法。
      *
      * @param amount 金额
@@ -263,6 +376,100 @@ public class PayManualReportServiceImpl extends ServiceImpl<PayManualReportMappe
             return "";
         }
         return amount.stripTrailingZeros().toPlainString();
+    }
+
+    /**
+     * 规范化轮询条数。
+     *
+     * @param limit 请求条数
+     * @return 实际条数
+     */
+    private int normalizePollLimit(Integer limit) {
+        if (limit == null || limit <= 0) {
+            return DEFAULT_POLL_LIMIT;
+        }
+        return Math.min(limit, MAX_POLL_LIMIT);
+    }
+
+    /**
+     * 规范化长轮询等待秒数。
+     *
+     * @param waitSeconds 请求等待秒数
+     * @return 实际等待秒数
+     */
+    private int normalizePollWaitSeconds(Integer waitSeconds) {
+        if (waitSeconds == null || waitSeconds <= 0) {
+            return DEFAULT_POLL_WAIT_SECONDS;
+        }
+        return Math.min(waitSeconds, MAX_POLL_WAIT_SECONDS);
+    }
+
+    /**
+     * 执行长轮询查询待处理支付单。
+     *
+     * @param payInfoId 支付方式 ID
+     * @param lastOrderId 上次消费到的支付单 ID
+     * @param limit 返回条数
+     * @param waitSeconds 等待秒数
+     * @return 支付单列表
+     */
+    private List<PayOrder> queryPendingOrdersWithLongPoll(Integer payInfoId, int lastOrderId, int limit, int waitSeconds) {
+        List<PayOrder> payOrders = queryPendingOrders(payInfoId, lastOrderId, limit);
+        if (!payOrders.isEmpty()) {
+            return payOrders;
+        }
+        payManualOrderPollNotifier.awaitNewOrder(payInfoId, waitSeconds);
+        return queryPendingOrders(payInfoId, lastOrderId, limit);
+    }
+
+    /**
+     * 查询当前待处理支付单。
+     *
+     * @param payInfoId 支付方式 ID
+     * @param lastOrderId 上次消费到的支付单 ID
+     * @param limit 返回条数
+     * @return 支付单列表
+     */
+    private List<PayOrder> queryPendingOrders(Integer payInfoId, int lastOrderId, int limit) {
+        return payOrderService.list(new LambdaQueryWrapper<PayOrder>()
+                .eq(PayOrder::getPayId, payInfoId)
+                .gt(PayOrder::getId, lastOrderId)
+                .in(PayOrder::getStatus,
+                        PayOrderDetails.TradeStateEnum.NOTPAY.getState(),
+                        PayOrderDetails.TradeStateEnum.USERPAYING.getState())
+                .orderByAsc(PayOrder::getId)
+                .last("limit " + (limit + 1)));
+    }
+
+    /**
+     * 构建轮询返回的支付单列表。
+     *
+     * @param payOrders 支付单列表
+     * @param limit 最大返回数
+     * @return 返回结果
+     */
+    private List<Map<String, Object>> buildPollOrders(List<PayOrder> payOrders, int limit) {
+        List<Map<String, Object>> orders = new ArrayList<>();
+        if (payOrders == null || payOrders.isEmpty()) {
+            return orders;
+        }
+        int size = Math.min(payOrders.size(), limit);
+        for (int i = 0; i < size; i++) {
+            PayOrder payOrder = payOrders.get(i);
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", payOrder.getId());
+            item.put("payId", payOrder.getPayId());
+            item.put("orderNo", payOrder.getOrderNo());
+            item.put("trackingNo", payOrder.getTrackingNo());
+            item.put("amount", payOrder.getAmount());
+            item.put("status", payOrder.getStatus());
+            item.put("notifyUrl", payOrder.getNotifyUrl());
+            item.put("userId", payOrder.getUserId());
+            item.put("createdTime", payOrder.getCreatedTime());
+            item.put("updatedTime", payOrder.getUpdatedTime());
+            orders.add(item);
+        }
+        return orders;
     }
 
     /**
@@ -323,6 +530,29 @@ public class PayManualReportServiceImpl extends ServiceImpl<PayManualReportMappe
         result.put("reportId", reportId);
         result.put("autoMatched", autoMatched);
         result.put("needReview", needReview);
+        return result;
+    }
+
+    /**
+     * 构建支付单轮询返回结构。
+     *
+     * @param success 是否成功
+     * @param message 提示信息
+     * @param count 本次数量
+     * @param nextOrderId 下一游标
+     * @param hasMore 是否还有更多
+     * @param orders 支付单列表
+     * @return 返回结果
+     */
+    private Map<String, Object> buildPollResult(boolean success, String message, int count, int nextOrderId,
+                                                boolean hasMore, List<Map<String, Object>> orders) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", success);
+        result.put("message", message);
+        result.put("count", count);
+        result.put("nextOrderId", nextOrderId);
+        result.put("hasMore", hasMore);
+        result.put("orders", orders);
         return result;
     }
 

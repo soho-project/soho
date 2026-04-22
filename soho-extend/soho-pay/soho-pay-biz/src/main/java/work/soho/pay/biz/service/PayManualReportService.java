@@ -3,6 +3,7 @@ package work.soho.pay.biz.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import work.soho.pay.biz.domain.PayManualReport;
 import work.soho.pay.biz.request.PayManualReportAuditRequest;
+import work.soho.pay.biz.request.PayManualOrderPollRequest;
 import work.soho.pay.biz.request.PayManualReportSubmitRequest;
 
 import java.util.Map;
@@ -18,6 +19,14 @@ public interface PayManualReportService extends IService<PayManualReport> {
      * @return 处理结果
      */
     Map<String, Object> submitReport(PayManualReportSubmitRequest request);
+
+    /**
+     * 轮询自定义二维码支付方式下的新支付单。
+     *
+     * @param request 轮询参数
+     * @return 轮询结果
+     */
+    Map<String, Object> pollPendingOrders(PayManualOrderPollRequest request);
 
     /**
      * 人工审核支付上报。

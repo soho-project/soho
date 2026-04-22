@@ -1,9 +1,12 @@
 package work.soho.pay.biz.platform.customqr.adapter;
 
+import org.springframework.beans.BeansException;
+import work.soho.common.core.support.SpringContextHolder;
 import work.soho.common.core.util.StringUtils;
 import work.soho.pay.biz.platform.PayConfig;
 import work.soho.pay.biz.platform.model.Order;
 import work.soho.pay.biz.platform.payapis.Pay;
+import work.soho.pay.biz.service.PayManualOrderPollNotifier;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,6 +46,24 @@ public class CustomQrApis implements Pay {
         result.put("pay_title", StringUtils.isBlank(payConfig.getTitle()) ? "" : payConfig.getTitle());
         result.put("pay_account_name", StringUtils.isBlank(payConfig.getAccountName()) ? "" : payConfig.getAccountName());
         result.put("pay_qr_image", StringUtils.isBlank(payConfig.getAccountPublicKey()) ? "" : payConfig.getAccountPublicKey());
+        notifyNewPayOrder(order);
         return result;
+    }
+
+    /**
+     * 通知轮询接口有新支付单创建。
+     *
+     * @param order 支付订单
+     */
+    private void notifyNewPayOrder(Order order) {
+        if (payConfig.getId() == null || order == null || StringUtils.isBlank(order.getOutTradeNo())) {
+            return;
+        }
+        try {
+            PayManualOrderPollNotifier notifier = SpringContextHolder.getBean(PayManualOrderPollNotifier.class);
+            notifier.notifyNewOrder(payConfig.getId(), order.getOutTradeNo());
+        } catch (BeansException ex) {
+            // 支付下单流程不能因为通知失败而中断
+        }
     }
 }
