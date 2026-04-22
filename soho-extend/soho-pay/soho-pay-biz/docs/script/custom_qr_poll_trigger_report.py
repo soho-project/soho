@@ -208,6 +208,13 @@ def init_config(args):
 
 
 def run(cmd, *, capture=True):
+    """
+    执行系统命令。
+
+    :param cmd: 命令参数列表
+    :param capture: 是否捕获输出
+    :return: 命令执行结果
+    """
     return subprocess.run(
         cmd,
         check=True,
@@ -217,12 +224,23 @@ def run(cmd, *, capture=True):
 
 
 def find_window():
+    """
+    查找目标应用窗口 ID。
+
+    :return: 窗口 ID，未找到时返回空字符串
+    """
     res = run(["xdotool", "search", "--name", APP_NAME])
     lines = [x.strip() for x in res.stdout.splitlines() if x.strip()]
     return lines[-1] if lines else ""
 
 
 def get_geometry(wid):
+    """
+    获取窗口几何信息。
+
+    :param wid: 窗口 ID
+    :return: 窗口左上角坐标与宽高
+    """
     res = run(["xwininfo", "-id", wid])
     text = res.stdout
 
@@ -241,14 +259,33 @@ def get_geometry(wid):
 
 
 def scale_x(x, win_w):
+    """
+    按当前窗口宽度缩放横坐标。
+
+    :param x: 基准横坐标
+    :param win_w: 当前窗口宽度
+    :return: 缩放后的横坐标
+    """
     return int(x * win_w / BASE_W)
 
 
 def scale_y(y, win_h):
+    """
+    按当前窗口高度缩放纵坐标。
+
+    :param y: 基准纵坐标
+    :param win_h: 当前窗口高度
+    :return: 缩放后的纵坐标
+    """
     return int(y * win_h / BASE_H)
 
 
 def get_mouse_position():
+    """
+    获取当前鼠标坐标。
+
+    :return: 鼠标横纵坐标
+    """
     res = run(["xdotool", "getmouselocation", "--shell"])
     x = re.search(r"^X=(\d+)$", res.stdout, re.M)
     y = re.search(r"^Y=(\d+)$", res.stdout, re.M)
@@ -258,6 +295,13 @@ def get_mouse_position():
 
 
 def human_move_and_click(target_x, target_y):
+    """
+    以拟人化方式移动鼠标并点击。
+
+    :param target_x: 目标横坐标
+    :param target_y: 目标纵坐标
+    :return: 无
+    """
     try:
         start_x, start_y = get_mouse_position()
     except Exception:
@@ -282,6 +326,17 @@ def human_move_and_click(target_x, target_y):
 
 
 def click_rel(rx, ry, abs_x, abs_y, win_w, win_h):
+    """
+    按窗口相对坐标执行点击。
+
+    :param rx: 基准横坐标
+    :param ry: 基准纵坐标
+    :param abs_x: 窗口绝对横坐标
+    :param abs_y: 窗口绝对纵坐标
+    :param win_w: 窗口宽度
+    :param win_h: 窗口高度
+    :return: 无
+    """
     sx = scale_x(rx, win_w)
     sy = scale_y(ry, win_h)
     target_x = abs_x + sx
@@ -290,6 +345,13 @@ def click_rel(rx, ry, abs_x, abs_y, win_w, win_h):
 
 
 def refresh_window(*, timeout=8.0, interval=0.2):
+    """
+    刷新并重新获取窗口信息。
+
+    :param timeout: 超时时间
+    :param interval: 轮询间隔
+    :return: 窗口 ID 与几何信息
+    """
     # 小程序重载后可能重建窗口，循环重查可避免使用失效窗口 ID。
     deadline = time.time() + timeout
     last_err = None
@@ -313,10 +375,23 @@ def refresh_window(*, timeout=8.0, interval=0.2):
 
 
 def capture_window(wid, out_img):
+    """
+    截取指定窗口图片。
+
+    :param wid: 窗口 ID
+    :param out_img: 输出图片路径
+    :return: 无
+    """
     run(["import", "-window", wid, out_img], capture=False)
 
 
 def wait_file(path):
+    """
+    等待文件生成完成。
+
+    :param path: 文件路径
+    :return: 无
+    """
     p = Path(path)
     for _ in range(21):
         if p.exists() and p.stat().st_size > 0:
@@ -326,6 +401,12 @@ def wait_file(path):
 
 
 def append_log(lines):
+    """
+    追加日志内容。
+
+    :param lines: 日志行列表
+    :return: 无
+    """
     # 统一追加日志，便于对照“截图 -> OCR 原文 -> 结构化结果”。
     log_path = Path(LOG_FILE)
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -335,10 +416,23 @@ def append_log(lines):
 
 
 def md5_upper(text):
+    """
+    计算大写 MD5。
+
+    :param text: 原始文本
+    :return: MD5 大写结果
+    """
     return hashlib.md5(text.encode("utf-8")).hexdigest().upper()
 
 
 def build_sign(payload, private_key):
+    """
+    按服务端规则生成签名。
+
+    :param payload: 待签名参数
+    :param private_key: 签名密钥
+    :return: 签名结果
+    """
     # 服务端同款规则：按 key 升序拼接，空值不参与。
     items = []
     for k in sorted(payload.keys()):
@@ -355,6 +449,12 @@ def build_sign(payload, private_key):
 
 
 def normalize_amount_text(amount_text):
+    """
+    规范化金额文本。
+
+    :param amount_text: 原始金额文本
+    :return: 规范化后的金额字符串
+    """
     s = str(amount_text or "").strip()
     if not s:
         return ""
@@ -368,6 +468,12 @@ def normalize_amount_text(amount_text):
 
 
 def calc_crop_top_px(win_h):
+    """
+    计算列表截图顶部裁剪高度。
+
+    :param win_h: 当前窗口高度
+    :return: 裁剪像素值
+    """
     # 默认按“截图绝对像素”裁剪，避免重复缩放导致切多。
     if LIST_TOP_EXCLUDE_MODE in ("scaled", "scale", "relative"):
         return scale_y(LIST_TOP_EXCLUDE_Y, win_h)
@@ -375,6 +481,14 @@ def calc_crop_top_px(win_h):
 
 
 def crop_list_area(src_img_path, dst_img_path, top_exclude_px):
+    """
+    裁剪列表截图顶部区域。
+
+    :param src_img_path: 原图路径
+    :param dst_img_path: 输出图路径
+    :param top_exclude_px: 顶部裁剪像素
+    :return: 无
+    """
     src = Path(src_img_path)
     dst = Path(dst_img_path)
     if not src.exists():
@@ -420,6 +534,15 @@ def crop_list_area(src_img_path, dst_img_path, top_exclude_px):
 
 
 def crop_vertical_band(src_img_path, dst_img_path, top_y, bottom_y):
+    """
+    裁剪详情页纵向识别区域。
+
+    :param src_img_path: 原图路径
+    :param dst_img_path: 输出图路径
+    :param top_y: 裁剪起始纵坐标
+    :param bottom_y: 裁剪结束纵坐标
+    :return: 无
+    """
     src = Path(src_img_path)
     dst = Path(dst_img_path)
     if not src.exists():
@@ -459,6 +582,14 @@ def crop_vertical_band(src_img_path, dst_img_path, top_y, bottom_y):
 
 
 def upscale_image(src_img_path, dst_img_path, percent):
+    """
+    放大图片以提高 OCR 识别率。
+
+    :param src_img_path: 原图路径
+    :param dst_img_path: 输出图路径
+    :param percent: 放大比例
+    :return: 无
+    """
     src = Path(src_img_path)
     dst = Path(dst_img_path)
     if not src.exists():
@@ -483,6 +614,12 @@ def upscale_image(src_img_path, dst_img_path, percent):
 
 
 def ocr_text(img_path):
+    """
+    对图片执行 OCR 文本识别。
+
+    :param img_path: 图片路径
+    :return: OCR 文本结果
+    """
     img = Path(img_path)
     if not img.exists():
         raise RuntimeError(f"image not found: {img}")
@@ -500,6 +637,12 @@ def ocr_text(img_path):
 
 
 def ocr_tsv(img_path):
+    """
+    对图片执行 TSV 格式 OCR 识别。
+
+    :param img_path: 图片路径
+    :return: TSV 文本结果
+    """
     img = Path(img_path)
     if not img.exists():
         raise RuntimeError(f"image not found: {img}")
@@ -533,6 +676,12 @@ def ocr_tsv(img_path):
 
 
 def get_image_size(path):
+    """
+    获取图片宽高。
+
+    :param path: 图片路径
+    :return: 图片宽高
+    """
     # 优先使用 Pillow 读取尺寸；不可用时回退到 ImageMagick。
     if Image is not None:
         try:
@@ -554,6 +703,12 @@ def get_image_size(path):
 
 
 def extract_line_boxes_from_tsv(tsv_text):
+    """
+    从 OCR TSV 结果中提取文本行框。
+
+    :param tsv_text: TSV 原始文本
+    :return: 行框列表
+    """
     lines = [x for x in tsv_text.splitlines() if x.strip()]
     if len(lines) <= 1:
         return []
@@ -623,6 +778,12 @@ def extract_line_boxes_from_tsv(tsv_text):
 
 
 def detect_list_row_segments(img_path):
+    """
+    根据像素深浅检测列表记录区间。
+
+    :param img_path: 图片路径
+    :return: 纵向区间列表
+    """
     # 基于像素深浅估算列表记录所在的纵向区间，规避 OCR 行框缺失时的误点。
     if Image is None:
         return []
@@ -676,6 +837,15 @@ def detect_list_row_segments(img_path):
 
 
 def build_fallback_click_positions(img_path, entry_count, fallback_w, fallback_h):
+    """
+    构建列表点击兜底坐标。
+
+    :param img_path: 图片路径
+    :param entry_count: 记录条数
+    :param fallback_w: 兜底宽度
+    :param fallback_h: 兜底高度
+    :return: 点击坐标列表
+    """
     # 在 OCR 行框缺失时，优先按截图中的真实内容区间生成点击点。
     if entry_count <= 0:
         return []
@@ -712,6 +882,12 @@ def build_fallback_click_positions(img_path, entry_count, fallback_w, fallback_h
 
 
 def clean_payer_name(raw_line):
+    """
+    清洗付款人姓名文本。
+
+    :param raw_line: OCR 原始行文本
+    :return: 付款人姓名
+    """
     # 去掉金额和货币符号，仅保留付款人文本。
     s = re.sub(r"[¥￥Y]?\s*[0-9]+\.[0-9]{2}", "", raw_line)
     s = re.sub(r"\s+", " ", s).strip()
@@ -755,6 +931,12 @@ def clean_payer_name(raw_line):
 
 
 def extract_note_from_line(raw_line):
+    """
+    从文本行中提取付款方备注。
+
+    :param raw_line: OCR 原始行文本
+    :return: 备注内容
+    """
     line = raw_line.strip()
     if not line:
         return ""
@@ -773,6 +955,14 @@ def extract_note_from_line(raw_line):
 
 
 def extract_payment_list(img_path, *, win_w=None, win_h=None):
+    """
+    从列表截图中提取付款记录。
+
+    :param img_path: 图片路径
+    :param win_w: 窗口宽度
+    :param win_h: 窗口高度
+    :return: 付款记录列表
+    """
     # 识别列表记录，并为每条记录计算尽量稳定的点击坐标。
     run_ts = time.strftime("%Y-%m-%d %H:%M:%S")
     text = ocr_text(img_path)
@@ -921,6 +1111,12 @@ def extract_payment_list(img_path, *, win_w=None, win_h=None):
 
 
 def extract_detail_fields(img_path):
+    """
+    从详情页截图中提取关键字段。
+
+    :param img_path: 图片路径
+    :return: 详情字段字典
+    """
     text = ocr_text(img_path)
     print("详情页 OCR 原始识别文本:")
     print(text.strip() or "(空)")
@@ -1131,6 +1327,13 @@ def extract_detail_fields(img_path):
 
 
 def merge_detail_fields(primary, fallback):
+    """
+    合并两次详情识别结果。
+
+    :param primary: 主识别结果
+    :param fallback: 兜底识别结果
+    :return: 合并后的字段
+    """
     merged = dict(primary)
     for k in ("receive_time", "order_no", "payer_note", "pay_amount"):
         if not merged.get(k):
@@ -1139,6 +1342,12 @@ def merge_detail_fields(primary, fallback):
 
 
 def submit_reports(details):
+    """
+    批量提交支付上报。
+
+    :param details: 详情记录列表
+    :return: 无
+    """
     if not REPORT_ENABLED:
         print("已关闭上报: REPORT_ENABLED=0")
         append_log(["已关闭上报: REPORT_ENABLED=0"])
@@ -1214,6 +1423,14 @@ def submit_reports(details):
 
 
 def post_json(api_url, body, timeout_sec):
+    """
+    发送 JSON POST 请求。
+
+    :param api_url: 接口地址
+    :param body: 请求体
+    :param timeout_sec: 超时时间
+    :return: 状态码与响应文本
+    """
     if requests is not None:
         resp = requests.post(
             api_url,
@@ -1357,6 +1574,18 @@ def poll_new_orders(last_order_id):
 
 
 def click_list_entry(entry, abs_x, abs_y, win_w, win_h, crop_top_px, wid=None):
+    """
+    点击列表中的指定记录。
+
+    :param entry: 记录数据
+    :param abs_x: 窗口绝对横坐标
+    :param abs_y: 窗口绝对纵坐标
+    :param win_w: 窗口宽度
+    :param win_h: 窗口高度
+    :param crop_top_px: 顶部裁剪像素
+    :param wid: 窗口 ID
+    :return: 无
+    """
     # 优先使用窗口内坐标点击，避免窗口边框/标题栏导致的全局坐标偏移。
     rel_x = int(entry.get("click_x", win_w // 2))
     rel_y = int(entry.get("click_y", max(1, (win_h - crop_top_px) // 2)))
@@ -1380,6 +1609,11 @@ def click_list_entry(entry, abs_x, abs_y, win_w, win_h, crop_top_px, wid=None):
 
 
 def run_query_and_extract_list():
+    """
+    执行查询流程并提取付款列表。
+
+    :return: 窗口信息、裁剪信息与付款记录列表
+    """
     # 执行查询流程并返回窗口信息、裁剪偏移和列表识别结果。
     wid, abs_x, abs_y, win_w, win_h = refresh_window(timeout=3.0)
 
