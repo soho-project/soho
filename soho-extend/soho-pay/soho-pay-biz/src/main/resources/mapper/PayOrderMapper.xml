@@ -23,4 +23,49 @@
         status,payed_time,created_time,
         updated_time
     </sql>
+
+    <select id="selectTodayOverview" resultType="work.soho.pay.biz.dto.PayDashboardOverviewStatsDTO">
+        select
+            coalesce(sum(case
+                when status = #{successStatus}
+                    and payed_time <![CDATA[>=]]> #{todayStart}
+                    and payed_time <![CDATA[<]]> #{tomorrowStart}
+                then amount else 0 end), 0) as todayPaidAmount,
+            coalesce(sum(case
+                when status = #{successStatus}
+                    and payed_time <![CDATA[>=]]> #{todayStart}
+                    and payed_time <![CDATA[<]]> #{tomorrowStart}
+                then 1 else 0 end), 0) as todayPaidOrderCount,
+            coalesce(sum(case
+                when status = #{notPayStatus}
+                    and created_time <![CDATA[>=]]> #{todayStart}
+                    and created_time <![CDATA[<]]> #{tomorrowStart}
+                then 1 else 0 end), 0) as todayUnpaidOrderCount
+        from pay_order
+    </select>
+
+    <select id="selectTodayPaidAmountByHour" resultType="work.soho.pay.biz.dto.PayDashboardHourAmountStatsDTO">
+        select
+            hour(payed_time) as hour,
+            coalesce(sum(amount), 0) as amount
+        from pay_order
+        where status = #{successStatus}
+          and payed_time <![CDATA[>=]]> #{todayStart}
+          and payed_time <![CDATA[<]]> #{tomorrowStart}
+        group by hour(payed_time)
+        order by hour asc
+    </select>
+
+    <select id="selectTodayPaidAmountByHourAndPayInfo" resultType="work.soho.pay.biz.dto.PayDashboardPayMethodHourAmountStatsDTO">
+        select
+            pay_id as payId,
+            hour(payed_time) as hour,
+            coalesce(sum(amount), 0) as amount
+        from pay_order
+        where status = #{successStatus}
+          and payed_time <![CDATA[>=]]> #{todayStart}
+          and payed_time <![CDATA[<]]> #{tomorrowStart}
+        group by pay_id, hour(payed_time)
+        order by pay_id asc, hour asc
+    </select>
 </mapper>
