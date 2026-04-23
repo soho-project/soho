@@ -15,7 +15,9 @@
     <modules>
         <module>soho-example-api</module>
         <module>soho-example-biz</module>
+        <module>soho-example-cloud-api</module>
         <module>soho-example-cloud-biz</module>
+        <module>soho-example-cloud-bridge</module>
     </modules>
 
     <properties>

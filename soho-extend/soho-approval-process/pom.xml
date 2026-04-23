@@ -17,6 +17,9 @@
     <modules>
         <module>soho-approval-process-biz</module>
         <module>soho-approval-process-api</module>
+        <module>soho-approval-process-cloud-api</module>
+        <module>soho-approval-process-cloud-biz</module>
+        <module>soho-approval-process-cloud-bridge</module>
     </modules>
 
 </project>

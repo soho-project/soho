@@ -14,6 +14,9 @@
     <modules>
         <module>soho-diy-api</module>
         <module>soho-diy-biz</module>
+        <module>soho-diy-cloud-api</module>
+        <module>soho-diy-cloud-biz</module>
+        <module>soho-diy-cloud-bridge</module>
     </modules>
 
     <properties>

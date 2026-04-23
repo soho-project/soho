@@ -11,6 +11,7 @@
     <modules>
         <module>soho-upload-api</module>
         <module>soho-upload-biz</module>
+        <module>soho-upload-cloud-api</module>
         <module>soho-upload-cloud-biz</module>
         <module>soho-upload-cloud-bridge</module>
     </modules>

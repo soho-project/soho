@@ -20,5 +20,8 @@
     <modules>
         <module>soho-lot-api</module>
         <module>soho-lot-biz</module>
+        <module>soho-lot-cloud-api</module>
+        <module>soho-lot-cloud-biz</module>
+        <module>soho-lot-cloud-bridge</module>
     </modules>
 </project>

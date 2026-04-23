@@ -15,6 +15,9 @@
     <modules>
         <module>soho-chat-api</module>
         <module>soho-chat-biz</module>
+        <module>soho-chat-cloud-api</module>
+        <module>soho-chat-cloud-biz</module>
+        <module>soho-chat-cloud-bridge</module>
     </modules>
 
     <properties>

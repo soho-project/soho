@@ -14,6 +14,9 @@
     <modules>
         <module>soho-game-biz</module>
         <module>soho-game-api</module>
+        <module>soho-game-cloud-api</module>
+        <module>soho-game-cloud-biz</module>
+        <module>soho-game-cloud-bridge</module>
     </modules>
 
     <properties>

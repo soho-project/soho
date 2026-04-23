@@ -15,6 +15,9 @@
     <modules>
         <module>soho-wallet-api</module>
         <module>soho-wallet-biz</module>
+        <module>soho-wallet-cloud-api</module>
+        <module>soho-wallet-cloud-biz</module>
+        <module>soho-wallet-cloud-bridge</module>
     </modules>
 
     <properties>

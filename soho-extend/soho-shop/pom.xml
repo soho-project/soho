@@ -14,6 +14,9 @@
     <modules>
         <module>soho-shop-api</module>
         <module>soho-shop-biz</module>
+        <module>soho-shop-cloud-api</module>
+        <module>soho-shop-cloud-biz</module>
+        <module>soho-shop-cloud-bridge</module>
     </modules>
 
     <properties>

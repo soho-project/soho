@@ -14,6 +14,9 @@
     <modules>
         <module>soho-ai-biz</module>
         <module>soho-ai-api</module>
+        <module>soho-ai-cloud-api</module>
+        <module>soho-ai-cloud-biz</module>
+        <module>soho-ai-cloud-bridge</module>
     </modules>
 
     <properties>

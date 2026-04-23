@@ -12,6 +12,9 @@
     <modules>
         <module>soho-open-api</module>
         <module>soho-open-biz</module>
+        <module>soho-open-cloud-api</module>
+        <module>soho-open-cloud-biz</module>
+        <module>soho-open-cloud-bridge</module>
     </modules>
 
     <properties>
